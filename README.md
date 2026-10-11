@@ -87,5 +87,7 @@ MIT — szczegóły w pliku [LICENSE](LICENSE).
 
 ## Status
 
-Projekt na etapie projektowania — kod jeszcze nie powstał. Wersje 0.x będą publicznie
-dostępne, ale nie są rekomendowane do wdrożeń produkcyjnych przed wersją 1.0.0.
+W budowie (przed v0.1.0): działają cztery operacje Kartografa 0.7.2 (NMT dla arkusza,
+arkusze potomne, wycinek NMT/NMPT, BDOT10k) z CLI i z Pythona, z modelem decyzyjnym
+zgodnym z API OpenAI (np. LM Studio); backend basal jeszcze nie powstał. Wersje 0.x są
+publicznie dostępne, ale nie są rekomendowane do wdrożeń produkcyjnych przed wersją 1.0.0.

@@ -8,16 +8,16 @@ Szablony wpisów: [Szablony](#szablony).
 
 | Element | Status | Uwagi |
 |---------|--------|-------|
-| Dokumentacja projektowa (PRD, ARCHITECTURE, DEVELOPMENT_STANDARDS) | ✅ Gotowy | szkic 2026-10-11; otwarte kwestie: PRD rozdz. 11, ARCHITECTURE rozdz. 12 |
-| Repozytorium (`main`, `develop`, `origin`) | 🚧 W toku | `origin` = `github.com/Daldek/Retman`; `develop` wypchnięty, `main` jeszcze nie |
-| Lista pierwszych operacji v0.1 | ⏳ Planowany | PRD 7.2 — decyzja autora; blokuje manifesty, handlery i zbiór testowy |
-| Szkielet pakietu, `pyproject.toml`, `retman.toml` i `retman init` | ⏳ Planowany | ARCHITECTURE 3.1, 9.1, 9.3; STANDARDS 5–8 |
-| Ekstraktory (w tym prawdopodobieństwo) | ⏳ Planowany | ARCHITECTURE 4.4 — w pełni opisane |
-| Backendy `basal`, `openai_compatible`, `none`; `FakeDecisionBackend` | ⏳ Planowany | ARCHITECTURE 3.3, 8.3 |
-| Rdzeń: pipeline, `Plan`, `dialog`, `Result` | ⏳ Planowany | ARCHITECTURE 2, 6, 7.1, 7.3 |
-| Rejestr operacji, wspólny adapter, `kinds`, `retman-scaffold` | ⏳ Planowany | ARCHITECTURE 3.2, 4.1–4.3 |
-| Przestrzeń robocza, dziennik projektu, ślad audytowy | ⏳ Planowany | ARCHITECTURE 5 |
-| CLI, `retman doctor`, `results`, `log` | ⏳ Planowany | ARCHITECTURE 6.4, 7.1, 7.2 |
+| Dokumentacja projektowa (PRD, ARCHITECTURE, DEVELOPMENT_STANDARDS) | ✅ Gotowy | szkic 2026-10-11; ADR-001–005; otwarte kwestie: PRD rozdz. 11, ARCHITECTURE rozdz. 12 |
+| Repozytorium (`main`, `develop`, `origin`) | ✅ Gotowy | `main` i `develop` na `origin` |
+| Lista pierwszych operacji v0.1 | 🚧 W toku | Kartograf: 4 operacje (ADR-001); brak operacji drugiego narzędzia (PRD 7.1) |
+| Szkielet pakietu, `pyproject.toml`, `retman.toml` i `retman init` | ✅ Gotowy | ARCHITECTURE 3.1, 9.1; Python ≥ 3.12 (ADR-002) |
+| Ekstraktory (w tym prawdopodobieństwo) | 🚧 W toku | gotowe: `area`, `path`, `result`; brak: prawdopodobieństwo, daty, stacje, liczby z jednostkami |
+| Backendy `basal`, `openai_compatible`, `none`; `FakeDecisionBackend` | 🚧 W toku | gotowe: `openai_compatible`, atrapa; `basal` — brak specyfikacji API basal-serve |
+| Rdzeń: pipeline, `Plan`, `dialog`, `Result` | ✅ Gotowy | ARCHITECTURE 2, 6, 7.1, 7.3 |
+| Rejestr operacji, wspólny adapter, `kinds`, `retman-scaffold` | 🚧 W toku | rejestr, adapter, `kinds` gotowe; `retman-scaffold` nie powstał |
+| Przestrzeń robocza, dziennik projektu, ślad audytowy | ✅ Gotowy | ARCHITECTURE 5 |
+| CLI, `retman doctor`, `results`, `log` | 🚧 W toku | CLI, `results`, `log`, `init` gotowe; brak `retman doctor` |
 | `retman-eval` i zbiór poleceń testowych | ⏳ Planowany | ARCHITECTURE 8 |
 | CI (Windows, Linux, macOS; test instalacji; wersje narzędzi) | ⏳ Planowany | ARCHITECTURE 3.2.7, 9.4 |
 
@@ -30,15 +30,62 @@ Szablony wpisów: [Szablony](#szablony).
 
 ## Ostatnia sesja
 
-> **START NASTĘPNEJ SESJI (stan 2026-10-11):** kodu jeszcze nie ma; praca na
-> `develop`. Repozytorium `github.com/Daldek/Retman` założone, `develop`
-> wypchnięty (`8c7657c`), `main` NIE — wypchnij go (`git push -u origin main`)
-> i sprawdź, czy domyślną gałęzią na GitHubie jest `main` (STANDARDS 1.1).
-> Najpierw: szkielet pakietu z konfiguracją i ekstraktor prawdopodobieństwa
-> (niezależne od listy operacji). Czeka na decyzję użytkownika: lista
-> pierwszych operacji (PRD 7.2), rodzaje danych i formaty plików (PRD W-09,
-> ARCHITECTURE 12 pkt 7), wartości docelowe (PRD W-01, N-07, rozdz. 8),
-> zapis decyzji z 2026-10-11 jako ADR. Pełna lista: Backlog niżej.
+> **START NASTĘPNEJ SESJI (stan 2026-10-11, wieczór):** praca na `develop`; pionowy
+> przekrój na Kartografie 0.7.2 działa end-to-end (CLI + LM Studio/Bielik 11B + GUGiK).
+> Najpierw: `retman doctor` (ARCHITECTURE 7.2) i `retman-eval` ze zbiorem ≥ 15 poleceń
+> na operację Kartografa (ARCHITECTURE 8) — smoke pokazał, że Bielik przy progach 0,9
+> często wybiera `unspecified` mimo wartości w poleceniu (np. „NMT” → produkt), więc
+> opisy opcji i progi trzeba stroić na zbiorze. Czeka na decyzję użytkownika: operacja
+> drugiego narzędzia (PRD 7.1), obsługa pliku geometrii (patrz „Otwarte” niżej),
+> wartości docelowe (PRD W-01, N-07, rozdz. 8), ADR wsteczne dla decyzji z pierwszej sesji.
+
+### Pionowy przekrój na Kartografie 0.7.2 (2026-10-11)
+
+- **Zlecenie użytkownika:** kontynuacja prac; Kartograf v0.7.2 jako pierwsze narzędzie
+  do testowania możliwości Retmana.
+- **Decyzje użytkownika:** operacje Kartografa i formy obszaru (ADR-001); Python ≥ 3.12
+  (ADR-002); zakres `>=0.7.2,<0.8` i grupa `tools` z tagiem Git (ADR-003); osobny `kind`
+  na produkt (ADR-004); kolejność sesji: szkielet + konfiguracja, potem przekrój
+  Kartografa. Adresu serwera LM Studio i ścieżki przestrzeni roboczej agenta nie wolno
+  zapisywać w żadnym pliku.
+- **Zrobione:**
+  - `pyproject.toml`, `.venv` przez `uv` (zainstalowany w `~/.local/bin`), konfiguracja
+    ruff (bez plików `.md` — przykłady „BAD” w dokumentacji), mypy, pytest, coverage;
+  - `config.py` + szablon, `exceptions.py`, loader tłumaczeń, izolacja sieci w testach;
+  - ekstraktory `area`/`path`/`result`; backend `openai_compatible` + `FakeDecisionBackend`;
+    `kinds.py`; `retman/tools/kartograf/` (manifest, handlery, `pl.toml`); rejestr,
+    adapter, pipeline, plan, dialog, workspace, journal, CLI (subagenci, integracja
+    i poprawki w tej sesji);
+  - poprawki po smoke: decyzja z `logprobs` = najbardziej prawdopodobna opcja, nie
+    wylosowany token (`27c6864`); niska pewność przy `unspecified` → pytanie zamiast
+    wartości domyślnej; `label` operacji dla użytkownika oddzielony od `description`
+    dla modelu; plan pokazuje odczyt prostokąta jako N/E;
+  - badanie LM Studio: `docs/research/2026-10-11-lm-studio-openai-compatible.md`
+    (ARCHITECTURE 12 pkt 9);
+  - dokumentacja: ADR-001–005, PRD 7.2, ARCHITECTURE 3.1, 3.2.6, 4.1–4.3, 9.2–9.3, 12,
+    STANDARDS 5.1, 6.1, 8.1, README, CLAUDE.md, CHANGELOG.
+- **Weryfikacja:** `pytest -m "not live"` — 142 passed, pokrycie 88% (rdzeń ≥ 84%);
+  `pytest -m live` — 6 passed (5 handlerów Kartografa na GUGiK, 1 Bielik 11B);
+  `ruff check`, `ruff format --check`, `mypy retman/ tests/` czyste. Smoke CLI
+  w folderze projektu poza repo z Bielikiem 11B: NMT 5 m dla N-34-130-D-d-2-4 →
+  `ok=False` (GUGiK nie ma 5 m dla arkusza, komunikat Kartografa, exit 1); wycinek NMT dla
+  prostokąta WGS84 → GeoTIFF EPSG:2180 1 m, 573×561, 77–90 m (Poznań), exit 0; sesja:
+  BDOT10k TERYT 2264 z `z` (zmiana na SHP) → 58 plików `.shp`, `koniec` exit 0;
+  polecenie spoza zakresu → lista operacji; bez TTY → exit 2; `results`, `log` działają.
+- **Otwarte:**
+  - **plik geometrii (SHP/GPKG)**: ekstraktor go rozpoznaje, ale żadna operacja Kartografa
+    go nie przyjmuje — `download_pl_cutout(geometry=)` w 0.7.2 jest nieaktywny, a publiczne
+    API nie ma funkcji zwracającej prostokąt geometrii (potrzebna np.
+    `get_overall_bbox(path, layer=None, target_crs=...)` w `__all__` Kartografa) —
+    decyzja autora;
+  - backend `basal`: brak specyfikacji API basal-serve i serwera do nagrania fixtur;
+    konfiguracja z `backend = "basal"` kończy się komunikatem `backend_unavailable`;
+  - Qwen w LM Studio nieprzetestowany (serwer odmówił załadowania — zasoby);
+  - `retman-scaffold --check` z bramki (CLAUDE.md) jeszcze nie istnieje;
+  - polecenie spoza zakresu jest wypisywane z prefiksem „Błąd:” i kończy się kodem 1 —
+    do przemyślenia przy `retman-eval`/UX;
+  - Kartograf przy folderze projektu na udziale CIFS zgłasza „database is locked” dla
+    cache metadanych w folderze wyniku i pracuje bez cache (zachowanie Kartografa).
 
 ### Start projektu: dokumentacja i repozytorium (2026-10-11)
 
@@ -88,37 +135,43 @@ Szablony wpisów: [Szablony](#szablony).
 
 Decyzje autora (blokują część implementacji):
 
-- [ ] **Lista pierwszych operacji** (3–5, z co najmniej dwóch narzędzi) —
-  PRD 7.2, 11 pkt 4.
-- [ ] **Rodzaje danych (`kind`) i formaty plików wynikowych** — PRD W-09,
-  11 pkt 8; ARCHITECTURE 3.2.6, 12 pkt 7.
+- [ ] **Operacja drugiego narzędzia** (PRD 7.1: z co najmniej dwóch narzędzi) —
+  Kartograf ustalony w ADR-001; PRD 7.2, 11 pkt 4.
+- [x] **Rodzaje danych dla Kartografa** — ADR-004, ARCHITECTURE 3.2.6; pozostałe
+  narzędzia otwarte (PRD 11 pkt 8; ARCHITECTURE 12 pkt 7).
+- [ ] **Plik geometrii jako obszar** — potrzebna publiczna funkcja Kartografa
+  (prostokąt geometrii) albo inna decyzja autora (wpis sesji 2026-10-11, „Otwarte”).
 - [ ] **Wartości docelowe**: trafność rozpoznania (W-01), czas odpowiedzi (N-07),
   miary sukcesu — PRD rozdz. 8, 11 pkt 5.
-- [ ] **Push `main` na `origin`** i domyślna gałąź `main` na GitHubie
-  (`develop` wypchnięty 2026-10-11).
-- [ ] **ADR dla decyzji z 2026-10-11** (lista we wpisie sesji) — czy zapisywać
-  wstecznie w `docs/DECISIONS.md`.
+- [x] **Push `main` na `origin`** — `main` na `origin` (`70857c0`).
+- [ ] **ADR dla decyzji z pierwszej sesji 2026-10-11** (lista we wpisie „Start projektu”) —
+  czy zapisywać wstecznie w `docs/DECISIONS.md`.
 
 Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
 
-- [ ] **Szkielet pakietu i konfiguracja** — `pyproject.toml`, `retman/`,
-  `tests/conftest.py` (izolacja sieci), `retman.toml` i `retman init`
-  (ARCHITECTURE 3.1, 9.1, 9.3; STANDARDS 5–8, 10.4).
+- [x] **Szkielet pakietu i konfiguracja** — `pyproject.toml`, `retman/config.py`,
+  `tests/conftest.py`, `retman init` (sesja 2026-10-11, przekrój Kartografa).
+- [ ] **`retman doctor`** (ARCHITECTURE 7.2) — adres i pytanie testowe modelu, wersje
+  narzędzi, komplet tłumaczeń, przestrzeń robocza.
+- [ ] **`retman-eval` i zbiór poleceń testowych** — ≥ 15 poleceń na operację Kartografa,
+  w tym niepełne i spoza zakresu; strojenie progów i opisów opcji dla Bielika
+  (ARCHITECTURE 6.2, 8).
 - [ ] **Ekstraktor prawdopodobieństwa** z testami wszystkich form z ARCHITECTURE 4.4.
-- [ ] **Pozostałe ekstraktory** — współrzędne, liczby z jednostkami, daty,
-  stacje, ścieżki, numery wyników (ARCHITECTURE 3.1, 6.1).
-- [ ] **Backendy** `basal`, `openai_compatible`, `none` i `FakeDecisionBackend`
-  (ARCHITECTURE 3.3, 8.3).
-- [ ] **Rdzeń** — pipeline, `Plan`, `dialog`, `Result`, `PlanNotConfirmedError`
-  (ARCHITECTURE 2, 6, 7.1, 7.3).
-- [ ] **Rejestr operacji, wspólny adapter, `kinds`, `retman-scaffold`**
-  (ARCHITECTURE 3.2, 4.1–4.3) — po decyzji o liście operacji.
-- [ ] **Przestrzeń robocza, dziennik projektu, ślad audytowy** (ARCHITECTURE 5).
-- [ ] **CLI, `retman doctor`, `results`, `log`** (ARCHITECTURE 6.4, 7.1, 7.2).
-- [ ] **`retman-eval` i zbiór poleceń testowych** (ARCHITECTURE 8).
+- [ ] **Pozostałe ekstraktory** — współrzędne punktu, liczby z jednostkami, daty,
+  stacje (ARCHITECTURE 3.1, 6.1); gotowe: `area`, `path`, `result`.
+- [ ] **Backend `basal`** — po uzyskaniu specyfikacji API basal-serve i serwera do
+  nagrania fixtur (ARCHITECTURE 3.3, STANDARDS 10.4).
+- [x] **Backend `openai_compatible` i `FakeDecisionBackend`** (ARCHITECTURE 3.3, 8.3).
+- [x] **Rdzeń** — pipeline, `Plan`, `dialog`, `Result`, `PlanNotConfirmedError`.
+- [x] **Rejestr operacji, wspólny adapter, `kinds`** (ARCHITECTURE 3.2, 4.1–4.3).
+- [ ] **`retman-scaffold`** — szkice i kontrola rozjazdów (ARCHITECTURE 3.2.3); jest
+  w bramce CLAUDE.md, a jeszcze nie istnieje.
+- [x] **Przestrzeń robocza, dziennik projektu, ślad audytowy** (ARCHITECTURE 5).
+- [x] **CLI, `results`, `log`, `init`** (ARCHITECTURE 6.4, 7.1).
 - [ ] **CI** — Windows, Linux, macOS; test instalacji; testy handlerów na
   wersjach narzędzi; kontrola rozjazdów (ARCHITECTURE 3.2.7, 9.4).
-- [ ] **Pomiary czasu odpowiedzi** (ARCHITECTURE 9.2).
+- [ ] **Pomiary czasu odpowiedzi** (ARCHITECTURE 9.2) — orientacyjnie z smoke:
+  plan z 4 decyzjami Bielika 11B ≈ 7 s (≈ 1,7 s na decyzję).
 
 ---
 

@@ -1439,7 +1439,9 @@ Zakres produktowy wersji opisuje PRD. Tu: które komponenty techniczne powstają
 8. **Integracja z GUI** (p. 7.4) — wariant połączenia (A czy B) i technologia GUI, gdy GUI powstaną.
 9. **LM Studio jako serwer modelu** — czy jego API zwraca `logprobs` i obsługuje odpowiedzi
    ustrukturyzowane (lista dozwolonych wartości). Od tego zależy jakość decyzji modeli
-   generatywnych (p. 3.3.3).
+   generatywnych (p. 3.3.3). Sprawdzone 2026-10-11 dla Bielika 11B i 4.5B (MLX): `logprobs`
+   i enumeracja w `json_schema` działają; Qwen nieprzetestowany
+   (`docs/research/2026-10-11-lm-studio-openai-compatible.md`).
 10. **basal w LM Studio** (niski priorytet — domyślnie basal działa przez basal-serve) — basal ma pliki GGUF, ale jego decyzje wymagają specjalnego odczytu
     (prawdopodobieństwa liter opcji, obie kolejności, kalibracja), który dziś zapewnia basal-serve.
     Do sprawdzenia: czy da się odtworzyć ten odczyt w Retmanie przez API z `logprobs`, żeby basal
