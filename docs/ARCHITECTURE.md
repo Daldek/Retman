@@ -488,6 +488,7 @@ narzędzia (p. 3.2.3). Każda operacja deklaruje też **co przyjmuje** (`inputs`
 # retman/tools/hydrolog/manifest.py
 MANIFEST = {
     "tool": "hydrolog",
+    "distribution": "hydrolog",              # package name for the installed-version check
     "supported_versions": ">=1.1,<2",        # checked at startup and in CI (p. 3.2.7)
     "translations": {"pl": "pl.toml"},       # relative to this package
     "operations": [
@@ -560,7 +561,11 @@ Zasady:
 | `bool` | model decyzyjny, tak/nie | „czy uwzględnić retencję?” |
 
 Dodatkowe klucze parametrów: `required`, `default`, `multiple` (kilka wartości naraz),
-`range` (dozwolony zakres dla liczb).
+`range` (dozwolony zakres dla liczb), `accepts` (które rodzaje wartości ekstraktora
+przyjmuje operacja, np. ekstraktor `area` daje godło arkusza, prostokąt, kod TERYT albo plik
+z geometrią, a pobranie BDOT10k przyjmuje tylko `["teryt", "bbox", "sheet"]`), `depends_on`
+(parametr dotyczy tylko wybranych wartości innego parametru `choice`, np. rozdzielczość tylko
+dla NMT: `{"product": ["dem"]}`).
 
 | Pole operacji | Znaczenie |
 | --- | --- |

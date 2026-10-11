@@ -3,6 +3,8 @@
 from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict
 
+from retman.i18n.loader import Texts
+
 ParamType = Literal["choice", "free", "bool"]
 
 
@@ -83,3 +85,88 @@ class HandlerOutput(TypedDict):
     values: dict[str, Any]
     files: dict[str, list[Path]]
     warnings: list[HandlerWarning]
+
+
+def validate_manifest(
+    manifest: ManifestSpec,
+    translations: dict[str, Texts],
+    *,
+    operation_ids: set[str] | None = None,
+) -> None:
+    """
+    Validate operation contracts and all declared translations.
+
+    ``operation_ids`` is shared across tools so duplicates fail at startup.
+    """
+    from retman.exceptions import ManifestError, TranslationError
+    from retman.extractors import EXTRACTORS
+    from retman.kinds import KINDS
+
+    seen = operation_ids if operation_ids is not None else set()
+    if not manifest["translations"] or not manifest["supported_versions"]:
+        raise ManifestError(f"{manifest['tool']}: missing versions or translations")
+    for language in manifest["translations"]:
+        texts: Texts | None = translations.get(language)
+        if texts is None:
+            raise ManifestError(f"{manifest['tool']}: missing {language} translations")
+    for spec in manifest["operations"]:
+        op_id = spec["id"]
+        if not op_id or op_id in seen:
+            raise ManifestError(f"duplicate or empty operation id: {op_id}")
+        seen.add(op_id)
+        if not spec["handler"] or ":" not in spec["handler"]:
+            raise ManifestError(f"{op_id}: invalid handler")
+        for kind in [*(item["kind"] for item in spec["inputs"]), *spec["outputs"]]:
+            if kind not in KINDS:
+                raise ManifestError(f"{op_id}: unknown kind {kind}")
+        params = {param["name"]: param for param in spec["params"]}
+        if len(params) != len(spec["params"]):
+            raise ManifestError(f"{op_id}: duplicate parameter")
+        for param in spec["params"]:
+            name = param["name"]
+            if param["type"] == "free" and param.get("extractor") not in EXTRACTORS:
+                raise ManifestError(f"{op_id}.{name}: unknown extractor")
+            if param["type"] == "choice" and (
+                not param.get("options") or len(param["options"]) + 1 > 10
+            ):
+                raise ManifestError(f"{op_id}.{name}: invalid choice options")
+            if (
+                "default" in param
+                and param["type"] == "choice"
+                and param["default"] not in param["options"]
+            ):
+                raise ManifestError(f"{op_id}.{name}: default outside options")
+            for dependency, options in param.get("depends_on", {}).items():
+                controlling = params.get(dependency)
+                if (
+                    controlling is None
+                    or controlling["type"] != "choice"
+                    or any(option not in controlling["options"] for option in options)
+                ):
+                    raise ManifestError(f"{op_id}.{name}: invalid dependency")
+        for language, texts in translations.items():
+            if language not in manifest["translations"]:
+                continue
+            # "label" is shown to the user; "description" (with synonyms) only
+            # to the decision model
+            required = [
+                f"operations.{op_id}.label",
+                f"operations.{op_id}.description",
+            ]
+            for param in spec["params"]:
+                prefix = f"operations.{op_id}.params.{param['name']}"
+                required.extend((f"{prefix}.label", f"{prefix}.question"))
+                if param["type"] == "free":
+                    required.append(f"{prefix}.example")
+                if param["type"] == "choice":
+                    required.extend(
+                        f"{prefix}.options.{key}" for key in param["options"]
+                    )
+                    required.append(f"{prefix}.options.unspecified")
+            for key in required:
+                try:
+                    texts.get(key)
+                except TranslationError as err:
+                    raise ManifestError(
+                        f"{manifest['tool']} ({language}): missing {key}"
+                    ) from err

@@ -1,0 +1,36 @@
+[operations.make_dem]
+label = "Utworzenie NMT"
+description = "Utworzenie numerycznego modelu terenu"
+
+[operations.make_dem.params.area]
+label = "Obszar"
+question = "Jakie godło arkusza wybrać?"
+example = "N-34-130-D-d-2-4"
+help = "Podaj poprawne godło arkusza albo ścieżkę do geometrii."
+
+[operations.make_dem.params.style]
+label = "Styl"
+question = "Jaki styl zapisu wybrać?"
+help = "Dostępny jest styl surowy i wygładzony."
+options.raw = "Surowy"
+options.smooth = "Wygładzony"
+options.unspecified = "Nie określono stylu"
+
+[operations.make_dem.params.detail]
+label = "Szczegółowość"
+question = "Jaka szczegółowość?"
+options.high = "Wysoka"
+options.low = "Niska"
+options.unspecified = "Nie określono szczegółowości"
+
+[operations.copy_dem]
+label = "Kopia NMT"
+description = "Kopia istniejącego modelu terenu"
+
+[operations.broken_dem]
+label = "Próba z błędem"
+description = "Próba z błędem narzędzia"
+
+[operations.escape_dem]
+label = "Próba zapisu poza wynikiem"
+description = "Próba zapisu poza folderem wyniku"

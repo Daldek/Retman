@@ -13,5 +13,109 @@ backend_unavailable = "Backend \"{backend}\" nie jest jeszcze dostępny w tej we
 # Etykiety odczytów ekstraktorów (retman/extractors), używane w pytaniach o niejednoznaczne zapisy.
 [extractors]
 
+[extractors.area]
+sheet = "godło arkusza {code}"
+teryt = "powiat o kodzie TERYT {code}"
+geometry = "obszar z pliku {path}"
+bbox_2180 = "prostokąt w PL-1992 (kolejność E, N): E {min_x}–{max_x}, N {min_y}–{max_y}"
+bbox_2180_swapped = "prostokąt w PL-1992 (zamieniona kolejność N, E): E {min_x}–{max_x}, N {min_y}–{max_y}"
+bbox_4326_lon_lat = "prostokąt WGS84 (kolejność długość, szerokość): E {min_x}–{max_x}°, N {min_y}–{max_y}°"
+bbox_4326_lat_lon = "prostokąt WGS84 (kolejność szerokość, długość): E {min_x}–{max_x}°, N {min_y}–{max_y}°"
+
+[extractors.path]
+file = "plik {path}"
+
+[extractors.result]
+number = "wynik #{number}"
+
+[extractors.errors]
+invalid_area = "Nie rozpoznaję rodzaju obszaru."
+invalid_sheet = "Niepoprawne godło arkusza PL-1992 lub PL-2000."
+invalid_teryt = "Kod TERYT powiatu musi mieć cztery cyfry."
+invalid_geometry = "Geometria musi być plikiem SHP lub GPKG."
+invalid_bbox = "Prostokąt wymaga czterech liczb i układu PL-1992 lub WGS84."
+invalid_bbox_order = "Granice prostokąta muszą rosnąć w obu osiach."
+outside_poland = "Współrzędne prostokąta wykraczają poza zakres Polski."
+invalid_result = "Numer wyniku musi być liczbą całkowitą większą od zera."
+
 # Zapytania do modeli zgodnych z API OpenAI (retman/backends/openai_compatible.py).
 [backends]
+system = "Wybierz jedną odpowiedź pasującą do polecenia. Jeśli dostępna jest opcja braku informacji i polecenie nie określa odpowiedzi, wybierz ją. Nie wyjaśniaj wyboru; zwróć wyłącznie literę odpowiedzi."
+decision = "Polecenie: {state}\nPytanie: {question}\nDostępne odpowiedzi (litera — identyfikator: opis):\n{options}\nOdpowiedz tylko literą jednej z dostępnych odpowiedzi."
+yes = "Tak"
+no = "Nie"
+
+# Plan, dialog i zdarzenia projektu (retman/core/).
+[plan]
+title = "Plan:"
+operation = "Operacja: {value}"
+parameter = "{label}: {value}{marker}"
+default_marker = " ← wartość domyślna, nie podano w poleceniu"
+workspace_marker = " ← wynik z przestrzeni roboczej"
+unverified_marker = " ← wybór modelu niezweryfikowany"
+missing = "Brakuje: {questions}"
+
+[dialog]
+operation = "Którą operację wykonać?"
+yes = "Tak"
+no = "Nie"
+out_of_scope = "Żadna z dostępnych operacji"
+input = "Którego pliku rodzaju {kind} użyć?"
+input_missing = "Podaj plik wejściowy rodzaju {kind}."
+example_path = "np. „dane.asc” lub „#1”"
+invalid = "Nie mogę odczytać odpowiedzi; podaj poprawną wartość."
+invalid_choice = "Wybierz jedną z podanych możliwości."
+ambiguous = "Odpowiedź ma kilka możliwych odczytów; wybierz jeden z listy."
+invalid_range = "Wartość musi mieścić się w zakresie {minimum}–{maximum}."
+invalid_file = "Niepoprawny plik wejściowy: {error}"
+invalid_geometry = "Nie znaleziono pliku geometrii: {path}"
+out_of_scope_message = "Polecenie nie dotyczy dostępnych operacji: {operations}"
+no_operations = "Brak dostępnych operacji. Sprawdź zainstalowane narzędzia."
+help_fallback = "Wybierz numer albo podaj wartość własnymi słowami."
+
+[cli]
+command_prompt = "> "
+answer_prompt = "> "
+confirmation = "Wykonać? [t]ak / [n]ie / [z]mień"
+question = "? {text}"
+option = "  {number}) {label}"
+example = "  np. {value}"
+default = "  Enter: {value}"
+error = "Błąd: {error}"
+cancelled = "Anulowano."
+rejected = "Plan odrzucony."
+change = "Którą wartość zmienić?"
+no_results = "Brak wyników w projekcie."
+no_events = "Dziennik projektu jest pusty."
+results_line = "#{number}: {summary}"
+log_line = "{time} {event}: {detail}"
+explain = "Decyzja {name}: {choice}, pewność {confidence} ({method}); {probabilities}"
+help = "Wpisz numer opcji lub odpowiedź własnymi słowami; „anuluj” przerywa."
+
+[results]
+success = "Gotowe. Wynik #{number}: {operation}. Pliki: {directory}"
+failure = "Wynik #{number} nie powiódł się: {error}"
+
+[journal]
+command = "polecenie"
+question = "pytanie"
+answer = "odpowiedź"
+plan = "plan"
+execution = "wykonanie"
+approved = "zatwierdzony"
+rejected = "odrzucony"
+changed = "zmieniony"
+cancelled = "anulowany"
+
+[errors]
+backend_connection = "Nie można połączyć się z modelem pod adresem {url}. Sprawdź: retman doctor"
+backend = "Błąd modelu: {error}"
+manifest = "Błąd opisu narzędzia: {error}"
+retman = "Błąd: {error}"
+
+[kinds.errors]
+unknown_kind = "Nieznany rodzaj danych: {kind}"
+missing_file = "Brak pliku wynikowego: {path}"
+unsupported_extension = "Plik {path} nie ma formatu obsługiwanego przez rodzaj {kind}"
+unreadable_file = "Nie można odczytać pliku wynikowego: {path}"
+invalid_header = "Plik {path} ma niepoprawny nagłówek dla rodzaju {kind}"

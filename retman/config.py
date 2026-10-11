@@ -288,6 +288,15 @@ def _parse(path: Path, data: dict[str, Any]) -> Config:
     text_backend = read.choice("text.backend", _TEXT_BACKENDS)
     language = read.string("ui.language")
     results_dir = read.string("output.results_dir")
+    # Results belong to the project folder (ARCHITECTURE 5.1): no absolute
+    # paths and no way out of the folder
+    if results_dir is not None and (
+        Path(results_dir).is_absolute()
+        or Path(results_dir).drive
+        or ".." in Path(results_dir).parts
+    ):
+        read.fail("invalid_value", "output.results_dir")
+        results_dir = None
     enabled = read.get("adapters.enabled", optional=True)
     if enabled is not None and (
         not isinstance(enabled, list)
