@@ -533,7 +533,8 @@ odpowiadającymi identyfikatorom z manifestu. Każde narzędzie ma w Retmanie w�
 # retman/tools/hydrolog/pl.toml
 
 [operations.peak_flow]
-description = "Obliczenie przepływu maksymalnego o zadanym prawdopodobieństwie"
+label = "Obliczenie przepływu maksymalnego"
+description = "Obliczenie przepływu maksymalnego o zadanym prawdopodobieństwie: przepływ miarodajny, woda stuletnia"
 
 [operations.peak_flow.params.method]
 label = "Metoda"
@@ -547,8 +548,11 @@ label = "Prawdopodobieństwo przewyższenia"
 ```
 
 Zasady:
-- Opisy opcji i operacji mogą zawierać synonimy i określenia potoczne, bo to one
-  pomagają modelowi decyzyjnemu dopasować polecenie.
+- `label` operacji to krótka nazwa pokazywana użytkownikowi (plan, pytania, lista operacji);
+  `description` trafia tylko do modelu decyzyjnego i może zawierać synonimy i określenia
+  potoczne, bo to one pomagają dopasować polecenie. To samo dotyczy opisów opcji.
+- Parametr `free` ma też `example` (przykład formatu w pytaniu), a każdy parametr może
+  mieć `help` (odpowiedź na `?`, p. 6.4).
 - Test automatyczny sprawdza, że każda operacja, parametr i opcja ma tekst w każdym
   obsługiwanym języku. Brak tłumaczenia = test nie przechodzi.
 

@@ -203,12 +203,24 @@ class Retman:
         if spec["type"] == "choice":
             return operation.text(f"params.{spec['name']}.options.{value}")
         if isinstance(value, dict):
-            if value.get("type") == "sheet":
-                return str(value["code"])
-            if value.get("type") == "teryt":
-                return str(value["code"])
-            if value.get("type") == "geometry":
-                return str(value["path"])
+            # Area values are normalized (x = east, y = north), so the plan
+            # shows how Retman read them (ARCHITECTURE 6.1, note on coordinates)
+            area_type = value.get("type")
+            if area_type in ("sheet", "teryt"):
+                return self.texts.get(
+                    f"extractors.area.{area_type}", code=value["code"]
+                )
+            if area_type == "geometry":
+                return self.texts.get("extractors.area.geometry", path=value["path"])
+            if area_type == "bbox":
+                crs_key = str(value["crs"]).replace("EPSG:", "")
+                return self.texts.get(
+                    f"extractors.area.bbox_{crs_key}_plan",
+                    **{
+                        name: f"{value[name]:g}"
+                        for name in ("min_x", "min_y", "max_x", "max_y")
+                    },
+                )
             return ", ".join(
                 f"{key}={item}" for key, item in value.items() if key != "type"
             )

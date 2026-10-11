@@ -21,6 +21,8 @@ bbox_2180 = "prostokąt w PL-1992 (kolejność E, N): E {min_x}–{max_x}, N {mi
 bbox_2180_swapped = "prostokąt w PL-1992 (zamieniona kolejność N, E): E {min_x}–{max_x}, N {min_y}–{max_y}"
 bbox_4326_lon_lat = "prostokąt WGS84 (kolejność długość, szerokość): E {min_x}–{max_x}°, N {min_y}–{max_y}°"
 bbox_4326_lat_lon = "prostokąt WGS84 (kolejność szerokość, długość): E {min_x}–{max_x}°, N {min_y}–{max_y}°"
+bbox_2180_plan = "prostokąt w PL-1992 (EPSG:2180): E {min_x}–{max_x}, N {min_y}–{max_y}"
+bbox_4326_plan = "prostokąt WGS84 (EPSG:4326): {min_y}–{max_y}° N, {min_x}–{max_x}° E"
 
 [extractors.path]
 file = "plik {path}"
