@@ -54,6 +54,7 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 | Czego szukasz | Gdzie |
 |---|---|
 | Stan prac, ostatnia sesja, backlog | `docs/PROGRESS.md` |
+| Specyfikacje komponentów (np. `retman-eval`) | `docs/specs/` |
 | Workflow sesji, kolejność lektury | `docs/DEVELOPMENT_STANDARDS.md` 15 |
 | Środowisko, komendy testów/lint/mypy/eval, gdzie uruchamiać CLI | STANDARDS 6 |
 | Git, commity, język, testy, wyjątki, logging, bezpieczeństwo (zasady) | STANDARDS 1–2, 9–12, 14 |

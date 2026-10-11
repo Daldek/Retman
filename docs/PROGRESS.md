@@ -153,8 +153,9 @@ Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
   `tests/conftest.py`, `retman init` (sesja 2026-10-11, przekrój Kartografa).
 - [ ] **`retman doctor`** (ARCHITECTURE 7.2) — adres i pytanie testowe modelu, wersje
   narzędzi, komplet tłumaczeń, przestrzeń robocza.
-- [ ] **`retman-eval` i zbiór poleceń testowych** — ≥ 15 poleceń na operację Kartografa,
-  w tym niepełne i spoza zakresu; strojenie progów i opisów opcji dla Bielika
+- [ ] **`retman-eval` i zbiór poleceń testowych** — specyfikacja
+  `docs/specs/retman-eval.md` (czeka na akceptację autora, rozdz. 10 specyfikacji);
+  ≥ 15 poleceń na operację Kartografa, strojenie progów i opisów opcji dla Bielika
   (ARCHITECTURE 6.2, 8).
 - [ ] **Ekstraktor prawdopodobieństwa** z testami wszystkich form z ARCHITECTURE 4.4.
 - [ ] **Pozostałe ekstraktory** — współrzędne punktu, liczby z jednostkami, daty,
