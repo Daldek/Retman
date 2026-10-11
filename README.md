@@ -73,7 +73,7 @@ retman doctor   # sprawdza środowisko i podpowiada, co naprawić
 
 ## Wymagania
 
-Python 3.11+ (instalowany automatycznie przez `uv`); Windows, Linux lub macOS.
+Python 3.12+ (instalowany automatycznie przez `uv`); Windows, Linux lub macOS.
 Wymagania sprzętowe zależą od wybranego modelu i miejsca, w którym działa — szczegóły
 w [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), p. 9.2.
 

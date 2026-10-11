@@ -22,6 +22,120 @@ każda relacja jest zapisana po obu stronach.
 
 | ADR | Tytuł | Data | Status |
 |---|---|---|---|
+| [ADR-001](#adr-001-pierwsze-operacje-v01-z-kartografa) | Pierwsze operacje v0.1 z Kartografa | 2026-10-11 | Przyjęta |
+| [ADR-002](#adr-002-python--312) | Python ≥ 3.12 | 2026-10-11 | Przyjęta |
+| [ADR-003](#adr-003-obsługiwane-wersje-kartografa-i-instalacja-deweloperska) | Obsługiwane wersje Kartografa i instalacja deweloperska | 2026-10-11 | Przyjęta |
+| [ADR-004](#adr-004-rodzaje-danych-kartografa-osobny-kind-na-produkt) | Rodzaje danych Kartografa: osobny `kind` na produkt | 2026-10-11 | Przyjęta |
+| [ADR-005](#adr-005-klient-http-httpx) | Klient HTTP: `httpx` | 2026-10-11 | Przyjęta |
+
+---
+
+## ADR-001: Pierwsze operacje v0.1 z Kartografa
+
+**Data:** 2026-10-11
+**Status:** Przyjęta
+
+**Kontekst:** PRD 7.2 wymagał listy pierwszych operacji; bez niej nie mogły powstać
+manifesty, handlery ani zbiór testowy. Autor wybrał Kartografa v0.7.2 jako pierwsze
+narzędzie do sprawdzania możliwości Retmana.
+
+**Opcje (operacje publicznego API Kartografa 0.7.2):**
+- A) NMT dla arkusza (`DownloadManager.download_sheet`),
+- B) NMT/NMPT/ortofotomapa dla arkusza nadrzędnego (`DownloadManager.download_hierarchy`),
+- C) wycinek NMT/NMPT dla obszaru przez WCS (`download_pl_cutout`),
+- D) chmura punktów LAZ dla obszaru (`download_laz_area`),
+- E) BDOT10k dla powiatu albo obszaru (`LandCoverManager`),
+- F) grupy glebowe HSG (`calculate_hsg_by_*`).
+
+**Decyzja:** A, B, C i E. Obszar w poleceniu: godło arkusza, prostokąt we współrzędnych
+PL-1992, prostokąt w stopniach WGS84, plik z geometrią (SHP/GPKG).
+
+**Konsekwencje:** PRD 7.2 dostaje listę; wymóg PRD 7.1 „z co najmniej dwóch narzędzi”
+pozostaje — operacja drugiego narzędzia do ustalenia. Potrzebne ekstraktory godła,
+prostokąta (z rozpoznaniem układu), kodu TERYT i ścieżek (ARCHITECTURE 3.1).
+
+---
+
+## ADR-002: Python ≥ 3.12
+
+**Data:** 2026-10-11
+**Status:** Przyjęta
+
+**Kontekst:** Kartograf 0.7.2 wymaga Pythona ≥ 3.12, a narzędzia muszą działać w tym
+samym środowisku co Retman (PRD N-09, ARCHITECTURE 9.4). Retman miał wymagać ≥ 3.11.
+
+**Opcje:**
+- A) podnieść Retmana do ≥ 3.12 — jedno środowisko bez wyjątków,
+- B) zostawić ≥ 3.11 — operacje Kartografa tylko na 3.12+, CI w dwóch wariantach.
+
+**Decyzja:** A.
+
+**Konsekwencje:** `requires-python = ">=3.12"`; zmienione ARCHITECTURE 9.2, 9.3,
+STANDARDS 5.1, 6.1, 8.1, README, CLAUDE.md.
+
+---
+
+## ADR-003: Obsługiwane wersje Kartografa i instalacja deweloperska
+
+**Data:** 2026-10-11
+**Status:** Przyjęta
+
+**Kontekst:** Manifest podaje obsługiwany zakres wersji narzędzia (ARCHITECTURE 3.2.7),
+a testy handlerów potrzebują prawdziwego narzędzia w `.venv`. Retman nie ma dodatków
+instalujących narzędzia (ARCHITECTURE 9.3).
+
+**Opcje:**
+- A) `>=0.7.2,<0.8`; Kartograf z tagu Git w grupie zależności deweloperskich,
+- B) `==0.7.2`; jak wyżej,
+- C) `>=0.7.2,<0.8`; instalacja edytowalna z katalogu `../Kartograf`.
+
+**Decyzja:** A. Grupa `tools` w `[dependency-groups]` `pyproject.toml`
+(`kartograf @ git+https://github.com/Daldek/Kartograf@v0.7.2`) — nie trafia do metadanych
+pakietu, więc użytkownik dalej instaluje narzędzia sam (`--with`).
+
+**Konsekwencje:** STANDARDS 6.1 opisuje `uv pip install --group tools`. Katalog
+`../Kartograf` nie jest używany (jego gałąź robocza nie musi odpowiadać wydaniu).
+
+---
+
+## ADR-004: Rodzaje danych Kartografa: osobny `kind` na produkt
+
+**Data:** 2026-10-11
+**Status:** Przyjęta
+
+**Kontekst:** ARCHITECTURE 12 pkt 7 — lista rodzajów danych była otwarta. Operacje
+z ADR-001 zwracają rastry NMT, NMPT, ortofotomapy i wektory BDOT10k.
+
+**Opcje:**
+- A) osobny `kind` na produkt: `dem`, `dsm`, `orthophoto`, `topographic_vector`,
+- B) kindy formatowe: `raster`, `vector`,
+- C) osobny `kind` na produkt i postać (zbiór arkuszy / wycinek).
+
+**Decyzja:** A. Format plików jest taki, jaki zwraca Kartograf (Retman ich nie konwertuje);
+walidator rodzaju sprawdza rozszerzenie i nagłówek pliku, bez bibliotek geoprzestrzennych.
+
+**Konsekwencje:** ARCHITECTURE 3.2.6 dostaje tabelę rodzajów Kartografa; jeden wynik może
+mieć kilka plików tego samego rodzaju (arkusze). Lista dla pozostałych narzędzi nadal otwarta.
+
+---
+
+## ADR-005: Klient HTTP: `httpx`
+
+**Data:** 2026-10-11
+**Status:** Przyjęta
+
+**Kontekst:** Zależności podstawowe to tylko klient HTTP (ARCHITECTURE 9.3); backendy
+potrzebują jawnych timeoutów i testów offline na zapisanych odpowiedziach (STANDARDS 10.4, 13.2).
+
+**Opcje:**
+- A) `httpx` — timeouty per zapytanie, wbudowany `MockTransport` do testów offline,
+- B) `requests` — już w środowisku przez Kartografa, ale testy offline wymagałyby
+  dodatkowej biblioteki atrap,
+- C) `urllib` z biblioteki standardowej — bez zależności, więcej własnego kodu.
+
+**Decyzja:** A.
+
+**Konsekwencje:** `dependencies = ["httpx>=0.27"]`.
 
 ---
 

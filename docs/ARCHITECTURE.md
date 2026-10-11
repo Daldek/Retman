@@ -130,6 +130,7 @@ retman/
 │   └── native/              # providers with their own API (optional extras, v0.2)
 ├── extractors/
 │   ├── coordinates.py       # geographic coordinates and PL-1992
+│   ├── areas.py             # areas: map sheet codes (godło), bounding boxes, TERYT codes (ADR-001)
 │   ├── numbers.py           # numbers with units (km², mm, m³/s)
 │   ├── probability.py       # exceedance probability and return period (p. 4.4)
 │   ├── dates.py             # dates and periods
@@ -297,7 +298,20 @@ Rodzaj danych to nazwa + format pliku + prosty walidator, np.:
 | `precipitation_series` | CSV | kolumny daty i wartości, jednostka |
 
 Rejestr jest w Retmanie. Narzędzia nie znają tych nazw — zamianą ich obiektów na pliki
-danego rodzaju zajmują się handlery. Pełna lista rodzajów i ich formatów to otwarta kwestia (rozdz. 12).
+danego rodzaju zajmują się handlery. Jeden wynik może zawierać kilka plików tego samego
+rodzaju (np. arkusze NMT), więc `files` przypisuje rodzajowi listę ścieżek.
+
+Rodzaje danych Kartografa (ADR-004) — format jest taki, jaki zwraca Kartograf; walidator
+sprawdza rozszerzenie i nagłówek pliku, bez bibliotek geoprzestrzennych:
+
+| `kind` | Format | Walidator sprawdza m.in. |
+| --- | --- | --- |
+| `dem` | NMT: ESRI ASCII Grid (`.asc`, arkusze) albo GeoTIFF (`.tif`, wycinek) | rozszerzenie; nagłówek `ncols` (ASC) albo sygnatura TIFF |
+| `dsm` | NMPT: jak `dem` | jak `dem` |
+| `orthophoto` | GeoTIFF (`.tif`) | sygnatura TIFF |
+| `topographic_vector` | BDOT10k: GeoPackage (`.gpkg`) albo Shapefile (`.shp`) | nagłówek SQLite (GPKG) albo kod pliku Shapefile |
+
+Lista rodzajów pozostałych narzędzi to otwarta kwestia (rozdz. 12).
 
 #### 3.2.7. Wersje i zgodność
 
@@ -1240,7 +1254,7 @@ collect_commands = false   # true = collect commands to improve the test set (se
 
 Systemy docelowe: **Windows, Linux i macOS**. CI Retmana uruchamia testy na wszystkich trzech.
 
-**Sam Retman** nie ma wymagań sprzętowych poza Pythonem ≥ 3.11. Wymagania dotyczą
+**Sam Retman** nie ma wymagań sprzętowych poza Pythonem ≥ 3.12. Wymagania dotyczą
 **serwera modelu** i zależą od wybranej konfiguracji (p. 3.3.4). Orientacyjnie:
 
 | Model | Gdzie | Uwagi |
@@ -1260,7 +1274,8 @@ do dokumentacji jako wskazówka doboru modelu (PRD, N-07).
 
 ### 9.3. Pakiet [N-08]
 
-- Python ≥ 3.11, `pyproject.toml` zgodny z PEP 639, licencja MIT.
+- Python ≥ 3.12 (ADR-002: tyle wymaga Kartograf, a narzędzia działają w środowisku Retmana),
+  `pyproject.toml` zgodny z PEP 639, licencja MIT.
 - Kod, identyfikatory, komentarze i docstringi po angielsku; teksty dla użytkownika w plikach
   tłumaczeń; README i dokumentacja po polsku (p. 1.3).
 - Zależności podstawowe: minimalne — klient HTTP. Plik centralny odczytuje `tomllib`
@@ -1411,6 +1426,7 @@ Zakres produktowy wersji opisuje PRD. Tu: które komponenty techniczne powstają
    w Retmanie tylko kontrole przejść między krokami łańcucha.
 7. **Rodzaje danych** — pełna lista nazw `kind`, ich formatów plików i wymaganych atrybutów
    (p. 3.2.6). Formaty warto od początku dobierać tak, żeby przyszłe GUI mogły je wczytywać.
+   Ustalone dla Kartografa (ADR-004); pozostałe narzędzia otwarte.
 8. **Integracja z GUI** (p. 7.4) — wariant połączenia (A czy B) i technologia GUI, gdy GUI powstaną.
 9. **LM Studio jako serwer modelu** — czy jego API zwraca `logprobs` i obsługuje odpowiedzi
    ustrukturyzowane (lista dozwolonych wartości). Od tego zależy jakość decyzji modeli

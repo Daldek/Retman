@@ -29,7 +29,7 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 - Język (ARCHITECTURE 1.3): kod, identyfikatory, komentarze i docstringi po angielsku;
   teksty dla użytkownika i modelu wyłącznie w plikach tłumaczeń (`pl.toml`);
   dokumentacja po polsku.
-- Środowisko przez `uv`, Python ≥ 3.11, wyłącznie z `.venv` (STANDARDS 6.1); ręczne
+- Środowisko przez `uv`, Python ≥ 3.12 (ADR-002), wyłącznie z `.venv` (STANDARDS 6.1); ręczne
   uruchomienia CLI poza repo, testy nie dotykają prawdziwego `retman.toml` (STANDARDS 6.4).
 - Testy offline bez GPU i bez serwera modelu: `FakeDecisionBackend`, `-m "not live"`
   (STANDARDS 6.3, 10.4).

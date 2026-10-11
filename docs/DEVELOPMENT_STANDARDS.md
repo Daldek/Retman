@@ -219,7 +219,7 @@ Prawdopodobieństwo przechowuj zawsze jako ułamek `p` (np. `0.01`), nie procent
 ```toml
 # pyproject.toml
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 88
 
 [tool.ruff.lint]
@@ -295,7 +295,7 @@ Kontrola: `git ls-files --eol` nie pokazuje `w/crlf`.
 
 ### 6.1 Środowisko wirtualne
 
-Wymagany Python 3.11+ (`requires-python` w `pyproject.toml`, ARCHITECTURE 9.3).
+Wymagany Python 3.12+ (`requires-python` w `pyproject.toml`, ARCHITECTURE 9.3, ADR-002).
 Środowisko zarządza `uv` — to samo narzędzie, którym instalują się użytkownicy
 (ARCHITECTURE 9.4). Jedno środowisko `.venv/` w korzeniu projektu — dla ludzi
 i agentów AI:
@@ -305,11 +305,12 @@ i agentów AI:
 
 ```bash
 cd Retman
-uv venv --python 3.11
+uv venv --python 3.12
 uv pip install -e ".[dev]"
 
-# Narzędzia hydrologiczne — w tym samym środowisku (handlery je importują)
-uv pip install "git+https://github.com/Daldek/IMGWTools" "git+https://github.com/Daldek/Hydrolog"
+# Narzędzia hydrologiczne — w tym samym środowisku (handlery je importują);
+# wersje do testów handlerów są w grupie "tools" w pyproject.toml (ADR-003)
+uv pip install --group tools
 ```
 
 Serwer modelu (basal-serve, LM Studio itd.) nie jest częścią środowiska
@@ -404,7 +405,7 @@ itp.). Wyjątki: `.editorconfig` i `.gitattributes` (sekcja 5.5).
 
 ## 8. Python — type hints
 
-### 8.1 Styl Python 3.11+
+### 8.1 Styl Python 3.12+
 
 ```python
 # GOOD — modern syntax

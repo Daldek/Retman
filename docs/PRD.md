@@ -157,10 +157,21 @@ Zróżnicowany — Retman musi obsłużyć **dwie ścieżki**:
 
 ### 7.2. Pierwsze operacje
 
-**[DO UZUPEŁNIENIA]** Lista do ustalenia. Kryteria wyboru:
+Kryteria wyboru:
 - operacja często wykonywana przez użytkowników,
 - większość wyborów to zamknięte listy, a wartości da się jednoznacznie odczytać z polecenia,
 - wynik łatwo sprawdzić na prostych przykładach.
+
+Wybrane (ADR-001; pierwsze narzędzie: Kartograf 0.7.2):
+
+| Operacja | Narzędzie | Obszar w poleceniu |
+| --- | --- | --- |
+| pobranie NMT dla arkusza | Kartograf | godło arkusza |
+| pobranie NMT, NMPT albo ortofotomapy dla arkusza nadrzędnego | Kartograf | godło arkusza |
+| wycinek NMT albo NMPT dla obszaru | Kartograf | prostokąt w PL-1992 albo WGS84, plik z geometrią |
+| pobranie BDOT10k | Kartograf | kod TERYT powiatu, prostokąt, godło |
+
+**[DO UZUPEŁNIENIA]** Operacja drugiego narzędzia (p. 7.1).
 
 ### 7.3. Poza zakresem
 
@@ -228,8 +239,8 @@ Pierwsza wersja rekomendowana do wdrożeń produkcyjnych: **1.0.0**.
 1. Problem, który Retman rozwiązuje, opisany z perspektywy administracji i projektantów (rozdz. 1).
 2. Oczekiwania i bariery poszczególnych grup (p. 3.4).
 3. Czy i jak pokazać Retmana grupom docelowym przed 1.0 (rozdz. 10).
-4. Lista pierwszych operacji (p. 7.2).
+4. Lista pierwszych operacji (p. 7.2) — operacje Kartografa ustalone (ADR-001); brak operacji drugiego narzędzia.
 5. Wartości docelowe: czas odpowiedzi, miary jakości i sukcesu (rozdz. 5, 6 i 8).
 6. Współpraca z GUI — decyzja, gdy GUI powstaną.
 7. Scenariusze charakterystyczne dla głównych grup użytkowników (rozdz. 4).
-8. Formaty plików wynikowych (W-09; strona techniczna: ARCHITECTURE rozdz. 12, pkt 7).
+8. Formaty plików wynikowych (W-09; strona techniczna: ARCHITECTURE rozdz. 12, pkt 7) — dla Kartografa: ADR-004.
