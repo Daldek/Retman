@@ -42,3 +42,14 @@ Linki porównań na końcu pliku, od najnowszego:
 [X.Y.Z]: https://github.com/Daldek/Retman/compare/vX.Y.W...vX.Y.Z
 [0.1.0]: https://github.com/Daldek/Retman/releases/tag/v0.1.0
 -->
+
+## [0.1.0] - Unreleased
+
+### Dodane
+
+- Dokumentacja projektu: wymagania produktowe (`docs/PRD.md`), architektura
+  (`docs/ARCHITECTURE.md`), standardy deweloperskie
+  (`docs/DEVELOPMENT_STANDARDS.md`), rejestr decyzji, dziennik postępu
+  i ten changelog; `README.md`, `CLAUDE.md`, licencja MIT.
+
+[0.1.0]: https://github.com/Daldek/Retman/commits/develop

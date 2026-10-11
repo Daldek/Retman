@@ -1022,7 +1022,7 @@ Model decyzyjny
 Narzędzia
   ✓ imgwtools  0.4.2   obsługiwane >=0.4,<0.5   3 operacje
   ! hydrolog   2.0.0   obsługiwane >=1.1,<2      wersja spoza zakresu — operacje wyłączone
-  ✗ kartograf  nie zainstalowany                 → uv tool install … --with git+https://github.com/<github-user>/kartograf (p. 9.4)
+  ✗ kartograf  nie zainstalowany                 → uv tool install … --with git+https://github.com/Daldek/Kartograf (p. 9.4)
 
 Tłumaczenia (pl)
   ✓ komplet
@@ -1271,7 +1271,7 @@ do dokumentacji jako wskazówka doboru modelu (PRD, N-07).
 - **basal (basal-serve) nie jest zależnością Retmana** — ani podstawową, ani opcjonalną.
   Backend `basal` to własne zapytanie HTTP, bez klienta z pakietu `basal` (p. 3.3.2).
 - **Dystrybucja przez GitHub, bez PyPI.** Retman instaluje się z repozytorium, np.
-  `uv tool install git+https://github.com/<github-user>/retman` (szczegóły: p. 9.4).
+  `uv tool install git+https://github.com/Daldek/Retman` (szczegóły: p. 9.4).
 - Opisy narzędzi są wbudowane w Retmana (`retman/tools/`). **Retman nie instaluje niczego sam
   z siebie.** Narzędzia instaluje użytkownik razem z Retmanem, w tym samym środowisku (p. 9.4),
   a od wersji łatwej także na wyraźne polecenie `retman add-tool` (z potwierdzeniem). Retman
@@ -1311,9 +1311,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 2. Retman together with the tools you need, in ONE environment
 #    (@v0.1.0 = a tagged release, so testers have a stable version)
-uv tool install "git+https://github.com/<github-user>/retman@v0.1.0" \
-    --with "git+https://github.com/<github-user>/imgwtools" \
-    --with "git+https://github.com/<github-user>/hydrolog"
+uv tool install "git+https://github.com/Daldek/Retman@v0.1.0" \
+    --with "git+https://github.com/Daldek/IMGWTools" \
+    --with "git+https://github.com/Daldek/Hydrolog"
 
 # 3. Model server: installed separately, following basal's instructions, then started
 basal-serve --model Remek/basal-1.5-mini --mode <depends on hardware>
