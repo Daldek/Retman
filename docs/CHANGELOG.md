@@ -71,5 +71,11 @@ Linki porównań na końcu pliku, od najnowszego:
   dziennik `journal.jsonl` (ARCHITECTURE 5–7).
 - CLI: `retman "…"`, sesja `retman`, `--plan-only`, `--explain`, `--config`,
   `retman init`, `retman results`, `retman log`; kody wyjścia 0–3 (ARCHITECTURE 6.4).
+- Specyfikacja `retman-eval` (`docs/specs/retman-eval.md`).
+
+### Zmienione
+
+- Operacje Kartografa nie mają wartości domyślnych: Retman dopytuje o rozdzielczość,
+  układ wysokościowy i format, jeśli polecenie ich nie podaje (ADR-006).
 
 [0.1.0]: https://github.com/Daldek/Retman/commits/develop

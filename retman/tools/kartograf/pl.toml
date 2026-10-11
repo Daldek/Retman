@@ -14,7 +14,7 @@ question = "Czy pobrać NMT w rozdzielczości 1 m czy 5 m?"
 help = "NMT 5 m jest dostępny wyłącznie w układzie wysokościowym EVRF2007."
 options."1m" = "1 m — NMT/DEM, model terenu o pikselu 1 metr"
 options."5m" = "5 m — NMT/DEM, model terenu o pikselu 5 metrów (tylko EVRF2007)"
-options.unspecified = "Nie określono rozdzielczości — użyj domyślnej 1 m"
+options.unspecified = "Nie podano rozdzielczości — dopytaj o 1 m albo 5 m"
 
 [operations.download_dem_sheet.params.vertical_crs]
 label = "Układ wysokościowy NMT"
@@ -22,7 +22,7 @@ question = "W którym układzie wysokościowym pobrać NMT: EVRF2007 czy KRON86?
 help = "KRON86 wymaga rozdzielczości 1 m; 5 m istnieje tylko w EVRF2007."
 options.evrf2007 = "EVRF2007 — europejski układ wysokościowy, PL-EVRF2007-NH"
 options.kron86 = "KRON86 — Kronsztadt 86, PL-KRON86-NH (wyłącznie 1 m)"
-options.unspecified = "Nie określono układu — użyj domyślnego EVRF2007"
+options.unspecified = "Nie podano układu wysokościowego — dopytaj o EVRF2007 albo KRON86"
 
 [operations.download_sheet_hierarchy]
 label = "Pobranie arkuszy potomnych (NMT, NMPT albo ortofotomapa)"
@@ -60,7 +60,7 @@ question = "W jakiej rozdzielczości pobrać arkusze NMT: 1 m czy 5 m?"
 help = "Ten wybór dotyczy tylko NMT; dla NMPT Kartograf obsługuje 1 m, ortofotomapa ma własną rozdzielczość produktu. 5 m wymaga EVRF2007."
 options."1m" = "1 m — numeryczny model terenu NMT 1 m"
 options."5m" = "5 m — numeryczny model terenu NMT 5 m, tylko EVRF2007"
-options.unspecified = "Nie podano rozdzielczości — użyj domyślnej 1 m"
+options.unspecified = "Nie podano rozdzielczości — dopytaj o 1 m albo 5 m"
 
 [operations.download_sheet_hierarchy.params.vertical_crs]
 label = "Układ wysokościowy NMT"
@@ -68,7 +68,7 @@ question = "W jakim układzie wysokościowym pobrać arkusze NMT?"
 help = "Ten wybór dotyczy tylko NMT. 5 m i KRON86 nie mogą być łączone."
 options.evrf2007 = "EVRF2007 — europejski układ wysokościowy"
 options.kron86 = "KRON86 — Kronsztadt 86, tylko NMT 1 m"
-options.unspecified = "Nie podano układu — użyj domyślnego EVRF2007"
+options.unspecified = "Nie podano układu wysokościowego — dopytaj o EVRF2007 albo KRON86"
 
 [operations.download_elevation_cutout]
 label = "Wycinek NMT albo NMPT dla prostokąta"
@@ -103,7 +103,7 @@ question = "Jaki układ wysokościowy wybrać dla wycinka NMT/NMPT 1 m?"
 help = "Wycinek WCS NMT i NMPT 1 m obsługuje EVRF2007 albo KRON86."
 options.evrf2007 = "EVRF2007 — europejski układ wysokościowy"
 options.kron86 = "KRON86 — Kronsztadt 86"
-options.unspecified = "Nie podano układu — użyj domyślnego EVRF2007"
+options.unspecified = "Nie podano układu wysokościowego — dopytaj o EVRF2007 albo KRON86"
 
 [operations.download_bdot10k]
 label = "Pobranie BDOT10k"
@@ -119,9 +119,9 @@ example = "np. TERYT 2264 lub N-34-130-D-d-2-4"
 label = "Format BDOT10k"
 question = "Czy zapisać wektory BDOT10k jako GeoPackage czy Shapefile?"
 help = "GeoPackage to jeden plik .gpkg. Kartograf zwraca Shapefile jako archiwum ZIP; Retman rozpakowuje wszystkie .shp wraz z plikami towarzyszącymi do katalogu wyniku."
-options.gpkg = "GeoPackage (.gpkg) — baza geoprzestrzenna SQLite, format domyślny"
+options.gpkg = "GeoPackage (.gpkg) — baza geoprzestrzenna SQLite, jeden plik"
 options.shp = "Shapefile (.shp) — wszystkie warstwy z pakietu ZIP wraz z .dbf/.shx/.prj"
-options.unspecified = "Nie podano formatu — użyj domyślnego GeoPackage"
+options.unspecified = "Nie podano formatu — dopytaj o GeoPackage albo Shapefile"
 
 [warnings]
 no_coverage = "GUGiK nie ma danych dla {count} z {total} arkuszy."

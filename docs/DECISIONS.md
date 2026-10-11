@@ -27,6 +27,7 @@ każda relacja jest zapisana po obu stronach.
 | [ADR-003](#adr-003-obsługiwane-wersje-kartografa-i-instalacja-deweloperska) | Obsługiwane wersje Kartografa i instalacja deweloperska | 2026-10-11 | Przyjęta |
 | [ADR-004](#adr-004-rodzaje-danych-kartografa-osobny-kind-na-produkt) | Rodzaje danych Kartografa: osobny `kind` na produkt | 2026-10-11 | Przyjęta |
 | [ADR-005](#adr-005-klient-http-httpx) | Klient HTTP: `httpx` | 2026-10-11 | Przyjęta |
+| [ADR-006](#adr-006-operacje-kartografa-bez-wartości-domyślnych) | Operacje Kartografa bez wartości domyślnych | 2026-10-11 | Przyjęta |
 
 ---
 
@@ -136,6 +137,33 @@ potrzebują jawnych timeoutów i testów offline na zapisanych odpowiedziach (ST
 **Decyzja:** A.
 
 **Konsekwencje:** `dependencies = ["httpx>=0.27"]`.
+
+---
+
+## ADR-006: Operacje Kartografa bez wartości domyślnych
+
+**Data:** 2026-10-11
+**Status:** Przyjęta
+
+**Kontekst:** Manifest Kartografa (ADR-001) miał wartości domyślne dla rozdzielczości NMT
+(1 m), układu wysokościowego (EVRF2007) i formatu BDOT10k (GeoPackage). Przy specyfikacji
+`retman-eval` (`docs/specs/retman-eval.md`) trzeba było ustalić, czy pytanie o taki
+parametr jest błędem, czy zbędnym kosztem.
+
+**Opcje:**
+- A) zostawić wartości domyślne — mniej pytań, ale wynik zależy od wartości, których
+  użytkownik nie wybrał,
+- B) usunąć wartości domyślne — Retman dopytuje o każdy szczegół, którego polecenie nie podaje.
+
+**Decyzja:** B — autor woli, żeby Retman dopytywał o szczegóły, niż przyjmował wartości
+domyślne. Parametry bez wartości w poleceniu są wymagane (`required`), więc trafiają do
+pytań. Wartości stałe, których nie da się wybrać (NMPT tylko 1 m / EVRF2007, ortofotomapa),
+nie są parametrami.
+
+**Konsekwencje:** `retman/tools/kartograf/manifest.py` bez kluczy `default`; teksty
+`unspecified` w `pl.toml` zapowiadają pytanie. W `retman-eval` pytanie o parametr niepodany
+w poleceniu jest oczekiwane (`expect_clarify`), a przyjęcie wartości bez pytania — cichym
+zgadywaniem.
 
 ---
 

@@ -35,19 +35,22 @@ UTF-8, LF, jeden obiekt JSON w linii. Polecenia po polsku, identyfikatory po ang
 | `command` | tak | treść polecenia |
 | `operation` | tak | oczekiwany identyfikator operacji albo `"out_of_scope"` |
 | `params` | nie | **tylko wartości podane w poleceniu**, w postaci znormalizowanej jak w planie: klucze opcji dla `choice` (np. `"5m"`), `true`/`false` dla `bool`, wartości ekstraktora dla `free` (np. `{"type": "sheet", "code": "N-34-130-D-d-2-4"}`) |
-| `expect_clarify` | nie | parametry, o które Retman **musi** zapytać, bo polecenie ich nie określa jednoznacznie, a nie mają wartości domyślnej (np. `["target_crs"]`) albo zapis jest niejednoznaczny (np. dwa odczyty prostokąta PL-1992) |
+| `expect_clarify` | nie | parametry, o które Retman **musi** zapytać: polecenie ich nie podaje, a parametr jest wymagany (np. `["target_crs", "vertical_crs"]`), albo zapis ma kilka odczytów (np. dwa odczyty prostokąta PL-1992) |
 | `tags` | tak | kategorie z p. 2.3, co najmniej jedna |
 | `note` | nie | uzasadnienie oczekiwań w trudnych przypadkach (po polsku) |
 
-Parametr, którego nie ma w `params` ani w `expect_clarify`, polecenie **nie określa**.
-Poprawną decyzją modelu jest wtedy `unspecified`; użycie wartości domyślnej z manifestu
-jest poprawne, a pytanie o niego jest dopuszczalne (zbędne, ale nie błędne).
+Każdy parametr operacji, który ma zastosowanie (z uwzględnieniem `depends_on`), jest
+**dokładnie w jednym** z pól `params` albo `expect_clarify` — zbiór nie zostawia parametrów
+bez oczekiwania. Dla parametru niepodanego w poleceniu poprawną decyzją modelu jest
+`unspecified`, a Retman musi o niego zapytać. Operacje Kartografa nie mają wartości
+domyślnych (ADR-006). Gdyby inna operacja miała `default`, parametr niepodany w poleceniu
+nie trafia do `expect_clarify`, a pytanie o niego liczy się jako zbędne (p. 5.2).
 
 Przykłady:
 
 ```json
-{"id": "kartograf-dem-sheet-001", "command": "Pobierz NMT 5 m dla arkusza N-34-130-D-d-2-4", "operation": "download_dem_sheet", "params": {"area": {"type": "sheet", "code": "N-34-130-D-d-2-4"}, "resolution": "5m"}, "tags": ["formal"]}
-{"id": "kartograf-cutout-004", "command": "wytnij mi dsm z prostokąta 52.40 16.90 52.41 16.91", "operation": "download_elevation_cutout", "params": {"product": "dsm", "area": {"type": "bbox", "min_x": 16.9, "min_y": 52.4, "max_x": 16.91, "max_y": 52.41, "crs": "EPSG:4326"}}, "expect_clarify": ["target_crs"], "tags": ["colloquial", "incomplete"]}
+{"id": "kartograf-dem-sheet-001", "command": "Pobierz NMT 5 m dla arkusza N-34-130-D-d-2-4", "operation": "download_dem_sheet", "params": {"area": {"type": "sheet", "code": "N-34-130-D-d-2-4"}, "resolution": "5m"}, "expect_clarify": ["vertical_crs"], "tags": ["formal", "incomplete"]}
+{"id": "kartograf-cutout-004", "command": "wytnij mi dsm z prostokąta 52.40 16.90 52.41 16.91", "operation": "download_elevation_cutout", "params": {"product": "dsm", "area": {"type": "bbox", "min_x": 16.9, "min_y": 52.4, "max_x": 16.91, "max_y": 52.41, "crs": "EPSG:4326"}}, "expect_clarify": ["target_crs", "vertical_crs"], "tags": ["colloquial", "incomplete"]}
 {"id": "oos-003", "command": "Jaka będzie jutro pogoda w Poznaniu?", "operation": "out_of_scope", "tags": ["out_of_scope"]}
 ```
 
@@ -60,7 +63,9 @@ Test w `tests/eval/` sprawdza bez modelu, że każdy wpis:
 - ma w `params` wartości dozwolone przez manifest (`options`, `accepts`, `range`),
 - dla parametrów `free` ma wartości, które **ekstraktor rzeczywiście wyciąga** z `command`
   (ten sam kod co w planowaniu) — rozbieżność to błąd zbioru, nie modelu,
-- nie wymienia tego samego parametru w `params` i `expect_clarify`.
+- nie wymienia tego samego parametru w `params` i `expect_clarify`,
+- obejmuje polami `params` i `expect_clarify` wszystkie parametry, które mają zastosowanie
+  przy oczekiwanych wartościach (`depends_on`), oprócz tych z `default`.
 
 Zbiór jest sprawdzany dla operacji **wszystkich** narzędzi z `retman/tools/`, nie tylko
 zainstalowanych.
@@ -74,7 +79,7 @@ zainstalowanych.
 | `typo` | literówki, brak polskich znaków | — |
 | `incomplete` | brak wymaganej wartości → oczekiwane `expect_clarify` | — |
 | `ambiguous` | zapis o kilku odczytach (np. kolejność osi PL-1992) | — |
-| `default` | parametr z wartością domyślną nie pada w poleceniu | — |
+| `complete` | polecenie podaje wszystkie parametry — oczekiwany plan bez pytań | 3 na operację |
 | `out_of_scope` | polecenie nie dotyczy żadnej operacji | 10 w całym zbiorze |
 | `near_miss` | polecenie bliskie zakresowi, ale niewykonalne (np. LAZ, opady) | 5 w całym zbiorze |
 
@@ -108,10 +113,19 @@ retman-eval --config PATH [--commands PATH] [--operations ID[,ID...]] [--tags TA
 
 Raporty z przebiegów na modelach zapisuje się w `docs/research/` (STANDARDS 6.4).
 
-**Kody wyjścia:** `0` — przebieg zakończony (niezależnie od wyników; eval mierzy, nie ocenia,
-dopóki PRD nie ma wartości docelowych); `1` — błąd konfiguracji, zbioru albo backendu
-(np. brak połączenia z modelem — przerywa przebieg, raport częściowy nie powstaje);
-`3` — przerwane przez użytkownika.
+**Kody wyjścia:**
+
+| Kod | Znaczenie |
+| --- | --- |
+| `0` | przebieg zakończony; miary są tylko raportowane — eval mierzy, nie ocenia |
+| `1` | błąd konfiguracji, zbioru albo backendu (np. brak połączenia z modelem — przerywa przebieg, raport częściowy nie powstaje) |
+| `3` | przerwane przez użytkownika |
+| `4` | przebieg zakończony, ale wystąpiło **naruszenie W-03** (p. 5.2) — jedyne kryterium oceniane zawsze, bo wymaganie jest bezwzględne („0”) i nie zależy od szumu |
+
+Progi dla pozostałych miar nie są wpisane w kod. Gdy PRD ustali wartości docelowe, można
+dodać opcję z wartościami podanymi wprost (np. `--require operation=0.95,error=0.01`);
+domyślnie dalej `0`, bo eval wymaga działającego modelu, nie wchodzi do bramki offline,
+a wyniki na kilkudziesięciu poleceniach są zaszumione.
 
 ## 4. Przebieg dla jednego polecenia
 
@@ -166,7 +180,7 @@ repozytorium (p. 3), a o adresie decyduje użytkownik (ARCHITECTURE rozdz. 10).
 | --- | --- |
 | decyzja `operation` | klucz = oczekiwana operacja (także `out_of_scope`) |
 | decyzja parametru `choice`/`bool` z oczekiwaną wartością | klucz = wartość z `params` |
-| decyzja parametru, którego polecenie nie określa | klucz = `unspecified`; inny klucz to **ciche zgadywanie** — błąd, w raporcie oznaczony jako „nieszkodliwy”, jeśli równa się wartości domyślnej |
+| decyzja parametru, którego polecenie nie określa | klucz = `unspecified` (Retman ma zapytać); inny klucz przyjęty bez pytania to **ciche zgadywanie** — błąd |
 | wartość `free` (ekstraktor) | wartość w planie = wartość z `params` (równość dokładna — obie pochodzą z tego samego kodu) |
 
 Decyzja jest **przyjęta bez pytania**, gdy pipeline nie zadał o nią pytania (pewność ≥ próg
@@ -178,10 +192,11 @@ albo metoda `none`).
 | --- | --- |
 | Trafność operacji | poprawne decyzje `operation` / wszystkie polecenia (z `out_of_scope`); osobno: w zakresie, spoza zakresu |
 | Trafność parametrów | poprawne wartości / oczekiwane wartości z `params` — z podziałem: poprawne bez pytania, błędne bez pytania, zapytane |
-| Pokrycie automatyczne | polecenia w zakresie bez `expect_clarify`, których plan nie zadał żadnego pytania / wszystkie takie polecenia |
+| Pokrycie automatyczne | polecenia `complete` (bez `expect_clarify`), których plan nie zadał żadnego pytania / wszystkie takie polecenia |
 | **Błąd przy pewności (W-02)** | błędne decyzje przyjęte bez pytania / wszystkie decyzje przyjęte bez pytania; osobno dla operacji, parametrów modelu i wartości ekstraktorów, oraz łącznie |
 | Ciche zgadywanie | decyzje inne niż `unspecified` przyjęte bez pytania dla parametrów, których polecenie nie określa |
-| Trafne dopytania | parametry z `expect_clarify`, o które zapytano / wszystkie z `expect_clarify` (czułość); dodatkowo liczba pytań zbędnych na polecenie |
+| Trafne dopytania | parametry z `expect_clarify`, o które zapytano / wszystkie z `expect_clarify` (czułość) |
+| Pytania zbędne | pytania o parametry, których wartość **jest** w `params` (model niepewny mimo podanej wartości), oraz — w operacjach z `default` — o parametry niepodane; liczone jako koszt na polecenie, nie jako błąd; strojenie opisów i progów ma je zmniejszać |
 | **Naruszenia W-03** | polecenia `out_of_scope`, dla których powstał plan z operacją i bez pytania o operację; wymagane 0 |
 | Stabilność (`--repeat`) | odsetek poleceń z identycznymi kluczami decyzji we wszystkich powtórzeniach |
 | Czas planu (N-07) | mediana, 90. percentyl i maksimum `plan_s`; osobno liczba zapytań do modelu na plan |
@@ -246,17 +261,18 @@ Test `live` (świadomie, `-m live`): jeden przebieg kilku poleceń na serwerze z
 2. Raport z przebiegu Bielik 11B (`logprobs`) trafia do `docs/research/`, z zaleceniem progów
    dla `--target-error 0.01`.
 3. Testy z p. 8 przechodzą offline; bramka STANDARDS 18 czysta.
-4. ARCHITECTURE 8.1–8.2 i 3.1 opisują eval zgodnie z tą specyfikacją.
+4. Specyfikacja i PROGRESS opisują stan; ARCHITECTURE 8.1–8.2 zostaje bez zmian do decyzji
+   z p. 10.1.
 
-## 10. Kwestie do decyzji autora
+## 10. Decyzje autora
 
-1. **Wywołanie:** ARCHITECTURE 8.2 podaje `retman-eval --backend basal`; specyfikacja
-   proponuje `--config PATH`, bo backend to nie jedyne ustawienie (model, metoda pewności,
-   progi). *Decyzja 2026-10-11:* ARCHITECTURE na razie bez zmian; praca docelowo z basalem.
-   Sposób wywołania do ponownego rozpatrzenia, gdy powstanie backend `basal`.
-2. **Autor zbioru:** *Decyzja 2026-10-11:* zbiór startowy przygotowuje agent jako szkic,
-   autor go przegląda przed pierwszym przebiegiem.
-3. **Wartości docelowe** (PRD W-01, N-07, rozdz. 8): do ich ustalenia eval tylko mierzy
-   i zawsze kończy się kodem `0`. Czy po ustaleniu ma zwracać kod błędu przy niespełnieniu?
-4. **Czy parametr z wartością domyślną może być zapytany bez kary** — specyfikacja liczy to
-   jako pytanie zbędne (koszt), nie błąd.
+1. **Wywołanie i backend** (2026-10-11): ARCHITECTURE 8.2 (`--backend basal`) na razie bez
+   zmian. basal-serve nie jest jeszcze dostępny, więc eval powstaje i działa na tym, co jest
+   (`openai_compatible`, LM Studio) przez `--config PATH`; sposób wywołania do ponownego
+   rozpatrzenia, gdy powstanie backend `basal`.
+2. **Autor zbioru** (2026-10-11): zbiór startowy przygotowuje agent jako szkic, autor go
+   przegląda przed pierwszym przebiegiem.
+3. **Kod wyjścia** (2026-10-11): wg rekomendacji — `0` niezależnie od miar, `4` przy
+   naruszeniu W-03 (p. 3); progi pozostałych miar ewentualnie później, jawną opcją.
+4. **Wartości domyślne** (2026-10-11, ADR-006): operacje Kartografa nie mają wartości
+   domyślnych; Retman ma dopytywać o szczegóły niepodane w poleceniu (p. 2.1, 5.1).
