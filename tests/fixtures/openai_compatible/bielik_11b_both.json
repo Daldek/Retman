@@ -1,0 +1,253 @@
+{
+  "id": "chatcmpl-ga6lxoiqo97g275o7r8drw",
+  "object": "chat.completion",
+  "created": 1791746443,
+  "model": "bielik-11b-v3.0-instruct-mlx",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"ke\": \"A\"}",
+        "reasoning_content": "",
+        "tool_calls": []
+      },
+      "logprobs": {
+        "content": [
+          {
+            "token": "{\"",
+            "logprob": -0.42870140075683594,
+            "bytes": [
+              123,
+              34
+            ],
+            "top_logprobs": [
+              {
+                "token": "{\"",
+                "logprob": -0.42870140075683594,
+                "bytes": [
+                  123,
+                  34
+                ]
+              },
+              {
+                "token": "{",
+                "logprob": -1.053701400756836,
+                "bytes": [
+                  123
+                ]
+              },
+              {
+                "token": "{",
+                "logprob": -15.084951400756836,
+                "bytes": [
+                  123
+                ]
+              }
+            ]
+          },
+          {
+            "token": "k",
+            "logprob": -0.881199836730957,
+            "bytes": [
+              107
+            ],
+            "top_logprobs": [
+              {
+                "token": "k",
+                "logprob": -0.881199836730957,
+                "bytes": [
+                  107
+                ]
+              },
+              {
+                "token": "key",
+                "logprob": -0.537449836730957,
+                "bytes": [
+                  107,
+                  101,
+                  121
+                ]
+              },
+              {
+                "token": "ke",
+                "logprob": -6.545262336730957,
+                "bytes": [
+                  107,
+                  101
+                ]
+              }
+            ]
+          },
+          {
+            "token": "e",
+            "logprob": -4.132515907287598,
+            "bytes": [
+              101
+            ],
+            "top_logprobs": [
+              {
+                "token": "e",
+                "logprob": -4.132515907287598,
+                "bytes": [
+                  101
+                ]
+              },
+              {
+                "token": "e",
+                "logprob": -0.030953407287597656,
+                "bytes": [
+                  101
+                ]
+              },
+              {
+                "token": "ey",
+                "logprob": -4.237984657287598,
+                "bytes": [
+                  101,
+                  121
+                ]
+              }
+            ]
+          },
+          {
+            "token": "\":",
+            "logprob": -0.012087821960449219,
+            "bytes": [
+              34,
+              58
+            ],
+            "top_logprobs": [
+              {
+                "token": "\":",
+                "logprob": -0.012087821960449219,
+                "bytes": [
+                  34,
+                  58
+                ]
+              },
+              {
+                "token": "\"",
+                "logprob": -4.449587821960449,
+                "bytes": [
+                  34
+                ]
+              },
+              {
+                "token": "\":\"",
+                "logprob": -8.01208782196045,
+                "bytes": [
+                  34,
+                  58,
+                  34
+                ]
+              }
+            ]
+          },
+          {
+            "token": "\"",
+            "logprob": -0.00360107421875,
+            "bytes": [
+              34
+            ],
+            "top_logprobs": [
+              {
+                "token": "\"",
+                "logprob": -0.00360107421875,
+                "bytes": [
+                  34
+                ]
+              },
+              {
+                "token": "",
+                "logprob": -5.62860107421875,
+                "bytes": []
+              },
+              {
+                "token": "\"",
+                "logprob": -14.62860107421875,
+                "bytes": [
+                  34
+                ]
+              }
+            ]
+          },
+          {
+            "token": "A",
+            "logprob": -0.008730888366699219,
+            "bytes": [
+              65
+            ],
+            "top_logprobs": [
+              {
+                "token": "A",
+                "logprob": -0.008730888366699219,
+                "bytes": [
+                  65
+                ]
+              },
+              {
+                "token": "B",
+                "logprob": -5.196230888366699,
+                "bytes": [
+                  66
+                ]
+              },
+              {
+                "token": "C",
+                "logprob": -5.758730888366699,
+                "bytes": [
+                  67
+                ]
+              }
+            ]
+          },
+          {
+            "token": "\"}",
+            "logprob": -0.054882049560546875,
+            "bytes": [
+              34,
+              125
+            ],
+            "top_logprobs": [
+              {
+                "token": "\"}",
+                "logprob": -0.054882049560546875,
+                "bytes": [
+                  34,
+                  125
+                ]
+              },
+              {
+                "token": "\"",
+                "logprob": -2.929882049560547,
+                "bytes": [
+                  34
+                ]
+              },
+              {
+                "token": "\"",
+                "logprob": -21.281444549560547,
+                "bytes": [
+                  34
+                ]
+              }
+            ]
+          }
+        ],
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 167,
+    "completion_tokens": 9,
+    "total_tokens": 176,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  },
+  "stats": {},
+  "system_fingerprint": "bielik-11b-v3.0-instruct-mlx"
+}

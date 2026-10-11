@@ -1,0 +1,29 @@
+{
+  "id": "chatcmpl-7ygcjuwzhhnumzmo520ron",
+  "object": "chat.completion",
+  "created": 1791746358,
+  "model": "bielik-11b-v3.0-instruct-mlx",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"key\": \"A\"}",
+        "reasoning_content": "",
+        "tool_calls": []
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 167,
+    "completion_tokens": 9,
+    "total_tokens": 176,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  },
+  "stats": {},
+  "system_fingerprint": "bielik-11b-v3.0-instruct-mlx"
+}

@@ -1,0 +1,63 @@
+{
+  "id": "chatcmpl-lqv859skclnf6x5phl7hz",
+  "object": "chat.completion",
+  "created": 1791746447,
+  "model": "bielik-4.5b-v3.0-instruct-mlx",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "B",
+        "reasoning_content": "",
+        "tool_calls": []
+      },
+      "logprobs": {
+        "content": [
+          {
+            "token": "B",
+            "logprob": -0.203125,
+            "bytes": [
+              66
+            ],
+            "top_logprobs": [
+              {
+                "token": "B",
+                "logprob": -0.203125,
+                "bytes": [
+                  66
+                ]
+              },
+              {
+                "token": "A",
+                "logprob": -2.15625,
+                "bytes": [
+                  65
+                ]
+              },
+              {
+                "token": "C",
+                "logprob": -2.6875,
+                "bytes": [
+                  67
+                ]
+              }
+            ]
+          }
+        ],
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 123,
+    "completion_tokens": 2,
+    "total_tokens": 125,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  },
+  "stats": {},
+  "system_fingerprint": "bielik-4.5b-v3.0-instruct-mlx"
+}
