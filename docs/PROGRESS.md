@@ -9,7 +9,7 @@ Szablony wpisów: [Szablony](#szablony).
 | Element | Status | Uwagi |
 |---------|--------|-------|
 | Dokumentacja projektowa (PRD, ARCHITECTURE, DEVELOPMENT_STANDARDS) | ✅ Gotowy | szkic 2026-10-11; otwarte kwestie: PRD rozdz. 11, ARCHITECTURE rozdz. 12 |
-| Repozytorium (`main`, `develop`, `origin`) | ✅ Gotowy | `origin` = `github.com/Daldek/Retman`, nic nie wypchnięto |
+| Repozytorium (`main`, `develop`, `origin`) | 🚧 W toku | `origin` = `github.com/Daldek/Retman`; `develop` wypchnięty, `main` jeszcze nie |
 | Lista pierwszych operacji v0.1 | ⏳ Planowany | PRD 7.2 — decyzja autora; blokuje manifesty, handlery i zbiór testowy |
 | Szkielet pakietu, `pyproject.toml`, `retman.toml` i `retman init` | ⏳ Planowany | ARCHITECTURE 3.1, 9.1, 9.3; STANDARDS 5–8 |
 | Ekstraktory (w tym prawdopodobieństwo) | ⏳ Planowany | ARCHITECTURE 4.4 — w pełni opisane |
@@ -31,12 +31,14 @@ Szablony wpisów: [Szablony](#szablony).
 ## Ostatnia sesja
 
 > **START NASTĘPNEJ SESJI (stan 2026-10-11):** kodu jeszcze nie ma; praca na
-> `develop`, `origin` dodany, ale nic nie wypchnięto (push to decyzja
-> użytkownika). Najpierw: szkielet pakietu z konfiguracją i ekstraktor
-> prawdopodobieństwa (niezależne od listy operacji). Czeka na decyzję
-> użytkownika: lista pierwszych operacji (PRD 7.2), rodzaje danych i formaty
-> plików (PRD W-09, ARCHITECTURE 12 pkt 7), wartości docelowe (PRD W-01, N-07,
-> rozdz. 8). Pełna lista: Backlog niżej.
+> `develop`. Repozytorium `github.com/Daldek/Retman` założone, `develop`
+> wypchnięty (`8c7657c`), `main` NIE — wypchnij go (`git push -u origin main`)
+> i sprawdź, czy domyślną gałęzią na GitHubie jest `main` (STANDARDS 1.1).
+> Najpierw: szkielet pakietu z konfiguracją i ekstraktor prawdopodobieństwa
+> (niezależne od listy operacji). Czeka na decyzję użytkownika: lista
+> pierwszych operacji (PRD 7.2), rodzaje danych i formaty plików (PRD W-09,
+> ARCHITECTURE 12 pkt 7), wartości docelowe (PRD W-01, N-07, rozdz. 8),
+> zapis decyzji z 2026-10-11 jako ADR. Pełna lista: Backlog niżej.
 
 ### Start projektu: dokumentacja i repozytorium (2026-10-11)
 
@@ -65,11 +67,20 @@ Szablony wpisów: [Szablony](#szablony).
     szablony `docs/DECISIONS.md`, `docs/PROGRESS.md`, `docs/CHANGELOG.md`,
     `LICENSE`, `.gitignore`, `.gitattributes`, `.editorconfig`;
   - `git init`: commit `70857c0` na `main`, gałąź `develop`, remote `origin`;
-    `<github-user>` w ARCHITECTURE zastąpione adresami `github.com/Daldek/…`.
+    `<github-user>` w ARCHITECTURE zastąpione adresami `github.com/Daldek/…`;
+  - wpis sesji, CP0 i backlog w PROGRESS, sekcja `[0.1.0] - Unreleased`
+    w CHANGELOG (commit `8c7657c`);
+  - instrukcja założenia repozytorium (`gh repo create` albo github.com/new
+    bez README/licencji) — `gh` nie jest zainstalowany na maszynie agenta;
+    repozytorium założył i wypchnął użytkownik.
 - **Weryfikacja:** odsyłacze `p.`/`rozdz.`/`[W-xx]`/`[N-xx]`/`S-xx` sprawdzone
   skryptem subagenta (brak martwych); brak odwołań do `DESIGN`;
-  `git ls-files --eol` bez `w/crlf`.
-- **Otwarte:** decyzje z Backlogu; push na `origin`.
+  `git ls-files --eol` bez `w/crlf`; `git ls-remote --heads origin` —
+  tylko `develop` (`8c7657c`).
+- **Otwarte:** decyzje z Backlogu; push `main`; czy zapisać decyzje
+  z tej sesji jako ADR-001… w `docs/DECISIONS.md` (pytanie bez odpowiedzi).
+  Override modelu subagentów (`task` → rola `slow`) był tylko na tę sesję,
+  niezapisany.
 
 ## Backlog
 
@@ -83,7 +94,10 @@ Decyzje autora (blokują część implementacji):
   11 pkt 8; ARCHITECTURE 3.2.6, 12 pkt 7.
 - [ ] **Wartości docelowe**: trafność rozpoznania (W-01), czas odpowiedzi (N-07),
   miary sukcesu — PRD rozdz. 8, 11 pkt 5.
-- [ ] **Push repozytorium na `origin`** — decyzja użytkownika.
+- [ ] **Push `main` na `origin`** i domyślna gałąź `main` na GitHubie
+  (`develop` wypchnięty 2026-10-11).
+- [ ] **ADR dla decyzji z 2026-10-11** (lista we wpisie sesji) — czy zapisywać
+  wstecznie w `docs/DECISIONS.md`.
 
 Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
 
