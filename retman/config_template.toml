@@ -1,0 +1,42 @@
+# Retman central config file (ARCHITECTURE 9.1).
+# Every value Retman uses is in this file; there are no hidden defaults.
+
+[decision]
+backend = "basal"                   # "basal" (default) | "openai_compatible"
+url = "http://127.0.0.1:8000"       # basal-serve running locally (started separately)
+model = "basal-1.5-mini"
+timeout_s = 30                      # how long to wait for the model server
+# Generative model instead of basal, e.g. LM Studio:
+# backend = "openai_compatible"
+# url = "http://127.0.0.1:1234/v1"
+# model = "<model-name>"
+# api_key_env = "PROVIDER_API_KEY"  # external providers: NAME of the environment variable holding the key
+# confidence = "auto"               # "auto" | "logprobs" | "consistency" | "none" (ARCHITECTURE 3.3.3)
+# consistency_runs = 3              # queries per decision for the consistency check
+# With this backend [decision.thresholds] must be numbers tuned for the model
+# (ARCHITECTURE 6.2); with confidence = "none" the thresholds are ignored.
+
+[decision.thresholds]
+operation = "auto"      # "auto" = basal calibration, allowed only with backend = "basal"; after tuning set a number, e.g. 0.90
+parameter = "auto"
+
+[text]
+backend = "none"        # from v0.2: "openai_compatible" (e.g. Bielik in LM Studio)
+
+[ui]
+language = "pl"         # language of questions, options and messages
+
+[output]
+results_dir = "retman-output"  # results folder created inside the project folder, i.e. where Retman runs
+
+[adapters]
+# By default Retman enables every supported tool that is installed in a supported version.
+# The optional "enabled" list only NARROWS that set.
+# enabled = ["kartograf"]
+
+[log]
+journal_commands = true    # store command texts and answers in the project journal
+diagnostic_level = "info"  # technical log in the user's log directory: "debug" | "info" | "warning"
+
+[privacy]
+collect_commands = false   # true = collect commands to improve the test set (separate from the journal)

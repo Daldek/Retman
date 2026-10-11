@@ -1,0 +1,17 @@
+# Teksty rdzenia Retmana po polsku (ARCHITECTURE 1.3, 4.2).
+# Każda sekcja należy do jednego modułu; klucze odpowiadają identyfikatorom w kodzie.
+
+[config]
+missing_file = "Brak pliku konfiguracji {path}. Utwórz go poleceniem: retman init"
+invalid_toml = "Plik konfiguracji {path} nie jest poprawnym plikiem TOML: {error}"
+missing_key = "Brak ustawienia w {path}: {keys}"
+invalid_value = "Niepoprawna wartość w {path}: {keys}"
+auto_threshold_without_basal = "Progi pewności \"auto\" działają tylko z backend = \"basal\"; wpisz liczbę dostrojoną dla modelu ({keys})"
+already_exists = "Plik konfiguracji już istnieje: {path} (nie nadpisuję)"
+backend_unavailable = "Backend \"{backend}\" nie jest jeszcze dostępny w tej wersji Retmana; ustaw backend = \"openai_compatible\" w {path}"
+
+# Etykiety odczytów ekstraktorów (retman/extractors), używane w pytaniach o niejednoznaczne zapisy.
+[extractors]
+
+# Zapytania do modeli zgodnych z API OpenAI (retman/backends/openai_compatible.py).
+[backends]
