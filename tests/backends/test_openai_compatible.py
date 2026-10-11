@@ -84,6 +84,28 @@ def test_choose_logprobs_normalizes_option_token_scores():
     assert requests[0].extensions["timeout"]["read"] == 7
 
 
+def test_choose_logprobs_picks_most_probable_option_not_sampled_token():
+    # Arrange: the server sampled the unlikely "B" while "A" dominates the
+    # distribution (seen live with LM Studio's default temperature).
+    body = json.loads((FIXTURES / "bielik_11b_enum_logprobs.json").read_text())
+    choice = body["choices"][0]
+    choice["message"]["content"] = "B"
+    token = choice["logprobs"]["content"][0]
+    token["token"], token["logprob"], token["bytes"] = "B", -4.511894226074219, [66]
+    transport = httpx.MockTransport(lambda _: httpx.Response(200, json=body))
+
+    with httpx.Client(transport=transport) as client:
+        backend = OpenAICompatibleBackend(
+            _config("logprobs"), load_core_texts("pl"), client
+        )
+        # Act
+        decision = backend.choose("Pobierz NMT", "Która operacja?", OPTIONS)
+
+    # Assert: key and confidence describe the same, most probable option
+    assert decision.key == "a_sheet"
+    assert decision.confidence == max(decision.probabilities.values())
+
+
 def test_choose_logprobs_rejects_incomplete_option_scores():
     # Arrange: the saved answer is valid, but one alternative is missing.
     body = json.loads((FIXTURES / "bielik_11b_enum_logprobs.json").read_text())

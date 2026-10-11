@@ -120,10 +120,13 @@ class OpenAICompatibleBackend:
                 probabilities = {
                     letters[letter]: share for letter, share in scores.items()
                 }
+                # The server samples the answer token; the decision is the most
+                # probable option, so the reported key and confidence agree
+                best = max(probabilities, key=lambda key: probabilities[key])
                 return Decision(
-                    selected,
+                    best,
                     probabilities=probabilities,
-                    confidence=probabilities[selected],
+                    confidence=probabilities[best],
                     confidence_method="logprobs",
                     model=reported_model,
                 )
