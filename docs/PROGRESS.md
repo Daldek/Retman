@@ -30,14 +30,16 @@ Szablony wpisów: [Szablony](#szablony).
 
 ## Ostatnia sesja
 
-> **START NASTĘPNEJ SESJI (stan 2026-10-11, wieczór):** praca na `develop`; pionowy
-> przekrój na Kartografie 0.7.2 działa end-to-end (CLI + LM Studio/Bielik 11B + GUGiK).
-> Najpierw: `retman-eval` wg `docs/specs/retman-eval.md` (decyzje autora w rozdz. 10:
-> działa na `openai_compatible`/LM Studio, kod 4 tylko przy naruszeniu W-03, zbiór jako
-> szkic agenta do przeglądu autora), potem `retman doctor`. Operacje Kartografa nie mają
-> już wartości domyślnych (ADR-006) — Retman dopytuje o szczegóły. basal-serve
-> niedostępny — backend `basal` czeka. Decyzje autora: operacja drugiego narzędzia
-> (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07, rozdz. 8), ADR wsteczne.
+> **START NASTĘPNEJ SESJI (stan 2026-10-11, koniec dnia):** praca na `develop`
+> (commity lokalne, niewypchnięte). **Najpierw: przegląd z autorem
+> `retman/tools/kartograf/pl.toml`** — etykiety i opisy operacji (`label` dla użytkownika,
+> `description` z synonimami dla modelu), pytania, `help`, `example`, opisy opcji
+> i `unspecified` po ADR-006; opisy wpływają na trafność decyzji (smoke: Bielik wybierał
+> `unspecified` mimo „NMT” w poleceniu). Potem `retman-eval` wg
+> `docs/specs/retman-eval.md` (decyzje autora w rozdz. 10) i `retman doctor`.
+> basal-serve niedostępny — backend `basal` czeka. Decyzje autora: operacja drugiego
+> narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07, rozdz. 8),
+> ADR wsteczne dla pierwszej sesji.
 
 ### Pionowy przekrój na Kartografie 0.7.2 (2026-10-11)
 
@@ -46,8 +48,11 @@ Szablony wpisów: [Szablony](#szablony).
 - **Decyzje użytkownika:** operacje Kartografa i formy obszaru (ADR-001); Python ≥ 3.12
   (ADR-002); zakres `>=0.7.2,<0.8` i grupa `tools` z tagiem Git (ADR-003); osobny `kind`
   na produkt (ADR-004); kolejność sesji: szkielet + konfiguracja, potem przekrój
-  Kartografa. Adresu serwera LM Studio i ścieżki przestrzeni roboczej agenta nie wolno
-  zapisywać w żadnym pliku.
+  Kartografa; operacje Kartografa bez wartości domyślnych — Retman dopytuje (ADR-006);
+  `retman-eval`: na razie LM Studio (basal-serve niedostępny), zbiór jako szkic agenta,
+  kod 0 poza naruszeniem W-03 (kod 4), ARCHITECTURE 8 bez zmian (specyfikacja rozdz. 10).
+  Adresu serwera LM Studio i ścieżki przestrzeni roboczej agenta nie wolno zapisywać
+  w żadnym pliku.
 - **Zrobione:**
   - `pyproject.toml`, `.venv` przez `uv` (zainstalowany w `~/.local/bin`), konfiguracja
     ruff (bez plików `.md` — przykłady „BAD” w dokumentacji), mypy, pytest, coverage;
@@ -62,7 +67,8 @@ Szablony wpisów: [Szablony](#szablony).
     dla modelu; plan pokazuje odczyt prostokąta jako N/E;
   - badanie LM Studio: `docs/research/2026-10-11-lm-studio-openai-compatible.md`
     (ARCHITECTURE 12 pkt 9);
-  - dokumentacja: ADR-001–005, PRD 7.2, ARCHITECTURE 3.1, 3.2.6, 4.1–4.3, 9.2–9.3, 12,
+  - specyfikacja `docs/specs/retman-eval.md`; manifest Kartografa bez `default` (ADR-006);
+  - dokumentacja: ADR-001–006, PRD 7.2, ARCHITECTURE 3.1, 3.2.6, 4.1–4.3, 9.2–9.3, 12,
     STANDARDS 5.1, 6.1, 8.1, README, CLAUDE.md, CHANGELOG.
 - **Weryfikacja:** `pytest -m "not live"` — 142 passed, pokrycie 88% (rdzeń ≥ 84%);
   `pytest -m live` — 6 passed (5 handlerów Kartografa na GUGiK, 1 Bielik 11B);
