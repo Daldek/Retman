@@ -252,10 +252,10 @@ Test `live` (świadomie, `-m live`): jeden przebieg kilku poleceń na serwerze z
 
 1. **Wywołanie:** ARCHITECTURE 8.2 podaje `retman-eval --backend basal`; specyfikacja
    proponuje `--config PATH`, bo backend to nie jedyne ustawienie (model, metoda pewności,
-   progi). Czy przyjąć i poprawić ARCHITECTURE?
-2. **Autor zbioru:** szkic poleceń może przygotować agent, ale polecenia ułożone przez
-   samego autora lepiej oddają prawdziwy język użytkowników. Czy zbiór startowy ma powstać
-   jako szkic agenta do przeglądu, czy w całości od autora?
+   progi). *Decyzja 2026-10-11:* ARCHITECTURE na razie bez zmian; praca docelowo z basalem.
+   Sposób wywołania do ponownego rozpatrzenia, gdy powstanie backend `basal`.
+2. **Autor zbioru:** *Decyzja 2026-10-11:* zbiór startowy przygotowuje agent jako szkic,
+   autor go przegląda przed pierwszym przebiegiem.
 3. **Wartości docelowe** (PRD W-01, N-07, rozdz. 8): do ich ustalenia eval tylko mierzy
    i zawsze kończy się kodem `0`. Czy po ustaleniu ma zwracać kod błędu przy niespełnieniu?
 4. **Czy parametr z wartością domyślną może być zapytany bez kary** — specyfikacja liczy to
