@@ -1,0 +1,51 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy / ruff
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+*.log
+
+# Secrets (DEVELOPMENT_STANDARDS 14.1)
+.env
+.env.local
+*.pem
+*.key
+
+# Retman results from accidental runs inside the repo (DEVELOPMENT_STANDARDS 6.4)
+retman-output/
+
+# Python version
+.python-version
+
+# Lokalne ustawienia Claude Code i tymczasowe worktree agentów
+.claude/
