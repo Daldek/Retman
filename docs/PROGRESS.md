@@ -32,12 +32,12 @@ Szablony wpisów: [Szablony](#szablony).
 
 > **START NASTĘPNEJ SESJI (stan 2026-10-11, wieczór):** praca na `develop`; pionowy
 > przekrój na Kartografie 0.7.2 działa end-to-end (CLI + LM Studio/Bielik 11B + GUGiK).
-> Najpierw: `retman doctor` (ARCHITECTURE 7.2) i `retman-eval` ze zbiorem ≥ 15 poleceń
-> na operację Kartografa (ARCHITECTURE 8) — smoke pokazał, że Bielik przy progach 0,9
-> często wybiera `unspecified` mimo wartości w poleceniu (np. „NMT” → produkt), więc
-> opisy opcji i progi trzeba stroić na zbiorze. Czeka na decyzję użytkownika: operacja
-> drugiego narzędzia (PRD 7.1), obsługa pliku geometrii (patrz „Otwarte” niżej),
-> wartości docelowe (PRD W-01, N-07, rozdz. 8), ADR wsteczne dla decyzji z pierwszej sesji.
+> Najpierw: `retman-eval` wg `docs/specs/retman-eval.md` (decyzje autora w rozdz. 10:
+> działa na `openai_compatible`/LM Studio, kod 4 tylko przy naruszeniu W-03, zbiór jako
+> szkic agenta do przeglądu autora), potem `retman doctor`. Operacje Kartografa nie mają
+> już wartości domyślnych (ADR-006) — Retman dopytuje o szczegóły. basal-serve
+> niedostępny — backend `basal` czeka. Decyzje autora: operacja drugiego narzędzia
+> (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07, rozdz. 8), ADR wsteczne.
 
 ### Pionowy przekrój na Kartografie 0.7.2 (2026-10-11)
 
