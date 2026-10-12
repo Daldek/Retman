@@ -101,5 +101,9 @@ Linki porównań na końcu pliku, od najnowszego:
 - Układ wyniku wycinka można podać samym kodem EPSG (`wynik w 2180`, `do 3045`), bez
   prefiksu `EPSG:`: opisy opcji dla modelu zawierają same kody i odróżniają układ prostokąta
   wejściowego od układu wyniku (skuteczność do zmierzenia w `retman-eval`).
+- Model decyzyjny dostaje osobne pytanie o to, co wymienia polecenie (`model_question`),
+  zamiast pytania dla użytkownika „czy X, czy Y?”; z Bielikiem 11B trafność wartości
+  parametrów wzrosła z 0,55 do 0,78, a rodzaju danych z 16/33 do 32/33 (ADR-008,
+  ARCHITECTURE 4.2).
 
 [0.1.0]: https://github.com/Daldek/Retman/commits/develop

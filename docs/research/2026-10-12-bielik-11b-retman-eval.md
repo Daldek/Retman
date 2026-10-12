@@ -2,8 +2,9 @@
 
 **Status:** przebieg roboczy na **szkicu** zbioru poleceń (przed przeglądem autora, spec.
 `docs/specs/2026-10-11-retman-eval.md` rozdz. 10 pkt 2).
-**Pełny raport z narzędzia:** `2026-10-12-bielik-11b-retman-eval-raport.md` (miary, krzywe
-progów, błędne przypadki, czasy).
+**Pełne raporty z narzędzia:** `2026-10-12-bielik-11b-retman-eval-raport.md` (przed zmianą)
+i `2026-10-12-bielik-11b-retman-eval-model-question-raport.md` (po ADR-008) — miary, krzywe
+progów, błędne przypadki, czasy.
 
 ## Konfiguracja
 
@@ -127,12 +128,33 @@ jako niewiadomą i wybiera „nie podano”. Model potrzebuje osobnego pytania o
 w poleceniu (analogicznie do `label`/`description`, ADR-007). `target_crs` nie poprawia
 się — błąd wynika z roli kodu w zdaniu (prostokąt wejściowy vs wynik), nie z pytania.
 
+## Po zmianie: osobne pytanie dla modelu (ADR-008)
+
+Pełny przebieg `retman-eval` na tym samym zbiorze, serwerze i progach, z `model_question`
+w `retman/tools/kartograf/pl.toml`:
+
+| Miara | Przed | Po |
+| --- | --- | --- |
+| Trafność wartości parametrów | 0,55 (90/164) | **0,78 (128/164)** |
+| Wartości, o które zapytano mimo podania | 66 | **30** |
+| Pokrycie automatyczne poleceń kompletnych | 6/36 | **11/36** |
+| Trafne dopytania | 0,85 (35/41) | 0,93 (38/41) |
+| Błąd bez pytania (W-02) | 2/137 | 1/174 |
+| Trafność operacji / naruszenia W-03 | 0,89 / 0 | 0,89 / 0 (bez zmian — pytanie o operację niezmienione) |
+| Zalecany próg parametrów (`--target-error 0.01`) | 0,94 (23/130 decyzji) | 0,97 (39/134 decyzji) |
+| Czas planu (mediana / P90) | 11,1 / 14,9 s | 10,9 / 14,6 s |
+
+Decyzje parametrów (trafne / pewne ≥ 0,9): `product` 32/33 / 21, `format` 14/15 / 8,
+`vertical_crs` 33/36 / 20, `resolution` 16/17 / 11, `target_scale` 14/14 / 8,
+`target_crs` 14/19 / 5. Jedyne ciche zgadywanie: `kartograf-cutout-008` (`target_crs` z kodu
+prostokąta wejściowego) — pozostaje do rozwiązania w kodzie (pkt 3 niżej).
+
 ## Wnioski i następne kroki
 
-1. Progi do decyzji autora: operacja 0,70 jest dobrze uzasadniona danymi; parametry 0,94
-   oznaczają bardzo dużo pytań — lepiej najpierw poprawić trafność `product`/`format`.
-2. Strojenie opisów: `product` (najpilniejsze), `format`, opis operacji arkuszy potomnych;
-   każda zmiana sprawdzana przebiegiem na tym samym zbiorze (ok. 14 min).
+1. Progi do decyzji autora: operacja 0,70 jest dobrze uzasadniona danymi; zalecany próg
+   parametrów po ADR-008 to 0,97 — nadal niepotwierdzony (< 100 decyzji ponad progiem).
+2. Strojenie: opis operacji arkuszy potomnych (6 z 9 błędów operacji); `product`
+   i `format` naprawione przez ADR-008. Każda zmiana sprawdzana przebiegiem (ok. 14 min).
 3. `target_crs`: rozważyć rozpoznawanie kodu układu wyniku w kodzie (ADR) — model myli kod
    prostokąta z układem wyniku z wysoką pewnością.
 4. Przegląd zbioru przez autora, potem przebieg z `--repeat 3` (stabilność) i większym

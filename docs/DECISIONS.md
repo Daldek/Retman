@@ -29,6 +29,7 @@ każda relacja jest zapisana po obu stronach.
 | [ADR-005](#adr-005-klient-http-httpx) | Klient HTTP: `httpx` | 2026-10-11 | Przyjęta |
 | [ADR-006](#adr-006-operacje-kartografa-bez-wartości-domyślnych) | Operacje Kartografa bez wartości domyślnych | 2026-10-11 | Przyjęta |
 | [ADR-007](#adr-007-opcje-z-etykietą-dla-użytkownika-i-opisem-dla-modelu) | Opcje z etykietą dla użytkownika i opisem dla modelu | 2026-10-12 | Przyjęta |
+| [ADR-008](#adr-008-osobne-pytanie-dla-modelu-model_question) | Osobne pytanie dla modelu (`model_question`) | 2026-10-12 | Przyjęta |
 
 ---
 
@@ -192,6 +193,37 @@ i `options.<klucz>.description`; `unspecified` nigdy nie jest pokazywany, więc 
 `description`. Walidacja manifestu wymaga obu pól. Odpowiedź użytkownika własnymi słowami
 model też dopasowuje do opisów (opcji i operacji), nie do etykiet. ARCHITECTURE 4.2,
 DEVELOPMENT_STANDARDS 17.
+
+---
+
+## ADR-008: Osobne pytanie dla modelu (`model_question`)
+
+**Data:** 2026-10-12
+**Status:** Przyjęta
+
+**Kontekst:** Pierwszy przebieg `retman-eval` z Bielikiem 11B
+(`docs/research/2026-10-12-bielik-11b-retman-eval.md`): model wybierał „nie podano” dla
+rodzaju danych w 17/34 poleceniach, mimo „NMT”/„DSM” w treści. Model dostawał to samo
+pytanie co użytkownik („Czy wycinek ma zawierać NMT (teren) czy NMPT (pokrycie terenu)?”).
+Diagnostyka na tym samym serwerze: pytanie o to, co wymienia polecenie, dało 32/34 (21 pewnych
+≥ 0,9 zamiast 4), poprawiło też format, układ wysokościowy, rozdzielczość i skalę, bez nowych
+błędów z wysoką pewnością.
+
+**Opcje:**
+- A) osobny tekst `model_question` dla parametrów wybieranych przez model,
+- B) przeredagować `question` tak, by służył obu stronom,
+- C) rozpoznawać wartości w kodzie (słowniki synonimów) zamiast w modelu.
+
+**Decyzja:** A — pytanie dla użytkownika ma zostać naturalne („1 m czy 5 m?”), a model
+potrzebuje pytania o treść polecenia; rozdział jak `label`/`description` (ADR-007). C zostaje
+do rozważenia dla układu wyniku (`target_crs`), którego A nie poprawia.
+
+**Konsekwencje:** parametry `choice` i `bool` mają w pliku tłumaczeń `model_question`
+(wymagane przez walidację manifestu); pipeline używa go przy decyzji z polecenia i przy
+odpowiedzi własnymi słowami, a pytanie użytkownika (`question`) — tylko w terminalu
+i w dzienniku. Pytanie o operację (`dialog.operation`) bez zmian. Przy backendzie basal
+do sprawdzenia, czy jego kalibracja pasuje do takiego brzmienia. ARCHITECTURE 3.3.1, 4.2,
+DEVELOPMENT_STANDARDS 17.1.
 
 ---
 

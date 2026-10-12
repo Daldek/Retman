@@ -383,7 +383,8 @@ class DecisionBackend(Protocol):
     def choose(self, state: str, question: str, options: dict[str, str]) -> "Decision":
         """
         state    – the user's command (plus optional context)
-        question – question text in the user's language (from translation files)
+        question – question for the model in the user's language (from translation
+                   files; for parameters: `model_question`, p. 4.2)
         options  – {key: description}, e.g. {"punzet": "Metoda Punzeta", ...}
         Returns the chosen key, probabilities of all options and the confidence.
         """
@@ -543,6 +544,7 @@ description = "Obliczenie przepływu maksymalnego o zadanym prawdopodobieństwie
 [operations.peak_flow.params.method]
 label = "Metoda"
 question = "Jaką metodą policzyć przepływ?"
+model_question = "Jaką metodę wymienia polecenie?"
 options.punzet.label = "Metoda Punzeta"
 options.punzet.description = "Metoda Punzeta, Punzet"
 options.bogdanowicz_stachy.label = "Metoda Bogdanowicz-Stachy"
@@ -561,6 +563,12 @@ Zasady:
   określenia potoczne oraz nazwy i skróty angielskie (DEM, DSM, SHP), bo to one pomagają
   dopasować polecenie i odpowiedź użytkownika (ADR-007). Opcja `unspecified` nie jest
   pokazywana użytkownikowi, więc ma tylko `description`.
+- `question` to pytanie dla użytkownika („Czy pobrać NMT w rozdzielczości 1 m czy 5 m?”);
+  parametr wybierany przez model (`choice`, `bool`) ma też `model_question` — pytanie
+  o to, **co wymienia polecenie** („Jaką rozdzielczość wymienia polecenie?”). Model dostaje
+  je przy poleceniu i przy odpowiedzi użytkownika własnymi słowami; pytanie w formie
+  „czy X, czy Y?” model odczytuje jako niewiadomą i częściej wybiera `unspecified`
+  (ADR-008).
 - Parametr `free` ma też `example` (przykład formatu w pytaniu), a każdy parametr może
   mieć `help` (odpowiedź na `?`, p. 6.4).
 - Test automatyczny sprawdza, że każda operacja, parametr i opcja ma tekst w każdym

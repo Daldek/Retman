@@ -104,6 +104,8 @@ def test_validate_manifest_reports_missing_language_option_and_example(dummy):
     data = tomllib.loads((folder / "pl.toml").read_text(encoding="utf-8"))
     data["operations"]["make_dem"]["params"]["style"]["options"]["raw"] = "Surowy"
     flat_option = Texts(data, "flat option")
+    no_model_question = tomllib.loads((folder / "pl.toml").read_text(encoding="utf-8"))
+    del no_model_question["operations"]["make_dem"]["params"]["style"]["model_question"]
 
     with pytest.raises(ManifestError, match="params.area.label"):
         validate_manifest(manifest, {"pl": missing_option})
@@ -112,6 +114,11 @@ def test_validate_manifest_reports_missing_language_option_and_example(dummy):
     # One text per option cannot serve both the user and the model
     with pytest.raises(ManifestError, match="params.style.options.raw.label"):
         validate_manifest(manifest, {"pl": flat_option})
+    # The user's question is not what the model is asked
+    with pytest.raises(ManifestError, match="params.style.model_question"):
+        validate_manifest(
+            manifest, {"pl": Texts(no_model_question, "no model question")}
+        )
 
 
 def test_load_operations_missing_translation_file_is_manifest_error(dummy):

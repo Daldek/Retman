@@ -73,7 +73,7 @@ def test_plan_missing_choice_then_user_answer_preserves_sources(create_app):
     assert not original.confirmed
 
 
-def test_choice_options_show_labels_and_offer_descriptions_to_model(create_app):
+def test_choice_shows_user_texts_and_asks_model_what_command_states(create_app):
     app = create_app({"make_dem": "make_dem"})
 
     plan = app.plan(f"Zrób NMT dla arkusza {SHEET}")
@@ -87,14 +87,14 @@ def test_choice_options_show_labels_and_offer_descriptions_to_model(create_app):
         "Wygładzony",
     ]
     assert answered.display["style"] == "Wygładzony"
-    # ... while the model matches the command and the answer against
-    # descriptions with synonyms (an English "smooth" exists only there)
-    command_options, answer_options = (
-        options for state, _, options in backend.calls if "smooth" in options
-    )
-    assert command_options["smooth"] == "Wygładzony, smooth — po wygładzeniu"
-    assert command_options["unspecified"] == "Nie określono stylu"
-    assert answer_options == {
+    assert plan.questions[0].text == "Jaki styl zapisu wybrać?"
+    # ... while the model is asked what the command (or answer) states and
+    # matches it against descriptions with synonyms ("smooth" exists only there)
+    command_call, answer_call = (call for call in backend.calls if "smooth" in call[2])
+    assert command_call[1] == answer_call[1] == "Jaki styl zapisu wymienia polecenie?"
+    assert command_call[2]["smooth"] == "Wygładzony, smooth — po wygładzeniu"
+    assert command_call[2]["unspecified"] == "Nie określono stylu"
+    assert answer_call[2] == {
         "raw": "Surowy, raw — bez wygładzania",
         "smooth": "Wygładzony, smooth — po wygładzeniu",
     }

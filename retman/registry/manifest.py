@@ -157,7 +157,9 @@ def validate_manifest(
                 continue
             # "label" is shown to the user; "description" (with synonyms and
             # English names) only to the decision model — for operations and
-            # options alike; "unspecified" is never shown, so it has no label
+            # options alike; "unspecified" is never shown, so it has no label.
+            # Model-decided parameters also have "model_question": what the
+            # command states, not the user's question (ARCHITECTURE 4.2)
             required = [
                 f"operations.{op_id}.label",
                 f"operations.{op_id}.description",
@@ -167,6 +169,8 @@ def validate_manifest(
                 required.extend((f"{prefix}.label", f"{prefix}.question"))
                 if param["type"] == "free":
                     required.append(f"{prefix}.example")
+                if param["type"] in ("choice", "bool"):
+                    required.append(f"{prefix}.model_question")
                 if param["type"] == "choice":
                     for key in param["options"]:
                         required.extend(

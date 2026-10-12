@@ -874,10 +874,11 @@ szablon na końcu pliku):
 #    choice/free/bool, required/default/multiple/range (ARCHITECTURE 4.1, 4.3).
 # 3. Handler w handlers.py: tylko publiczne API narzędzia, wejścia jako pliki,
 #    zapis tylko do output_dir, bez input()/print() (ARCHITECTURE 3.2.4).
-# 4. pl.toml: label i description operacji, pytania, opcje z label (dla użytkownika)
-#    i description z synonymami i nazwami angielskimi (dla modelu; ARCHITECTURE 4.2,
-#    ADR-007); parametry, których może brakować w poleceniu, mają opcję unspecified
-#    z samym description (3.4).
+# 4. pl.toml: label i description operacji, pytania (question dla użytkownika,
+#    model_question — „co wymienia polecenie” — dla parametrów choice/bool, ADR-008),
+#    opcje z label (dla użytkownika) i description z synonymami i nazwami angielskimi
+#    (dla modelu; ARCHITECTURE 4.2, ADR-007); parametry, których może brakować
+#    w poleceniu, mają opcję unspecified z samym description (3.4).
 # 5. Nowy kind? — sekcja 17.2.
 # 6. Testy handlera na prawdziwym narzędziu z małymi danymi (sekcja 10.4).
 # 7. Co najmniej 15 poleceń w retman/eval/commands.jsonl, w tym niepełne,

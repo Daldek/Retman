@@ -31,15 +31,29 @@ Szablony wpisów: [Szablony](#szablony).
 ## Ostatnia sesja
 
 > **START NASTĘPNEJ SESJI (stan 2026-10-12):** praca na `develop` (commity lokalne,
-> niewypchnięte). Pierwszy przebieg `retman-eval` na Bieliku 11B:
-> `docs/research/2026-10-12-bielik-11b-retman-eval.md`. **Najpierw:** decyzje autora
-> z raportu — progi (operacja 0,70 uzasadniona; parametry 0,94 = dużo pytań), strojenie
-> opisu `product`/`format` i operacji arkuszy potomnych, czy rozpoznawać kod EPSG układu
-> wyniku w kodzie (ciche zgadywanie `target_crs`); przegląd zbioru (spec. 10 pkt 2).
+> niewypchnięte). Przebiegi `retman-eval` na Bieliku 11B przed i po ADR-008 (osobne
+> pytanie dla modelu): `docs/research/2026-10-12-bielik-11b-retman-eval.md`.
+> **Najpierw:** decyzje autora — progi (operacja 0,70; parametry 0,97, niepotwierdzone),
+> czy rozpoznawać kod EPSG układu wyniku w kodzie (ciche zgadywanie `target_crs`),
+> strojenie opisu operacji arkuszy potomnych; przegląd zbioru (spec. 10 pkt 2).
 > Adres LM Studio podaje użytkownik — nie zapisywać. Pozostałe decyzje autora: operacja
 > drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07,
 > rozdz. 8), ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza
 > zakresu w CLI.
+
+### Osobne pytanie dla modelu — ADR-008 (2026-10-12)
+
+- **Zlecenie użytkownika:** wdrożenie pkt 1 z propozycji poprawy rozpoznawania (osobne
+  pytanie dla modelu).
+- **Zrobione:** `model_question` dla parametrów `choice`/`bool` (walidacja manifestu,
+  pipeline: decyzja z polecenia i z odpowiedzi własnymi słowami); teksty w
+  `retman/tools/kartograf/pl.toml` i w fixture; testy (pipeline: model dostaje
+  `model_question`, użytkownik `question`; walidacja: brak `model_question` = błąd);
+  ADR-008, ARCHITECTURE 3.3.1 i 4.2, STANDARDS 17.1, CHANGELOG, raport w `docs/research/`.
+- **Weryfikacja:** `pytest -m "not live"` — 179 passed; ruff, mypy czyste. Pełny
+  `retman-eval` z Bielikiem 11B: parametry 0,55 → 0,78, pytania zbędne 66 → 30, pokrycie
+  poleceń kompletnych 6/36 → 11/36, W-02 2 → 1, `product` 16/33 → 32/33; operacja bez
+  zmian (0,89). Adres serwera nie trafił do repo; konfiguracja tymczasowa usunięta.
 
 ### Przebieg `retman-eval` z Bielikiem 11B (2026-10-12)
 

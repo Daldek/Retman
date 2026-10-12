@@ -347,7 +347,9 @@ class Retman:
     ) -> Question | None:
         name = spec["name"]
         prefix = f"params.{name}"
-        question = operation.text(f"{prefix}.question")
+        # The user-facing question ("1 m or 5 m?") reads to the model as an open
+        # choice; the model is asked what the command states (ARCHITECTURE 4.2)
+        question = operation.text(f"{prefix}.model_question")
         recorded = next((d for d in plan.decisions if d["name"] == name), None)
         if recorded is None:
             if spec["type"] == "bool":
@@ -582,10 +584,13 @@ class Retman:
                 else option.label
                 for option in question.options
             }
-            decision = self._choose(answer, question.text, choices)
+            model_question = self.operations[updated.operation].text(
+                f"params.{name}.model_question"
+            )
+            decision = self._choose(answer, model_question, choices)
             value = decision.key if not self._uncertain(decision, "parameter") else None
             updated.decisions.append(
-                self._audit_decision(f"{name}_answer", question.text, decision)
+                self._audit_decision(f"{name}_answer", model_question, decision)
             )
         elif (
             updated.operation is not None
