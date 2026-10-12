@@ -102,6 +102,31 @@ zależne od niezapytanego jeszcze parametru (`depends_on`) — ok. 90 pozycji sz
 wypisywane są tylko wartości **przyjęte** błędnie (bez zmian w miarach); raport w tym
 katalogu wygenerowano ponownie z tych samych surowych rekordów.
 
+## Diagnostyka: brzmienie pytania do modelu
+
+Pojedyncze decyzje parametrów wysłane wprost do tego samego serwera (ten sam format promptu
+co backend `openai_compatible`, `logprobs`, jeden przebieg), na poleceniach ze zbioru.
+Wariant „neutralne” zastępuje pytanie dla użytkownika (np. „Czy wycinek ma zawierać NMT
+(teren) czy NMPT (pokrycie terenu)?”) pytaniem o to, **co wymienia polecenie** (np. „Jakiego
+rodzaju dane wymienia polecenie?”); opisy opcji bez zmian.
+
+| Parametr | Pytanie dla użytkownika: trafne / pewne ≥ 0,9 | Pytanie neutralne: trafne / pewne ≥ 0,9 | Błędne ≥ 0,9 (przed → po) |
+| --- | --- | --- | --- |
+| `product` | 17/34 / 4 | **32/34 / 21** | 0 → 0 |
+| `format` | 12/15 / 3 | 14/15 / 8 | 0 → 0 |
+| `vertical_crs` | 36/40 / 14 | 37/40 / 21 | 0 → 0 |
+| `resolution` | 19/21 / 10 | 19/21 / 13 | 0 → 0 |
+| `target_scale` | 13/15 / 6 | 15/15 / 8 | 0 → 0 |
+| `target_crs` | 13/19 / 3 | 14/19 / 6 | 2 → 2 |
+
+Dla `product` sprawdzono też kolejność opcji (`unspecified` jako pierwsza opcja, pytanie
+bez zmian): 21/34, pewne ≥ 0,9: 4 — efekt kolejności jest mały wobec brzmienia pytania.
+
+Wnioski: pytania w formie „czy X, czy Y?” są dobre dla użytkownika, ale model odczytuje je
+jako niewiadomą i wybiera „nie podano”. Model potrzebuje osobnego pytania o to, co jest
+w poleceniu (analogicznie do `label`/`description`, ADR-007). `target_crs` nie poprawia
+się — błąd wynika z roli kodu w zdaniu (prostokąt wejściowy vs wynik), nie z pytania.
+
 ## Wnioski i następne kroki
 
 1. Progi do decyzji autora: operacja 0,70 jest dobrze uzasadniona danymi; parametry 0,94
