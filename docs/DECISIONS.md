@@ -30,6 +30,7 @@ każda relacja jest zapisana po obu stronach.
 | [ADR-006](#adr-006-operacje-kartografa-bez-wartości-domyślnych) | Operacje Kartografa bez wartości domyślnych | 2026-10-11 | Przyjęta |
 | [ADR-007](#adr-007-opcje-z-etykietą-dla-użytkownika-i-opisem-dla-modelu) | Opcje z etykietą dla użytkownika i opisem dla modelu | 2026-10-12 | Przyjęta |
 | [ADR-008](#adr-008-osobne-pytanie-dla-modelu-model_question) | Osobne pytanie dla modelu (`model_question`) | 2026-10-12 | Przyjęta |
+| [ADR-009](#adr-009-układ-wyniku-wycinka-rozpoznawany-w-kodzie) | Układ wyniku wycinka rozpoznawany w kodzie | 2026-10-12 | Przyjęta |
 
 ---
 
@@ -224,6 +225,38 @@ odpowiedzi własnymi słowami, a pytanie użytkownika (`question`) — tylko w t
 i w dzienniku. Pytanie o operację (`dialog.operation`) bez zmian. Przy backendzie basal
 do sprawdzenia, czy jego kalibracja pasuje do takiego brzmienia. ARCHITECTURE 3.3.1, 4.2,
 DEVELOPMENT_STANDARDS 17.1.
+
+---
+
+## ADR-009: Układ wyniku wycinka rozpoznawany w kodzie
+
+**Data:** 2026-10-12
+**Status:** Przyjęta
+
+**Kontekst:** W przebiegach `retman-eval` z Bielikiem 11B
+(`docs/research/2026-10-12-bielik-11b-retman-eval.md`) jedyne decyzje błędne przyjęte bez
+pytania dotyczyły `target_crs`: układ podany dla prostokąta wejściowego („… 382100
+PL-1992”) model brał za układ wyniku z pewnością do 0,97. Ani opis opcji, ani
+`model_question` (ADR-008) tego nie poprawiły — błąd wynika z roli kodu w zdaniu.
+
+**Opcje:**
+- A) kod rozpoznaje układy i ich rolę (prostokąt / wynik); niejasne → pytanie,
+- B) jak A, a gdy kod nic nie rozpozna — model,
+- C) zostawić model z progiem tak wysokim, by takie przypadki zawsze kończyły się pytaniem.
+
+**Decyzja:** A (wybór autora). Liczby i kody odczytuje kod (ARCHITECTURE 1.1); model
+myli role z wysoką pewnością, więc droga B przywracałaby ciche zgadywanie.
+
+**Konsekwencje:** ekstraktor `retman/extractors/crs.py`: nazwy i kody układów (z `EPSG:`,
+samą liczbą przy słowie o układzie, nazwą: PL-1992, PUWG 1992, S-JTSK, Křovák, ETRS89/TM33,
+UTM 33N, WGS84), rola z położenia (zaraz po prostokącie = wejście), słów przed wzmianką
+(„wynik”, „do”, „przelicz”, „zapisz”, „docelowy” = wynik; „prostokąt”, „współrzędne” =
+wejście) i z niezgodności z układem liczb prostokąta. Tekst bez polskich znaków i wielkości
+liter; jedna literówka tolerowana w słowach od 5 liter, krótkie słowa i kody — dokładnie
+(literówka w kodzie kończy się pytaniem). Odpowiedź na pytanie czyta osobna funkcja
+(sam kod „2180” wystarcza). Schemat manifestu: `choice` z `extractor` i `option_values`
+(ARCHITECTURE 4.3); walidacja wymaga dla niego tylko tekstów dla użytkownika. Kartograf:
+`download_elevation_cutout.target_crs`.
 
 ---
 

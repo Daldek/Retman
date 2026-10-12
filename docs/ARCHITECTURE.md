@@ -131,6 +131,7 @@ retman/
 ├── extractors/
 │   ├── coordinates.py       # geographic coordinates and PL-1992
 │   ├── areas.py             # areas: map sheet codes (godło), bounding boxes, TERYT codes (ADR-001)
+│   ├── crs.py               # coordinate systems and their role: input rectangle vs result (ADR-009)
 │   ├── numbers.py           # numbers with units (km², mm, m³/s)
 │   ├── probability.py       # exceedance probability and return period (p. 4.4)
 │   ├── dates.py             # dates and periods
@@ -578,7 +579,7 @@ Zasady:
 
 | Typ parametru | Skąd wartość | Przykłady |
 | --- | --- | --- |
-| `choice` | model decyzyjny, wybór z listy | metoda, rodzaj danych, typ analizy |
+| `choice` | model decyzyjny, wybór z listy; z kluczem `extractor` — kod (ekstraktor), bez modelu | metoda, rodzaj danych, typ analizy; układ wyniku wycinka (`crs`) |
 | `free` | ekstraktor w kodzie | współrzędne, data, prawdopodobieństwo, powierzchnia, stacja, ścieżka pliku |
 | `bool` | model decyzyjny, tak/nie | „czy uwzględnić retencję?” |
 
@@ -588,6 +589,13 @@ przyjmuje operacja, np. ekstraktor `area` daje godło arkusza, prostokąt, kod T
 z geometrią, a pobranie BDOT10k przyjmuje tylko `["teryt", "bbox", "sheet"]`), `depends_on`
 (parametr dotyczy tylko wybranych wartości innego parametru `choice`, np. rozdzielczość tylko
 dla NMT: `{"product": ["dem"]}`).
+
+Parametr `choice` z kluczem `extractor` ma też `option_values` (klucz opcji → wartość
+ekstraktora, np. `{"epsg_2180": "EPSG:2180"}`). Wartość ustala wtedy kod: dokładnie jedna
+obsługiwana wartość z polecenia → plan; brak, kilka albo wartość nieobsługiwana → pytanie
+z listą opcji. Model nie dostaje takiego parametru, więc nie ma on `model_question` ani
+opisów opcji dla modelu (ADR-009). Stosujemy to tam, gdzie model myli rolę wartości
+w zdaniu — np. układ prostokąta wejściowego z układem wyniku.
 
 | Pole operacji | Znaczenie |
 | --- | --- |

@@ -98,9 +98,10 @@ Linki porównań na końcu pliku, od najnowszego:
   plan i pytania pokazują krótkie nazwy („NMT (numeryczny model terenu)”, „1 m”), a model
   dopasowuje polecenie i odpowiedzi do opisów z synonymami i nazwami angielskimi (DEM, DTM,
   DSM, orthophoto, GPKG, SHP) (ADR-007, ARCHITECTURE 4.2).
-- Układ wyniku wycinka można podać samym kodem EPSG (`wynik w 2180`, `do 3045`), bez
-  prefiksu `EPSG:`: opisy opcji dla modelu zawierają same kody i odróżniają układ prostokąta
-  wejściowego od układu wyniku (skuteczność do zmierzenia w `retman-eval`).
+- Układ wyniku wycinka rozpoznaje kod, nie model: kod EPSG z prefiksem lub bez, nazwa
+  (PL-1992, S-JTSK, ETRS89/TM33 …), rola z kontekstu („wynik”, „do”, „przelicz” — wynik;
+  zaraz po współrzędnych — prostokąt), bez polskich znaków i z jedną literówką w słowach;
+  niejasny zapis kończy się pytaniem (ADR-009, ARCHITECTURE 4.3).
 - Model decyzyjny dostaje osobne pytanie o to, co wymienia polecenie (`model_question`),
   zamiast pytania dla użytkownika „czy X, czy Y?”; z Bielikiem 11B trafność wartości
   parametrów wzrosła z 0,55 do 0,78, a rodzaju danych z 16/33 do 32/33 (ADR-008,

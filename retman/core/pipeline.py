@@ -26,7 +26,7 @@ from retman.exceptions import (
     PlanNotConfirmedError,
     RetmanError,
 )
-from retman.extractors import EXTRACTORS, VALIDATORS
+from retman.extractors import ANSWER_EXTRACTORS, EXTRACTORS, VALIDATORS
 from retman.extractors.base import Match, Reading
 from retman.i18n.loader import load_core_texts
 from retman.registry.loader import load_operations
@@ -342,6 +342,43 @@ class Retman:
         self._set_param(plan, operation, spec, self._normalize_free(value), "command")
         return None
 
+    @staticmethod
+    def _extracted_values(matches: list[Match]) -> list[Any]:
+        return list(
+            dict.fromkeys(
+                reading.value for match in matches for reading in match.readings
+            )
+        )
+
+    def _extracted_choice_error(self, spec: ParamSpec, values: list[Any]) -> str | None:
+        """Why values read by code do not give one option; None if they do."""
+        supported = set(spec["option_values"].values())
+        if len(values) > 1:
+            return self.texts.get(
+                "dialog.several_values", values=", ".join(map(str, values))
+            )
+        if values and values[0] not in supported:
+            return self.texts.get("dialog.unsupported_value", value=values[0])
+        return None
+
+    def _extracted_choice(
+        self, plan: Plan, operation: Operation, spec: ParamSpec
+    ) -> Question | None:
+        """A choice read by code, never by the model (ADR-009)."""
+        values = self._extracted_values(EXTRACTORS[spec["extractor"]](plan.command))
+        if len(values) == 1 and values[0] in spec["option_values"].values():
+            key = next(k for k, v in spec["option_values"].items() if v == values[0])
+            self._set_param(plan, operation, spec, key, "command")
+            return None
+        if not values and "default" in spec:
+            self._set_param(plan, operation, spec, spec["default"], "default")
+            return None
+        if not values and not spec.get("required"):
+            return None
+        return self._param_question(
+            operation, spec, error=self._extracted_choice_error(spec, values)
+        )
+
     def _choice_param(
         self, plan: Plan, operation: Operation, spec: ParamSpec
     ) -> Question | None:
@@ -513,6 +550,8 @@ class Retman:
                 continue
             if spec["type"] == "free":
                 question = self._extract_param(plan, operation, spec)
+            elif spec["type"] == "choice" and "extractor" in spec:
+                question = self._extracted_choice(plan, operation, spec)
             else:
                 question = self._choice_param(plan, operation, spec)
             if question:
@@ -571,6 +610,32 @@ class Retman:
             updated.decisions.append(
                 self._audit_decision("operation_answer", question.text, decision)
             )
+        elif (
+            updated.operation is not None
+            and (spec := self.operations[updated.operation].parameter(name)) is not None
+            and spec["type"] == "choice"
+            and "extractor" in spec
+        ):
+            reader = ANSWER_EXTRACTORS.get(
+                spec["extractor"], EXTRACTORS[spec["extractor"]]
+            )
+            values = self._extracted_values(reader(answer))
+            value = next(
+                (
+                    key
+                    for key, option_value in spec["option_values"].items()
+                    if len(values) == 1 and option_value == values[0]
+                ),
+                None,
+            )
+            if value is None and (
+                message := self._extracted_choice_error(spec, values)
+            ):
+                updated.questions = [
+                    replace(q, error=message) if q.name == name else q
+                    for q in updated.questions
+                ]
+                return updated
         elif (
             updated.operation is not None
             and (spec := self.operations[updated.operation].parameter(name)) is not None

@@ -2,9 +2,9 @@
 
 **Status:** przebieg roboczy na **szkicu** zbioru poleceń (przed przeglądem autora, spec.
 `docs/specs/2026-10-11-retman-eval.md` rozdz. 10 pkt 2).
-**Pełne raporty z narzędzia:** `2026-10-12-bielik-11b-retman-eval-raport.md` (przed zmianą)
-i `2026-10-12-bielik-11b-retman-eval-model-question-raport.md` (po ADR-008) — miary, krzywe
-progów, błędne przypadki, czasy.
+**Pełne raporty z narzędzia:** `2026-10-12-bielik-11b-retman-eval-raport.md` (przed
+zmianami), `…-model-question-raport.md` (po ADR-008) i `…-crs-raport.md` (po ADR-009) —
+miary, krzywe progów, błędne przypadki, czasy.
 
 ## Konfiguracja
 
@@ -149,13 +149,36 @@ Decyzje parametrów (trafne / pewne ≥ 0,9): `product` 32/33 / 21, `format` 14/
 `target_crs` 14/19 / 5. Jedyne ciche zgadywanie: `kartograf-cutout-008` (`target_crs` z kodu
 prostokąta wejściowego) — pozostaje do rozwiązania w kodzie (pkt 3 niżej).
 
+## Po zmianie: układ wyniku rozpoznawany w kodzie (ADR-009)
+
+Pełny przebieg na zbiorze rozszerzonym o 4 polecenia z literówkami w układzie
+(`kartograf-cutout-020`–`023`, razem 83), ten sam serwer i progi:
+
+| Miara | Po ADR-008 | Po ADR-009 |
+| --- | --- | --- |
+| Błąd bez pytania (W-02) | 1/174 | **0/189** |
+| Ciche zgadywanie | 1 | **0** |
+| Trafność wartości parametrów | 0,78 (128/164) | 0,80 (144/179) |
+| Pokrycie automatyczne poleceń kompletnych | 11/36 | 14/39 |
+| Trafne dopytania | 0,93 (38/41) | 0,95 (40/42) |
+| Trafność operacji / naruszenia W-03 | 0,89 / 0 | 0,88 (73/83) / 0 |
+| Zalecany próg parametrów (`--target-error 0.01`) | 0,97 (39/134) | **0,67** (104/123, 1 błąd) |
+| Czas planu (mediana / P90) | 10,9 / 14,6 s | 10,6 / 11,8 s (o jedno zapytanie mniej przy wycinku) |
+
+`target_crs` zgodny z oczekiwaniem we wszystkich 23 poleceniach wycinka: 15 wartości
+z polecenia, w tym z literówkami („wyink w 2180”, „przelic do sjtsk”, „uklad wynikowy
+3045”), i 8 pytań — w tym układ zaraz po współrzędnych (`-008`, `-009`, `-015`, `-019`)
+i literówka w kodzie (`-023`). Zalecany próg parametrów spadł, bo zniknęły błędy `target_crs`
+z wysoką pewnością; 104 decyzje ponad progiem to granica wymaganej liczby (≥ 100), więc
+zalecenie jest słabo potwierdzone. Nowe błędy operacji: `-022` (polecenie bez czasownika)
+i dalej `-018`.
+
 ## Wnioski i następne kroki
 
-1. Progi do decyzji autora: operacja 0,70 jest dobrze uzasadniona danymi; zalecany próg
-   parametrów po ADR-008 to 0,97 — nadal niepotwierdzony (< 100 decyzji ponad progiem).
-2. Strojenie: opis operacji arkuszy potomnych (6 z 9 błędów operacji); `product`
+1. Progi do decyzji autora: operacja ok. 0,70 (66–70 decyzji ponad progiem, bez błędów);
+   parametry po ADR-009 — 0,67 (1 błąd na 104), do potwierdzenia przebiegiem `--repeat 3`.
+2. Strojenie: opis operacji arkuszy potomnych (6 z 10 błędów operacji); `product`
    i `format` naprawione przez ADR-008. Każda zmiana sprawdzana przebiegiem (ok. 14 min).
-3. `target_crs`: rozważyć rozpoznawanie kodu układu wyniku w kodzie (ADR) — model myli kod
-   prostokąta z układem wyniku z wysoką pewnością.
+3. `target_crs`: rozwiązane w kodzie (ADR-009) — 0 cichych zgadnięć.
 4. Przegląd zbioru przez autora, potem przebieg z `--repeat 3` (stabilność) i większym
    zbiorem, by potwierdzić błąd ≤ 1% (≥ 100 decyzji ponad progiem).

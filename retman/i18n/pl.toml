@@ -30,6 +30,9 @@ file = "plik {path}"
 [extractors.result]
 number = "wynik #{number}"
 
+[extractors.crs]
+code = "układ EPSG:{code}"
+
 [extractors.errors]
 invalid_area = "Nie rozpoznaję rodzaju obszaru."
 invalid_sheet = "Niepoprawne godło arkusza PL-1992 lub PL-2000."
@@ -39,6 +42,7 @@ invalid_bbox = "Prostokąt wymaga czterech liczb i układu PL-1992 lub WGS84."
 invalid_bbox_order = "Granice prostokąta muszą rosnąć w obu osiach."
 outside_poland = "Współrzędne prostokąta wykraczają poza zakres Polski."
 invalid_result = "Numer wyniku musi być liczbą całkowitą większą od zera."
+invalid_crs = "Układ współrzędnych musi mieć postać EPSG:<kod>."
 
 # Zapytania do modeli zgodnych z API OpenAI (retman/backends/openai_compatible.py).
 [backends]
@@ -68,6 +72,8 @@ example_path = "„dane.asc” lub „#1”"
 invalid = "Nie mogę odczytać odpowiedzi; podaj poprawną wartość."
 invalid_choice = "Wybierz jedną z podanych możliwości."
 ambiguous = "Odpowiedź ma kilka możliwych odczytów; wybierz jeden z listy."
+several_values = "Polecenie wymienia kilka wartości: {values}; wybierz jedną."
+unsupported_value = "Wartość {value} nie jest tu obsługiwana; wybierz jedną z podanych możliwości."
 invalid_range = "Wartość musi mieścić się w zakresie {minimum}–{maximum}."
 invalid_file = "Niepoprawny plik wejściowy: {error}"
 invalid_geometry = "Nie znaleziono pliku geometrii: {path}"

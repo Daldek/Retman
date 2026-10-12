@@ -116,15 +116,10 @@ example = "530000,382000,530100,382100 EPSG:2180"
 [operations.download_elevation_cutout.params.target_crs]
 label = "Układ współrzędnych wyniku"
 question = "Do jakiego układu współrzędnych zapisać wycinek?"
-model_question = "Jaki układ współrzędnych wyniku (docelowy) wymienia polecenie?"
-help = "Wynik jest jednym plikiem GeoTIFF. EPSG:2180 to PL-1992; EPSG:5514 to S-JTSK, EPSG:3045 to ETRS89/TM33. Kod można podać z prefiksem (EPSG:2180) albo samą liczbą (2180)."
+help = "Wynik jest jednym plikiem GeoTIFF. EPSG:2180 to PL-1992; EPSG:5514 to S-JTSK, EPSG:3045 to ETRS89/TM33. Kod można podać z prefiksem (EPSG:2180), samą liczbą (2180) albo nazwą (PL-1992). W poleceniu układ wyniku rozpoznaję po słowach „wynik”, „do”, „przelicz”, „zapisz”, „docelowy”; układ podany zaraz po współrzędnych traktuję jako układ prostokąta."
 options.epsg_2180.label = "EPSG:2180 (PL-1992)"
-options.epsg_2180.description = "EPSG:2180, kod 2180 — polski układ PL-1992, PUWG 1992"
 options.epsg_5514.label = "EPSG:5514 (S-JTSK)"
-options.epsg_5514.description = "EPSG:5514, kod 5514 — czeski układ S-JTSK, Křovák"
 options.epsg_3045.label = "EPSG:3045 (ETRS89/TM33)"
-options.epsg_3045.description = "EPSG:3045, kod 3045 — europejski układ ETRS89/TM33, UTM 33N"
-options.unspecified.description = "Nie podano układu wyniku (układ, w którym zapisano sam prostokąt wejściowy, nie jest układem wyniku) — dopytaj"
 
 [operations.download_elevation_cutout.params.vertical_crs]
 label = "Układ wysokościowy wycinka"

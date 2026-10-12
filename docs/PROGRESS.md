@@ -31,15 +31,34 @@ Szablony wpisów: [Szablony](#szablony).
 ## Ostatnia sesja
 
 > **START NASTĘPNEJ SESJI (stan 2026-10-12):** praca na `develop` (commity lokalne,
-> niewypchnięte). Przebiegi `retman-eval` na Bieliku 11B przed i po ADR-008 (osobne
-> pytanie dla modelu): `docs/research/2026-10-12-bielik-11b-retman-eval.md`.
-> **Najpierw:** decyzje autora — progi (operacja 0,70; parametry 0,97, niepotwierdzone),
-> czy rozpoznawać kod EPSG układu wyniku w kodzie (ciche zgadywanie `target_crs`),
-> strojenie opisu operacji arkuszy potomnych; przegląd zbioru (spec. 10 pkt 2).
+> niewypchnięte). Przebiegi `retman-eval` na Bieliku 11B przed i po ADR-008/ADR-009:
+> `docs/research/2026-10-12-bielik-11b-retman-eval.md` (W-02: 0/189 po ADR-009).
+> **Najpierw:** decyzje autora — progi (operacja ok. 0,70; parametry 0,67, słabo
+> potwierdzone), strojenie opisu operacji arkuszy potomnych, przegląd zbioru (spec. 10
+> pkt 2), pętla oceny w pracy (`collect_commands` jest w konfiguracji, ale nie działa).
 > Adres LM Studio podaje użytkownik — nie zapisywać. Pozostałe decyzje autora: operacja
 > drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07,
 > rozdz. 8), ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza
 > zakresu w CLI.
+
+### Układ wyniku rozpoznawany w kodzie — ADR-009 (2026-10-12)
+
+- **Zlecenie użytkownika:** rozpoznawanie układu wyniku w kodzie, droga A (niejasne →
+  pytanie, bez modelu); odporność na brak polskich znaków i literówki.
+- **Zrobione:** `retman/extractors/crs.py` (`extract_crs` z rolą wzmianki: po prostokącie /
+  słowa „wynik”, „do”, „przelicz”… / niezgodność z układem liczb; `read_crs_answer` dla
+  odpowiedzi; normalizacja znaków z `ł`; jedna literówka w słowach ≥ 5 liter);
+  `ANSWER_EXTRACTORS`; schemat manifestu: `choice` z `extractor` i `option_values`
+  (walidacja; teksty modelu niewymagane); pipeline: `_extracted_choice` i odpowiedź
+  bez modelu, komunikaty `dialog.several_values`/`unsupported_value`; Kartograf
+  `target_crs` z ekstraktorem, usunięte teksty modelu; testy ekstraktora (role, literówki,
+  odpowiedzi), pipeline (bez modelu, prostokąt ≠ wynik, nieobsługiwany kod, odpowiedź
+  „2180”/„4326”), walidacji; zbiór: `kartograf-cutout-020`–`023`; ADR-009, ARCHITECTURE
+  3.1 i 4.3, USAGE, CHANGELOG, raport w `docs/research/`.
+- **Weryfikacja:** `pytest -m "not live"` — 209 passed, `crs.py` 96%; ruff, mypy czyste.
+  `retman-eval` z Bielikiem 11B (83 polecenia): W-02 0/189, ciche zgadywanie 0,
+  `target_crs` 23/23 zgodnie z oczekiwaniem, pokrycie poleceń kompletnych 14/39. Adres
+  serwera nie trafił do repo.
 
 ### Osobne pytanie dla modelu — ADR-008 (2026-10-12)
 

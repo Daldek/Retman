@@ -111,6 +111,14 @@ MANIFEST: ManifestSpec = {
                     "name": "target_crs",
                     "type": "choice",
                     "options": ["epsg_2180", "epsg_5514", "epsg_3045"],
+                    # Read by code, not the model: the model took the system of
+                    # the input rectangle for the result (ADR-009)
+                    "extractor": "crs",
+                    "option_values": {
+                        "epsg_2180": "EPSG:2180",
+                        "epsg_5514": "EPSG:5514",
+                        "epsg_3045": "EPSG:3045",
+                    },
                     "required": True,
                 },
                 {

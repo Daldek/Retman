@@ -80,8 +80,13 @@ def test_validate_manifest_detects_unknown_kind_extractor_and_duplicate_id(dummy
     bad_extractor["operations"][0]["params"][0]["extractor"] = "fictional"
     duplicate = deepcopy(manifest)
     duplicate["operations"][1]["id"] = "make_dem"
+    # A choice read by code must map every option to an extractor value
+    partial_mapping = deepcopy(manifest)
+    partial_mapping["operations"][0]["params"][1].update(
+        extractor="crs", option_values={"raw": "EPSG:2180"}
+    )
 
-    for invalid in (bad_kind, bad_extractor, duplicate):
+    for invalid in (bad_kind, bad_extractor, duplicate, partial_mapping):
         with pytest.raises(ManifestError):
             validate_manifest(invalid, texts)
     with pytest.raises(ManifestError):

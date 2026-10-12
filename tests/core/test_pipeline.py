@@ -21,6 +21,7 @@ from retman.registry.loader import load_operations
 from retman.testing import FakeDecisionBackend
 
 SHEET = "N-34-130-D-d-2-4"
+KARTOGRAF_DIR = Path(__file__).resolve().parents[2] / "retman/tools/kartograf"
 
 
 @pytest.fixture
@@ -375,3 +376,68 @@ def test_out_of_scope_command_lists_operations_instead_of_planning(create_app):
         "Próba zapisu poza wynikiem",
     ]
     assert "Utworzenie NMT" in str(error.value)
+
+
+@pytest.fixture
+def cutout_app(tmp_path: Path):
+    """Kartograf's cutout: its result system is read by code (ADR-009)."""
+    from retman.tools.kartograf.manifest import MANIFEST
+
+    operations = load_operations(
+        "pl",
+        manifests=[(MANIFEST, KARTOGRAF_DIR)],
+        version_lookup=lambda _: "0.7.2",
+    )
+    config = load_config(init_config(tmp_path / "config.toml"))
+    backend = FakeDecisionBackend(
+        {"download_elevation_cutout": "download_elevation_cutout", "dem": "dem"}
+    )
+    return Retman(config, backend, tmp_path, operations=operations), backend
+
+
+def _offered_crs(backend: FakeDecisionBackend) -> bool:
+    return any("epsg_2180" in options for _, _, options in backend.calls)
+
+
+def test_result_system_is_read_by_code_without_the_model(cutout_app):
+    app, backend = cutout_app
+
+    plan = app.plan(
+        "Daj NMT z x=530000 y=382000 x=530100 y=382100 w 2180, przelicz do 3045"
+    )
+
+    assert plan.values["target_crs"].value == "epsg_3045"
+    assert plan.values["target_crs"].source == "command"
+    assert not _offered_crs(backend)
+
+
+def test_system_of_the_rectangle_is_not_taken_for_the_result(cutout_app):
+    app, backend = cutout_app
+
+    plan = app.plan("Wytnij NMT x=530000 y=382000 x=530100 y=382100 PL-1992")
+
+    assert "target_crs" not in plan.values
+    assert "target_crs" in [question.name for question in plan.questions]
+    assert not _offered_crs(backend)
+
+
+def test_unsupported_result_system_asks_and_says_why(cutout_app):
+    app, _ = cutout_app
+
+    plan = app.plan("Wytnij NMT 16.90 52.40 16.91 52.41 do EPSG:2177")
+    question = next(q for q in plan.questions if q.name == "target_crs")
+
+    assert question.error is not None and "EPSG:2177" in question.error
+
+
+def test_answer_with_bare_code_or_unsupported_system(cutout_app):
+    app, _ = cutout_app
+    plan = app.plan("Wytnij NMT 16.90 52.40 16.91 52.41")
+
+    rejected = plan.answer("target_crs", "4326")
+    accepted = plan.answer("target_crs", "2180")
+
+    question = next(q for q in rejected.questions if q.name == "target_crs")
+    assert question.error is not None and "EPSG:4326" in question.error
+    assert accepted.values["target_crs"].value == "epsg_2180"
+    assert accepted.values["target_crs"].source == "user"

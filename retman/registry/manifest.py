@@ -12,7 +12,10 @@ class ParamSpec(TypedDict):
     """
     One operation parameter.
 
-    ``choice`` values are picked by the decision model from ``options``;
+    ``choice`` values are picked by the decision model from ``options`` — or,
+    with ``extractor``, read by code and mapped through ``option_values``
+    (option key → extractor value, e.g. ``{"epsg_2180": "EPSG:2180"}``); then
+    the model is never asked and an unclear command leads to a question;
     ``free`` values come from the extractor named in ``extractor``;
     ``bool`` values come from a yes/no question to the model.
     ``accepts`` narrows a multi-type extractor (e.g. ``area``) to the value
@@ -25,6 +28,7 @@ class ParamSpec(TypedDict):
     type: ParamType
     options: NotRequired[list[str]]
     extractor: NotRequired[str]
+    option_values: NotRequired[dict[str, Any]]
     accepts: NotRequired[list[str]]
     required: NotRequired[bool]
     default: NotRequired[Any]
@@ -139,6 +143,15 @@ def validate_manifest(
             ):
                 raise ManifestError(f"{op_id}.{name}: invalid choice options")
             if (
+                param["type"] == "choice"
+                and "extractor" in param
+                and (
+                    param["extractor"] not in EXTRACTORS
+                    or set(param.get("option_values", {})) != set(param["options"])
+                )
+            ):
+                raise ManifestError(f"{op_id}.{name}: invalid choice extractor")
+            if (
                 "default" in param
                 and param["type"] == "choice"
                 and param["default"] not in param["options"]
@@ -159,7 +172,9 @@ def validate_manifest(
             # English names) only to the decision model — for operations and
             # options alike; "unspecified" is never shown, so it has no label.
             # Model-decided parameters also have "model_question": what the
-            # command states, not the user's question (ARCHITECTURE 4.2)
+            # command states, not the user's question (ARCHITECTURE 4.2).
+            # A choice read by an extractor never reaches the model, so it
+            # needs only user-facing texts.
             required = [
                 f"operations.{op_id}.label",
                 f"operations.{op_id}.description",
@@ -169,15 +184,18 @@ def validate_manifest(
                 required.extend((f"{prefix}.label", f"{prefix}.question"))
                 if param["type"] == "free":
                     required.append(f"{prefix}.example")
-                if param["type"] in ("choice", "bool"):
+                by_model = param["type"] == "bool" or (
+                    param["type"] == "choice" and "extractor" not in param
+                )
+                if by_model:
                     required.append(f"{prefix}.model_question")
                 if param["type"] == "choice":
                     for key in param["options"]:
-                        required.extend(
-                            f"{prefix}.options.{key}.{field}"
-                            for field in ("label", "description")
-                        )
-                    required.append(f"{prefix}.options.unspecified.description")
+                        required.append(f"{prefix}.options.{key}.label")
+                        if by_model:
+                            required.append(f"{prefix}.options.{key}.description")
+                    if by_model:
+                        required.append(f"{prefix}.options.unspecified.description")
             for key in required:
                 try:
                     texts.get(key)

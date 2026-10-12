@@ -393,7 +393,7 @@ Operacje Kartografa 0.7.2 (ADR-001); wszystkie pobierają dane z GUGiK:
 | --- | --- | --- | --- |
 | Pobranie NMT dla arkusza | godło arkusza PL-1992 lub PL-2000 | rozdzielczość 1 m / 5 m; układ wysokościowy EVRF2007 / KRON86 (5 m tylko w EVRF2007) | `Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4` |
 | Pobranie arkuszy potomnych | godło arkusza nadrzędnego | produkt NMT / NMPT / ortofotomapa; skala docelowa 1:10000–1:500 (drobniejsze niż 1:10000 tylko w PL-2000); dla NMT rozdzielczość i układ wysokościowy | `Rozwiń N-34-130-D-d-2 do 1:10000, ściągnij DSM z arkuszy potomnych` |
-| Wycinek NMT albo NMPT | prostokąt w PL-1992 (EPSG:2180) albo WGS84 (EPSG:4326) | produkt NMT / NMPT; układ wyniku EPSG:2180 / 5514 / 3045 (kod z prefiksem `EPSG:` albo sama liczba, np. `wynik w 2180`); układ wysokościowy | `wytnij dsm z prostokąta 52.40 16.90 52.41 16.91 do 3045` |
+| Wycinek NMT albo NMPT | prostokąt w PL-1992 (EPSG:2180) albo WGS84 (EPSG:4326) | produkt NMT / NMPT; układ wyniku EPSG:2180 / 5514 / 3045 (kod z prefiksem `EPSG:`, sama liczba albo nazwa, np. `wynik w 2180`, `do S-JTSK`); układ wysokościowy | `wytnij dsm z prostokąta 52.40 16.90 52.41 16.91 do 3045` |
 | Pobranie BDOT10k | powiat (TERYT, 4 cyfry), godło albo prostokąt | format GeoPackage / Shapefile | `ściągnij bdot dla powiatu 2264 w gpkg` |
 
 Formy zapisu obszaru:
@@ -532,6 +532,10 @@ naruszenie W-03. Opcje i miary: `docs/specs/2026-10-11-retman-eval.md`.
   niezweryfikowany”.
 - **Współrzędne PL-1992**: przy zapisie bez wskazania kolejności osi Retman pyta, który
   odczyt jest właściwy (p. 4).
+- **Układ wyniku wycinka** rozpoznaje kod, nie model: po słowach „wynik”, „do”, „przelicz”,
+  „zapisz”, „docelowy” (także bez polskich znaków i z jedną literówką). Układ podany zaraz
+  po współrzędnych (`… 382100 PL-1992`) Retman traktuje jako układ prostokąta i pyta
+  o układ wyniku; tak samo przy literówce w samym kodzie (`2108`).
 - **BDOT10k** dla godła lub prostokąta pobiera pełne pakiety każdego przecinanego powiatu,
   bez przycinania — pliki mogą być duże.
 - Pobierany jest najnowszy dostępny materiał GUGiK; wyboru rocznika i kampanii jeszcze nie ma.
