@@ -492,6 +492,7 @@ narzędzia (p. 3.2.3). Każda operacja deklaruje też **co przyjmuje** (`inputs`
 MANIFEST = {
     "tool": "hydrolog",
     "distribution": "hydrolog",              # package name for the installed-version check
+    "source": "git+https://github.com/Daldek/Hydrolog",  # for `--with` in retman doctor hints (p. 9.4)
     "supported_versions": ">=1.1,<2",        # checked at startup and in CI (p. 3.2.7)
     "translations": {"pl": "pl.toml"},       # relative to this package
     "operations": [

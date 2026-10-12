@@ -5,6 +5,7 @@ from retman.registry.manifest import ManifestSpec
 MANIFEST: ManifestSpec = {
     "tool": "dummy_tool",
     "distribution": "dummy-tool",
+    "source": "dummy-tool",
     "supported_versions": ">=1.2,<2",
     "translations": {"pl": "pl.toml"},
     "operations": [

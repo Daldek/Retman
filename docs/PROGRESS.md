@@ -17,7 +17,7 @@ Szablony wpisów: [Szablony](#szablony).
 | Rdzeń: pipeline, `Plan`, `dialog`, `Result` | ✅ Gotowy | ARCHITECTURE 2, 6, 7.1, 7.3 |
 | Rejestr operacji, wspólny adapter, `kinds`, `retman-scaffold` | 🚧 W toku | rejestr, adapter, `kinds` gotowe; `retman-scaffold` nie powstał |
 | Przestrzeń robocza, dziennik projektu, ślad audytowy | ✅ Gotowy | ARCHITECTURE 5 |
-| CLI, `retman doctor`, `results`, `log` | 🚧 W toku | CLI, `results`, `log`, `init` gotowe; brak `retman doctor` |
+| CLI, `retman doctor`, `results`, `log` | ✅ Gotowy | ARCHITECTURE 6.4, 7.1, 7.2 |
 | `retman-eval` i zbiór poleceń testowych | 🚧 W toku | kod i szkic zbioru gotowe; czeka: przegląd zbioru przez autora, przebieg na Bieliku 11B (spec. rozdz. 9) |
 | CI (Windows, Linux, macOS; test instalacji; wersje narzędzi) | ⏳ Planowany | ARCHITECTURE 3.2.7, 9.4 |
 
@@ -34,12 +34,37 @@ Szablony wpisów: [Szablony](#szablony).
 > niewypchnięte). `retman-eval` zaimplementowany wg przyjętej specyfikacji; zbiór
 > `retman/eval/commands.jsonl` to szkic agenta. **Najpierw: przegląd zbioru przez autora**
 > (spec. 10 pkt 2), potem przebieg na Bieliku 11B w LM Studio (adres podaje użytkownik,
-> nie zapisywać), raport do `docs/research/`, strojenie progów i opisów; potem
-> `retman doctor`. Niezatwierdzona zmiana użytkownika w `retman/tools/kartograf/pl.toml`
+> nie zapisywać), raport do `docs/research/`, strojenie progów i opisów. `retman doctor`
+> gotowy. Niezatwierdzona zmiana użytkownika w `retman/tools/kartograf/pl.toml`
 > (`[errors]`: PRG, „shapefile”) — nie z sesji agenta. Decyzje autora: operacja drugiego
 > narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07, rozdz. 8),
 > ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza zakresu
 > w CLI.
+
+### `retman doctor` (2026-10-12)
+
+- **Zlecenie użytkownika:** przejście do `retman doctor`.
+- **Zrobione:**
+  - `retman/doctor.py` (`run_doctor` → `DoctorReport`: tekst jak w ARCHITECTURE 7.2 i
+    `--json`), polecenie `retman doctor [--json]` w CLI; teksty `[doctor]` w
+    `retman/i18n/pl.toml`;
+  - sekcje: konfiguracja (plik, projekt, zapis, liczba wyników, nieczytelne `result.json`),
+    model decyzyjny (adres, `GET /models`, pytanie testowe NMT vs pogoda, pewność, progi),
+    narzędzia (wersja na tle zakresu, liczba operacji, `[adapters] enabled`, polecenie
+    doinstalowania), tłumaczenia, model tekstowy;
+  - kod 1 tylko przy problemach blokujących: błąd konfiguracji, model niedostępny albo
+    pytanie testowe zakończone błędem, brak dostępnych operacji, błędne tłumaczenia;
+    błędna odpowiedź na pytanie testowe, model spoza listy serwera, brak pewności,
+    nieczytelne wyniki — ostrzeżenia;
+  - pole `source` w manifeście (wymagane, walidowane) do podpowiedzi `uv … --with`
+    (ARCHITECTURE 4.1); Kartograf: `git+https://github.com/Daldek/Kartograf`;
+  - testy `tests/test_doctor.py` (13), CHANGELOG.
+- **Weryfikacja:** `pytest -m "not live"` — 179 passed; ruff, mypy czyste. Smoke CLI poza
+  repo: konfiguracja z szablonu (`basal`) → backend niedostępny, kod 1; brak pliku →
+  podpowiedź `retman init`, kod 1; `openai_compatible` na lokalnym serwerze testowym
+  (stdlib HTTP) → model na liście, poprawna odpowiedź, ostrzeżenie o `confidence = "none"`,
+  kod 0; po zatrzymaniu serwera → „serwer modelu nie odpowiada” z podpowiedzią, kod 1.
+  Bez prawdziwego LM Studio.
 
 ### `retman-eval` (2026-10-12)
 
@@ -211,8 +236,7 @@ Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
 
 - [x] **Szkielet pakietu i konfiguracja** — `pyproject.toml`, `retman/config.py`,
   `tests/conftest.py`, `retman init` (sesja 2026-10-11, przekrój Kartografa).
-- [ ] **`retman doctor`** (ARCHITECTURE 7.2) — adres i pytanie testowe modelu, wersje
-  narzędzi, komplet tłumaczeń, przestrzeń robocza.
+- [x] **`retman doctor`** (ARCHITECTURE 7.2) — sesja 2026-10-12.
 - [ ] **`retman-eval` i zbiór poleceń testowych** — kod gotowy (sesja 2026-10-12);
   czeka przegląd zbioru przez autora, przebieg na Bieliku 11B z raportem
   w `docs/research/`, strojenie progów i opisów opcji (ARCHITECTURE 6.2, 8; spec. rozdz. 9).

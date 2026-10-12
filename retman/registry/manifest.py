@@ -57,6 +57,8 @@ class ManifestSpec(TypedDict):
 
     tool: str
     distribution: str
+    # Requirement for ``uv tool install … --with`` shown by ``retman doctor``
+    source: str
     supported_versions: str
     translations: dict[str, str]
     operations: list[OperationSpec]
@@ -103,8 +105,14 @@ def validate_manifest(
     from retman.kinds import KINDS
 
     seen = operation_ids if operation_ids is not None else set()
-    if not manifest["translations"] or not manifest["supported_versions"]:
-        raise ManifestError(f"{manifest['tool']}: missing versions or translations")
+    if (
+        not manifest["translations"]
+        or not manifest["supported_versions"]
+        or not manifest["source"]
+    ):
+        raise ManifestError(
+            f"{manifest['tool']}: missing versions, translations or source"
+        )
     for language in manifest["translations"]:
         texts: Texts | None = translations.get(language)
         if texts is None:

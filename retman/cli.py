@@ -10,6 +10,7 @@ from retman.core.dialog import Question
 from retman.core.pipeline import Retman
 from retman.core.plan import Plan
 from retman.core.workspace import Workspace
+from retman.doctor import run_doctor
 from retman.exceptions import BackendConnectionError, ConfigError, RetmanError
 from retman.i18n.loader import Texts, load_core_texts
 
@@ -150,6 +151,7 @@ def main(
     parser.add_argument("--config", type=Path)
     parser.add_argument("--plan-only", action="store_true")
     parser.add_argument("--explain", action="store_true")
+    parser.add_argument("--json", action="store_true")
     parser.add_argument("command", nargs="?")
     args = parser.parse_args(argv)
     texts = load_core_texts("pl")
@@ -157,6 +159,17 @@ def main(
         if args.command == "init":
             print(init_config(args.config))
             return 0
+        if args.command == "doctor":
+            report, report_texts = run_doctor(
+                args.config,
+                project_dir if project_dir is not None else Path.cwd(),
+                backend=backend,
+            )
+            print(
+                report.to_json() if args.json else report.to_text(report_texts),
+                end="",
+            )
+            return report.exit_code
         config = load_config(args.config)
         texts = load_core_texts(config.language)
         folder = project_dir if project_dir is not None else Path.cwd()

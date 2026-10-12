@@ -5,6 +5,7 @@ from retman.registry.manifest import ManifestSpec
 MANIFEST: ManifestSpec = {
     "tool": "kartograf",
     "distribution": "kartograf",
+    "source": "git+https://github.com/Daldek/Kartograf",
     "supported_versions": ">=0.7.2,<0.8",
     "translations": {"pl": "pl.toml"},
     "operations": [

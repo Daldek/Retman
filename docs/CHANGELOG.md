@@ -80,6 +80,12 @@ Linki porównań na końcu pliku, od najnowszego:
   i 15 spoza zakresu lub bliskich zakresowi, z walidacją wpisów na tym samym kodzie
   ekstraktorów co planowanie (ARCHITECTURE 8.1).
 - `OutOfScopeError` dla poleceń spoza zakresu, z listą dostępnych operacji (W-03).
+- `retman doctor` (i `--json`): plik centralny, folder projektu i zapis wyników, czytelność
+  `result.json`, adres modelu decyzyjnego, lista modeli serwera, pytanie testowe, metoda
+  pewności i progi, wersje narzędzi na tle obsługiwanego zakresu z poleceniem doinstalowania,
+  komplet tłumaczeń, model tekstowy; każdy problem z podpowiedzią, kod 1 gdy coś blokuje pracę
+  (ARCHITECTURE 7.2). Manifest narzędzia ma pole `source` do podpowiedzi `uv … --with`
+  (ARCHITECTURE 4.1).
 
 ### Zmienione
 
