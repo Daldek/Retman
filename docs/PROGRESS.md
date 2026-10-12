@@ -32,10 +32,9 @@ Szablony wpisów: [Szablony](#szablony).
 
 > **START NASTĘPNEJ SESJI (stan 2026-10-12):** praca na `develop` (commity lokalne,
 > niewypchnięte). Opcje w tłumaczeniach mają już `label`/`description` (ADR-007).
-> **Najpierw: dokończyć z autorem przegląd `retman/tools/kartograf/pl.toml`** — etykiety
-> opcji (nowe, krótkie), synonimy w `description`, pytania, `help`, `example`; potem
-> `retman-eval` wg `docs/specs/retman-eval.md` (status: do akceptacji autora) i
-> `retman doctor`. basal-serve niedostępny — backend `basal` czeka. Decyzje autora:
+> Przegląd `retman/tools/kartograf/pl.toml` zakończony — autor zaakceptował treść.
+> **Następnie:** `retman-eval` wg `docs/specs/retman-eval.md` (status: do akceptacji
+> autora) i `retman doctor`. basal-serve niedostępny — backend `basal` czeka. Decyzje autora:
 > operacja drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01,
 > N-07, rozdz. 8), ADR wsteczne dla pierwszej sesji.
 
@@ -64,7 +63,8 @@ Szablony wpisów: [Szablony](#szablony).
   na prawdziwych tekstach Kartografa): pytanie pokazuje „1 m”, „5 m (tylko EVRF2007)”,
   plan „Rozdzielczość NMT: 1 m”, model dostał opisy z „NMT/DEM”. Bez modelu na żywo —
   wpływ synonimów na trafność zmierzy `retman-eval`.
-- **Otwarte:** przegląd treści `pl.toml` z autorem (etykiety i synonimy są propozycją agenta).
+- **Przegląd `pl.toml`:** autor zaakceptował treść Kartografa (etykiety, synonimy,
+  pytania, `help`, `example`) bez zmian.
 
 ### Pionowy przekrój na Kartografie 0.7.2 (2026-10-11)
 
