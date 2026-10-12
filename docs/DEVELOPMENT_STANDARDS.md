@@ -374,7 +374,7 @@ Retman zapisuje wyniki w folderze projektu, w którym go uruchomiono
   użytkownika: konfiguracja z jawnej ścieżki (`Retman.from_config(path)`),
   wyniki w `tmp_path`.
 - Raporty `.md` z przebiegów (np. `retman-eval`, pomiary czasu odpowiedzi,
-  ARCHITECTURE 9.2) trafiają do `docs/research/` w repo.
+  ARCHITECTURE 9.2) trafiają do `docs/research/` w repo, z datą w nazwie (sekcja 7.1).
 
 ---
 
@@ -385,6 +385,12 @@ Retman zapisuje wyniki w folderze projektu, w którym go uruchomiono
 Pakiet `retman/` leży w korzeniu repo (bez `src/`); testy w `tests/`
 (`conftest.py` + `fixtures/`), dokumentacja w `docs/`, konfiguracja narzędzi
 w `pyproject.toml`.
+
+Specyfikacje (`docs/specs/`), plany (`docs/plans/`) i raporty z badań
+(`docs/research/`) mają w nazwie pliku datę powstania w formacie `YYYY-MM-DD`:
+`docs/<katalog>/YYYY-MM-DD-<temat>.md`, np. `docs/specs/2026-10-11-retman-eval.md`.
+Data w nazwie się nie zmienia; późniejsze zmiany treści opisuje nagłówek dokumentu
+(status, data aktualizacji).
 
 Źródłem prawdy dla struktury modułów jest `docs/ARCHITECTURE.md`, p. 3.1,
 a ostatecznie sam katalog `retman/`. Ten dokument nie powiela drzewa modułów.
@@ -927,7 +933,7 @@ szablon na końcu pliku):
 ---
 
 **Wersja dokumentu:** 1.0
-**Data ostatniej aktualizacji:** 2026-10-11
+**Data ostatniej aktualizacji:** 2026-10-12
 **Źródło:** `Kartograf/docs/DEVELOPMENT_STANDARDS.md` v3.3
 
 *Odstępstwa od tych standardów wymagają uzasadnienia — w tym dokumencie albo w ADR (`docs/DECISIONS.md`).*

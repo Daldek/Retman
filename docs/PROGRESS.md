@@ -41,6 +41,14 @@ Szablony wpisów: [Szablony](#szablony).
 > ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza zakresu
 > w CLI.
 
+### Nazwy specyfikacji i planów z datą (2026-10-12)
+
+- **Decyzje użytkownika:** specyfikacje i plany (oraz raporty z badań) mają w nazwie datę
+  `YYYY-MM-DD` — reguła w STANDARDS 7.1 i mapie dokumentacji w CLAUDE.md.
+- **Zrobione:** `docs/specs/retman-eval.md` → `docs/specs/2026-10-11-retman-eval.md`
+  (data z nagłówka specyfikacji); odsyłacze w CHANGELOG, DECISIONS (ADR-006), PROGRESS,
+  STANDARDS 6.4. `docs/research/` już spełniał regułę; `docs/plans/` jeszcze nie istnieje.
+
 ### `retman doctor` (2026-10-12)
 
 - **Zlecenie użytkownika:** przejście do `retman doctor`.
@@ -69,7 +77,7 @@ Szablony wpisów: [Szablony](#szablony).
 ### `retman-eval` (2026-10-12)
 
 - **Zlecenie użytkownika:** implementacja `retman-eval` po akceptacji specyfikacji.
-- **Decyzje użytkownika:** specyfikacja `docs/specs/retman-eval.md` przyjęta bez zmian.
+- **Decyzje użytkownika:** specyfikacja `docs/specs/2026-10-11-retman-eval.md` przyjęta bez zmian.
 - **Zrobione:**
   - `OutOfScopeError(RetmanError)` z `operations` (spec. 7); CLI bez zmian (nadal „Błąd:”
     i kod 1 — decyzja autora);
@@ -146,7 +154,7 @@ Szablony wpisów: [Szablony](#szablony).
     dla modelu; plan pokazuje odczyt prostokąta jako N/E;
   - badanie LM Studio: `docs/research/2026-10-11-lm-studio-openai-compatible.md`
     (ARCHITECTURE 12 pkt 9);
-  - specyfikacja `docs/specs/retman-eval.md`; manifest Kartografa bez `default` (ADR-006);
+  - specyfikacja `docs/specs/2026-10-11-retman-eval.md`; manifest Kartografa bez `default` (ADR-006);
   - dokumentacja: ADR-001–006, PRD 7.2, ARCHITECTURE 3.1, 3.2.6, 4.1–4.3, 9.2–9.3, 12,
     STANDARDS 5.1, 6.1, 8.1, README, CLAUDE.md, CHANGELOG.
 - **Weryfikacja:** `pytest -m "not live"` — 142 passed, pokrycie 88% (rdzeń ≥ 84%);

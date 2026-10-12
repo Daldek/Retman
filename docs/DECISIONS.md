@@ -148,7 +148,7 @@ potrzebują jawnych timeoutów i testów offline na zapisanych odpowiedziach (ST
 
 **Kontekst:** Manifest Kartografa (ADR-001) miał wartości domyślne dla rozdzielczości NMT
 (1 m), układu wysokościowego (EVRF2007) i formatu BDOT10k (GeoPackage). Przy specyfikacji
-`retman-eval` (`docs/specs/retman-eval.md`) trzeba było ustalić, czy pytanie o taki
+`retman-eval` (`docs/specs/2026-10-11-retman-eval.md`) trzeba było ustalić, czy pytanie o taki
 parametr jest błędem, czy zbędnym kosztem.
 
 **Opcje:**

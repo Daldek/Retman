@@ -71,7 +71,7 @@ Linki porównań na końcu pliku, od najnowszego:
   dziennik `journal.jsonl` (ARCHITECTURE 5–7).
 - CLI: `retman "…"`, sesja `retman`, `--plan-only`, `--explain`, `--config`,
   `retman init`, `retman results`, `retman log`; kody wyjścia 0–3 (ARCHITECTURE 6.4).
-- Specyfikacja `retman-eval` (`docs/specs/retman-eval.md`).
+- Specyfikacja `retman-eval` (`docs/specs/2026-10-11-retman-eval.md`).
 - `retman-eval --config PATH`: planuje zbiór poleceń testowych (bez wykonywania operacji),
   zapisuje surowe rekordy i raport Markdown z miarami (trafność, błąd przy pewności W-02,
   ciche zgadywanie, naruszenia W-03, czasy), krzywą progów i zalecanymi progami
