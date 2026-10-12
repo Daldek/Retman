@@ -64,6 +64,7 @@ retman doctor   # sprawdza środowisko i podpowiada, co naprawić
 
 | Plik | Zawartość |
 |---|---|
+| [USAGE.md](docs/USAGE.md) | Praca z Retmanem: polecenia, pytania, plany, wyniki, Python, diagnostyka — z przykładami |
 | [PRD.md](docs/PRD.md) | Wymagania produktowe: użytkownicy, scenariusze, zakres wersji |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Projekt techniczny: architektura, adaptery narzędzi, modele, konfiguracja |
 | [DECISIONS.md](docs/DECISIONS.md) | Rejestr decyzji architektonicznych (ADR) |

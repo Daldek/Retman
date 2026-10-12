@@ -183,7 +183,6 @@ def main(
                     print(
                         texts.get(
                             "cli.results_line",
-                            number=item["number"],
                             summary=item["summary"],
                         )
                     )

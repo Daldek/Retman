@@ -6,7 +6,7 @@ description = "Pobierz NMT dla jednego godła arkusza: numeryczny model terenu, 
 label = "Godło arkusza NMT"
 question = "Dla jakiego godła arkusza mam pobrać NMT (numeryczny model terenu)?"
 help = "Podaj godło PL-1992 albo PL-2000. Dla godła PL-1992 grubszego niż 1:10000 Kartograf pobierze potomne arkusze. Pobierany jest najnowszy dostępny lot; wybór roku i kampanii nie jest jeszcze obsługiwany."
-example = "np. N-34-130-D-d-2-4"
+example = "N-34-130-D-d-2-4"
 
 [operations.download_dem_sheet.params.resolution]
 label = "Rozdzielczość NMT"
@@ -48,7 +48,7 @@ options.unspecified.description = "Nie podano produktu — dopytaj o NMT, NMPT l
 label = "Godło arkusza nadrzędnego"
 question = "Jakie jest godło arkusza nadrzędnego do rozwinięcia?"
 help = "Podaj godło grubszego arkusza PL-1992 lub PL-2000; docelowa skala musi być bardziej szczegółowa. W PL-1992 dostępne są przede wszystkim arkusze 1:10000; drobniejsze skale dotyczą PL-2000."
-example = "np. N-34-130-D-d-2"
+example = "N-34-130-D-d-2"
 
 [operations.download_sheet_hierarchy.params.target_scale]
 label = "Skala arkuszy potomnych"
@@ -104,7 +104,7 @@ options.unspecified.description = "Nie podano produktu — dopytaj o NMT lub NMP
 label = "Prostokąt wycinka"
 question = "Jaki prostokąt współrzędnych wyciąć z danych wysokościowych?"
 help = "Podaj granice prostokąta w PL-1992 (EPSG:2180) lub WGS84 (EPSG:4326). Pliki geometrii SHP/GPKG nie są przyjmowane: publiczne API Kartografa nie udostępnia ich dokładnego prostokąta, a argument geometry wycinka WCS jest nieaktywny."
-example = "np. 530000,382000,530100,382100 EPSG:2180"
+example = "530000,382000,530100,382100 EPSG:2180"
 
 [operations.download_elevation_cutout.params.target_crs]
 label = "Układ współrzędnych wyniku"
@@ -136,7 +136,7 @@ description = "Pobierz BDOT10k: bazę danych obiektów topograficznych, wektory 
 label = "Obszar BDOT10k"
 question = "Dla jakiego powiatu (TERYT), arkusza albo prostokąta pobrać BDOT10k?"
 help = "Kod TERYT powiatu ma 4 cyfry. Dla prostokąta lub godła pobierany jest pełen pakiet każdego przecinanego powiatu, nie przycięcie do obszaru; plik może być duży."
-example = "np. TERYT 2264 lub N-34-130-D-d-2-4"
+example = "TERYT 2264 lub N-34-130-D-d-2-4"
 
 [operations.download_bdot10k.params.format]
 label = "Format BDOT10k"

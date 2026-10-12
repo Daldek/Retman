@@ -86,6 +86,9 @@ Linki porównań na końcu pliku, od najnowszego:
   komplet tłumaczeń, model tekstowy; każdy problem z podpowiedzią, kod 1 gdy coś blokuje pracę
   (ARCHITECTURE 7.2). Manifest narzędzia ma pole `source` do podpowiedzi `uv … --with`
   (ARCHITECTURE 4.1).
+- Przewodnik użytkownika `docs/USAGE.md`: przygotowanie, polecenia, pytania, plan,
+  wyniki i dziennik, sesja i opcje, kody wyjścia, API Pythona, `retman doctor`,
+  `retman-eval`, z przykładami przebiegów.
 
 ### Zmienione
 

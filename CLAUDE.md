@@ -54,6 +54,7 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 | Czego szukasz | Gdzie |
 |---|---|
 | Stan prac, ostatnia sesja, backlog | `docs/PROGRESS.md` |
+| Jak się pracuje z Retmanem (CLI, Python, przykłady) | `docs/USAGE.md` |
 | Specyfikacje komponentów (np. `retman-eval`), plany, raporty z badań (nazwy `YYYY-MM-DD-<temat>.md`, STANDARDS 7.1) | `docs/specs/`, `docs/plans/`, `docs/research/` |
 | Workflow sesji, kolejność lektury | `docs/DEVELOPMENT_STANDARDS.md` 15 |
 | Środowisko, komendy testów/lint/mypy/eval, gdzie uruchamiać CLI | STANDARDS 6 |

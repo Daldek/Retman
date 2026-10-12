@@ -41,6 +41,24 @@ Szablony wpisów: [Szablony](#szablony).
 > ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza zakresu
 > w CLI.
 
+### Przewodnik `docs/USAGE.md` (2026-10-12)
+
+- **Zlecenie użytkownika:** opis sposobu pracy z Retmanem z przykładami.
+- **Zrobione:**
+  - `docs/USAGE.md` (przygotowanie, folder projektu, polecenia, pytania, plan i `z`,
+    wykonanie, `results`/`log`/`result.json`, sesja, opcje, praca bez terminala, kody
+    wyjścia, operacje Kartografa i formy obszaru, API Pythona, `retman doctor`,
+    `retman-eval`, ograniczenia); odsyłacze w README i CLAUDE.md, CHANGELOG;
+  - poprawki znalezione przy nagrywaniu przykładów: podwójne „np. np.” w podpowiedziach
+    (`example` w `retman/tools/kartograf/pl.toml` i `dialog.example_path` bez „np.” — dodaje
+    je `cli.example`); `retman results` powtarzał numer wyniku (`cli.results_line` =
+    samo podsumowanie).
+- **Weryfikacja:** przykłady CLI nagrane prawdziwym `retman.cli.main` z atrapą modelu
+  (`FakeDecisionBackend`) w folderze tymczasowym (usunięty); wycinek NMT 100 × 100 m
+  pobrany z GUGiK naprawdę (GeoTIFF, `result.json`, `results`, `log`); przykłady API
+  Pythona (`plan`/`answer`/`PlanNotConfirmedError`/`to_dict`/`from_dict`/`known`)
+  uruchomione; formy obszaru sprawdzone ekstraktorem; `pytest -m "not live"` — 179 passed.
+
 ### Nazwy specyfikacji i planów z datą (2026-10-12)
 
 - **Decyzje użytkownika:** specyfikacje i plany (oraz raporty z badań) mają w nazwie datę
