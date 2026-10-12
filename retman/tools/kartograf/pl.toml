@@ -159,7 +159,7 @@ unverified = "Dla {count} arkuszy nie sprawdzono najnowszej kampanii, ponieważ 
 [errors]
 no_sheet_coverage = "GUGiK nie ma danych dla żadnego z żądanych arkuszy. Sprawdź godło, skalę i rozdzielczość."
 all_sheets_failed = "Nie udało się pobrać żadnego z żądanych arkuszy."
-no_counties = "Wybrany obszar nie przecina żadnego powiatu w PRG."
+no_counties = "Wybrany obszar nie przecina żadnego powiatu w PRG (Państwowym Rejestrze Granic)."
 all_counties_failed = "Nie udało się pobrać żadnego pakietu powiatowego BDOT10k."
-unsafe_archive = "Archiwum SHP zawiera niedozwoloną ścieżkę lub plik spoza katalogu wyniku."
-missing_shapefiles = "Pobrane archiwum BDOT10k SHP nie zawiera plików .shp."
+unsafe_archive = "Archiwum shapefile zawiera niedozwoloną ścieżkę lub plik spoza katalogu wyniku."
+missing_shapefiles = "Pobrane archiwum BDOT10k shapefile nie zawiera plików .shp."
