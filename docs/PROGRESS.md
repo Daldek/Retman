@@ -8,17 +8,17 @@ Szablony wpisów: [Szablony](#szablony).
 
 | Element | Status | Uwagi |
 |---------|--------|-------|
-| Dokumentacja projektowa (PRD, ARCHITECTURE, DEVELOPMENT_STANDARDS) | ✅ Gotowy | szkic 2026-10-11; ADR-001–005; otwarte kwestie: PRD rozdz. 11, ARCHITECTURE rozdz. 12 |
+| Dokumentacja projektowa (PRD, ARCHITECTURE, DEVELOPMENT_STANDARDS, USAGE) | ✅ Gotowy | ADR-001–011; przewodnik `docs/USAGE.md`; otwarte kwestie: PRD rozdz. 11, ARCHITECTURE rozdz. 12 |
 | Repozytorium (`main`, `develop`, `origin`) | ✅ Gotowy | `main` i `develop` na `origin` |
 | Lista pierwszych operacji v0.1 | 🚧 W toku | Kartograf: 4 operacje (ADR-001); brak operacji drugiego narzędzia (PRD 7.1) |
 | Szkielet pakietu, `pyproject.toml`, `retman.toml` i `retman init` | ✅ Gotowy | ARCHITECTURE 3.1, 9.1; Python ≥ 3.12 (ADR-002) |
-| Ekstraktory (w tym prawdopodobieństwo) | 🚧 W toku | gotowe: `area`, `path`, `result`; brak: prawdopodobieństwo, daty, stacje, liczby z jednostkami |
+| Ekstraktory (w tym prawdopodobieństwo) | 🚧 W toku | gotowe: `area`, `crs` (ADR-009), `path`, `result`; brak: prawdopodobieństwo, daty, stacje, liczby z jednostkami |
 | Backendy `basal`, `openai_compatible`, `none`; `FakeDecisionBackend` | 🚧 W toku | gotowe: `openai_compatible`, atrapa; `basal` — brak specyfikacji API basal-serve |
 | Rdzeń: pipeline, `Plan`, `dialog`, `Result` | ✅ Gotowy | ARCHITECTURE 2, 6, 7.1, 7.3 |
 | Rejestr operacji, wspólny adapter, `kinds`, `retman-scaffold` | 🚧 W toku | rejestr, adapter, `kinds` gotowe; `retman-scaffold` nie powstał |
-| Przestrzeń robocza, dziennik projektu, ślad audytowy | ✅ Gotowy | ARCHITECTURE 5 |
+| Przestrzeń robocza, dziennik projektu, ślad audytowy, zbiór poleceń | ✅ Gotowy | ARCHITECTURE 5; dziennik z danymi planu i zbiór za zgodą (ADR-010); `retman collect` — ADR-011, odłożone |
 | CLI, `retman doctor`, `results`, `log` | ✅ Gotowy | ARCHITECTURE 6.4, 7.1, 7.2 |
-| `retman-eval` i zbiór poleceń testowych | 🚧 W toku | kod gotowy; pierwszy przebieg Bielik 11B (`docs/research/2026-10-12-bielik-11b-retman-eval.md`); czeka: przegląd zbioru, strojenie opisów, decyzja o progach |
+| `retman-eval` i zbiór poleceń testowych | 🚧 W toku | kod gotowy; 83 polecenia (szkic agenta); przebiegi z Bielikiem 11B (`docs/research/2026-10-12-bielik-11b-retman-eval.md`); czeka: przegląd zbioru, progi, strojenie |
 | CI (Windows, Linux, macOS; test instalacji; wersje narzędzi) | ⏳ Planowany | ARCHITECTURE 3.2.7, 9.4 |
 
 ## Checkpointy
@@ -30,18 +30,25 @@ Szablony wpisów: [Szablony](#szablony).
 
 ## Ostatnia sesja
 
-> **START NASTĘPNEJ SESJI (stan 2026-10-12):** praca na `develop` (commity lokalne,
-> niewypchnięte). Przebiegi `retman-eval` na Bieliku 11B przed i po ADR-008/ADR-009:
-> `docs/research/2026-10-12-bielik-11b-retman-eval.md` (W-02: 0/189 po ADR-009).
-> **Najpierw:** decyzje autora — progi (operacja ok. 0,70; parametry 0,67, słabo
-> potwierdzone), strojenie opisu operacji arkuszy potomnych, przegląd zbioru (spec. 10
-> pkt 2), kiedy wdrożyć `retman collect export`/`draft` (ADR-011, zapisane, wdrożenie
-> odłożone przez autora). Istniejące pliki `retman.toml` wymagają klucza
-> `[privacy] collect_path`.
-> Adres LM Studio podaje użytkownik — nie zapisywać. Pozostałe decyzje autora: operacja
-> drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07,
-> rozdz. 8), ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza
-> zakresu w CLI.
+> **START NASTĘPNEJ SESJI (stan 2026-10-12, koniec sesji):** praca na `develop`,
+> 29 commitów lokalnych niewypchniętych na `origin`. Ostatni przebieg `retman-eval`
+> (Bielik 11B, 83 polecenia): operacja 0,88, W-03 0, W-02 0/189, wartości 0,80, polecenia
+> kompletne bez pytań 14/39, mediana planu 10,6 s — `docs/research/2026-10-12-bielik-11b-retman-eval.md`.
+> **Do zrobienia, w kolejności:**
+> 1. Push `develop` na `origin` (decyzja autora).
+> 2. Przegląd zbioru `retman/eval/commands.jsonl` przez autora (spec. 10 pkt 2), potem
+>    przebieg `--repeat 3` i decyzja o progach (propozycja: operacja ok. 0,70, parametry
+>    0,67 — słabo potwierdzone); wpisanie progów do konfiguracji użytkownika.
+> 3. Strojenie opisu operacji arkuszy potomnych (6 z 10 błędów operacji) i sprawdzenie
+>    przebiegiem.
+> 4. Ekstraktor prawdopodobieństwa (ARCHITECTURE 4.4) — wymagany w 0.1.
+> 5. `retman-scaffold` (jest w bramce CLAUDE.md, nie istnieje) i CI (Windows/Linux/macOS).
+> 6. `retman collect export`/`draft` (ADR-011) — gdy autor zdecyduje o wdrożeniu.
+> Decyzje autora: operacja drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe
+> (PRD W-01, N-07, rozdz. 8), ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1
+> dla polecenia spoza zakresu w CLI, backend basal (czeka na API basal-serve).
+> Uwagi: istniejące pliki `retman.toml` wymagają klucza `[privacy] collect_path`; adres
+> LM Studio podaje użytkownik — nie zapisywać nigdzie.
 
 ### Dziennik z danymi planu i zbiór poleceń — ADR-010 (2026-10-12)
 
@@ -361,7 +368,7 @@ Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
   strojenie opisów i decyzja o progach (ARCHITECTURE 6.2, 8; spec. rozdz. 9).
 - [ ] **Ekstraktor prawdopodobieństwa** z testami wszystkich form z ARCHITECTURE 4.4.
 - [ ] **Pozostałe ekstraktory** — współrzędne punktu, liczby z jednostkami, daty,
-  stacje (ARCHITECTURE 3.1, 6.1); gotowe: `area`, `path`, `result`.
+  stacje (ARCHITECTURE 3.1, 6.1); gotowe: `area`, `crs` (ADR-009), `path`, `result`.
 - [ ] **Backend `basal`** — po uzyskaniu specyfikacji API basal-serve i serwera do
   nagrania fixtur (ARCHITECTURE 3.3, STANDARDS 10.4).
 - [x] **Backend `openai_compatible` i `FakeDecisionBackend`** (ARCHITECTURE 3.3, 8.3).
@@ -375,8 +382,9 @@ Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
 - [x] **CLI, `results`, `log`, `init`** (ARCHITECTURE 6.4, 7.1).
 - [ ] **CI** — Windows, Linux, macOS; test instalacji; testy handlerów na
   wersjach narzędzi; kontrola rozjazdów (ARCHITECTURE 3.2.7, 9.4).
-- [ ] **Pomiary czasu odpowiedzi** (ARCHITECTURE 9.2) — orientacyjnie z smoke:
-  plan z 4 decyzjami Bielika 11B ≈ 7 s (≈ 1,7 s na decyzję).
+- [ ] **Pomiary czasu odpowiedzi** (ARCHITECTURE 9.2) — z `retman-eval` (Bielik 11B, LM
+  Studio w sieci lokalnej): mediana planu 10,6 s, P90 11,8 s, ok. 3,7 s na zapytanie;
+  wartość docelowa N-07 nieustalona.
 
 ---
 

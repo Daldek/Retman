@@ -349,8 +349,9 @@ z pominięciem pliku (brak ukrytych wartości domyślnych, PRD N-11).
 # Kontrola rozjazdów opisów z API narzędzi (ARCHITECTURE 3.2.3)
 .venv/bin/retman-scaffold --check
 
-# Ocena jakości decyzji na zbiorze testowym — wymaga działającego serwera modelu
-.venv/bin/retman-eval --backend basal
+# Ocena jakości decyzji na zbiorze testowym — wymaga działającego serwera modelu;
+# plik konfiguracji z adresem serwera trzymaj poza repo (raport: docs/research/)
+.venv/bin/retman-eval --config <plik> --target-error 0.01 --report raport.md
 ```
 
 Testy są **offline**: `tests/conftest.py` przewraca każdy test otwierający

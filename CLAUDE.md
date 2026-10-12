@@ -6,8 +6,9 @@ dopytuje o braki, pokazuje plan do potwierdzenia i wywołuje publiczne API narz�
 Działa jako CLI `retman` i biblioteka Python; model językowy jest osobną usługą
 (basal-serve albo serwer zgodny z API OpenAI). Wprowadzenie: `README.md`.
 
-**Stan:** przed v0.1.0 — pionowy przekrój na Kartografie 0.7.2 (rdzeń, CLI, backend
-`openai_compatible`); bieżący stan i backlog w `docs/PROGRESS.md`. Obowiązują `docs/PRD.md`
+**Stan:** przed v0.1.0 — pionowy przekrój na Kartografie 0.7.2 (rdzeń, CLI, `retman doctor`,
+`retman-eval`, backend `openai_compatible`, sprawdzony z Bielikiem 11B w LM Studio);
+decyzje ADR-001–011; bieżący stan i backlog w `docs/PROGRESS.md`. Obowiązują `docs/PRD.md`
 i `docs/ARCHITECTURE.md`.
 
 ## Zasady pracy (krytyczne)
