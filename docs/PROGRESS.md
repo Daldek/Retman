@@ -30,12 +30,12 @@ Szablony wpisów: [Szablony](#szablony).
 
 ## Ostatnia sesja
 
-> **START NASTĘPNEJ SESJI (stan 2026-10-12, koniec sesji):** praca na `develop`,
-> 29 commitów lokalnych niewypchniętych na `origin`. Ostatni przebieg `retman-eval`
+> **START NASTĘPNEJ SESJI (stan 2026-10-12, koniec sesji):** praca na `develop`
+> (wypchnięty na `origin`, `1166fbb`). Ostatni przebieg `retman-eval`
 > (Bielik 11B, 83 polecenia): operacja 0,88, W-03 0, W-02 0/189, wartości 0,80, polecenia
 > kompletne bez pytań 14/39, mediana planu 10,6 s — `docs/research/2026-10-12-bielik-11b-retman-eval.md`.
 > **Do zrobienia, w kolejności:**
-> 1. Push `develop` na `origin` (decyzja autora).
+> 1. Push `develop` na `origin` — zrobione 2026-10-12.
 > 2. Przegląd zbioru `retman/eval/commands.jsonl` przez autora (spec. 10 pkt 2), potem
 >    przebieg `--repeat 3` i decyzja o progach (propozycja: operacja ok. 0,70, parametry
 >    0,67 — słabo potwierdzone); wpisanie progów do konfiguracji użytkownika.
