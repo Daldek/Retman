@@ -1,5 +1,6 @@
 """Manifest completeness, global IDs and numeric version boundaries."""
 
+import tomllib
 from copy import deepcopy
 from importlib.metadata import PackageNotFoundError
 from pathlib import Path
@@ -100,11 +101,17 @@ def test_validate_manifest_reports_missing_language_option_and_example(dummy):
     )
     missing_language = deepcopy(manifest)
     missing_language["translations"]["en"] = "en.toml"
+    data = tomllib.loads((folder / "pl.toml").read_text(encoding="utf-8"))
+    data["operations"]["make_dem"]["params"]["style"]["options"]["raw"] = "Surowy"
+    flat_option = Texts(data, "flat option")
 
     with pytest.raises(ManifestError, match="params.area.label"):
         validate_manifest(manifest, {"pl": missing_option})
     with pytest.raises(ManifestError, match="missing en translations"):
         validate_manifest(missing_language, {"pl": texts})
+    # One text per option cannot serve both the user and the model
+    with pytest.raises(ManifestError, match="params.style.options.raw.label"):
+        validate_manifest(manifest, {"pl": flat_option})
 
 
 def test_load_operations_missing_translation_file_is_manifest_error(dummy):

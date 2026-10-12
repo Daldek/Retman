@@ -28,6 +28,7 @@ każda relacja jest zapisana po obu stronach.
 | [ADR-004](#adr-004-rodzaje-danych-kartografa-osobny-kind-na-produkt) | Rodzaje danych Kartografa: osobny `kind` na produkt | 2026-10-11 | Przyjęta |
 | [ADR-005](#adr-005-klient-http-httpx) | Klient HTTP: `httpx` | 2026-10-11 | Przyjęta |
 | [ADR-006](#adr-006-operacje-kartografa-bez-wartości-domyślnych) | Operacje Kartografa bez wartości domyślnych | 2026-10-11 | Przyjęta |
+| [ADR-007](#adr-007-opcje-z-etykietą-dla-użytkownika-i-opisem-dla-modelu) | Opcje z etykietą dla użytkownika i opisem dla modelu | 2026-10-12 | Przyjęta |
 
 ---
 
@@ -164,6 +165,33 @@ nie są parametrami.
 `unspecified` w `pl.toml` zapowiadają pytanie. W `retman-eval` pytanie o parametr niepodany
 w poleceniu jest oczekiwane (`expect_clarify`), a przyjęcie wartości bez pytania — cichym
 zgadywaniem.
+
+---
+
+## ADR-007: Opcje z etykietą dla użytkownika i opisem dla modelu
+
+**Data:** 2026-10-12
+**Status:** Przyjęta
+
+**Kontekst:** Operacje miały już osobno `label` (dla użytkownika) i `description`
+(z synonimami, tylko dla modelu), ale opcja parametru miała jeden tekst. Ten sam tekst
+szedł do modelu, do pytania w terminalu i do planu, więc synonimy dopisane dla modelu
+(„DEM”, „rzeźba terenu”) zaśmiecały to, co widzi użytkownik.
+
+**Opcje:**
+- A) rozdzielić opcje jak operacje: `label` dla użytkownika, `description` dla modelu,
+- B) usunąć synonimy z opcji i zostawić je tylko w opisach operacji,
+- C) usunąć synonimy w ogóle — Retman rozumie tylko polskie nazwy urzędowe.
+
+**Decyzja:** A — w praktyce często używa się angielskich nazw i skrótów (DEM, DSM, SHP),
+mimo że komunikacja jest po polsku, więc model musi je znać, a użytkownik ma widzieć
+krótkie nazwy.
+
+**Konsekwencje:** każda opcja w pliku tłumaczeń ma `options.<klucz>.label`
+i `options.<klucz>.description`; `unspecified` nigdy nie jest pokazywany, więc ma tylko
+`description`. Walidacja manifestu wymaga obu pól. Odpowiedź użytkownika własnymi słowami
+model też dopasowuje do opisów (opcji i operacji), nie do etykiet. ARCHITECTURE 4.2,
+DEVELOPMENT_STANDARDS 17.
 
 ---
 

@@ -30,16 +30,41 @@ Szablony wpisów: [Szablony](#szablony).
 
 ## Ostatnia sesja
 
-> **START NASTĘPNEJ SESJI (stan 2026-10-11, koniec dnia):** praca na `develop`
-> (commity lokalne, niewypchnięte). **Najpierw: przegląd z autorem
-> `retman/tools/kartograf/pl.toml`** — etykiety i opisy operacji (`label` dla użytkownika,
-> `description` z synonimami dla modelu), pytania, `help`, `example`, opisy opcji
-> i `unspecified` po ADR-006; opisy wpływają na trafność decyzji (smoke: Bielik wybierał
-> `unspecified` mimo „NMT” w poleceniu). Potem `retman-eval` wg
-> `docs/specs/retman-eval.md` (decyzje autora w rozdz. 10) i `retman doctor`.
-> basal-serve niedostępny — backend `basal` czeka. Decyzje autora: operacja drugiego
-> narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07, rozdz. 8),
-> ADR wsteczne dla pierwszej sesji.
+> **START NASTĘPNEJ SESJI (stan 2026-10-12):** praca na `develop` (commity lokalne,
+> niewypchnięte). Opcje w tłumaczeniach mają już `label`/`description` (ADR-007).
+> **Najpierw: dokończyć z autorem przegląd `retman/tools/kartograf/pl.toml`** — etykiety
+> opcji (nowe, krótkie), synonimy w `description`, pytania, `help`, `example`; potem
+> `retman-eval` wg `docs/specs/retman-eval.md` (status: do akceptacji autora) i
+> `retman doctor`. basal-serve niedostępny — backend `basal` czeka. Decyzje autora:
+> operacja drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01,
+> N-07, rozdz. 8), ADR wsteczne dla pierwszej sesji.
+
+### Etykiety i opisy opcji (2026-10-12)
+
+- **Zlecenie użytkownika:** stan prac; pytanie, dlaczego `pl.toml` obok NMT wymienia DEM
+  i „rzeźbę terenu”.
+- **Decyzje użytkownika:** opcje rozdzielone jak operacje — `label` dla użytkownika,
+  `description` z synonymami i nazwami angielskimi dla modelu, bo w praktyce używa się
+  angielskich nazw i skrótów (ADR-007).
+- **Zrobione:**
+  - `core/pipeline.py`: pytania i plan pokazują `options.<klucz>.label`; model dostaje
+    `options.<klucz>.description` (także `unspecified`) — przy poleceniu i przy odpowiedzi
+    własnymi słowami; odpowiedź na pytanie o operację model dopasowuje do `description`
+    operacji, nie do `label`;
+  - `registry/manifest.py`: walidacja wymaga `label` i `description` każdej opcji
+    oraz `unspecified.description`;
+  - `retman/tools/kartograf/pl.toml`: krótkie etykiety opcji; w opisach dodane DTM,
+    orthophoto, PUWG 1992, UTM 33N, Křovák, poziom odniesienia Amsterdam, GPKG/SHP;
+  - testy: `test_choice_options_show_labels_and_offer_descriptions_to_model`, przypadek
+    opcji z jednym tekstem w `test_validate_manifest_reports_missing_language_option_and_example`;
+    fixture `dummy_tool/pl.toml` w nowym schemacie;
+  - dokumentacja: ADR-007, ARCHITECTURE 4.2, STANDARDS 17.1, CHANGELOG.
+- **Weryfikacja:** `pytest -m "not live"` — 143 passed; `ruff check`, `ruff format
+  --check`, `mypy retman/ tests/` czyste. Smoke (skrypt z `FakeDecisionBackend`
+  na prawdziwych tekstach Kartografa): pytanie pokazuje „1 m”, „5 m (tylko EVRF2007)”,
+  plan „Rozdzielczość NMT: 1 m”, model dostał opisy z „NMT/DEM”. Bez modelu na żywo —
+  wpływ synonimów na trafność zmierzy `retman-eval`.
+- **Otwarte:** przegląd treści `pl.toml` z autorem (etykiety i synonimy są propozycją agenta).
 
 ### Pionowy przekrój na Kartografie 0.7.2 (2026-10-11)
 

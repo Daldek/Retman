@@ -170,7 +170,7 @@ class Retman:
             if options is not None
             else (
                 [
-                    Option(key, operation.text(f"{prefix}.options.{key}"))
+                    Option(key, operation.text(f"{prefix}.options.{key}.label"))
                     for key in spec.get("options", [])
                 ]
                 if spec["type"] == "choice"
@@ -201,7 +201,7 @@ class Retman:
 
     def _display(self, operation: Operation, spec: ParamSpec, value: Any) -> str:
         if spec["type"] == "choice":
-            return operation.text(f"params.{spec['name']}.options.{value}")
+            return operation.text(f"params.{spec['name']}.options.{value}.label")
         if isinstance(value, dict):
             # Area values are normalized (x = east, y = north), so the plan
             # shows how Retman read them (ARCHITECTURE 6.1, note on coordinates)
@@ -356,11 +356,12 @@ class Retman:
                 if decision.key not in ("yes", "no"):
                     raise InvalidModelAnswerError(self.backend.url, decision.key)
             else:
+                # Labels are for the user; descriptions with synonyms and English
+                # names are for the model (ARCHITECTURE 4.2)
                 options = {
-                    key: operation.text(f"{prefix}.options.{key}")
-                    for key in spec["options"]
+                    key: operation.text(f"{prefix}.options.{key}.description")
+                    for key in [*spec["options"], "unspecified"]
                 }
-                options["unspecified"] = operation.text(f"{prefix}.options.unspecified")
                 decision = self._choose(plan.command, question, options)
             recorded = self._audit_decision(name, question, decision)
             plan.decisions.append(recorded)
@@ -560,7 +561,10 @@ class Retman:
         elif selection is not None:
             value = selection.value if selection.value is not None else selection.key
         elif name == "operation":
-            choices = {option.key: option.label for option in question.options}
+            choices = {
+                option.key: self.operations[option.key].text("description")
+                for option in question.options
+            }
             decision = self._choose(answer, question.text, choices)
             value = decision.key if not self._uncertain(decision, "operation") else None
             updated.decisions.append(
@@ -571,7 +575,14 @@ class Retman:
             and (spec := self.operations[updated.operation].parameter(name)) is not None
             and spec["type"] != "free"
         ):
-            choices = {option.key: option.label for option in question.options}
+            choices = {
+                option.key: self.operations[updated.operation].text(
+                    f"params.{name}.options.{option.key}.description"
+                )
+                if spec["type"] == "choice"
+                else option.label
+                for option in question.options
+            }
             decision = self._choose(answer, question.text, choices)
             value = decision.key if not self._uncertain(decision, "parameter") else None
             updated.decisions.append(

@@ -68,6 +68,33 @@ def test_plan_missing_choice_then_user_answer_preserves_sources(create_app):
     assert not original.confirmed
 
 
+def test_choice_options_show_labels_and_offer_descriptions_to_model(create_app):
+    app = create_app({"make_dem": "make_dem"})
+
+    plan = app.plan(f"Zrób NMT dla arkusza {SHEET}")
+    backend = app.backend
+    backend.rules["smooth"] = "smooth"  # the model reads the user's own words
+    answered = plan.answer("style", "smooth")
+
+    # The user sees short labels in questions and in the plan ...
+    assert [option.label for option in plan.questions[0].options] == [
+        "Surowy",
+        "Wygładzony",
+    ]
+    assert answered.display["style"] == "Wygładzony"
+    # ... while the model matches the command and the answer against
+    # descriptions with synonyms (an English "smooth" exists only there)
+    command_options, answer_options = (
+        options for state, _, options in backend.calls if "smooth" in options
+    )
+    assert command_options["smooth"] == "Wygładzony, smooth — po wygładzeniu"
+    assert command_options["unspecified"] == "Nie określono stylu"
+    assert answer_options == {
+        "raw": "Surowy, raw — bez wygładzania",
+        "smooth": "Wygładzony, smooth — po wygładzeniu",
+    }
+
+
 def test_plan_missing_free_value_reasks_with_error(create_app):
     app = create_app({"make_dem": "make_dem", "raw": "raw"})
     plan = app.plan("Zrób NMT bez podania godła")

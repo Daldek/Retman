@@ -77,5 +77,9 @@ Linki porównań na końcu pliku, od najnowszego:
 
 - Operacje Kartografa nie mają wartości domyślnych: Retman dopytuje o rozdzielczość,
   układ wysokościowy i format, jeśli polecenie ich nie podaje (ADR-006).
+- Opcje parametrów mają osobną etykietę dla użytkownika i opis dla modelu, jak operacje:
+  plan i pytania pokazują krótkie nazwy („NMT (numeryczny model terenu)”, „1 m”), a model
+  dopasowuje polecenie i odpowiedzi do opisów z synonymami i nazwami angielskimi (DEM, DTM,
+  DSM, orthophoto, GPKG, SHP) (ADR-007, ARCHITECTURE 4.2).
 
 [0.1.0]: https://github.com/Daldek/Retman/commits/develop

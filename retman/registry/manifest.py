@@ -147,8 +147,9 @@ def validate_manifest(
         for language, texts in translations.items():
             if language not in manifest["translations"]:
                 continue
-            # "label" is shown to the user; "description" (with synonyms) only
-            # to the decision model
+            # "label" is shown to the user; "description" (with synonyms and
+            # English names) only to the decision model — for operations and
+            # options alike; "unspecified" is never shown, so it has no label
             required = [
                 f"operations.{op_id}.label",
                 f"operations.{op_id}.description",
@@ -159,10 +160,12 @@ def validate_manifest(
                 if param["type"] == "free":
                     required.append(f"{prefix}.example")
                 if param["type"] == "choice":
-                    required.extend(
-                        f"{prefix}.options.{key}" for key in param["options"]
-                    )
-                    required.append(f"{prefix}.options.unspecified")
+                    for key in param["options"]:
+                        required.extend(
+                            f"{prefix}.options.{key}.{field}"
+                            for field in ("label", "description")
+                        )
+                    required.append(f"{prefix}.options.unspecified.description")
             for key in required:
                 try:
                     texts.get(key)

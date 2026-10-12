@@ -539,18 +539,24 @@ description = "Obliczenie przepływu maksymalnego o zadanym prawdopodobieństwie
 [operations.peak_flow.params.method]
 label = "Metoda"
 question = "Jaką metodą policzyć przepływ?"
-options.punzet = "Metoda Punzeta"
-options.bogdanowicz_stachy = "Metoda Bogdanowicz-Stachy"
-options.scs_cn = "Metoda SCS-CN"
+options.punzet.label = "Metoda Punzeta"
+options.punzet.description = "Metoda Punzeta, Punzet"
+options.bogdanowicz_stachy.label = "Metoda Bogdanowicz-Stachy"
+options.bogdanowicz_stachy.description = "Metoda Bogdanowicz-Stachy, Bogdanowicz i Stachý"
+options.scs_cn.label = "Metoda SCS-CN"
+options.scs_cn.description = "Metoda SCS-CN, Soil Conservation Service, curve number, CN"
+options.unspecified.description = "Polecenie nie określa metody"
 
 [operations.peak_flow.params.probability]
 label = "Prawdopodobieństwo przewyższenia"
 ```
 
 Zasady:
-- `label` operacji to krótka nazwa pokazywana użytkownikowi (plan, pytania, lista operacji);
-  `description` trafia tylko do modelu decyzyjnego i może zawierać synonimy i określenia
-  potoczne, bo to one pomagają dopasować polecenie. To samo dotyczy opisów opcji.
+- `label` operacji i opcji to krótka nazwa pokazywana użytkownikowi (plan, pytania, lista
+  operacji); `description` trafia tylko do modelu decyzyjnego i może zawierać synonimy,
+  określenia potoczne oraz nazwy i skróty angielskie (DEM, DSM, SHP), bo to one pomagają
+  dopasować polecenie i odpowiedź użytkownika (ADR-007). Opcja `unspecified` nie jest
+  pokazywana użytkownikowi, więc ma tylko `description`.
 - Parametr `free` ma też `example` (przykład formatu w pytaniu), a każdy parametr może
   mieć `help` (odpowiedź na `?`, p. 6.4).
 - Test automatyczny sprawdza, że każda operacja, parametr i opcja ma tekst w każdym
