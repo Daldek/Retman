@@ -41,6 +41,25 @@ Szablony wpisów: [Szablony](#szablony).
 > ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza zakresu
 > w CLI.
 
+### Kod EPSG bez prefiksu (2026-10-12)
+
+- **Zlecenie użytkownika:** Retman ma rozpoznawać kod EPSG także jako samą liczbę
+  z kontekstu (`2180` zamiast `EPSG:2180`).
+- **Ustalenia:** prostokąt (ekstraktor `area`) już wcześniej nie zależał od zapisu
+  `EPSG:` — układ wynika z zakresu liczb; same `2180`/`3045` nie są czytane jako TERYT ani
+  współrzędna (sprawdzone). Kod EPSG w poleceniu dotyczy więc tylko wyboru `target_crs`,
+  który robi model z kontekstu (prostokąt wejściowy vs wynik).
+- **Zrobione:** opisy opcji `target_crs` dla modelu z samym kodem (`EPSG:2180, kod 2180 —
+  …`), opis `unspecified` odróżnia układ prostokąta wejściowego od układu wyniku, `help`
+  pytania mówi, że kod można podać samą liczbą; w zbiorze `retman-eval`
+  `kartograf-cutout-016`–`019` (kody bez prefiksu, w tym przypadek dwuznaczny „w układzie
+  2180” → pytanie); USAGE 9, CHANGELOG.
+- **Weryfikacja:** `pytest -m "not live"` — 179 passed (walidacja zbioru z nowymi wpisami).
+  Bez przebiegu na modelu — skuteczność zmierzy `retman-eval` na nowych wpisach.
+- **Otwarte:** jeśli Bielik nie będzie trafnie wiązał samych kodów, alternatywą jest
+  rozpoznawanie kodu w kodzie (ekstraktor z regułami kontekstu „wynik/do/przelicz”) —
+  decyzja po przebiegu `retman-eval`.
+
 ### Przewodnik `docs/USAGE.md` (2026-10-12)
 
 - **Zlecenie użytkownika:** opis sposobu pracy z Retmanem z przykładami.
