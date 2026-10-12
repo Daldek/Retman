@@ -31,7 +31,8 @@ każda relacja jest zapisana po obu stronach.
 | [ADR-007](#adr-007-opcje-z-etykietą-dla-użytkownika-i-opisem-dla-modelu) | Opcje z etykietą dla użytkownika i opisem dla modelu | 2026-10-12 | Przyjęta |
 | [ADR-008](#adr-008-osobne-pytanie-dla-modelu-model_question) | Osobne pytanie dla modelu (`model_question`) | 2026-10-12 | Przyjęta |
 | [ADR-009](#adr-009-układ-wyniku-wycinka-rozpoznawany-w-kodzie) | Układ wyniku wycinka rozpoznawany w kodzie | 2026-10-12 | Przyjęta |
-| [ADR-010](#adr-010-zbiór-poleceń-ze-wszystkich-projektów) | Zbiór poleceń ze wszystkich projektów | 2026-10-12 | Przyjęta |
+| [ADR-010](#adr-010-zbiór-poleceń-ze-wszystkich-projektów) | Zbiór poleceń ze wszystkich projektów | 2026-10-12 | Przyjęta — uzupełniona przez ADR-011 |
+| [ADR-011](#adr-011-eksport-zbioru-poleceń-i-szkic-wpisów-retman-eval) | Eksport zbioru poleceń i szkic wpisów `retman-eval` | 2026-10-12 | Przyjęta (wdrożenie odłożone) |
 
 ---
 
@@ -264,7 +265,7 @@ liter; jedna literówka tolerowana w słowach od 5 liter, krótkie słowa i kody
 ## ADR-010: Zbiór poleceń ze wszystkich projektów
 
 **Data:** 2026-10-12
-**Status:** Przyjęta
+**Status:** Przyjęta — uzupełniona przez ADR-011 (przekazanie zbioru i szkic wpisów `retman-eval`)
 
 **Kontekst:** `[privacy] collect_commands` istniało w konfiguracji bez określonego działania
 (miejsce zapisu „—” w ARCHITECTURE 5.4). Autor chce oceniać rozpoznanie poleceń na podstawie
@@ -285,6 +286,52 @@ collect_commands=)`; wpis po każdym wyniku planowania (dla zatwierdzonego — p
 z jego wynikiem), bez adresu serwera i ścieżek lokalnych; `retman-eval` nie zbiera.
 ARCHITECTURE 5.4, 9.1, rozdz. 10. Otwarte: sposób przekazania zbioru autorowi (osobna,
 wyraźna zgoda, nigdy automatycznie) i krok „zbiór → szkic wpisów `retman-eval`”.
+
+---
+
+## ADR-011: Eksport zbioru poleceń i szkic wpisów `retman-eval`
+
+**Data:** 2026-10-12
+**Status:** Przyjęta; uzupełnia ADR-010. **Wdrożenie odłożone** (decyzja autora, 2026-10-12).
+
+**Kontekst:** ADR-010 zostawił otwarte dwie sprawy: jak użytkownik przekazuje zbiór poleceń
+autorowi (nigdy automatycznie, ARCHITECTURE rozdz. 10) i jak z pełnych wpisów zbioru
+powstają wpisy zbioru testowego `retman-eval` (spec. `docs/specs/2026-10-11-retman-eval.md`).
+
+**Opcje:**
+- przekazanie: A) eksport do pliku i wysyłka ręczna przez użytkownika (e-mail, prywatny
+  kanał); B) załącznik do zgłoszenia na GitHubie (publiczny — polecenia zawierają
+  lokalizacje); C) prywatne repozytorium albo formularz z uploadem;
+- szkic wpisów: 1) opcja `retman-eval`; 2) część eksportu; 3) osobne podpolecenie obok
+  eksportu.
+
+**Decyzja:**
+- przekazanie: **A** (wybór autora); **C z formularzem** do rozważenia później — przyjmie te
+  same pełne wpisy, więc nie zmienia formatu;
+- szkic: **3** — polecenie `retman collect` z dwoma podpoleceniami:
+  - `retman collect export [--from RRRR-MM-DD] [--to RRRR-MM-DD] --output PLIK` — kopiuje
+    pełne wpisy z okresu, wypisuje ich liczbę według operacji i statusu (do przejrzenia
+    przed wysłaniem), nic nie wysyła; kod 1, gdy zbieranie jest wyłączone albo wybór pusty;
+  - `retman collect draft PLIK --output SZKIC` — zamienia pełne wpisy (z eksportu albo
+    zbioru) na wpisy `retman-eval` ze stabilnym `id`, tagiem `collected` i polem `review`
+    w miejscach do rozstrzygnięcia przez człowieka.
+
+Uzasadnienie wyboru 3: `retman-eval` mierzy i wymaga modelu, a szkic to zamiana formatu bez
+modelu, po której i tak następuje przegląd człowieka; eksport robi użytkownik, który nie
+powinien rozstrzygać oczekiwań testu, a szkic gubi dane (decyzje modelu, prawdopodobieństwa,
+status), których autor potrzebuje do analiz; szkic robi autor — także z plików od testerów.
+
+**Reguły szkicu:** wartość ze źródłem `command` w planie zatwierdzonym → `params`; wartość
+ze źródłem `user` → `review` (polecenie jej nie podało — `expect_clarify` — albo model był
+niepewny lub się mylił); plan odrzucony, zmieniony lub anulowany → `review`; „poza
+zakresem” → `operation: "out_of_scope"` z `review`, czy słusznie. Wpis z nieprzejrzanym
+polem `review` jest odrzucany przez walidację zbioru (`retman/eval/dataset.py`).
+
+**Konsekwencje (przy wdrożeniu):** kod szkicu obok walidacji zbioru
+(`retman/eval/dataset.py`), polecenie w CLI; ARCHITECTURE 5.4 i 7.1 (lista poleceń), USAGE
+6.4, specyfikacja `retman-eval` p. 2 (pole `review`, tag `collected`). Do ustalenia przy
+wdrożeniu: czy eksport może anonimizować wpisy (np. pomijać wybrane), skoro współrzędne są
+potrzebne do testów.
 
 ---
 

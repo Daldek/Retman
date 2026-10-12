@@ -33,10 +33,11 @@ Szablony wpisów: [Szablony](#szablony).
 > **START NASTĘPNEJ SESJI (stan 2026-10-12):** praca na `develop` (commity lokalne,
 > niewypchnięte). Przebiegi `retman-eval` na Bieliku 11B przed i po ADR-008/ADR-009:
 > `docs/research/2026-10-12-bielik-11b-retman-eval.md` (W-02: 0/189 po ADR-009).
-> **Najpierw:** decyzje autora — sposób przekazania zbioru poleceń autorowi i krok „zbiór →
-> szkic wpisów `retman-eval`” (ADR-010, otwarte), progi (operacja ok. 0,70; parametry 0,67,
-> słabo potwierdzone), strojenie opisu operacji arkuszy potomnych, przegląd zbioru (spec. 10
-> pkt 2). Istniejące pliki `retman.toml` wymagają nowego klucza `[privacy] collect_path`.
+> **Najpierw:** decyzje autora — progi (operacja ok. 0,70; parametry 0,67, słabo
+> potwierdzone), strojenie opisu operacji arkuszy potomnych, przegląd zbioru (spec. 10
+> pkt 2), kiedy wdrożyć `retman collect export`/`draft` (ADR-011, zapisane, wdrożenie
+> odłożone przez autora). Istniejące pliki `retman.toml` wymagają klucza
+> `[privacy] collect_path`.
 > Adres LM Studio podaje użytkownik — nie zapisywać. Pozostałe decyzje autora: operacja
 > drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07,
 > rozdz. 8), ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza
@@ -57,7 +58,9 @@ Szablony wpisów: [Szablony](#szablony).
   `retman init` w terminalu (odpowiedź „t”) → `collect_commands = true` i pełna ścieżka;
   bez terminala → `false`; polecenie z odpowiedzią i odrzuceniem → wpis w zbiorze
   i w dzienniku z decyzjami modelu (format 0,72) i wartościami ze źródłami.
-- **Otwarte:** przekazanie zbioru autorowi; eksport zbioru do szkicu wpisów `retman-eval`.
+- **Otwarte:** przekazanie zbioru i szkic wpisów `retman-eval` — rozstrzygnięte w ADR-011
+  (droga A: eksport i wysyłka ręczna, formularz z uploadem do rozważenia; `retman collect
+  export` i `retman collect draft`), wdrożenie odłożone przez autora.
 
 ### Układ wyniku rozpoznawany w kodzie — ADR-009 (2026-10-12)
 
@@ -366,6 +369,8 @@ Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
 - [x] **Rejestr operacji, wspólny adapter, `kinds`** (ARCHITECTURE 3.2, 4.1–4.3).
 - [ ] **`retman-scaffold`** — szkice i kontrola rozjazdów (ARCHITECTURE 3.2.3); jest
   w bramce CLAUDE.md, a jeszcze nie istnieje.
+- [ ] **`retman collect export` i `retman collect draft`** (ADR-011) — wdrożenie odłożone
+  przez autora; zakres i reguły szkicu w ADR-011.
 - [x] **Przestrzeń robocza, dziennik projektu, ślad audytowy** (ARCHITECTURE 5).
 - [x] **CLI, `results`, `log`, `init`** (ARCHITECTURE 6.4, 7.1).
 - [ ] **CI** — Windows, Linux, macOS; test instalacji; testy handlerów na
