@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from retman.backends.base import DecisionBackend
-from retman.config import init_config, load_config
+from retman.config import default_collect_path, init_config, load_config
 from retman.core.dialog import Question
 from retman.core.pipeline import Retman
 from retman.core.plan import Plan
@@ -157,7 +157,20 @@ def main(
     texts = load_core_texts("pl")
     try:
         if args.command == "init":
-            print(init_config(args.config))
+            # Collecting commands needs the user's explicit answer (ADR-010);
+            # without a terminal it stays off and the file says so
+            collect = False
+            if sys.stdin.isatty():
+                print(texts.get("cli.collect_question", path=default_collect_path()))
+                answer = input(texts.get("cli.collect_prompt")).strip().lower()
+                collect = answer in ("t", "tak")
+            print(init_config(args.config, collect_commands=collect))
+            print(
+                texts.get(
+                    "cli.collect_on" if collect else "cli.collect_off",
+                    path=default_collect_path(),
+                )
+            )
             return 0
         if args.command == "doctor":
             report, report_texts = run_doctor(

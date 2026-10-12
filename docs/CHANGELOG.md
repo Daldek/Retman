@@ -98,6 +98,13 @@ Linki porównań na końcu pliku, od najnowszego:
   plan i pytania pokazują krótkie nazwy („NMT (numeryczny model terenu)”, „1 m”), a model
   dopasowuje polecenie i odpowiedzi do opisów z synonymami i nazwami angielskimi (DEM, DTM,
   DSM, orthophoto, GPKG, SHP) (ADR-007, ARCHITECTURE 4.2).
+- Dziennik projektu zapisuje przy każdym planie wartości ze źródłami, decyzje modelu
+  z pewnością i nazwę zmienianej wartości, a polecenie spoza zakresu — jako osobne zdarzenie
+  z decyzją modelu (ARCHITECTURE 5.4, ADR-010).
+- Zbiór poleceń ze wszystkich projektów w jednym pliku (`[privacy] collect_commands`,
+  `collect_path`), tylko po wyraźnej zgodzie — `retman init` pyta o nią w terminalu
+  (ADR-010, ARCHITECTURE 5.4, rozdz. 10). Nowy klucz `collect_path` jest wymagany w
+  `retman.toml`.
 - Układ wyniku wycinka rozpoznaje kod, nie model: kod EPSG z prefiksem lub bez, nazwa
   (PL-1992, S-JTSK, ETRS89/TM33 …), rola z kontekstu („wynik”, „do”, „przelicz” — wynik;
   zaraz po współrzędnych — prostokąt), bez polskich znaków i z jedną literówką w słowach;

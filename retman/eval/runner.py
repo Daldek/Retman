@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import monotonic
@@ -146,7 +147,13 @@ def evaluate_command(
     counting = CountingBackend(backend, config)
     with TemporaryDirectory(dir=temporary_dir) as folder:
         project = Path(folder)
-        retman = Retman(config, counting, project, operations=operations)
+        # Evaluation commands are not the user's work: never collect them (ADR-010)
+        retman = Retman(
+            replace(config, collect_commands=False),
+            counting,
+            project,
+            operations=operations,
+        )
         start = monotonic()
         initial_question: dict[str, Any] = {"asked": False, "offered": []}
         operation_offered: bool | None = None

@@ -61,6 +61,8 @@ retman init        # tworzy plik centralny retman.toml z komentarzami
 ```
 
 `retman init` wypisuje ścieżkę utworzonego pliku i nigdy nie nadpisuje istniejącego.
+W terminalu pyta też, czy zbierać polecenia ze wszystkich projektów w jednym pliku (p. 6.4);
+domyślnie — Enter — nie. Bez terminala zbieranie zostaje wyłączone.
 Szablon jest ustawiony na basal, więc dla LM Studio trzeba zmienić sekcję `[decision]`
 (wartości adresu i modelu — własne):
 
@@ -316,7 +318,20 @@ $ retman log
 ```
 
 Dziennik jest tylko dopisywany i obejmuje także plany odrzucone, zmienione i przerwane.
-Treść poleceń i odpowiedzi zapisuje się przy `[log] journal_commands = true` (domyślnie).
+Przy każdym planie zapisuje, co Retman zrozumiał: wartości ze źródłami (`values`), decyzje
+modelu z pewnością (`decisions`) i — przy zmianie — którą wartość poprawiono (`changed`);
+polecenie spoza zakresu ma własne zdarzenie z decyzją modelu. Treść poleceń i odpowiedzi
+zapisuje się przy `[log] journal_commands = true` (domyślnie).
+
+### 6.4. Zbiór poleceń (opcjonalny)
+
+Po zgodzie w `retman init` (`[privacy] collect_commands = true`) Retman dopisuje wynik
+każdego planowania ze wszystkich projektów do jednego pliku (`[privacy] collect_path`):
+polecenie, Twoje odpowiedzi, wartości ze źródłami, decyzje modelu, status (zatwierdzony
+z wynikiem wykonania, odrzucony, zmieniony, anulowany, poza zakresem), wersje i nazwę modelu
+— bez adresu serwera i bez ścieżek lokalnych. Plik zostaje na Twoim komputerze; służy do
+budowy zbioru testowego `retman-eval` z prawdziwej pracy. Wyłączenie: `collect_commands =
+false`.
 
 ---
 

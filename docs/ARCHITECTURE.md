@@ -786,7 +786,8 @@ poleceń ani odpowiedzi użytkownika; pozostałe dane audytowe są zapisywane za
 | --- | --- |
 | polecenie | treść (jeśli `journal_commands = true`), czas, identyfikator sesji |
 | pytanie i odpowiedź | treść pytania, odpowiedź użytkownika (jeśli `journal_commands = true`) |
-| plan | pokazany plan i jego decyzja: **zatwierdzony / odrzucony / zmieniony / anulowany** |
+| plan | pokazany plan i jego decyzja: **zatwierdzony / odrzucony / zmieniony / anulowany**; do tego dane: wartości ze źródłami (`values`, `inputs`), otwarte pytania, decyzje modelu z pewnością (`decisions`), a przy zmianie — nazwa zmienianej wartości (`changed`) |
+| poza zakresem | decyzja modelu, że polecenie nie dotyczy żadnej operacji (z pewnością) |
 | wykonanie | numer wyniku albo opis błędu |
 
 Dziennik jest **tylko dopisywany** — Retman nigdy nie zmienia ani nie usuwa wpisów. Zapisuje
@@ -809,13 +810,25 @@ błędy), w katalogu logów użytkownika: Linux `~/.local/state/retman/`, macOS
 `~/Library/Logs/retman/`, Windows `%LOCALAPPDATA%\retman\Logs\`. **Bez treści poleceń.**
 Poziom szczegółowości ustawia plik centralny (`diagnostic_level`, p. 9.1).
 
-**Trzy rzeczy, których nie należy mylić:**
+**4. Zbiór poleceń** (opcjonalny, ADR-010) — jeden plik ze **wszystkich** projektów, do budowy
+i strojenia zbioru testowego (`retman-eval`). Każdy wiersz to wynik planowania: status
+(zatwierdzony z wynikiem wykonania, odrzucony, zmieniony, anulowany, poza zakresem),
+polecenie, odpowiedzi, wartości ze źródłami, pytania, decyzje modelu, wersje Retmana
+i narzędzia, backend i nazwa modelu — **bez adresu serwera** i bez ścieżek lokalnych (z pliku
+geometrii zostaje nazwa). Włącza go tylko wyraźna zgoda: `retman init` pyta o to w terminalu,
+bez terminala zapisuje `false`; ścieżka pliku jest wpisana w `retman.toml` (`collect_path`,
+domyślnie Linux `~/.local/share/retman/collected.jsonl`, macOS
+`~/Library/Application Support/retman/collected.jsonl`, Windows
+`%LOCALAPPDATA%\retman\collected.jsonl`). Zbiór jest niezależny od `journal_commands`;
+`retman-eval` nigdy do niego nie pisze. Plik zostaje na komputerze użytkownika.
+
+**Cztery rzeczy, których nie należy mylić:**
 
 | Co | Gdzie | Treść poleceń |
 | --- | --- | --- |
 | dziennik projektu + dane audytowe | folder projektu | **tak** — to zapis pracy użytkownika; można wyłączyć (`journal_commands`) |
 | log techniczny | katalog logów użytkownika | nie |
-| zbieranie poleceń do ulepszania zbioru testowego | — | domyślnie wyłączone (`collect_commands`, rozdz. 10) |
+| zbiór poleceń | jeden plik użytkownika (`collect_path`) | **tak**, tylko po wyraźnej zgodzie (`collect_commands`, rozdz. 10) |
 
 ### 5.5. Później (v0.2+)
 
@@ -1282,7 +1295,8 @@ journal_commands = true    # store command texts and answers in the project jour
 diagnostic_level = "info"  # technical log in the user's log directory: "debug" | "info" | "warning"
 
 [privacy]
-collect_commands = false   # true = collect commands to improve the test set (separate from the journal)
+collect_commands = false   # true only after the user agreed in retman init (ADR-010)
+collect_path = '/home/<user>/.local/share/retman/collected.jsonl'  # written for this system
 ```
 
 ### 9.2. Systemy i sprzęt [N-06], [N-09]
@@ -1424,9 +1438,10 @@ retman doctor
   zostają w folderze projektu, a zapisywanie w nich treści poleceń i odpowiedzi można wyłączyć
   (`journal_commands = false`, p. 5.4).
 - **Log techniczny** jest zapisywany lokalnie, bez treści poleceń (p. 5.4).
-- Zbieranie treści poleceń do ulepszania zbioru testowego jest **opcjonalne i domyślnie wyłączone** (`[privacy] collect_commands`).
-  Przekazywanie poleceń autorowi wymaga osobnej, wyraźnej zgody użytkownika i nigdy nie dzieje
-  się automatycznie.
+- Zbieranie poleceń ze wszystkich projektów w jednym pliku (`[privacy] collect_commands`,
+  p. 5.4) jest **opcjonalne, domyślnie wyłączone i wymaga wyraźnej zgody** — `retman init`
+  pyta o nią. Plik zostaje na komputerze użytkownika. Przekazywanie poleceń autorowi wymaga
+  osobnej, wyraźnej zgody użytkownika i nigdy nie dzieje się automatycznie.
 
 ---
 

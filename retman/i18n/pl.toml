@@ -99,6 +99,10 @@ results_line = "{summary}"
 log_line = "{time} {event}: {detail}"
 explain = "Decyzja {name}: {choice}, pewność {confidence} ({method}); {probabilities}"
 help = "Wpisz numer opcji lub odpowiedź własnymi słowami; „anuluj” przerywa."
+collect_question = "Czy zbierać Twoje polecenia ze wszystkich projektów w jednym pliku ({path})?\nZapisywane są: polecenie, plan, Twoje odpowiedzi i decyzje modelu — do budowy i strojenia zbioru testowego.\nPlik zostaje na tym komputerze; nic nie jest nigdzie wysyłane. Ustawienie można zmienić w [privacy] collect_commands."
+collect_prompt = "Zbierać polecenia? [t]ak / [N]ie: "
+collect_on = "Zbieranie poleceń włączone: {path}"
+collect_off = "Zbieranie poleceń wyłączone ([privacy] collect_commands = false)."
 
 [results]
 success = "Gotowe. Wynik #{number}: {operation}. Pliki: {directory}"
@@ -114,6 +118,7 @@ approved = "zatwierdzony"
 rejected = "odrzucony"
 changed = "zmieniony"
 cancelled = "anulowany"
+out_of_scope = "poza zakresem"
 
 [errors]
 backend_connection = "Nie można połączyć się z modelem pod adresem {url}. Sprawdź: retman doctor"

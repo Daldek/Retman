@@ -31,6 +31,7 @@ każda relacja jest zapisana po obu stronach.
 | [ADR-007](#adr-007-opcje-z-etykietą-dla-użytkownika-i-opisem-dla-modelu) | Opcje z etykietą dla użytkownika i opisem dla modelu | 2026-10-12 | Przyjęta |
 | [ADR-008](#adr-008-osobne-pytanie-dla-modelu-model_question) | Osobne pytanie dla modelu (`model_question`) | 2026-10-12 | Przyjęta |
 | [ADR-009](#adr-009-układ-wyniku-wycinka-rozpoznawany-w-kodzie) | Układ wyniku wycinka rozpoznawany w kodzie | 2026-10-12 | Przyjęta |
+| [ADR-010](#adr-010-zbiór-poleceń-ze-wszystkich-projektów) | Zbiór poleceń ze wszystkich projektów | 2026-10-12 | Przyjęta |
 
 ---
 
@@ -257,6 +258,33 @@ liter; jedna literówka tolerowana w słowach od 5 liter, krótkie słowa i kody
 (sam kod „2180” wystarcza). Schemat manifestu: `choice` z `extractor` i `option_values`
 (ARCHITECTURE 4.3); walidacja wymaga dla niego tylko tekstów dla użytkownika. Kartograf:
 `download_elevation_cutout.target_crs`.
+
+---
+
+## ADR-010: Zbiór poleceń ze wszystkich projektów
+
+**Data:** 2026-10-12
+**Status:** Przyjęta
+
+**Kontekst:** `[privacy] collect_commands` istniało w konfiguracji bez określonego działania
+(miejsce zapisu „—” w ARCHITECTURE 5.4). Autor chce oceniać rozpoznanie poleceń na podstawie
+pracy z Retmanem i budować z niej zbiór testowy. Dziennik projektu zostaje w folderze
+projektu i nie zawierał decyzji modelu dla planów niewykonanych.
+
+**Opcje:**
+- A) usunąć ustawienie — wystarczy dziennik projektu,
+- B) zbieranie w jednym pliku ze wszystkich projektów, za wyraźną zgodą.
+
+**Decyzja:** B (wybór autora): domyślnie wyłączone, ale `retman init` pyta o zgodę przy
+pierwszej konfiguracji. Dziennik projektu uzupełniony o dane planu (wartości ze źródłami,
+decyzje modelu z pewnością, zmieniana wartość) i o zdarzenie „poza zakresem”.
+
+**Konsekwencje:** `retman/core/collection.py`; `[privacy] collect_path` (pełna ścieżka
+wpisana przez `retman init`, bez ukrytej wartości domyślnej, N-11); `init_config(…,
+collect_commands=)`; wpis po każdym wyniku planowania (dla zatwierdzonego — po wykonaniu,
+z jego wynikiem), bez adresu serwera i ścieżek lokalnych; `retman-eval` nie zbiera.
+ARCHITECTURE 5.4, 9.1, rozdz. 10. Otwarte: sposób przekazania zbioru autorowi (osobna,
+wyraźna zgoda, nigdy automatycznie) i krok „zbiór → szkic wpisów `retman-eval`”.
 
 ---
 

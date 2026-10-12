@@ -62,6 +62,7 @@ class Config:
     journal_commands: bool
     diagnostic_level: DiagnosticLevel
     collect_commands: bool
+    collect_path: Path
 
 
 def default_config_path() -> Path:
@@ -97,16 +98,39 @@ def default_log_dir() -> Path:
     return base / "retman"
 
 
-def config_template() -> str:
-    """Text of the full config file with comments, written by ``retman init``."""
+def default_collect_path() -> Path:
+    """Default file of the command collection for the current system (ADR-010).
+
+    Linux: ``$XDG_DATA_HOME/retman/collected.jsonl`` (default ``~/.local/share``);
+    macOS: ``~/Library/Application Support/retman/collected.jsonl``;
+    Windows: ``%LOCALAPPDATA%\\retman\\collected.jsonl``.
+    """
+    if sys.platform == "win32":
+        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        xdg = os.environ.get("XDG_DATA_HOME")
+        base = Path(xdg) if xdg else Path.home() / ".local" / "share"
+    return base / "retman" / "collected.jsonl"
+
+
+def config_template(*, collect_commands: bool = False) -> str:
+    """Text of the full config file with comments, written by ``retman init``.
+
+    The collection path is written out for this system, so the file shows every
+    value Retman uses (no hidden defaults, N-11).
+    """
     return (
         resources.files("retman")
         .joinpath("config_template.toml")
         .read_text(encoding="utf-8")
+        .replace("@COLLECT_COMMANDS@", "true" if collect_commands else "false")
+        .replace("@COLLECT_PATH@", str(default_collect_path()))
     )
 
 
-def init_config(path: Path | None = None) -> Path:
+def init_config(path: Path | None = None, *, collect_commands: bool = False) -> Path:
     """
     Write the full config file from the template (``retman init``).
 
@@ -114,6 +138,9 @@ def init_config(path: Path | None = None) -> Path:
     ----------
     path : Path, optional
         Target file; the system location by default.
+    collect_commands : bool, optional
+        The user's explicit answer about collecting commands (ADR-010);
+        disabled unless the user agreed.
 
     Returns
     -------
@@ -130,7 +157,11 @@ def init_config(path: Path | None = None) -> Path:
     if target.exists():
         raise ConfigError(target, ["already_exists"])
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(config_template(), encoding="utf-8", newline="\n")
+    target.write_text(
+        config_template(collect_commands=collect_commands),
+        encoding="utf-8",
+        newline="\n",
+    )
     return target
 
 
@@ -307,6 +338,10 @@ def _parse(path: Path, data: dict[str, Any]) -> Config:
     journal_commands = read.boolean("log.journal_commands")
     diagnostic_level = read.choice("log.diagnostic_level", _DIAGNOSTIC_LEVELS)
     collect_commands = read.boolean("privacy.collect_commands")
+    collect_path = read.string("privacy.collect_path")
+    if collect_path is not None and not Path(collect_path).is_absolute():
+        read.fail("invalid_value", "privacy.collect_path")
+        collect_path = None
 
     if read.problems:
         raise ConfigError(path, read.problems, read.details)
@@ -333,4 +368,5 @@ def _parse(path: Path, data: dict[str, Any]) -> Config:
         journal_commands=cast(bool, journal_commands),
         diagnostic_level=cast(DiagnosticLevel, diagnostic_level),
         collect_commands=cast(bool, collect_commands),
+        collect_path=Path(cast(str, collect_path)),
     )

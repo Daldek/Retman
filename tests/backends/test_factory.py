@@ -30,6 +30,7 @@ def test_build_decision_backend_rejects_unavailable_basal_service():
         journal_commands=False,
         diagnostic_level="info",
         collect_commands=False,
+        collect_path=Path("/tmp/retman-collected.jsonl"),
     )
 
     with pytest.raises(ConfigError) as caught:

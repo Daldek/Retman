@@ -45,11 +45,18 @@ def create_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         confidence: float = 1.0,
         journal_commands: bool = True,
         thresholds: Thresholds | None = None,
+        collect: bool = False,
     ) -> Retman:
         decision = replace(
             config.decision, thresholds=thresholds or config.decision.thresholds
         )
-        settings = replace(config, decision=decision, journal_commands=journal_commands)
+        settings = replace(
+            config,
+            decision=decision,
+            journal_commands=journal_commands,
+            collect_commands=collect,
+            collect_path=tmp_path / "collection" / "collected.jsonl",
+        )
         return Retman(
             settings,
             FakeDecisionBackend(rules, confidence=confidence),
@@ -441,3 +448,81 @@ def test_answer_with_bare_code_or_unsupported_system(cutout_app):
     assert question.error is not None and "EPSG:4326" in question.error
     assert accepted.values["target_crs"].value == "epsg_2180"
     assert accepted.values["target_crs"].source == "user"
+
+
+def _uncertain_style(create_app, **kwargs):
+    """Operation sure, style decided with confidence below the 0.9 threshold."""
+    return create_app(
+        {
+            "make_dem": "make_dem",
+            "raw": Decision("raw", {"raw": 0.6, "smooth": 0.4}, 0.6, "logprobs"),
+        },
+        thresholds=Thresholds(operation=0.7, parameter=0.9),
+        **kwargs,
+    )
+
+
+def test_journal_keeps_what_the_model_chose_for_plans_never_executed(create_app):
+    app = _uncertain_style(create_app)
+
+    plan = app.plan(f"NMT dla {SHEET}").answer("style", "1")
+    changed = plan.change("style").answer("style", "2")
+    app.record_plan(changed, "rejected")
+    plans = [e for e in app.journal.entries() if e["event"] == "plan"]
+
+    assert [p["status"] for p in plans] == ["changed", "rejected"]
+    # Which value the user corrected, without inferring it from later questions
+    assert plans[0]["changed"] == "style"
+    assert plans[0]["values"]["style"] == {"value": "raw", "source": "user"}
+    assert plans[1]["values"]["style"] == {"value": "smooth", "source": "user"}
+    # The model's choice and its confidence survive even though nothing ran
+    style = next(d for d in plans[1]["decisions"] if d["name"] == "style")
+    assert (style["key"], style["confidence"], style["method"]) == (
+        "raw",
+        0.6,
+        "logprobs",
+    )
+
+
+def test_journal_records_out_of_scope_decision(create_app):
+    app = create_app({"out_of_scope": "out_of_scope"})
+
+    with pytest.raises(OutOfScopeError):
+        app.plan("Jaka będzie jutro pogoda?")
+    event = app.journal.entries()[-1]
+
+    assert event["event"] == "out_of_scope"
+    assert event["decisions"][0]["key"] == "out_of_scope"
+
+
+def test_collection_is_off_unless_enabled(create_app, tmp_path: Path):
+    app = create_app({"make_dem": "make_dem", "raw": "raw"})
+
+    app.execute(app.plan(f"NMT dla {SHEET}").confirm())
+
+    assert not (tmp_path / "collection").exists()
+
+
+def test_collection_gathers_outcomes_with_commands_answers_and_decisions(
+    create_app, tmp_path: Path
+):
+    app = _uncertain_style(create_app, collect=True, journal_commands=False)
+
+    plan = app.plan(f"NMT dla {SHEET}").answer("style", "2")
+    app.record_plan(plan, "rejected")
+    app.execute(app.plan(f"NMT dla {SHEET}").answer("style", "1").confirm())
+    with pytest.raises(OutOfScopeError):
+        create_app({"out_of_scope": "out_of_scope"}, collect=True).plan("Pogoda?")
+    lines = (tmp_path / "collection" / "collected.jsonl").read_text("utf-8")
+    records = [json.loads(line) for line in lines.splitlines()]
+
+    assert [r["status"] for r in records] == ["rejected", "approved", "out_of_scope"]
+    rejected, approved, out_of_scope = records
+    # Collected with explicit consent, even when the project journal omits texts
+    assert rejected["command"] == f"NMT dla {SHEET}"
+    assert rejected["answers"] == {"style": "2"}
+    assert rejected["values"]["style"] == {"value": "smooth", "source": "user"}
+    assert approved["result"] == {"ok": True, "error": None}
+    assert approved["environment"]["tools"] == {"dummy_tool": "1.2.0"}
+    assert out_of_scope["command"] == "Pogoda?"
+    assert "url" not in json.dumps(records)

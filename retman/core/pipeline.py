@@ -13,6 +13,7 @@ from retman.adapters import execute_operation
 from retman.backends import build_decision_backend
 from retman.backends.base import Decision, DecisionBackend
 from retman.config import Config, load_config
+from retman.core.collection import Collection
 from retman.core.dialog import Option, Question
 from retman.core.journal import Journal, sha256_file, utc_now
 from retman.core.plan import Plan, PlanValue, Source
@@ -56,6 +57,9 @@ class Retman:
         self.workspace = Workspace(project_dir, config.results_dir)
         self.journal = Journal(
             self.workspace.root, str(uuid.uuid4()), config.journal_commands
+        )
+        self.collection = Collection(
+            config.collect_path if config.collect_commands else None
         )
 
     @classmethod
@@ -114,6 +118,12 @@ class Retman:
         question = self.texts.get("dialog.operation")
         decision = self._choose(command, question, options)
         if decision.key == "out_of_scope":
+            outcome = [self._audit_decision("operation", question, decision)]
+            self.journal.append("out_of_scope", decisions=self._compact(outcome))
+            self._collect(
+                {"status": "out_of_scope", "command": command, "operation": None},
+                outcome,
+            )
             labels = [operation.text("label") for operation in self.operations.values()]
             raise OutOfScopeError(
                 labels,
@@ -805,14 +815,106 @@ class Retman:
                 self.workspace.find_by_kind(input_spec["kind"]),
             )
         updated.questions.insert(0, question)
-        self.record_plan(plan, "changed")
+        self.record_plan(plan, "changed", changed=name)
         return updated
 
-    def record_plan(self, plan: Plan, status: str) -> None:
-        """Record an approved, changed, rejected or cancelled plan."""
-        self.journal.append(
-            "plan", status=status, operation=plan.operation, plan=plan.summary()
+    @staticmethod
+    def _compact(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Model decisions without question texts, for journal and collection."""
+        return [
+            {
+                "name": d["name"],
+                "key": d["key"],
+                "confidence": d["confidence"],
+                "method": d["confidence_method"],
+                "probabilities": d["probabilities"],
+            }
+            for d in decisions
+        ]
+
+    @staticmethod
+    def _portable(value: Any) -> Any:
+        """Plan value without local paths: a geometry file keeps only its name."""
+        if isinstance(value, dict) and value.get("type") == "geometry":
+            return {**value, "path": Path(value["path"]).name}
+        if isinstance(value, list):
+            return [Retman._portable(item) for item in value]
+        return value
+
+    def _plan_data(self, plan: Plan) -> dict[str, Any]:
+        """What Retman understood: values with sources, open questions, decisions."""
+        return {
+            "operation": plan.operation,
+            "values": {
+                name: {"value": self._portable(entry.value), "source": entry.source}
+                for name, entry in plan.values.items()
+            },
+            "inputs": {
+                name: {"number": entry.value.get("number"), "source": entry.source}
+                for name, entry in plan.inputs.items()
+            },
+            "questions": [question.name for question in plan.questions],
+            "decisions": self._compact(plan.decisions),
+        }
+
+    def _collect(self, record: dict[str, Any], decisions: list[dict[str, Any]]) -> None:
+        if not self.collection.enabled:
+            return
+        operation = self.operations.get(record.get("operation") or "")
+        self.collection.append(
+            {
+                **record,
+                "session_id": self.journal.session_id,
+                "decisions": self._compact(decisions),
+                "environment": {
+                    "retman": __version__,
+                    "tools": {operation.tool: operation.version} if operation else {},
+                    "backend": self.config.decision.backend,
+                    "model": self.backend.model,
+                },
+            }
         )
+
+    def _collect_plan(
+        self,
+        plan: Plan,
+        status: str,
+        *,
+        changed: str | None = None,
+        result: Result | None = None,
+    ) -> None:
+        data = self._plan_data(plan)
+        del data["decisions"]
+        record: dict[str, Any] = {
+            "status": status,
+            "command": plan.command,
+            "answers": plan.answers,
+            **data,
+        }
+        if changed:
+            record["changed"] = changed
+        if result is not None:
+            record["result"] = {"ok": result.ok, "error": result.error}
+        self._collect(record, plan.decisions)
+
+    def record_plan(
+        self, plan: Plan, status: str, *, changed: str | None = None
+    ) -> None:
+        """Record an approved, changed, rejected or cancelled plan.
+
+        The journal gets the shown plan and the structured data behind it; the
+        optional collection (ADR-010) also gets the command and the answers —
+        for an approved plan only after execution, with its outcome.
+        """
+        self.journal.append(
+            "plan",
+            status=status,
+            plan=plan.summary(),
+            **({"changed": changed} if changed else {}),
+            **self._plan_data(plan),
+        )
+        if status != "approved":
+            self._collect_plan(plan, status, changed=changed)
 
     def execute(self, plan: Plan) -> Result:
         """Run only a confirmed, complete plan and preserve an audit record."""
@@ -904,4 +1006,5 @@ class Retman:
             operation=operation.id,
             error=result.error if not result.ok else None,
         )
+        self._collect_plan(plan, "approved", result=result)
         return result

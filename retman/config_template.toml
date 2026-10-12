@@ -39,4 +39,8 @@ journal_commands = true    # store command texts and answers in the project jour
 diagnostic_level = "info"  # technical log in the user's log directory: "debug" | "info" | "warning"
 
 [privacy]
-collect_commands = false   # true = collect commands to improve the test set (separate from the journal)
+# Collect planning outcomes (command, plan, answers, model decisions) from ALL projects
+# in one file, to build and tune the test set (ARCHITECTURE 5.4, rozdz. 10). Separate from
+# the project journal; stays on this computer, nothing is sent anywhere. retman init asks.
+collect_commands = @COLLECT_COMMANDS@
+collect_path = '@COLLECT_PATH@'

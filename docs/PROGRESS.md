@@ -33,13 +33,31 @@ Szablony wpisów: [Szablony](#szablony).
 > **START NASTĘPNEJ SESJI (stan 2026-10-12):** praca na `develop` (commity lokalne,
 > niewypchnięte). Przebiegi `retman-eval` na Bieliku 11B przed i po ADR-008/ADR-009:
 > `docs/research/2026-10-12-bielik-11b-retman-eval.md` (W-02: 0/189 po ADR-009).
-> **Najpierw:** decyzje autora — progi (operacja ok. 0,70; parametry 0,67, słabo
-> potwierdzone), strojenie opisu operacji arkuszy potomnych, przegląd zbioru (spec. 10
-> pkt 2), pętla oceny w pracy (`collect_commands` jest w konfiguracji, ale nie działa).
+> **Najpierw:** decyzje autora — sposób przekazania zbioru poleceń autorowi i krok „zbiór →
+> szkic wpisów `retman-eval`” (ADR-010, otwarte), progi (operacja ok. 0,70; parametry 0,67,
+> słabo potwierdzone), strojenie opisu operacji arkuszy potomnych, przegląd zbioru (spec. 10
+> pkt 2). Istniejące pliki `retman.toml` wymagają nowego klucza `[privacy] collect_path`.
 > Adres LM Studio podaje użytkownik — nie zapisywać. Pozostałe decyzje autora: operacja
 > drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07,
 > rozdz. 8), ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza
 > zakresu w CLI.
+
+### Dziennik z danymi planu i zbiór poleceń — ADR-010 (2026-10-12)
+
+- **Zlecenie użytkownika:** uzupełnić dziennik (decyzje modelu dla planów niewykonanych,
+  wartości jako dane, zdarzenie „poza zakresem”, zmieniana wartość); `collect_commands`
+  jako zbieranie poleceń w jednym miejscu, wyłączone domyślnie, z pytaniem w `retman init`.
+- **Zrobione:** zdarzenie `plan` z `values`/`inputs`/`questions`/`decisions`/`changed`,
+  zdarzenie `out_of_scope`; `retman/core/collection.py`; `[privacy] collect_path`
+  (ścieżka wpisana przez `retman init`, `default_collect_path`); pytanie o zgodę w
+  `retman init` (terminal; bez terminala `false`); zbiór pomija `retman-eval`; testy
+  (dziennik dla planów niewykonanych, poza zakresem, zbiór wyłączony/włączony, konfiguracja);
+  ADR-010, ARCHITECTURE 5.4, 9.1, rozdz. 10, USAGE 1.3 i 6.3–6.4, CHANGELOG.
+- **Weryfikacja:** `pytest -m "not live"` — 215 passed; ruff, mypy czyste. Smoke CLI:
+  `retman init` w terminalu (odpowiedź „t”) → `collect_commands = true` i pełna ścieżka;
+  bez terminala → `false`; polecenie z odpowiedzią i odrzuceniem → wpis w zbiorze
+  i w dzienniku z decyzjami modelu (format 0,72) i wartościami ze źródłami.
+- **Otwarte:** przekazanie zbioru autorowi; eksport zbioru do szkicu wpisów `retman-eval`.
 
 ### Układ wyniku rozpoznawany w kodzie — ADR-009 (2026-10-12)
 
