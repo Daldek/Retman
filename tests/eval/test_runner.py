@@ -154,12 +154,8 @@ def test_metrics_measure_decisions_values_questions_and_w03(context, tmp_path: P
     assert measures.accepted_extractors == (type(measures.accepted_extractors))(0, 5)
     assert measures.accepted_all == (type(measures.accepted_all))(3, 15)
     assert {case.id for case in measures.violations} == {"violation"}
-    assert {case.id for case in measures.errors} >= {
-        "guess",
-        "wrong",
-        "uncertain",
-        "violation",
-    }
+    # An uncertain value that Retman asked about is a cost, not an error case
+    assert {case.id for case in measures.errors} == {"guess", "wrong", "violation"}
     assert measures.model_queries is not None and measures.model_queries.median == 2
     assert measures.plan_seconds is not None and measures.plan_seconds.maximum >= 0
     assert summarize(records).by_tag["out_of_scope"].w03.count == 1

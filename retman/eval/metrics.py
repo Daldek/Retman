@@ -233,18 +233,18 @@ def _parameters(
         )
         measures_value = getattr(measures, field)
         setattr(measures, field, _ratio_add(measures_value, 1))
-        if not correct:
-            measures.errors.append(
-                _issue(
-                    record, name, expected_value, actual if actual is not None else "?"
-                )
-            )
+        # Listed only when a wrong value was set: an asked value is a cost
+        # (unnecessary question), and a missing one follows from a wrong
+        # operation or an unresolved controlling parameter (``depends_on``)
+        if actual is not None and not correct and not asked:
+            measures.errors.append(_issue(record, name, expected_value, actual))
     measures.clarification = _ratio_add(
         measures.clarification, len(questions.intersection(clarify)), len(clarify)
     )
     for name in clarify:
-        if name not in questions:
-            measures.errors.append(_issue(record, name, "question", values.get(name)))
+        # Same rule: only a value accepted without the expected question is listed
+        if name not in questions and values.get(name) is not None:
+            measures.errors.append(_issue(record, name, "question", values[name]))
     unnecessary = questions.intersection(params)
     # A default only applies to a parameter absent from both expectation fields.
     unnecessary.update(

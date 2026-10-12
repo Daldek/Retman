@@ -18,7 +18,7 @@ Szablony wpisów: [Szablony](#szablony).
 | Rejestr operacji, wspólny adapter, `kinds`, `retman-scaffold` | 🚧 W toku | rejestr, adapter, `kinds` gotowe; `retman-scaffold` nie powstał |
 | Przestrzeń robocza, dziennik projektu, ślad audytowy | ✅ Gotowy | ARCHITECTURE 5 |
 | CLI, `retman doctor`, `results`, `log` | ✅ Gotowy | ARCHITECTURE 6.4, 7.1, 7.2 |
-| `retman-eval` i zbiór poleceń testowych | 🚧 W toku | kod i szkic zbioru gotowe; czeka: przegląd zbioru przez autora, przebieg na Bieliku 11B (spec. rozdz. 9) |
+| `retman-eval` i zbiór poleceń testowych | 🚧 W toku | kod gotowy; pierwszy przebieg Bielik 11B (`docs/research/2026-10-12-bielik-11b-retman-eval.md`); czeka: przegląd zbioru, strojenie opisów, decyzja o progach |
 | CI (Windows, Linux, macOS; test instalacji; wersje narzędzi) | ⏳ Planowany | ARCHITECTURE 3.2.7, 9.4 |
 
 ## Checkpointy
@@ -31,15 +31,35 @@ Szablony wpisów: [Szablony](#szablony).
 ## Ostatnia sesja
 
 > **START NASTĘPNEJ SESJI (stan 2026-10-12):** praca na `develop` (commity lokalne,
-> niewypchnięte). `retman-eval` zaimplementowany wg przyjętej specyfikacji; zbiór
-> `retman/eval/commands.jsonl` to szkic agenta. **Najpierw: przegląd zbioru przez autora**
-> (spec. 10 pkt 2), potem przebieg na Bieliku 11B w LM Studio (adres podaje użytkownik,
-> nie zapisywać), raport do `docs/research/`, strojenie progów i opisów. `retman doctor`
-> gotowy. Niezatwierdzona zmiana użytkownika w `retman/tools/kartograf/pl.toml`
-> (`[errors]`: PRG, „shapefile”) — nie z sesji agenta. Decyzje autora: operacja drugiego
-> narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07, rozdz. 8),
-> ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza zakresu
-> w CLI.
+> niewypchnięte). Pierwszy przebieg `retman-eval` na Bieliku 11B:
+> `docs/research/2026-10-12-bielik-11b-retman-eval.md`. **Najpierw:** decyzje autora
+> z raportu — progi (operacja 0,70 uzasadniona; parametry 0,94 = dużo pytań), strojenie
+> opisu `product`/`format` i operacji arkuszy potomnych, czy rozpoznawać kod EPSG układu
+> wyniku w kodzie (ciche zgadywanie `target_crs`); przegląd zbioru (spec. 10 pkt 2).
+> Adres LM Studio podaje użytkownik — nie zapisywać. Pozostałe decyzje autora: operacja
+> drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07,
+> rozdz. 8), ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza
+> zakresu w CLI.
+
+### Przebieg `retman-eval` z Bielikiem 11B (2026-10-12)
+
+- **Zlecenie użytkownika:** test działania z Bielikiem; przebieg roboczy na szkicu zbioru.
+- **Zrobione:**
+  - `retman doctor` z LM Studio (`bielik-11b-v3.0-instruct-mlx`): wszystko ✓, pytanie
+    testowe pewność 1,00 z logprobs;
+  - `retman-eval --target-error 0.01` (79 poleceń, ok. 14 min); analiza
+    `docs/research/2026-10-12-bielik-11b-retman-eval.md`, raport narzędzia
+    `…-raport.md`;
+  - eksperyment z neutralnymi opisami `unspecified` — gorzej dla `product`/`format`,
+    teksty przywrócone;
+  - `retman/eval/metrics.py`: lista „Błędne przypadki” bez wartości zapytanych i bez
+    parametrów zależnych od niezapytanego (miary bez zmian); test zaktualizowany.
+- **Wynik:** operacja 0,89, W-03 0 naruszeń, W-02 2/137 (ciche zgadywanie `target_crs`
+  z kodu prostokąta wejściowego, pewność 0,93–0,94), `product` 16/33 (model wybiera
+  „nie podano” mimo NMT/DSM), pokrycie poleceń kompletnych 6/36, mediana planu 11 s.
+  Zalecane progi: operacja 0,70, parametry 0,94 (niepotwierdzone, < 100 decyzji).
+- **Weryfikacja:** `pytest -m "not live"` — 179 passed; ruff, mypy czyste; adres serwera
+  nie występuje w repo (grep); konfiguracja tymczasowa usunięta.
 
 ### Kod EPSG bez prefiksu (2026-10-12)
 
@@ -283,8 +303,8 @@ Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
   `tests/conftest.py`, `retman init` (sesja 2026-10-11, przekrój Kartografa).
 - [x] **`retman doctor`** (ARCHITECTURE 7.2) — sesja 2026-10-12.
 - [ ] **`retman-eval` i zbiór poleceń testowych** — kod gotowy (sesja 2026-10-12);
-  czeka przegląd zbioru przez autora, przebieg na Bieliku 11B z raportem
-  w `docs/research/`, strojenie progów i opisów opcji (ARCHITECTURE 6.2, 8; spec. rozdz. 9).
+  pierwszy przebieg Bielik 11B (2026-10-12, `docs/research/`); czeka przegląd zbioru,
+  strojenie opisów i decyzja o progach (ARCHITECTURE 6.2, 8; spec. rozdz. 9).
 - [ ] **Ekstraktor prawdopodobieństwa** z testami wszystkich form z ARCHITECTURE 4.4.
 - [ ] **Pozostałe ekstraktory** — współrzędne punktu, liczby z jednostkami, daty,
   stacje (ARCHITECTURE 3.1, 6.1); gotowe: `area`, `path`, `result`.
