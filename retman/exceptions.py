@@ -33,12 +33,36 @@ class ConfigError(RetmanError):
         super().__init__(f"{path}: {', '.join(problems)}")
 
 
+class EvalDatasetError(RetmanError):
+    """One or more eval commands are malformed or contradict tool manifests."""
+
+    def __init__(self, problems: list[str]) -> None:
+        self.problems = problems
+        super().__init__("Invalid eval commands: " + "; ".join(problems))
+
+
 class ManifestError(RetmanError):
     """A tool manifest or its translations are invalid (programmer error)."""
 
 
 class TranslationError(RetmanError):
     """A translation key is missing (programmer error)."""
+
+
+class OutOfScopeError(RetmanError):
+    """The command matches none of the available operations (W-03).
+
+    Parameters
+    ----------
+    operations : list[str]
+        Labels of the available operations, shown to the user.
+    message : str
+        Translated message listing what Retman can do.
+    """
+
+    def __init__(self, operations: list[str], message: str) -> None:
+        self.operations = operations
+        super().__init__(message)
 
 
 class KindValidationError(RetmanError):

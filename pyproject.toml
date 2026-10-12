@@ -29,6 +29,7 @@ dev = [
 
 [project.scripts]
 retman = "retman.cli:main"
+retman-eval = "retman.eval.runner:main"
 
 [project.urls]
 Repository = "https://github.com/Daldek/Retman"

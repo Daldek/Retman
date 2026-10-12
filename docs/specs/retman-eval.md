@@ -1,6 +1,6 @@
 # Specyfikacja: `retman-eval`
 
-**Status:** projekt do akceptacji autora
+**Status:** przyjęta przez autora (2026-10-12)
 **Data:** 2026-10-11
 **Podstawa:** PRD W-01, W-02, W-03, N-05, N-07, rozdz. 8; ARCHITECTURE 3.4, 6.2, 8.1–8.3, 9.2;
 STANDARDS 6.3, 6.4, 10.4, 17.1

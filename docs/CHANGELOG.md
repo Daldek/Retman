@@ -72,6 +72,14 @@ Linki porównań na końcu pliku, od najnowszego:
 - CLI: `retman "…"`, sesja `retman`, `--plan-only`, `--explain`, `--config`,
   `retman init`, `retman results`, `retman log`; kody wyjścia 0–3 (ARCHITECTURE 6.4).
 - Specyfikacja `retman-eval` (`docs/specs/retman-eval.md`).
+- `retman-eval --config PATH`: planuje zbiór poleceń testowych (bez wykonywania operacji),
+  zapisuje surowe rekordy i raport Markdown z miarami (trafność, błąd przy pewności W-02,
+  ciche zgadywanie, naruszenia W-03, czasy), krzywą progów i zalecanymi progami
+  (`--target-error`); kod 4 przy naruszeniu W-03 (ARCHITECTURE 8).
+- Zbiór `retman/eval/commands.jsonl`: 60 poleceń dla czterech operacji Kartografa
+  i 15 spoza zakresu lub bliskich zakresowi, z walidacją wpisów na tym samym kodzie
+  ekstraktorów co planowanie (ARCHITECTURE 8.1).
+- `OutOfScopeError` dla poleceń spoza zakresu, z listą dostępnych operacji (W-03).
 
 ### Zmienione
 

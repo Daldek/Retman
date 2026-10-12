@@ -21,6 +21,7 @@ from retman.core.workspace import Workspace, WorkspaceFile
 from retman.exceptions import (
     InvalidModelAnswerError,
     KindValidationError,
+    OutOfScopeError,
     PlanIncompleteError,
     PlanNotConfirmedError,
     RetmanError,
@@ -113,14 +114,12 @@ class Retman:
         question = self.texts.get("dialog.operation")
         decision = self._choose(command, question, options)
         if decision.key == "out_of_scope":
-            raise RetmanError(
+            labels = [operation.text("label") for operation in self.operations.values()]
+            raise OutOfScopeError(
+                labels,
                 self.texts.get(
-                    "dialog.out_of_scope_message",
-                    operations=", ".join(
-                        operation.text("label")
-                        for operation in self.operations.values()
-                    ),
-                )
+                    "dialog.out_of_scope_message", operations=", ".join(labels)
+                ),
             )
         plan = Plan(
             command,

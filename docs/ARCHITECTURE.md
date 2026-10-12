@@ -141,6 +141,9 @@ retman/
 │   └── resolver.py          # chain building from input/output dependencies (v0.2)
 ├── eval/
 │   ├── runner.py            # retman-eval: runs the test command set, prints the report (p. 8.2)
+│   ├── dataset.py           # loading and validating the test command set (p. 8.1)
+│   ├── metrics.py           # quality measures, threshold curve (p. 8.2)
+│   ├── report.py            # Markdown report (p. 8.2)
 │   └── commands.jsonl       # test command set, shipped as package data (p. 8.1)
 ├── testing.py               # test helpers: fake backend, manifest validation
 ├── exceptions.py            # RetmanError hierarchy, e.g. PlanNotConfirmedError (p. 6.3)

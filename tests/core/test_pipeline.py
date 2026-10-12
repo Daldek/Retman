@@ -11,7 +11,12 @@ from retman.backends.base import Decision
 from retman.config import Thresholds, init_config, load_config
 from retman.core.pipeline import Retman
 from retman.core.plan import Plan
-from retman.exceptions import PlanIncompleteError, PlanNotConfirmedError, RetmanError
+from retman.exceptions import (
+    OutOfScopeError,
+    PlanIncompleteError,
+    PlanNotConfirmedError,
+    RetmanError,
+)
 from retman.registry.loader import load_operations
 from retman.testing import FakeDecisionBackend
 
@@ -355,3 +360,18 @@ def test_known_invalid_value_is_not_silently_replaced(create_app):
 
     with pytest.raises(RetmanError, match="Wybierz"):
         app.plan(f"NMT dla {SHEET}", known={"style": "not_a_style"})
+
+
+def test_out_of_scope_command_lists_operations_instead_of_planning(create_app):
+    app = create_app({"out_of_scope": "out_of_scope"})
+
+    with pytest.raises(OutOfScopeError) as error:
+        app.plan("Jaka będzie jutro pogoda w Poznaniu?")
+
+    assert error.value.operations == [
+        "Utworzenie NMT",
+        "Kopia NMT",
+        "Próba z błędem",
+        "Próba zapisu poza wynikiem",
+    ]
+    assert "Utworzenie NMT" in str(error.value)

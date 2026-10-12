@@ -18,7 +18,7 @@ Szablony wpisów: [Szablony](#szablony).
 | Rejestr operacji, wspólny adapter, `kinds`, `retman-scaffold` | 🚧 W toku | rejestr, adapter, `kinds` gotowe; `retman-scaffold` nie powstał |
 | Przestrzeń robocza, dziennik projektu, ślad audytowy | ✅ Gotowy | ARCHITECTURE 5 |
 | CLI, `retman doctor`, `results`, `log` | 🚧 W toku | CLI, `results`, `log`, `init` gotowe; brak `retman doctor` |
-| `retman-eval` i zbiór poleceń testowych | ⏳ Planowany | ARCHITECTURE 8 |
+| `retman-eval` i zbiór poleceń testowych | 🚧 W toku | kod i szkic zbioru gotowe; czeka: przegląd zbioru przez autora, przebieg na Bieliku 11B (spec. rozdz. 9) |
 | CI (Windows, Linux, macOS; test instalacji; wersje narzędzi) | ⏳ Planowany | ARCHITECTURE 3.2.7, 9.4 |
 
 ## Checkpointy
@@ -31,12 +31,41 @@ Szablony wpisów: [Szablony](#szablony).
 ## Ostatnia sesja
 
 > **START NASTĘPNEJ SESJI (stan 2026-10-12):** praca na `develop` (commity lokalne,
-> niewypchnięte). Opcje w tłumaczeniach mają już `label`/`description` (ADR-007).
-> Przegląd `retman/tools/kartograf/pl.toml` zakończony — autor zaakceptował treść.
-> **Następnie:** `retman-eval` wg `docs/specs/retman-eval.md` (status: do akceptacji
-> autora) i `retman doctor`. basal-serve niedostępny — backend `basal` czeka. Decyzje autora:
-> operacja drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01,
-> N-07, rozdz. 8), ADR wsteczne dla pierwszej sesji.
+> niewypchnięte). `retman-eval` zaimplementowany wg przyjętej specyfikacji; zbiór
+> `retman/eval/commands.jsonl` to szkic agenta. **Najpierw: przegląd zbioru przez autora**
+> (spec. 10 pkt 2), potem przebieg na Bieliku 11B w LM Studio (adres podaje użytkownik,
+> nie zapisywać), raport do `docs/research/`, strojenie progów i opisów; potem
+> `retman doctor`. Niezatwierdzona zmiana użytkownika w `retman/tools/kartograf/pl.toml`
+> (`[errors]`: PRG, „shapefile”) — nie z sesji agenta. Decyzje autora: operacja drugiego
+> narzędzia (PRD 7.1), plik geometrii, wartości docelowe (PRD W-01, N-07, rozdz. 8),
+> ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza zakresu
+> w CLI.
+
+### `retman-eval` (2026-10-12)
+
+- **Zlecenie użytkownika:** implementacja `retman-eval` po akceptacji specyfikacji.
+- **Decyzje użytkownika:** specyfikacja `docs/specs/retman-eval.md` przyjęta bez zmian.
+- **Zrobione:**
+  - `OutOfScopeError(RetmanError)` z `operations` (spec. 7); CLI bez zmian (nadal „Błąd:”
+    i kod 1 — decyzja autora);
+  - `retman/eval/dataset.py` (wczytanie i walidacja wpisów, spec. 2.2, manifesty wszystkich
+    narzędzi z `retman/tools/`), `runner.py` (CLI, izolacja w katalogu tymczasowym, licznik
+    zapytań do modelu), `metrics.py` (spec. 5), `report.py` (teksty w `[eval]`
+    `retman/i18n/pl.toml`); skrypt `retman-eval` w `pyproject.toml`;
+  - szkic zbioru: 4 × 15 poleceń Kartografa, 10 `out_of_scope`, 5 `near_miss`; tagi:
+    formal 31, colloquial 20, typo 10, incomplete 23, ambiguous 4, complete 33;
+  - testy `tests/eval/` (walidacja zbioru i reguły budowy 2.3, miary, krzywa progów,
+    izolacja, brak adresu w rekordach) + test `live`;
+  - ARCHITECTURE 3.1 (moduły `eval/`), status specyfikacji, CHANGELOG.
+- **Weryfikacja:** `pytest -m "not live"` — 166 passed, pokrycie 89% (`eval/` 86–99%);
+  ruff, mypy czyste. Smoke: `retman-eval` (`main`) na całym zbiorze z
+  `FakeDecisionBackend` wybierającym zawsze NMT dla arkusza → raport z wszystkimi
+  sekcjami, 75 rekordów, kod 4 (15 naruszeń W-03), brak plików poza katalogiem
+  tymczasowym. Przebiegu na modelu nie było.
+- **Do przeglądu w zbiorze:** `kartograf-hierarchy-006/-007` (godła PL-2000 i dostępność
+  skali zależą od pokrycia GUGiK), `kartograf-cutout-008/-009/-015`,
+  `kartograf-bdot-011` (kolejność osi PL-1992 → pytanie), `kartograf-bdot-015` (pytanie
+  o format zostawia go nieokreślonym), `near-005` (przycięcie ortofotomapy do wielokąta).
 
 ### Etykiety i opisy opcji (2026-10-12)
 
@@ -184,10 +213,9 @@ Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
   `tests/conftest.py`, `retman init` (sesja 2026-10-11, przekrój Kartografa).
 - [ ] **`retman doctor`** (ARCHITECTURE 7.2) — adres i pytanie testowe modelu, wersje
   narzędzi, komplet tłumaczeń, przestrzeń robocza.
-- [ ] **`retman-eval` i zbiór poleceń testowych** — specyfikacja
-  `docs/specs/retman-eval.md` (czeka na akceptację autora, rozdz. 10 specyfikacji);
-  ≥ 15 poleceń na operację Kartografa, strojenie progów i opisów opcji dla Bielika
-  (ARCHITECTURE 6.2, 8).
+- [ ] **`retman-eval` i zbiór poleceń testowych** — kod gotowy (sesja 2026-10-12);
+  czeka przegląd zbioru przez autora, przebieg na Bieliku 11B z raportem
+  w `docs/research/`, strojenie progów i opisów opcji (ARCHITECTURE 6.2, 8; spec. rozdz. 9).
 - [ ] **Ekstraktor prawdopodobieństwa** z testami wszystkich form z ARCHITECTURE 4.4.
 - [ ] **Pozostałe ekstraktory** — współrzędne punktu, liczby z jednostkami, daty,
   stacje (ARCHITECTURE 3.1, 6.1); gotowe: `area`, `path`, `result`.
