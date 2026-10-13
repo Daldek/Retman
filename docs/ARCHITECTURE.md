@@ -645,6 +645,8 @@ ograniczenia). Wartość poza zakresem → komunikat z dozwolonym zakresem.
 
 Deklaracje `inputs`/`outputs` są wpisywane już w v0.1, gdzie służą do wyszukiwania danych
 w przestrzeni roboczej (rozdz. 5). Resolver opisany poniżej powstaje w v0.2.
+Alternatywa do oceny po dodaniu kolejnych narzędzi — łańcuchy jako przepisy autora: rozdz. 12
+pkt 14.
 
 Model **nie planuje** łańcuchów. Wybiera tylko cel, a kolejne kroki wynikają z deklaracji
 `inputs`/`outputs` — podobnie jak w arkuszu kalkulacyjnym formuły liczą się w kolejności zależności.
@@ -1493,3 +1495,8 @@ Zakres produktowy wersji opisuje PRD. Tu: które komponenty techniczne powstają
     od tego zależy instrukcja instalacji modelu dla testerów z Windows (p. 9.4).
 13. **Uruchamianie basal-serve** — ręcznie przed pracą czy jako usługa startująca z systemem
     (w wersji łatwej); usługa to wygoda, ale też ingerencja w system użytkownika.
+14. **Łańcuchy: resolver czy przepisy autora** (p. 4.5) — alternatywa: łańcuchy jako przepisy
+    pisane i przeglądane przez autora, a logika resolvera tylko do szkicu i sprawdzania
+    przepisów. Do oceny po dodaniu kolejnych narzędzi; razem z nią możliwe zastosowania n8n
+    jako otoczenia Retmana (monitoring, kontrola jakości, rejestr wyników, kanały zleceń).
+    Opis: `docs/PROGRESS.md`, Backlog, „Do rozważenia”.

@@ -30,8 +30,8 @@ Szablony wpisów: [Szablony](#szablony).
 
 ## Ostatnia sesja
 
-> **START NASTĘPNEJ SESJI (stan 2026-10-12, koniec sesji):** praca na `develop`
-> (wypchnięty na `origin`, `1166fbb`). Ostatni przebieg `retman-eval`
+> **START NASTĘPNEJ SESJI (stan 2026-10-13, koniec sesji):** praca na `develop`
+> (na `origin` do `ab8e51d`; commit z 2026-10-13 tylko lokalnie). Ostatni przebieg `retman-eval`
 > (Bielik 11B, 83 polecenia): operacja 0,88, W-03 0, W-02 0/189, wartości 0,80, polecenia
 > kompletne bez pytań 14/39, mediana planu 10,6 s — `docs/research/2026-10-12-bielik-11b-retman-eval.md`.
 > **Do zrobienia, w kolejności:**
@@ -47,8 +47,29 @@ Szablony wpisów: [Szablony](#szablony).
 > Decyzje autora: operacja drugiego narzędzia (PRD 7.1), plik geometrii, wartości docelowe
 > (PRD W-01, N-07, rozdz. 8), ADR wsteczne dla pierwszej sesji, prefiks „Błąd:” i kod 1
 > dla polecenia spoza zakresu w CLI, backend basal (czeka na API basal-serve).
+> Do oceny po dodaniu kolejnych narzędzi (nie teraz): łańcuchy jako przepisy autora
+> i zastosowania n8n — Backlog, „Do rozważenia”.
 > Uwagi: istniejące pliki `retman.toml` wymagają klucza `[privacy] collect_path`; adres
 > LM Studio podaje użytkownik — nie zapisywać nigdzie.
+
+### Łańcuchy jako przepisy i miejsce dla n8n — analiza (2026-10-13)
+
+- **Zlecenie użytkownika:** gdzie w Retmanie jest miejsce na n8n i gotowe automatyzacje;
+  czy łańcuchy wykonywać deterministycznie (n8n zamiast Retmana lub LLM); przepisy czy
+  resolver.
+- **Decyzje użytkownika:** bez ADR — przepisy i n8n trafiają do Backlogu („Do
+  rozważenia”); ocena po dodaniu kolejnych narzędzi. n8n tylko tam, gdzie Retman nie
+  da rady albo własne rozwiązanie byłoby zbyt trudne (także jako nauka technologii).
+- **Zrobione:** analiza (ARCHITECTURE 1.2, 4.5, 5.4, 6.3, 7.4–7.5, 10, 11; USAGE 7–12;
+  dokumentacja n8n); pozycje Backlogu; otwarta kwestia ARCHITECTURE 12 pkt 14.
+  Wnioski: wykonanie i kolejność kroków już są w kodzie (model nie planuje łańcuchów),
+  jedyny wpływ modelu na kształt łańcucha to krok 4 resolvera; n8n nie dodaje
+  determinizmu, a jako wykonawca rozdzieliłby ślad audytowy (W-15) i zdublował nazwy
+  parametrów; W-05 wyklucza wykonanie bez zatwierdzenia przez człowieka.
+- **Weryfikacja:** bez zmian w kodzie; nic nie uruchamiano.
+- **Otwarte:** ocena przepisów po drugim narzędziu (wszystkie operacje Kartografa mają
+  `inputs: []`, więc łańcucha jeszcze nie ma); czy zatwierdzenie planu w innym kanale
+  (mail, komunikator przez n8n) spełnia W-05 — decyzja autora.
 
 ### Dziennik z danymi planu i zbiór poleceń — ADR-010 (2026-10-12)
 
@@ -385,6 +406,51 @@ Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
 - [ ] **Pomiary czasu odpowiedzi** (ARCHITECTURE 9.2) — z `retman-eval` (Bielik 11B, LM
   Studio w sieci lokalnej): mediana planu 10,6 s, P90 11,8 s, ok. 3,7 s na zapytanie;
   wartość docelowa N-07 nieustalona.
+
+#### Do rozważenia (ocena po dodaniu kolejnych narzędzi)
+
+Propozycje z sesji 2026-10-13, bez ADR; autor ocenia je, gdy będą łańcuchy do sprawdzenia.
+
+- [ ] **Łańcuchy jako przepisy autora zamiast resolvera w trakcie pracy** (alternatywa
+  dla ARCHITECTURE 4.5; PRD W-12, S-05). Przepis pisze autor (kod + wiedza dziedzinowa):
+  lista kroków, powiązania wyjście→wejście (`kind`), jawne źródło każdego parametru
+  (polecenie, pytanie, wcześniejszy krok, wartość stała widoczna w planie ze źródłem
+  `recipe` — nowe źródło w ARCHITECTURE 5.4, wymóg N-11), kontrole między krokami
+  (ARCHITECTURE 12 pkt 6); teksty w `pl.toml`. Model wybiera przepis z listy (jak
+  operację), pytania z wszystkich kroków naraz, jeden plan do zatwierdzenia (W-05).
+  Logika resolvera nie planuje w trakcie pracy, tylko pomaga: `retman recipes draft
+  <operacja>` (szkic przepisu), `retman recipes check` (operacje i wersje narzędzi,
+  zgodność `kind`, źródło każdego parametru, brak cykli, kolejność wg zależności,
+  komplet tłumaczeń — do bramki obok `retman-scaffold --check`), `retman recipes show`
+  (opis po polsku i diagram mermaid do przeglądu). Testy: plan z `FakeDecisionBackend`,
+  wpisy w `commands.jsonl` z oczekiwanym przepisem, test `live` na małym obszarze.
+  Zysk: każdy wykonywany łańcuch przejrzany przez specjalistę, znika wybór modelu
+  w kroku 4 resolvera. Koszt: każdy łańcuch trzeba dopisać; polecenie bez przepisu →
+  odmowa z listą możliwości (W-03). Przy przyjęciu: ADR, ARCHITECTURE 1.2, 3.1, 4.5,
+  5.4, 11; PRD W-12; STANDARDS 17 (checklista „nowy przepis”).
+- [ ] **n8n jako otoczenie Retmana, nie wykonawca kroków** — kryterium autora: tylko tam,
+  gdzie Retman nie da rady albo własne rozwiązanie byłoby zbyt trudne. Nie dla n8n:
+  przepisy, kolejność i wykonanie kroków (ślad audytowy W-15 w jednym miejscu, jedno
+  źródło nazw parametrów, testy offline). Możliwe zastosowania (n8n na własnym serwerze —
+  ARCHITECTURE 10; licencja Sustainable Use, przepływy poza pakietem, np. `examples/n8n/`):
+  1. monitoring `retman doctor --json` z alertem przy kodzie 1 — możliwe już teraz;
+  2. kontrola jakości przy nowej wersji narzędzia lub modelu: `retman-eval`, porównanie
+     z poprzednim raportem, alert przy kodzie 4 (W-03) — możliwe już teraz;
+  3. rejestr obliczeń: `result.json` i `journal.jsonl` do arkusza lub bazy (tylko odczyt;
+     treść poleceń przy `journal_commands = true`) — możliwe już teraz;
+  4. przyjmowanie zleceń (mail, formularz, Teams) i zatwierdzanie planu w tym samym
+     kanale — po API HTTP (v0.4) i decyzji, czy taki kanał spełnia W-05;
+  5. partie z listy (godła, TERYT) z wartościami `known` — wymaga decyzji o jednym
+     zatwierdzeniu dla wielu planów;
+  6. ponowne wykonanie zapisanego planu (`retman rerun #N`, ARCHITECTURE 5.5) — bez
+     modelu, z zatwierdzeniem.
+  Ułatwienia po stronie Retmana (dla każdego orkiestratora): `--json` dla planu w CLI
+  (dziś tylko `doctor`; `plan.to_dict()` istnieje), zapis planu do pliku i wykonanie
+  zatwierdzonego planu z wpisem w dzienniku (ARCHITECTURE 7.4, wariant A), API HTTP
+  z krokami `plan`/`answer`/`confirm`/`execute` i webhookiem po zakończeniu (v0.4).
+  Węzeł Execute Command w n8n od 2.0 jest domyślnie wyłączony — lepsza droga przez HTTP.
+  Opcjonalny wykonawca `n8n` (zatwierdzony plan na webhook, kroki wołają Retmana przez
+  API HTTP) — tylko jeśli pkt 1–4 pokażą potrzebę.
 
 ---
 
