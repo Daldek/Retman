@@ -3,6 +3,7 @@
 from dataclasses import asdict, dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Literal
 
+from retman.core.check import CheckReport
 from retman.core.dialog import Question
 from retman.core.journal import utc_now
 from retman.exceptions import PlanIncompleteError, RetmanError
@@ -26,7 +27,18 @@ class PlanValue:
 
 @dataclass
 class Plan:
-    """One proposed operation; ``confirm()`` is mandatory before execution."""
+    """One proposed operation; ``confirm()`` is mandatory before execution.
+
+    ``reopened`` maps parameters the tool rejected after the user answered (an
+    offline preview found a problem) to the text shown with the repeated
+    question. ``unset`` maps the applicable optional parameters the command left
+    unset to their label and the operation's text for "not set" (N-11: the plan
+    says what an unset value means). ``preview_rows`` and ``preview_values`` are
+    what the offline preview found out about the plan (rows shown, values only
+    audited). ``checks`` are the availability checks run on exactly this plan
+    state; the consent for the next one (``check_confirmed``) is single-use and
+    never serialized.
+    """
 
     command: str
     operation: str | None
@@ -44,6 +56,12 @@ class Plan:
     language: str = "pl"
     confirmed: bool = False
     confirmed_at: str | None = None
+    reopened: dict[str, str] = field(default_factory=dict)
+    unset: dict[str, tuple[str, str]] = field(default_factory=dict)
+    preview_rows: list[tuple[str, str]] = field(default_factory=list)
+    preview_values: dict[str, Any] = field(default_factory=dict)
+    checks: list[CheckReport] = field(default_factory=list)
+    check_confirmed: bool = False
     _owner: "Retman | None" = field(default=None, repr=False, compare=False)
 
     def answer(self, name: str, answer: str) -> "Plan":
@@ -70,6 +88,36 @@ class Plan:
             raise PlanIncompleteError("plan still has open questions")
         self.confirmed = True
         self.confirmed_at = utc_now()
+        return self
+
+    @property
+    def can_check(self) -> bool:
+        """Whether the operation offers an availability check for this plan.
+
+        True for a complete plan of an operation that declares ``check``.
+        """
+        return (
+            self._owner is not None
+            and self.operation is not None
+            and not self.questions
+            and "check" in self._owner.operations[self.operation].spec
+        )
+
+    def check_notice(self) -> str:
+        """What the availability check contacts and sends, to show before consent."""
+        if not self.can_check or self._owner is None:
+            raise PlanIncompleteError("this plan offers no availability check")
+        return self._owner.check_notice(self)
+
+    def confirm_check(self) -> "Plan":
+        """Consent to one availability check; it does not confirm the plan.
+
+        The consent is single-use: ``Retman.check()`` consumes it, and any change
+        of the plan withdraws it.
+        """
+        if not self.can_check:
+            raise PlanIncompleteError("this plan offers no availability check")
+        self.check_confirmed = True
         return self
 
     def summary(self) -> str:
@@ -99,6 +147,33 @@ class Plan:
                     marker=marker,
                 )
             )
+        for label, value in self.unset.values():
+            rows.append(
+                texts.get(
+                    "plan.parameter",
+                    label=label,
+                    value=value,
+                    marker=texts.get("plan.unset_marker"),
+                )
+            )
+        for label, value in self.preview_rows:
+            rows.append(
+                texts.get(
+                    "plan.parameter",
+                    label=label,
+                    value=value,
+                    marker=texts.get("plan.preview_marker"),
+                )
+            )
+        if self.checks:
+            last = self.checks[-1]
+            rows.append(
+                texts.get(
+                    "plan.check",
+                    status=texts.get(f"check.status_{last.status}"),
+                    time=last.time_label,
+                )
+            )
         if self.questions:
             rows.append(
                 texts.get(
@@ -109,7 +184,10 @@ class Plan:
         return "\n".join(rows)
 
     def to_dict(self) -> dict[str, Any]:
-        """Export the complete plan state as JSON-compatible data."""
+        """Export the complete plan state as JSON-compatible data.
+
+        Consent for an availability check is not part of the state.
+        """
         return {
             "command": self.command,
             "operation": self.operation,
@@ -127,13 +205,22 @@ class Plan:
             "language": self.language,
             "confirmed": self.confirmed,
             "confirmed_at": self.confirmed_at,
+            "reopened": self.reopened,
+            "unset": {name: list(row) for name, row in self.unset.items()},
+            "preview_rows": [list(row) for row in self.preview_rows],
+            "preview_values": self.preview_values,
+            "checks": [report.to_dict() for report in self.checks],
         }
 
     @classmethod
     def from_dict(
         cls, state: dict[str, Any], *, retman: "Retman | None" = None
     ) -> "Plan":
-        """Load a saved plan; provide ``retman`` to answer remaining questions."""
+        """Load a saved plan; provide ``retman`` to answer remaining questions.
+
+        Approvals are never restored (W-05): a loaded plan is always unconfirmed,
+        whatever the saved state says, and must be confirmed again.
+        """
         return cls(
             command=state["command"],
             operation=state["operation"],
@@ -149,10 +236,25 @@ class Plan:
             display=state["display"],
             known=state["known"],
             language=state["language"],
-            confirmed=state["confirmed"],
-            confirmed_at=state["confirmed_at"],
+            reopened=state["reopened"],
+            unset={
+                name: (label, text) for name, (label, text) in state["unset"].items()
+            },
+            preview_rows=[(label, value) for label, value in state["preview_rows"]],
+            preview_values=state["preview_values"],
+            checks=[CheckReport.from_dict(entry) for entry in state["checks"]],
             _owner=retman,
         )
 
     def _updated(self, **changes: Any) -> "Plan":
-        return replace(self, confirmed=False, confirmed_at=None, **changes)
+        """A changed copy: approvals, preview and checks belonged to the old state."""
+        return replace(
+            self,
+            confirmed=False,
+            confirmed_at=None,
+            check_confirmed=False,
+            checks=[],
+            preview_rows=[],
+            preview_values={},
+            **changes,
+        )

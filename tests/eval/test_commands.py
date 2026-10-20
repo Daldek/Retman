@@ -177,11 +177,12 @@ def test_rejects_inconsistent_expectations(
 def test_dependency_does_not_require_inapplicable_params() -> None:
     valid = sample(
         operation="download_sheet_hierarchy",
-        command="Pobierz NMPT dla potomnych arkuszy N-34-130-D-d-2 do skali 1:10000",
+        command="Pobierz ortofotomapę RGB z arkuszy potomnych N-34-130-D-d-2 w 1:10000",
         params={
-            "product": "dsm",
+            "product": "orthophoto",
             "area": {"type": "sheet", "code": "N-34-130-D-d-2"},
             "target_scale": "scale_10000",
+            "color": "rgb",
         },
     )
     validate_commands([valid])

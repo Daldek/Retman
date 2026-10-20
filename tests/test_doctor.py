@@ -1,8 +1,12 @@
 """``retman doctor``: blocking problems, hints and the report contract (ARCH 7.2)."""
 
+import errno
 import importlib.metadata
 import json
+import sys
+from copy import deepcopy
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -10,8 +14,9 @@ import pytest
 from retman import cli
 from retman.backends.base import Decision
 from retman.config import init_config
-from retman.doctor import run_doctor
+from retman.doctor import _plural, run_doctor
 from retman.i18n.loader import load_core_texts
+from retman.stores import ToolOutcome
 from retman.testing import FakeDecisionBackend
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -26,8 +31,16 @@ def dummy(monkeypatch: pytest.MonkeyPatch):
     return [(MANIFEST, FIXTURES / "dummy_tool")]
 
 
+@pytest.fixture(autouse=True)
+def local_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Per-user data (cache, reference files) below tmp_path: nothing real is read."""
+    data = tmp_path / "data"
+    monkeypatch.setattr("retman.config.default_data_dir", lambda: data)
+    return data
+
+
 def _openai_config(tmp_path: Path, *, confidence: str = "logprobs") -> Path:
-    path = init_config(tmp_path / "retman.toml")
+    path = init_config(tmp_path / "retman.toml", stores_dir=tmp_path / "stores")
     text = (
         path.read_text(encoding="utf-8")
         .replace('backend = "basal"', 'backend = "openai_compatible"', 1)
@@ -92,7 +105,8 @@ def test_healthy_setup_shows_model_address_and_exits_zero(tmp_path: Path, dummy)
     assert MODEL_URL in text
     assert "pytanie testowe: poprawna odpowiedź (pewność 0,97" in text
     assert "progi pewności: operacja 0.9, parametr 0.85" in text
-    assert "dummy_tool 1.2.0, obsługiwane >=1.2,<2, 4 operacje" in text
+    count = _plural(load_core_texts("pl"), "operations", len(dummy[0][0]["operations"]))
+    assert f"dummy_tool 1.2.0, obsługiwane >=1.2,<2, {count}" in text
     assert "✗" not in text
 
 
@@ -221,8 +235,6 @@ def test_unreadable_result_is_reported_but_does_not_block(tmp_path: Path, dummy)
     ],
 )
 def test_polish_plural_of_operation_counts(count: int, expected: str):
-    from retman.doctor import _plural
-
     assert _plural(load_core_texts("pl"), "operations", count) == expected
 
 
@@ -239,3 +251,331 @@ def test_cli_doctor_json_reports_the_same_checks_and_exit_code(
     configuration = report["sections"][0]
     assert configuration["key"] == "configuration"
     assert configuration["checks"][0]["blocking"] is True
+
+
+# --- stores of the tools (ARCH 7.2, 9.1) ---------------------------------------------
+
+
+@pytest.fixture
+def store_tools(dummy):
+    """Two tools named like the real ones, so their stores are checked."""
+    manifest, folder = dummy[0]
+    sources = {
+        "kartograf": "git+https://github.com/Daldek/Kartograf",
+        "imgwtools": "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools",
+    }
+    tools = []
+    for tool, source in sources.items():
+        copy = deepcopy(manifest)
+        copy["tool"], copy["distribution"], copy["source"] = tool, tool, source
+        tools.append((copy, folder))
+    return tools
+
+
+@pytest.fixture
+def pyarrow(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "pyarrow", SimpleNamespace(__version__="26.0.0"))
+
+
+def _make_stores(tmp_path: Path, **skip: bool) -> dict[str, Path]:
+    """Create the folders a healthy installation has; ``skip`` leaves one out."""
+    paths = {
+        "kartograf": tmp_path / "stores" / "kartograf",
+        "cache": tmp_path / "data" / "kartograf_cache.db",
+        "imgwtools": tmp_path / "stores" / "imgwtools",
+        "reference": tmp_path / "data" / "imgw-reference",
+    }
+    for name, path in paths.items():
+        if skip.get(name):
+            continue
+        folder = path.parent if name == "cache" else path
+        folder.mkdir(parents=True)
+    if not skip.get("imgwtools"):
+        marker = paths["imgwtools"] / "imgw-store.json"
+        marker.write_text('{"schema": "imgw-store/1"}', encoding="utf-8")
+    return paths
+
+
+def _stores(report) -> list[tuple[str, str]]:
+    return [
+        (check.status, check.text)
+        for found in report.sections
+        if found.key == "stores"
+        for check in found.checks
+    ]
+
+
+def _probe(calls: list[str], outcome: ToolOutcome | None = None):
+    def probe() -> ToolOutcome:
+        calls.append("probe")
+        return outcome or ToolOutcome("ok", version="3.0.0")
+
+    return probe
+
+
+def _run_stores(
+    tmp_path: Path,
+    tools,
+    *,
+    lookup=None,
+    rewrite: tuple[str, str] | None = None,
+    **options,
+):
+    config = _openai_config(tmp_path)
+    if rewrite is not None:
+        text = config.read_text(encoding="utf-8")
+        config.write_text(text.replace(*rewrite), encoding="utf-8")
+    with _server(["bielik-11b"]) as client:
+        return run_doctor(
+            config,
+            tmp_path,
+            backend=_fake("terrain"),
+            client=client,
+            manifests=tools,
+            version_lookup=lookup or _installed("1.2.0"),
+            **options,
+        )
+
+
+def test_healthy_stores_are_listed_and_the_slow_probe_is_not_run(
+    tmp_path: Path, store_tools, pyarrow
+):
+    paths = _make_stores(tmp_path)
+    calls: list[str] = []
+
+    report, _ = _run_stores(tmp_path, store_tools, probe=_probe(calls))
+    stores = _stores(report)
+
+    assert report.exit_code == 0
+    assert all(status == "ok" for status, _ in stores)
+    text = "\n".join(text for _, text in stores)
+    for expected in (
+        f"magazyn {paths['kartograf']} (zapis możliwy, dowiązania twarde działają)",
+        f"cache metadanych {paths['cache']}",
+        f"magazyn {paths['imgwtools']} (znacznik imgw-store.json",
+        "schemat imgw-store/1, dowiązania twarde działają)",
+        "pyarrow 26.0.0",
+        f"dane referencyjne {paths['reference']} (hydro_stations_locations.csv: brak)",
+    ):
+        assert expected in text
+    assert calls == []
+    # The write and link tests leave nothing behind in a user's store
+    assert list(paths["kartograf"].iterdir()) == []
+
+
+def test_stores_not_created_yet_warn_with_a_hint_and_do_not_block(
+    tmp_path: Path, store_tools, pyarrow
+):
+    report, texts = _run_stores(tmp_path, store_tools)
+    text = report.to_text(texts)
+
+    assert report.exit_code == 0
+    stores = _stores(report)
+    assert [s for s, line in stores if "pyarrow" not in line] == ["warning"] * 4
+    assert "Kartograf utworzy go przy pierwszym pobraniu" in text
+    assert (
+        "nie został jeszcze utworzony (brak imgw-store.json) → utwórz go: retman init"
+        in text
+    )
+    # Nothing was created while looking
+    assert not (tmp_path / "stores").exists()
+    assert not (tmp_path / "data").exists()
+
+
+@pytest.mark.parametrize(
+    ("marker", "expected"),
+    [
+        (None, "nie jest pusty i nie jest magazynem IMGWTools"),
+        ('{"schema": "imgw-store/2"}', "nieobsługiwany schemat (imgw-store/2)"),
+        ("{", "jest nieczytelny"),
+    ],
+    ids=["foreign_files", "unsupported_schema", "unreadable_marker"],
+)
+def test_imgw_folder_that_is_not_a_usable_store_blocks_work(
+    tmp_path: Path, store_tools, pyarrow, marker: str | None, expected: str
+):
+    paths = _make_stores(tmp_path)
+    store = paths["imgwtools"]
+    if marker is None:
+        (store / "imgw-store.json").unlink()
+        (store / "notes.txt").write_text("not a store", encoding="utf-8")
+    else:
+        (store / "imgw-store.json").write_text(marker, encoding="utf-8")
+
+    report, _ = _run_stores(tmp_path, store_tools)
+    problems = [text for status, text in _stores(report) if status == "error"]
+
+    assert report.exit_code == 1
+    assert len(problems) == 1 and expected in problems[0]
+
+
+def test_store_path_that_is_a_file_blocks_work(tmp_path: Path, store_tools, pyarrow):
+    paths = _make_stores(tmp_path, kartograf=True)
+    paths["kartograf"].write_text("a file", encoding="utf-8")
+
+    report, _ = _run_stores(tmp_path, store_tools)
+
+    assert report.exit_code == 1
+    assert any(
+        status == "error" and "nie jest folderem" in text
+        for status, text in _stores(report)
+    )
+
+
+def test_symlink_in_a_store_path_is_refused_by_imgwtools_but_tolerated_by_kartograf(
+    tmp_path: Path, store_tools, pyarrow
+):
+    real = tmp_path / "real"
+    real.mkdir()
+    try:
+        (tmp_path / "stores").symlink_to(real, target_is_directory=True)
+    except OSError:
+        pytest.skip("symbolic links are not available")
+    _make_stores(tmp_path)
+
+    # init writes resolved paths, so the symlink comes from a hand-edited config
+    rewrite = (str(real), str(tmp_path / "stores"))
+    report, texts = _run_stores(tmp_path, store_tools, rewrite=rewrite)
+    stores = _stores(report)
+    kartograf = [item for item in stores if item[1].startswith("kartograf: w ścieżce")]
+    imgwtools = [item for item in stores if item[1].startswith("imgwtools: w ścieżce")]
+
+    assert [status for status, _ in kartograf] == ["warning"]
+    assert [status for status, _ in imgwtools] == ["error"]
+    assert report.exit_code == 1
+    # The hint names the real path to write into the config
+    assert f"wpisz ścieżkę rzeczywistą {real}/imgwtools" in report.to_text(texts)
+
+
+def test_a_file_system_without_hard_links_blocks_both_stores(
+    tmp_path: Path, store_tools, pyarrow, monkeypatch: pytest.MonkeyPatch
+):
+    _make_stores(tmp_path)
+    refusal = OSError(errno.EPERM, "Operation not permitted")
+    monkeypatch.setattr("retman.doctor.hardlink_error", lambda folder: refusal)
+
+    report, texts = _run_stores(tmp_path, store_tools)
+    stores = _stores(report)
+    refused = [line for status, line in stores if status == "error"]
+
+    assert report.exit_code == 1
+    assert len(refused) == 2
+    assert all(
+        "nie obsługuje dowiązań twardych (Operation not permitted)" in r
+        for r in refused
+    )
+    assert {line.split(":")[0] for line in refused} == {"kartograf", "imgwtools"}
+    text = report.to_text(texts)
+    assert (
+        "[tools.kartograf] store_dir" in text and "[tools.imgwtools] store_dir" in text
+    )
+    # No "all is well" line next to the problem
+    assert not any("zapis możliwy" in line for _, line in stores)
+    assert not any("dowiązania twarde działają" in line for _, line in stores)
+
+
+def test_hard_links_are_tried_where_a_missing_imgw_store_will_be_created(
+    tmp_path: Path, store_tools, pyarrow, monkeypatch: pytest.MonkeyPatch
+):
+    paths = _make_stores(tmp_path, imgwtools=True)
+    tried: list[Path] = []
+
+    def record(folder: Path) -> None:
+        tried.append(folder)
+
+    monkeypatch.setattr("retman.doctor.hardlink_error", record)
+
+    report, _ = _run_stores(tmp_path, store_tools)
+
+    # The Kartograf store itself, and for the missing IMGWTools store the closest
+    # existing folder: the same disk
+    assert tried == [paths["kartograf"], paths["kartograf"].parent]
+    assert report.exit_code == 0
+
+
+def test_missing_pyarrow_disables_series_and_skips_the_probe(
+    tmp_path: Path, store_tools, monkeypatch: pytest.MonkeyPatch
+):
+    _make_stores(tmp_path)
+    monkeypatch.setitem(sys.modules, "pyarrow", None)
+    calls: list[str] = []
+
+    report, texts = _run_stores(tmp_path, store_tools, deep=True, probe=_probe(calls))
+
+    assert report.exit_code == 0
+    assert any(
+        status == "warning" and "brak pakietu pyarrow" in text
+        for status, text in _stores(report)
+    )
+    assert (
+        "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools"
+        in report.to_text(texts)
+    )
+    assert calls == []
+
+
+@pytest.mark.parametrize("deep", [False, True])
+def test_imgwtools_write_probe_runs_only_with_deep(
+    tmp_path: Path, store_tools, pyarrow, deep: bool
+):
+    _make_stores(tmp_path)
+    calls: list[str] = []
+
+    report, _ = _run_stores(tmp_path, store_tools, probe=_probe(calls), deep=deep)
+
+    assert calls == (["probe"] if deep else [])
+    assert report.exit_code == 0
+    assert (
+        any("zapis do magazynu działa" in text for _, text in _stores(report)) == deep
+    )
+
+
+def test_failed_write_probe_blocks_work_and_quotes_the_tool(
+    tmp_path: Path, store_tools, pyarrow
+):
+    _make_stores(tmp_path)
+    refusal = ToolOutcome("refused", "System plików nie zapewnia atomowego zapisu")
+
+    report, texts = _run_stores(
+        tmp_path, store_tools, deep=True, probe=_probe([], refusal)
+    )
+    text = report.to_text(texts)
+
+    assert report.exit_code == 1
+    assert (
+        "✗ imgwtools 1.2.0: zapis do magazynu nie działa na tym systemie: System plików"
+        in text
+    )
+    assert "wyłącz narzędzie w [adapters] enabled" in text
+
+
+def test_stores_of_tools_that_are_not_in_use_are_not_checked(
+    tmp_path: Path, store_tools, pyarrow
+):
+    def lookup(name: str) -> str:
+        if name == "imgwtools":
+            raise importlib.metadata.PackageNotFoundError(name)
+        return "1.2.0"
+
+    calls: list[str] = []
+
+    report, _ = _run_stores(
+        tmp_path, store_tools, lookup=lookup, deep=True, probe=_probe(calls)
+    )
+
+    assert calls == []
+    assert all("imgwtools" not in text for _, text in _stores(report))
+    assert any("kartograf" in text for _, text in _stores(report))
+
+
+def test_without_a_readable_config_there_are_no_store_checks(
+    tmp_path: Path, store_tools
+):
+    report, _ = run_doctor(
+        tmp_path / "absent.toml",
+        tmp_path,
+        manifests=store_tools,
+        version_lookup=_installed("1.2.0"),
+    )
+
+    assert "stores" not in [section.key for section in report.sections]

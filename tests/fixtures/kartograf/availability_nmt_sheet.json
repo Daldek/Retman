@@ -1,0 +1,601 @@
+{
+ "schema": "kartograf-availability/1",
+ "request": {
+  "product": "nmt",
+  "country": "pl",
+  "sheet": "N-34-130-D-d-2-4",
+  "min_year": null,
+  "max_year": null
+ },
+ "checked_at": "2026-10-19T20:07:21+00:00",
+ "areas": [
+  {
+   "country": "PL",
+   "crs": "EPSG:2180",
+   "bounds": [
+    769911.0902514459,
+    508419.1628396921,
+    772163.7346478042,
+    510851.57309799455
+   ],
+   "area_m2": 4934664.0,
+   "land_m2": 4934664.0
+  }
+ ],
+ "combinations": [
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_1m",
+   "year": 2025,
+   "acquisition_dates": [
+    "2025-04-26",
+    "2025-04-26"
+   ],
+   "published": [
+    "2025-09-24",
+    "2025-09-24"
+   ],
+   "campaigns": [
+    "GK-FOTO.6201.11.2025"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": "1m",
+   "vertical_crs": "EVRF2007",
+   "format": "ASC",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2-4"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --resolution 1m --vertical-crs EVRF2007 --year 2025"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2-4",
+     "campaign": "GK-FOTO.6201.11.2025",
+     "acquisition_date": "2025-04-26",
+     "published": "2025-09-24",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/82710/82710_1715397_N-34-130-D-d-2-4.asc"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "GK-FOTO.6201.11.2025",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  },
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_1m",
+   "year": 2024,
+   "acquisition_dates": [
+    "2024-05-27",
+    "2024-05-27"
+   ],
+   "published": [
+    "2025-04-09",
+    "2025-04-09"
+   ],
+   "campaigns": [
+    "DFT.7201.011.2024"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": "1m",
+   "vertical_crs": "EVRF2007",
+   "format": "ASC",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2-4"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --resolution 1m --vertical-crs EVRF2007 --year 2024"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2-4",
+     "campaign": "DFT.7201.011.2024",
+     "acquisition_date": "2024-05-27",
+     "published": "2025-04-09",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/81449/81449_1658710_N-34-130-D-d-2-4.asc"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "DFT.7201.011.2024",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  },
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_1m",
+   "year": 2022,
+   "acquisition_dates": [
+    "2022-07-21",
+    "2022-07-21"
+   ],
+   "published": [
+    "2023-02-08",
+    "2023-02-08"
+   ],
+   "campaigns": [
+    "DFT.7201.002.2022"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": "1m",
+   "vertical_crs": "EVRF2007",
+   "format": "ASC",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2-4"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --resolution 1m --vertical-crs EVRF2007 --year 2022"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2-4",
+     "campaign": "DFT.7201.002.2022",
+     "acquisition_date": "2022-07-21",
+     "published": "2023-02-08",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/76748/76748_1290645_N-34-130-D-d-2-4.asc"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "DFT.7201.002.2022",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  },
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_xyz_1m",
+   "year": 2020,
+   "acquisition_dates": [
+    "2020-04-07",
+    "2020-04-07"
+   ],
+   "published": [
+    "2021-01-21",
+    "2021-01-21"
+   ],
+   "campaigns": [
+    "DFT.7201.002.2020"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": "1m",
+   "vertical_crs": "EVRF2007",
+   "format": "XYZ",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2-4"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --format XYZ --resolution 1m --vertical-crs EVRF2007 --year 2020"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2-4",
+     "campaign": "DFT.7201.002.2020",
+     "acquisition_date": "2020-04-07",
+     "published": "2021-01-21",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/73866/73866_1051743_N-34-130-D-d-2-4.xyz.zip"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "DFT.7201.002.2020",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  },
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_xyz_1m",
+   "year": 2017,
+   "acquisition_dates": [
+    "2017-07-10",
+    "2017-07-10"
+   ],
+   "published": [
+    "2018-02-22",
+    "2018-02-22"
+   ],
+   "campaigns": [
+    "DFT.7201.005.2017"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": "1m",
+   "vertical_crs": "KRON86",
+   "format": "XYZ",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2-4"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --format XYZ --resolution 1m --vertical-crs KRON86 --year 2017"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2-4",
+     "campaign": "DFT.7201.005.2017",
+     "acquisition_date": "2017-07-10",
+     "published": "2018-02-22",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/66297/66297_752687_N-34-130-D-d-2-4.xyz.zip"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "DFT.7201.005.2017",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  },
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_1m",
+   "year": 2013,
+   "acquisition_dates": [
+    "2013-10-23",
+    "2013-10-23"
+   ],
+   "published": [
+    "2014-03-03",
+    "2014-03-03"
+   ],
+   "campaigns": [
+    "M-3334-009/11"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": "1m",
+   "vertical_crs": "KRON86",
+   "format": "ASC",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2-4"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --resolution 1m --vertical-crs KRON86 --year 2013"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2-4",
+     "campaign": "M-3334-009/11",
+     "acquisition_date": "2013-10-23",
+     "published": "2014-03-03",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/4042/4042_475813_N-34-130-D-d-2-4.asc"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "M-3334-009/11",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  },
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_xyz_1m",
+   "year": 2013,
+   "acquisition_dates": [
+    "2013-10-23",
+    "2013-10-23"
+   ],
+   "published": [
+    "2014-03-03",
+    "2014-03-03"
+   ],
+   "campaigns": [
+    "M-3334-009/11"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": "1m",
+   "vertical_crs": "KRON86",
+   "format": "XYZ",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2-4"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --format XYZ --resolution 1m --vertical-crs KRON86 --year 2013"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2-4",
+     "campaign": "M-3334-009/11",
+     "acquisition_date": "2013-10-23",
+     "published": "2014-03-03",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/4043/4043_475717_N-34-130-D-d-2-4.xyz.zip"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "M-3334-009/11",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  },
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_tbd_25m",
+   "year": 2010,
+   "acquisition_dates": [
+    "2010-08-01",
+    "2010-08-01"
+   ],
+   "published": [
+    "2011-11-04",
+    "2011-11-04"
+   ],
+   "campaigns": [
+    "N-34-007/10"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": "25m",
+   "vertical_crs": "KRON86",
+   "format": "TBD",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --format TBD --resolution 25m --vertical-crs KRON86 --year 2010"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2",
+     "campaign": "N-34-007/10",
+     "acquisition_date": "2010-08-01",
+     "published": "2011-11-04",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/5144/5144_417424_N-34-130-D-d-2_asc.zip"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "N-34-007/10",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  },
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_tbd_40m",
+   "year": 2006,
+   "acquisition_dates": [
+    "2006-01-01",
+    "2006-01-01"
+   ],
+   "published": [
+    "2007-03-15",
+    "2007-03-15"
+   ],
+   "campaigns": [
+    "N-34-006/06"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": "40m",
+   "vertical_crs": "KRON86",
+   "format": "TBD",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --format TBD --resolution 40m --vertical-crs KRON86 --year 2006"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2",
+     "campaign": "N-34-006/06",
+     "acquisition_date": "2006-01-01",
+     "published": "2007-03-15",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/5115/5115_379399_N-34-130-D-d-2_asc.zip"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "N-34-006/06",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  },
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_tin",
+   "year": 2006,
+   "acquisition_dates": [
+    "2006-01-01",
+    "2006-01-01"
+   ],
+   "published": [
+    "2007-03-15",
+    "2007-03-15"
+   ],
+   "campaigns": [
+    "N-34-006/06"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": null,
+   "vertical_crs": "KRON86",
+   "format": "TIN",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --format TIN --vertical-crs KRON86 --year 2006"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2",
+     "campaign": "N-34-006/06",
+     "acquisition_date": "2006-01-01",
+     "published": "2007-03-15",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/4498/4498_380423_N-34-130-D-d-2_tin.zip"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "N-34-006/06",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  },
+  {
+   "country": "PL",
+   "product": "nmt",
+   "source": "pl.gugik.nmt_ttn",
+   "year": 2006,
+   "acquisition_dates": [
+    "2006-01-01",
+    "2006-01-01"
+   ],
+   "published": [
+    "2007-03-15",
+    "2007-03-15"
+   ],
+   "campaigns": [
+    "N-34-006/06"
+   ],
+   "horizontal": "PL-1992",
+   "resolution": null,
+   "vertical_crs": "KRON86",
+   "format": "TTN",
+   "densities": [],
+   "complete": true,
+   "sheets_full": [
+    "N-34-130-D-d-2"
+   ],
+   "sheets_partial": [],
+   "sheets_missing": [],
+   "uncovered": false,
+   "uncovered_m2": 0.0,
+   "size_bytes": null,
+   "download_hint": [
+    "elevation download --product nmt --sheet N-34-130-D-d-2-4 --format TTN --vertical-crs KRON86 --year 2006"
+   ],
+   "full_m2": 4934664.0,
+   "sheet_records": [
+    {
+     "sheet": "N-34-130-D-d-2",
+     "campaign": "N-34-006/06",
+     "acquisition_date": "2006-01-01",
+     "published": "2007-03-15",
+     "full_sheet": true,
+     "url": "https://opendata.geoportal.gov.pl/NumDaneWys/NMT/4499/4499_379197_N-34-130-D-d-2.ttn"
+    }
+   ],
+   "campaign_coverage": [
+    {
+     "campaign": "N-34-006/06",
+     "complete": true,
+     "full_m2": 4934664.0
+    }
+   ]
+  }
+ ],
+ "notices": [],
+ "ok": true
+}

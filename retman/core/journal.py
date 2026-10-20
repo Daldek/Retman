@@ -30,11 +30,15 @@ class Journal:
         self.include_commands = include_commands
 
     def append(self, event: str, **fields: Any) -> None:
-        """Append one JSON event; omit raw command and answer when opted out."""
+        """Append one JSON event; omit texts shown to the user when opted out.
+
+        Without ``include_commands`` the raw command and answer, the shown plan,
+        the reason a question was asked again and the lines of an availability
+        report are left out: they may quote the user's own words or paths.
+        """
         if not self.include_commands:
-            fields.pop("command", None)
-            fields.pop("answer", None)
-            fields.pop("plan", None)
+            for name in ("command", "answer", "plan", "reason", "lines"):
+                fields.pop(name, None)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         record = {
             "time": utc_now(),

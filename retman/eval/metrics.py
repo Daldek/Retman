@@ -128,7 +128,10 @@ def _measure(records: Sequence[EvalRecord], repeat: int) -> Measures:
         expected_operation = expected["operation"]
         decisions = {item["name"]: item for item in record["decisions"]}
         questions = set(record["questions"])
-        op_asked = record["operation_question"]["asked"]
+        op_asked = (
+            record["operation_question"]["asked"]
+            or record["category_question"]["asked"]
+        )
         op_decision = decisions.get("operation")
         op_correct = op_decision is not None and _correct_key(
             op_decision, expected_operation

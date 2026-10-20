@@ -1,0 +1,38 @@
+{
+ "schema": "kartograf-download/1",
+ "files": [
+  {
+   "unit": "530000_382000_530100_382100",
+   "country": "PL",
+   "file": {
+    "path": "<store>/nmt/pl_1992_evrf2007_1m/bbox/530000_382000_530100_382100.tif",
+    "status": "new",
+    "label": "2026-10-19_ab12cd34",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "version_path": "<store>/nmt/pl_1992_evrf2007_1m/bbox/530000_382000_530100_382100.tif",
+    "newer": null,
+    "unverified": null,
+    "same_as": null
+   }
+  }
+ ],
+ "raw": [],
+ "inputs": [],
+ "failed": [],
+ "stale": [],
+ "superseded": [],
+ "summary": null,
+ "notices": [
+  {
+   "level": "info",
+   "code": "cutout_size",
+   "text": "wycinek 100 x 100 m: 1 zapytanie WCS"
+  },
+  {
+   "level": "warning",
+   "code": "all_nodata",
+   "text": "wycinek w calosci nodata - WCS GUGiK nie zwrocil danych dla obszaru"
+  }
+ ],
+ "ok": true
+}

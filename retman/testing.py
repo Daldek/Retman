@@ -1,6 +1,19 @@
-"""Deterministic backend for offline Retman tests."""
+"""Deterministic backend and tool client for offline Retman tests."""
 
+from collections.abc import Callable, Mapping
+from pathlib import Path
+from typing import Any
+
+from retman.adapters.catalog import (
+    CatalogCall,
+    PlanClient,
+    ToolContext,
+    ToolDocument,
+    ToolError,
+    ToolRun,
+)
 from retman.backends.base import Decision
+from retman.registry.operation import Operation
 
 
 class FakeDecisionBackend:
@@ -63,3 +76,121 @@ class FakeDecisionBackend:
             confidence_method="basal",
             model=self.model,
         )
+
+
+class FakeToolClient:
+    """A programmed command client for offline tests that records every call.
+
+    It satisfies the ``RunClient`` protocol without importing any tool.
+    ``calls`` holds ``(method, call)`` in order, ``network_calls`` those of
+    ``run``, ``check`` and ``query`` — what must stay empty before confirmation
+    (N-12).
+
+    Parameters
+    ----------
+    validation : Mapping[str, ToolError | Callable[[CatalogCall], ToolError | None]]
+        What ``validate`` raises per command (a callable may return ``None`` to
+        accept the call). Calls of other commands are accepted.
+    runs : Mapping[str, ToolRun | Callable[[CatalogCall], ToolRun]]
+        What ``run`` returns per command; a callable may write the files it
+        reports or raise ``ToolError``. A command without an entry yields an
+        ``ok`` run without files.
+    documents : Mapping[str, ToolDocument | Callable[[CatalogCall], ToolDocument]]
+        What ``lookup``, ``check`` and ``query`` return, by command, or by
+        ``"<method>:<command>"`` to tell the methods apart. ``lookup`` of a
+        command without an entry raises ``ToolError("not_offline")``; ``check``
+        and ``query`` return an empty document.
+    """
+
+    def __init__(
+        self,
+        *,
+        validation: Mapping[str, ToolError | Callable[[CatalogCall], ToolError | None]]
+        | None = None,
+        runs: Mapping[str, ToolRun | Callable[[CatalogCall], ToolRun]] | None = None,
+        documents: Mapping[str, ToolDocument | Callable[[CatalogCall], ToolDocument]]
+        | None = None,
+    ) -> None:
+        self.validation = validation or {}
+        self.runs = runs or {}
+        self.documents = documents or {}
+        self.calls: list[tuple[str, CatalogCall]] = []
+
+    @property
+    def network_calls(self) -> list[tuple[str, CatalogCall]]:
+        """Calls of the methods that may use the network or write: run, check, query."""
+        return [item for item in self.calls if item[0] in ("run", "check", "query")]
+
+    def validate(self, call: CatalogCall) -> None:
+        """Record the call; raise the programmed rejection, if any."""
+        self.calls.append(("validate", call))
+        programmed = self.validation.get(call.command)
+        error = programmed(call) if callable(programmed) else programmed
+        if error is not None:
+            raise error
+
+    def command_line(self, call: CatalogCall) -> str:
+        """Record the call; a deterministic stand-in for the tool's command line."""
+        self.calls.append(("command_line", call))
+        options = " ".join(
+            f"--{key}={call.options[key]}" for key in sorted(call.options)
+        )
+        return f"fake {call.command} {options}".strip()
+
+    def lookup(self, call: CatalogCall) -> ToolDocument:
+        """Record the call; the programmed document or ``ToolError("not_offline")``."""
+        self.calls.append(("lookup", call))
+        document = self._document("lookup", call)
+        if document is None:
+            raise ToolError("fake", "not_offline", call.command, call=call)
+        return document
+
+    def run(self, call: CatalogCall) -> ToolRun:
+        """Record the call; the programmed run (default: ``ok`` without files)."""
+        self.calls.append(("run", call))
+        programmed = self.runs.get(call.command)
+        if programmed is None:
+            return ToolRun(call.command, "ok", schema="fake/1")
+        return programmed(call) if callable(programmed) else programmed
+
+    def check(self, call: CatalogCall) -> ToolDocument:
+        """Record the call; the programmed document or an empty one."""
+        self.calls.append(("check", call))
+        return self._document("check", call) or {}
+
+    def query(self, call: CatalogCall) -> ToolDocument:
+        """Record the call; the programmed document or an empty one."""
+        self.calls.append(("query", call))
+        return self._document("query", call) or {}
+
+    def _document(self, method: str, call: CatalogCall) -> ToolDocument | None:
+        programmed = self.documents.get(
+            f"{method}:{call.command}", self.documents.get(call.command)
+        )
+        return programmed(call) if callable(programmed) else programmed
+
+
+def tool_context(
+    operation: Operation,
+    *,
+    client: PlanClient | None = None,
+    settings: Mapping[str, Any] | None = None,
+    project_dir: Path | None = None,
+    output_dir: Path | None = None,
+    inputs: Mapping[str, Path] | None = None,
+) -> ToolContext:
+    """A ``ToolContext`` for testing call builders, previews and checks.
+
+    Defaults to a ``FakeToolClient``, empty settings and no output folder (the
+    state while planning).
+    """
+    return ToolContext(
+        tool=operation.tool,
+        settings=settings or {},
+        project_dir=project_dir or Path.cwd(),
+        output_dir=output_dir,
+        inputs=inputs or {},
+        client=client if client is not None else FakeToolClient(),
+        specs={param["name"]: param for param in operation.spec["params"]},
+        operation=operation,
+    )

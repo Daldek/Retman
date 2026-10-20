@@ -2,14 +2,12 @@
 
 import hashlib
 import json
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from retman.backends.base import Decision
-from retman.config import Thresholds, init_config, load_config
-from retman.core.pipeline import Retman
+from retman.config import Thresholds
 from retman.core.plan import Plan
 from retman.exceptions import (
     OutOfScopeError,
@@ -17,54 +15,9 @@ from retman.exceptions import (
     PlanNotConfirmedError,
     RetmanError,
 )
-from retman.registry.loader import load_operations
 from retman.testing import FakeDecisionBackend
 
 SHEET = "N-34-130-D-d-2-4"
-KARTOGRAF_DIR = Path(__file__).resolve().parents[2] / "retman/tools/kartograf"
-
-
-@pytest.fixture
-def create_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Construct an isolated pipeline on the dummy package, not Kartograf."""
-    fixture_dir = Path(__file__).resolve().parents[1] / "fixtures"
-    monkeypatch.syspath_prepend(str(fixture_dir))
-    from dummy_tool.manifest import MANIFEST
-
-    operations = load_operations(
-        "pl",
-        manifests=[(MANIFEST, fixture_dir / "dummy_tool")],
-        version_lookup=lambda _: "1.2.0",
-    )
-    config_file = init_config(tmp_path / "config.toml")
-    config = load_config(config_file)
-
-    def create(
-        rules: dict[str, str | Decision] | None = None,
-        *,
-        confidence: float = 1.0,
-        journal_commands: bool = True,
-        thresholds: Thresholds | None = None,
-        collect: bool = False,
-    ) -> Retman:
-        decision = replace(
-            config.decision, thresholds=thresholds or config.decision.thresholds
-        )
-        settings = replace(
-            config,
-            decision=decision,
-            journal_commands=journal_commands,
-            collect_commands=collect,
-            collect_path=tmp_path / "collection" / "collected.jsonl",
-        )
-        return Retman(
-            settings,
-            FakeDecisionBackend(rules, confidence=confidence),
-            tmp_path,
-            operations=operations,
-        )
-
-    return create
 
 
 def test_plan_missing_choice_then_user_answer_preserves_sources(create_app):
@@ -202,17 +155,19 @@ def test_plan_unknown_confidence_marks_unverified_not_question(create_app):
     assert "niezweryfikowany" in plan.summary()
 
 
-def test_plan_geometry_path_resolves_from_project_and_must_exist(create_app):
+def test_plan_geometry_path_resolves_from_project_and_must_exist(create_app, make_gpkg):
     app = create_app({"make_dem": "make_dem", "raw": "raw"})
     folder = app.workspace.project_dir
-    (folder / "parcel.gpkg").write_bytes(b"SQLite format 3\x00")
+    make_gpkg(folder / "parcel.gpkg", "parcels")
 
     resolved = app.plan("NMT z pliku parcel.gpkg")
     missing = app.plan("NMT z pliku absent.gpkg")
 
+    # The one feature table is used and recorded, never left to the tool
     assert resolved.values["area"].value == {
         "type": "geometry",
         "path": str(folder / "parcel.gpkg"),
+        "layer": "parcels",
     }
     assert missing.questions[0].error
     assert "absent.gpkg" in missing.questions[0].error
@@ -381,25 +336,19 @@ def test_out_of_scope_command_lists_operations_instead_of_planning(create_app):
         "Kopia NMT",
         "Próba z błędem",
         "Próba zapisu poza wynikiem",
+        "Zapis w magazynie narzędzia",
+        "Pobranie NMT z katalogu narzędzia",
+        "Wycinek NMT",
+        "Wynik z ostrzeżeniami",
     ]
     assert "Utworzenie NMT" in str(error.value)
 
 
 @pytest.fixture
-def cutout_app(tmp_path: Path):
-    """Kartograf's cutout: its result system is read by code (ADR-009)."""
-    from retman.tools.kartograf.manifest import MANIFEST
-
-    operations = load_operations(
-        "pl",
-        manifests=[(MANIFEST, KARTOGRAF_DIR)],
-        version_lookup=lambda _: "0.7.2",
-    )
-    config = load_config(init_config(tmp_path / "config.toml"))
-    backend = FakeDecisionBackend(
-        {"download_elevation_cutout": "download_elevation_cutout", "dem": "dem"}
-    )
-    return Retman(config, backend, tmp_path, operations=operations), backend
+def cutout_app(create_app):
+    """A cutout: its result system is read by code, not the model (ADR-009)."""
+    app = create_app({"cut_dem": "cut_dem"})
+    return app, app.backend
 
 
 def _offered_crs(backend: FakeDecisionBackend) -> bool:
@@ -416,6 +365,39 @@ def test_result_system_is_read_by_code_without_the_model(cutout_app):
     assert plan.values["target_crs"].value == "epsg_3045"
     assert plan.values["target_crs"].source == "command"
     assert not _offered_crs(backend)
+
+
+def test_an_optional_parameter_left_unset_is_said_in_the_plan(cutout_app):
+    app, _ = cutout_app
+
+    plan = app.plan(
+        "Daj NMT z x=530000 y=382000 x=530100 y=382100 w 2180, przelicz do 3045"
+    )
+    named = app.plan(
+        "Daj NMT z x=530000 y=382000 x=530100 y=382100 w 2180, przelicz do 3045, "
+        'nazwij "wycinek_a"'
+    )
+
+    assert not plan.questions
+    assert "name" not in plan.values
+    assert (
+        "Nazwa wycinka: bez nazwy (nazwa pliku z prostokąta) ← nie podano w "
+        "poleceniu, parametr nieobowiązkowy"
+    ) in plan.summary().splitlines()
+    assert Plan.from_dict(plan.to_dict()).unset == plan.unset
+    assert named.values["name"].value == "wycinek_a"
+    assert "bez nazwy" not in named.summary()
+    # An unset parameter can still be chosen with "z"
+    changed = plan.change("name")
+    assert [question.name for question in changed.questions] == ["name"]
+    answered = changed.answer("name", "wycinek_b")
+    assert answered.values["name"].value == "wycinek_b"
+    assert "name" not in answered.unset
+    app.execute(plan.confirm())
+    record = json.loads(
+        (app.workspace.root / "001_cut_dem" / "result.json").read_text("utf-8")
+    )
+    assert record["unset"] == {"name": "bez nazwy (nazwa pliku z prostokąta)"}
 
 
 def test_system_of_the_rectangle_is_not_taken_for_the_result(cutout_app):

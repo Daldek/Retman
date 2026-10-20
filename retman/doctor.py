@@ -7,7 +7,7 @@ import tomllib
 from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import httpx
 
@@ -26,7 +26,19 @@ from retman.exceptions import (
 from retman.i18n.loader import Texts, load_core_texts, load_texts
 from retman.registry.loader import discover_manifests, version_matches
 from retman.registry.manifest import ManifestSpec, validate_manifest
+from retman.stores import (
+    IMGW_MARKER,
+    IMGW_REFERENCE_FILE,
+    ToolOutcome,
+    hardlink_error,
+    imgw_store_state,
+    nearest_existing,
+    probe_imgw_write,
+    symlink_component,
+)
 
+if TYPE_CHECKING:
+    from retman.devtools.light import LightCheck
 Status = Literal["ok", "warning", "error", "off"]
 
 # The fallback language only renders the report when the config cannot be read
@@ -125,12 +137,6 @@ def _config_problems(texts: Texts, error: ConfigError) -> list[Check]:
     ]
 
 
-def _nearest_existing(path: Path) -> Path:
-    while not path.exists() and path != path.parent:
-        path = path.parent
-    return path
-
-
 def _project_checks(config: Config, project_dir: Path, texts: Texts) -> list[Check]:
     project = project_dir.resolve()
     root = project / config.results_dir
@@ -146,7 +152,7 @@ def _project_checks(config: Config, project_dir: Path, texts: Texts) -> list[Che
     )
     # Results are created later, so writability is checked on the nearest
     # existing folder without creating anything in the project
-    writable = os.access(_nearest_existing(root), os.W_OK)
+    writable = os.access(nearest_existing(root), os.W_OK)
     checks.append(
         Check(
             "ok" if writable else "error",
@@ -332,8 +338,10 @@ def _tool_checks(
     texts: Texts,
     manifests: list[tuple[ManifestSpec, Path]],
     version_lookup: Callable[[str], str],
-) -> list[Check]:
+) -> tuple[list[Check], dict[str, tuple[ManifestSpec, str]]]:
+    """Per-tool lines and the tools in use: their manifest and installed version."""
     checks: list[Check] = []
+    active: dict[str, tuple[ManifestSpec, str]] = {}
     available = 0
     for manifest, _ in manifests:
         tool = manifest["tool"]
@@ -384,6 +392,7 @@ def _tool_checks(
             continue
         count = len(manifest["operations"])
         available += count
+        active[tool] = (manifest, version)
         checks.append(
             Check(
                 "ok",
@@ -405,7 +414,263 @@ def _tool_checks(
                 blocking=True,
             )
         )
+    return checks, active
+
+
+def _store_folder(
+    tool: str, store: Path, texts: Texts, config_path: Path, *, symlinks_refused: bool
+) -> tuple[list[Check], Literal["ok", "missing", "broken"]]:
+    """What every tool store needs: a path without symbolic links and a folder that
+    exists (or can be created) and takes writes.
+
+    Returns the problems found and the state of the folder: ``missing`` is a folder
+    that does not exist yet but can be created, ``broken`` one that cannot be used.
+    """
+    checks: list[Check] = []
+    link = symlink_component(store)
+    if link is not None:
+        resolved = store.resolve()
+        key = "symlink_refused" if symlinks_refused else "symlink"
+        checks.append(
+            Check(
+                "error" if symlinks_refused else "warning",
+                texts.get(f"doctor.stores.{key}", tool=tool, link=link),
+                texts.get(
+                    "doctor.stores.hint_symlink",
+                    tool=tool,
+                    resolved=resolved,
+                    config=config_path,
+                ),
+                blocking=symlinks_refused,
+            )
+        )
+    hint = texts.get("doctor.stores.hint_store_dir", tool=tool, config=config_path)
+    if not store.exists():
+        parent = nearest_existing(store)
+        if parent.is_dir() and os.access(parent, os.W_OK | os.X_OK):
+            return checks, "missing"
+        text = texts.get("doctor.stores.cannot_create", tool=tool, path=store)
+        checks.append(Check("error", text, hint, blocking=True))
+        return checks, "broken"
+    if not store.is_dir():
+        text = texts.get("doctor.stores.not_a_directory", tool=tool, path=store)
+        checks.append(Check("error", text, hint, blocking=True))
+        return checks, "broken"
+    if not os.access(store, os.W_OK | os.X_OK):
+        text = texts.get("doctor.stores.not_writable", tool=tool, path=store)
+        checks.append(Check("error", text, hint, blocking=True))
+        return checks, "broken"
+    return checks, "ok"
+
+
+def _cache_checks(cache_file: Path, texts: Texts, config_path: Path) -> list[Check]:
+    """Kartograf works without its metadata cache, only slower: warnings only."""
+    folder = cache_file.parent
+    if cache_file.is_dir():
+        problem = texts.get("doctor.stores.cache_is_folder", path=cache_file)
+    elif not folder.is_dir():
+        problem = texts.get("doctor.stores.cache_dir_missing", path=folder)
+    elif not os.access(folder, os.W_OK | os.X_OK) or (
+        cache_file.exists() and not os.access(cache_file, os.W_OK)
+    ):
+        problem = texts.get("doctor.stores.cache_not_writable", path=cache_file)
+    else:
+        return [Check("ok", texts.get("doctor.stores.cache_ok", path=cache_file))]
+    hint = texts.get("doctor.stores.hint_cache", folder=folder, config=config_path)
+    return [Check("warning", problem, hint)]
+
+
+def _hardlink_checks(
+    tool: str, folder: Path, texts: Texts, config_path: Path
+) -> list[Check]:
+    """Both tool stores publish every version with hard links; FAT/exFAT and some
+    network shares have none. Tried in the store, or in the closest existing folder
+    when the store is not created yet (the same file system)."""
+    try:
+        failure = hardlink_error(folder)
+    except OSError:
+        text = texts.get("doctor.stores.not_writable", tool=tool, path=folder)
+        hint = texts.get("doctor.stores.hint_store_dir", tool=tool, config=config_path)
+        return [Check("error", text, hint, blocking=True)]
+    if failure is None:
+        return []
+    reason = failure.strerror or str(failure)
+    text = texts.get(
+        "doctor.stores.no_hardlinks", tool=tool, path=folder, reason=reason
+    )
+    hint = texts.get("doctor.stores.hint_no_hardlinks", tool=tool, config=config_path)
+    return [Check("error", text, hint, blocking=True)]
+
+
+def _kartograf_checks(
+    settings: dict[str, Any], texts: Texts, config_path: Path
+) -> list[Check]:
+    """Kartograf's store keeps every version of a file as a hard link target."""
+    store = Path(settings["store_dir"])
+    checks, state = _store_folder(
+        "kartograf", store, texts, config_path, symlinks_refused=False
+    )
+    where: Path | None = None
+    if state == "missing":
+        checks.append(
+            Check(
+                "warning",
+                texts.get("doctor.stores.missing", tool="kartograf", path=store),
+                texts.get("doctor.stores.hint_missing_kartograf"),
+            )
+        )
+        # The file system is the one of the closest existing folder
+        where = nearest_existing(store)
+    elif state == "ok":
+        where = store
+    if where is not None:
+        checks.extend(_hardlink_checks("kartograf", where, texts, config_path))
+    if state == "ok" and not checks:
+        checks.append(Check("ok", texts.get("doctor.stores.kartograf_ok", path=store)))
+    checks.extend(_cache_checks(Path(settings["cache_file"]), texts, config_path))
     return checks
+
+
+def _imgw_store_checks(store: Path, texts: Texts, config_path: Path) -> list[Check]:
+    """IMGWTools creates a store in an empty folder and marks it with a file."""
+    checks, state = _store_folder(
+        "imgwtools", store, texts, config_path, symlinks_refused=True
+    )
+    if state == "broken":
+        return checks
+    found = imgw_store_state(store)
+    args = {"path": store, "marker": IMGW_MARKER, "schema": found.detail}
+    config = {"config": config_path}
+    if found.state in ("missing", "empty"):
+        checks.append(
+            Check(
+                "warning",
+                texts.get("doctor.stores.imgw_not_initialised", **args),
+                texts.get("doctor.stores.hint_imgw_init"),
+            )
+        )
+    elif found.state == "foreign":
+        text = texts.get("doctor.stores.imgw_foreign", **args)
+        hint = texts.get("doctor.stores.hint_imgw_foreign", **config)
+        checks.append(Check("error", text, hint, blocking=True))
+    elif found.state in ("unreadable", "unsupported"):
+        text = texts.get(f"doctor.stores.imgw_{found.state}", **args)
+        hint = texts.get("doctor.stores.hint_imgw_marker", **config)
+        checks.append(Check("error", text, hint, blocking=True))
+    if found.state in ("missing", "empty", "ready"):
+        where = store if state == "ok" else nearest_existing(store)
+        checks.extend(_hardlink_checks("imgwtools", where, texts, config_path))
+    if found.state == "ready" and not checks:
+        checks.append(Check("ok", texts.get("doctor.stores.imgw_ready", **args)))
+    return checks
+
+
+def _pyarrow_check(texts: Texts, source: str) -> Check:
+    """The series of IMGWTools are Parquet files (``imgwtools[store]``)."""
+    try:
+        pyarrow = importlib.import_module("pyarrow")
+    except ImportError:
+        return Check(
+            "warning",
+            texts.get("doctor.stores.pyarrow_missing"),
+            texts.get("doctor.stores.hint_pyarrow_missing", source=source),
+        )
+    return Check(
+        "ok", texts.get("doctor.stores.pyarrow_ok", version=pyarrow.__version__)
+    )
+
+
+def _reference_check(folder: Path, texts: Texts, config_path: Path) -> Check:
+    if not folder.is_dir():
+        return Check(
+            "warning",
+            texts.get("doctor.stores.reference_missing", path=folder),
+            texts.get("doctor.stores.hint_reference", config=config_path),
+        )
+    present = (folder / IMGW_REFERENCE_FILE).is_file()
+    return Check(
+        "ok",
+        texts.get(
+            "doctor.stores.reference_ok",
+            path=folder,
+            file=IMGW_REFERENCE_FILE,
+            state=texts.get(
+                "doctor.stores.reference_present"
+                if present
+                else "doctor.stores.reference_absent"
+            ),
+        ),
+    )
+
+
+def _probe_check(
+    outcome: ToolOutcome, version: str, texts: Texts, source: str, config_path: Path
+) -> Check:
+    if outcome.status == "ok":
+        return Check("ok", texts.get("doctor.stores.probe_ok", version=version))
+    return Check(
+        "error",
+        texts.get("doctor.stores.probe_failed", version=version, detail=outcome.detail),
+        texts.get("doctor.stores.hint_probe_failed", source=source, config=config_path),
+        blocking=True,
+    )
+
+
+def _store_checks(
+    config: Config,
+    texts: Texts,
+    active: dict[str, tuple[ManifestSpec, str]],
+    *,
+    deep: bool,
+    probe: Callable[[], ToolOutcome],
+) -> list[Check]:
+    """Stores of the tools that are in use (installed, supported, not disabled)."""
+    checks: list[Check] = []
+    if "kartograf" in active and "kartograf" in config.tools:
+        checks.extend(_kartograf_checks(config.tools["kartograf"], texts, config.path))
+    if "imgwtools" in active and "imgwtools" in config.tools:
+        manifest, version = active["imgwtools"]
+        settings = config.tools["imgwtools"]
+        checks.extend(
+            _imgw_store_checks(Path(settings["store_dir"]), texts, config.path)
+        )
+        arrow = _pyarrow_check(texts, manifest["source"])
+        checks.append(arrow)
+        checks.append(
+            _reference_check(Path(settings["reference_data_dir"]), texts, config.path)
+        )
+        # An end-to-end write in a temporary folder (init, an archive, a series, a
+        # catalog): slow, so only on request
+        if arrow.status == "ok" and deep:
+            checks.append(
+                _probe_check(probe(), version, texts, manifest["source"], config.path)
+            )
+    return checks
+
+
+def _conformance_checks(
+    tool_manifests: list[tuple[ManifestSpec, Path]],
+    active: dict[str, tuple[ManifestSpec, str]],
+    texts: Texts,
+    conformance: "LightCheck | None",
+) -> list[Check]:
+    """The light drift check of the tools in use (X1, X4; ARCHITECTURE 3.2.3).
+
+    Whether the installed catalog still has the commands the manifest names and
+    offers no value the manifest neither offers nor excludes. A tool the scaffold
+    has nothing to check against gives no line.
+    """
+    # The scaffold is imported only here: nothing of it is needed to start
+    from retman.devtools.light import light_lines
+
+    directories = {manifest["tool"]: folder for manifest, folder in tool_manifests}
+    return [
+        Check(line.status, line.text, line.hint)
+        for tool, (manifest, version) in active.items()
+        for line in light_lines(
+            manifest, directories[tool], version, texts, conformance
+        )
+    ]
 
 
 def _translation_checks(
@@ -450,6 +715,9 @@ def run_doctor(
     client: httpx.Client | None = None,
     manifests: Iterable[tuple[ManifestSpec, Path]] | None = None,
     version_lookup: Callable[[str], str] = importlib.metadata.version,
+    deep: bool = False,
+    probe: Callable[[], ToolOutcome] = probe_imgw_write,
+    conformance: "LightCheck | None" = None,
 ) -> tuple[DoctorReport, Texts]:
     """
     Check configuration, models, tools, translations and the project workspace.
@@ -463,6 +731,14 @@ def run_doctor(
     backend, client, manifests, version_lookup
         Injections for offline tests; by default the configured backend,
         a new HTTP client, all tool manifests and installed package versions.
+    deep : bool, optional
+        Also run the slow checks: whether IMGWTools can write a store here.
+    probe : Callable, optional
+        The IMGWTools write probe; an injection for offline tests.
+    conformance : LightCheck, optional
+        The light drift check of the tools in use; by default the one of
+        ``retman.devtools`` on the discovered tools. With injected ``manifests``
+        it runs only when given, so that a test never meets a real tool.
 
     Returns
     -------
@@ -498,13 +774,26 @@ def run_doctor(
         finally:
             if owns_client:
                 http.close()
-    sections.append(
-        Section(
-            "tools",
-            texts.get("doctor.section_tools"),
-            _tool_checks(config, texts, tool_manifests, version_lookup),
+    tool_checks, active = _tool_checks(config, texts, tool_manifests, version_lookup)
+    sections.append(Section("tools", texts.get("doctor.section_tools"), tool_checks))
+    if config is not None:
+        store_checks = _store_checks(config, texts, active, deep=deep, probe=probe)
+        if store_checks:
+            sections.append(
+                Section("stores", texts.get("doctor.section_stores"), store_checks)
+            )
+    if manifests is None or conformance is not None:
+        conformance_checks = _conformance_checks(
+            tool_manifests, active, texts, conformance
         )
-    )
+        if conformance_checks:
+            sections.append(
+                Section(
+                    "conformance",
+                    texts.get("scaffold.doctor_section"),
+                    conformance_checks,
+                )
+            )
     language = config.language if config is not None else REPORT_LANGUAGE
     sections.append(
         Section(

@@ -1,65 +1,87 @@
+[categories.spatial_data]
+label = "Dane przestrzenne GUGiK"
+description = "Pobieranie danych przestrzennych z GUGiK: numeryczny model terenu NMT, numeryczny model pokrycia terenu NMPT, ortofotomapa, wycinki wysokościowe i BDOT10k (wektory topograficzne)"
+
 [operations.download_dem_sheet]
-label = "Pobranie NMT dla arkusza"
-description = "Pobierz NMT dla jednego godła arkusza: numeryczny model terenu, DEM, DTM, wysokości gruntu lub rzeźba terenu z GUGiK."
+label = "Pobranie NMT dla arkusza lub obszaru"
+description = "Pobierz NMT dla godła arkusza albo dla obszaru z pliku geometrii: numeryczny model terenu, DEM, DTM, wysokości gruntu lub rzeźba terenu z GUGiK."
+
+[operations.download_dem_sheet.check]
+notice = "Zapytam usługi GUGiK (skorowidz arkuszy WFS i warstwę PRG) o lata, rozdzielczości i układy wysokościowe dla godła albo pliku z planu. NMT 100 m (pliki województw) nie ma takiego skorowidza i niczego nie sprawdzam."
 
 [operations.download_dem_sheet.params.area]
-label = "Godło arkusza NMT"
-question = "Dla jakiego godła arkusza mam pobrać NMT (numeryczny model terenu)?"
-help = "Podaj godło PL-1992 albo PL-2000. Dla godła PL-1992 grubszego niż 1:10000 Kartograf pobierze potomne arkusze. Pobierany jest najnowszy dostępny lot; wybór roku i kampanii nie jest jeszcze obsługiwany."
+label = "Godło arkusza lub obszar NMT"
+question = "Dla jakiego godła arkusza albo pliku geometrii mam pobrać NMT (numeryczny model terenu)?"
+help = "Podaj godło PL-1992 albo PL-2000 albo plik SHP/GPKG. Godło PL-1992 grubsze niż 1:10000 Kartograf rozwinie na arkusze 1:10000; godło PL-2000 w skali 1:10000 (np. 7.171.21) nie ma NMT w tej skali — użyj operacji arkuszy potomnych. Dla pliku pobierane są arkusze 1:10000 (PL-1992), których obwiednia styka się z obwiednią któregokolwiek obiektu; kształt obiektów nie jest uwzględniany. Dla każdego arkusza pobierany jest najnowszy dostępny lot; roku i kampanii nie wybierasz."
 example = "N-34-130-D-d-2-4"
+geometry_note = "arkusze 1:10000 (PL-1992) przecinające obwiednię któregokolwiek obiektu warstwy; kształt wieloboku nie jest uwzględniany"
 
 [operations.download_dem_sheet.params.resolution]
 label = "Rozdzielczość NMT"
-question = "Czy pobrać NMT w rozdzielczości 1 m czy 5 m?"
+question = "W jakiej rozdzielczości pobrać NMT: 0,15 m, 0,5 m, 0,6 m, 1 m, 5 m, 10 m czy 100 m?"
 model_question = "Jaką rozdzielczość wymienia polecenie?"
-help = "NMT 5 m jest dostępny wyłącznie w układzie wysokościowym EVRF2007."
-options."1m".label = "1 m"
-options."1m".description = "1 m — NMT/DEM, model terenu o pikselu 1 metr"
-options."5m".label = "5 m (tylko EVRF2007)"
-options."5m".description = "5 m — NMT/DEM, model terenu o pikselu 5 metrów (tylko EVRF2007)"
-options.unspecified.description = "Nie podano rozdzielczości — dopytaj o 1 m albo 5 m"
+help = "W układzie EVRF2007 dostępne są 0,15 m, 0,5 m, 0,6 m, 1 m, 5 m i 10 m; w KRON86 tylko 0,5 m i 1 m. NMT 100 m to pliki XYZ w archiwach ZIP dla województw, bez układu wysokościowego i bez przycięcia do arkusza."
+options.0_15m.label = "0,15 m (tylko EVRF2007)"
+options.0_15m.description = "0,15 m — NMT o pikselu 15 centymetrów, 0.15 m, 15 cm (tylko EVRF2007)"
+options.0_5m.label = "0,5 m"
+options.0_5m.description = "0,5 m — NMT o pikselu 50 centymetrów, 0.5 m, 50 cm, pół metra (to nie jest 5 m)"
+options.0_6m.label = "0,6 m (tylko EVRF2007)"
+options.0_6m.description = "0,6 m — NMT o pikselu 60 centymetrów, 0.6 m, 60 cm (tylko EVRF2007)"
+options.1m.label = "1 m"
+options.1m.description = "1 m — NMT/DEM, model terenu o pikselu 1 metr, 100 cm"
+options.5m.label = "5 m (tylko EVRF2007)"
+options.5m.description = "5 m — NMT/DEM, model terenu o pikselu 5 metrów (tylko EVRF2007; to nie jest 0,5 m)"
+options.10m.label = "10 m (tylko EVRF2007)"
+options.10m.description = "10 m — NMT/DEM, model terenu o pikselu 10 metrów (tylko EVRF2007)"
+options.100m.label = "100 m (pliki województw, bez układu wysokościowego)"
+options.100m.description = "100 m — NMT 100 metrów, siatka krajowa, pliki XYZ w ZIP dla województw, bez układu wysokościowego"
+options.unspecified.description = "Nie podano rozdzielczości — dopytaj, o którą chodzi"
 
 [operations.download_dem_sheet.params.vertical_crs]
 label = "Układ wysokościowy NMT"
 question = "W którym układzie wysokościowym pobrać NMT: EVRF2007 czy KRON86?"
 model_question = "Jaki układ wysokościowy wymienia polecenie?"
-help = "KRON86 wymaga rozdzielczości 1 m; 5 m istnieje tylko w EVRF2007."
+help = "KRON86 jest dostępny tylko dla rozdzielczości 0,5 m i 1 m; pozostałe rozdzielczości istnieją wyłącznie w EVRF2007."
 options.evrf2007.label = "EVRF2007"
 options.evrf2007.description = "EVRF2007 — europejski układ wysokościowy, PL-EVRF2007-NH, poziom odniesienia Amsterdam"
-options.kron86.label = "KRON86 (tylko 1 m)"
-options.kron86.description = "KRON86 — Kronsztadt 86, PL-KRON86-NH (wyłącznie 1 m)"
+options.kron86.label = "KRON86 (tylko 0,5 m i 1 m)"
+options.kron86.description = "KRON86 — Kronsztadt 86, PL-KRON86-NH (wyłącznie 0,5 m i 1 m)"
 options.unspecified.description = "Nie podano układu wysokościowego — dopytaj o EVRF2007 albo KRON86"
 
 [operations.download_sheet_hierarchy]
 label = "Pobranie arkuszy potomnych (NMT, NMPT albo ortofotomapa)"
-description = "Pobierz hierarchię arkuszy potomnych GUGiK: NMT (numeryczny model terenu, DEM, DTM, rzeźba terenu), NMPT (numeryczny model pokrycia terenu, DSM) albo ortofotomapę (ortofoto, orthophoto, zdjęcia lotnicze)."
+description = "Pobierz hierarchię arkuszy potomnych GUGiK: NMT (numeryczny model terenu, DEM, DTM, rzeźba terenu), NMPT (numeryczny model pokrycia terenu, DSM) albo ortofotomapę (ortofoto, orthophoto, zdjęcia lotnicze) w wariancie RGB, CIR albo czarno-białym."
+
+[operations.download_sheet_hierarchy.check]
+notice = "Zapytam usługi GUGiK (skorowidz arkuszy WFS i warstwę PRG albo skorowidz ortofotomapy WMS) o dane dla godła albo pliku z planu. Dla ortofotomapy skorowidz zna tylko wariant RGB; dla CIR i czarno-białej niczego nie sprawdzam."
 
 [operations.download_sheet_hierarchy.params.product]
 label = "Rodzaj danych arkuszy"
 question = "Jakie dane pobrać dla arkuszy potomnych: NMT, NMPT czy ortofotomapę?"
 model_question = "Jakiego rodzaju dane wymienia polecenie?"
-help = "Arkusze NMT i NMPT zapisują wysokości, a ortofotomapa to georeferencyjne zdjęcie lotnicze. NMPT i ortofotomapa mają ustawienia Kartografa: 1 m / EVRF2007 (NMPT), kolor RGB (ortofotomapa). Najnowsze dostępne dane bez wyboru roku/kampanii."
+help = "Arkusze NMT i NMPT zapisują wysokości (siatka ASC), a ortofotomapa to georeferencyjne zdjęcie lotnicze (GeoTIFF) w wybranym wariancie barwnym: RGB, CIR albo czarno-białym. Dla każdego arkusza pobierany jest najnowszy dostępny lot; roku i kampanii nie wybierasz."
 options.dem.label = "NMT (numeryczny model terenu)"
 options.dem.description = "NMT — numeryczny model terenu, DEM, DTM, wysokość gruntu i rzeźba terenu"
 options.dsm.label = "NMPT (numeryczny model pokrycia terenu)"
 options.dsm.description = "NMPT — numeryczny model pokrycia terenu, DSM, wysokość budynków i roślinności"
 options.orthophoto.label = "Ortofotomapa"
-options.orthophoto.description = "Ortofotomapa — ortofoto, orthophoto, georeferencyjne zdjęcie lotnicze"
+options.orthophoto.description = "Ortofotomapa — ortofoto, orthophoto, georeferencyjne zdjęcie lotnicze, zdjęcia z lotu"
 options.unspecified.description = "Nie podano produktu — dopytaj o NMT, NMPT lub ortofotomapę"
 
 [operations.download_sheet_hierarchy.params.area]
-label = "Godło arkusza nadrzędnego"
-question = "Jakie jest godło arkusza nadrzędnego do rozwinięcia?"
-help = "Podaj godło grubszego arkusza PL-1992 lub PL-2000; docelowa skala musi być bardziej szczegółowa. W PL-1992 dostępne są przede wszystkim arkusze 1:10000; drobniejsze skale dotyczą PL-2000."
+label = "Godło arkusza nadrzędnego lub obszar"
+question = "Jakie jest godło arkusza nadrzędnego do rozwinięcia albo plik geometrii?"
+help = "Podaj godło grubszego arkusza PL-1992 lub PL-2000 albo plik SHP/GPKG; docelowa skala musi być bardziej szczegółowa. Dla pliku pobierane są arkusze w wybranej skali, których obwiednia styka się z obwiednią któregokolwiek obiektu; kształt obiektów nie jest uwzględniany. Ortofotomapę pobieram tylko dla godła arkusza, nie dla pliku."
 example = "N-34-130-D-d-2"
+geometry_note = "arkusze w wybranej skali przecinające obwiednię któregokolwiek obiektu warstwy; kształt wieloboku nie jest uwzględniany"
 
 [operations.download_sheet_hierarchy.params.target_scale]
 label = "Skala arkuszy potomnych"
 question = "Do jakiej skali Kartografa rozwinąć godło arkusza?"
 model_question = "Jaką skalę docelową wymienia polecenie?"
-help = "1:10000 to standardowy arkusz PL-1992, którego moduł GUGiK nazywa 1:5000. Skale 1:5000, 1:2000, 1:1000 i 1:500 należą do PL-2000; w wielu miejscach GUGiK udostępnia arkusze PL-2000 w skali 1:2000. Skala docelowa musi być drobniejsza od skali godła nadrzędnego."
-options.scale_10000.label = "1:10000"
-options.scale_10000.description = "1:10000 — standardowe arkusze NMT/NMPT/ortofoto PL-1992 albo początek PL-2000"
+help = "Arkusze PL-1992 istnieją tylko w skali 1:10000 (standardowy arkusz GUGiK) — dla godła PL-1992 i dla pliku w układzie PL-1992 wybierz 1:10000. Skale 1:5000, 1:2000, 1:1000 i 1:500 należą do PL-2000 (GUGiK najczęściej publikuje 1:2000). Skala musi być drobniejsza od skali godła nadrzędnego i pasować do jego układu."
+options.scale_10000.label = "1:10000 (PL-1992)"
+options.scale_10000.description = "1:10000 — standardowe arkusze NMT/NMPT/ortofoto PL-1992 (jedyna skala arkuszy PL-1992)"
 options.scale_5000.label = "1:5000 (PL-2000)"
 options.scale_5000.description = "1:5000 — arkusze PL-2000 w osobnej gałęzi podziału"
 options.scale_2000.label = "1:2000 (PL-2000)"
@@ -72,35 +94,72 @@ options.unspecified.description = "Nie podano skali docelowej — dopytaj"
 
 [operations.download_sheet_hierarchy.params.resolution]
 label = "Rozdzielczość NMT"
-question = "W jakiej rozdzielczości pobrać arkusze NMT: 1 m czy 5 m?"
-model_question = "Jaką rozdzielczość wymienia polecenie?"
-help = "Ten wybór dotyczy tylko NMT; dla NMPT Kartograf obsługuje 1 m, ortofotomapa ma własną rozdzielczość produktu. 5 m wymaga EVRF2007."
-options."1m".label = "1 m"
-options."1m".description = "1 m — numeryczny model terenu NMT/DEM 1 m"
-options."5m".label = "5 m (tylko EVRF2007)"
-options."5m".description = "5 m — numeryczny model terenu NMT/DEM 5 m, tylko EVRF2007"
-options.unspecified.description = "Nie podano rozdzielczości — dopytaj o 1 m albo 5 m"
+question = "W jakiej rozdzielczości pobrać arkusze NMT: 0,15 m, 0,5 m, 0,6 m, 1 m, 5 m czy 10 m?"
+model_question = "Jaką rozdzielczość NMT wymienia polecenie?"
+help = "W układzie EVRF2007 dostępne są 0,15 m, 0,5 m, 0,6 m, 1 m, 5 m i 10 m; w KRON86 tylko 0,5 m i 1 m."
+options.0_15m.label = "0,15 m (tylko EVRF2007)"
+options.0_15m.description = "0,15 m — piksel 15 centymetrów, 0.15 m, 15 cm (tylko EVRF2007)"
+options.0_5m.label = "0,5 m"
+options.0_5m.description = "0,5 m — piksel 50 centymetrów, 0.5 m, 50 cm, pół metra (to nie jest 5 m)"
+options.0_6m.label = "0,6 m (tylko EVRF2007)"
+options.0_6m.description = "0,6 m — piksel 60 centymetrów, 0.6 m, 60 cm (tylko EVRF2007)"
+options.1m.label = "1 m"
+options.1m.description = "1 m — piksel 1 metr, 100 cm"
+options.5m.label = "5 m (tylko EVRF2007)"
+options.5m.description = "5 m — piksel 5 metrów (tylko EVRF2007; to nie jest 0,5 m)"
+options.10m.label = "10 m (tylko EVRF2007)"
+options.10m.description = "10 m — piksel 10 metrów (tylko EVRF2007)"
+options.unspecified.description = "Nie podano rozdzielczości — dopytaj, o którą chodzi"
+
+[operations.download_sheet_hierarchy.params.resolution_dsm]
+label = "Rozdzielczość NMPT"
+question = "W jakiej rozdzielczości pobrać arkusze NMPT: 0,5 m, 0,6 m czy 1 m?"
+model_question = "Jaką rozdzielczość NMPT wymienia polecenie?"
+help = "NMPT w EVRF2007: 0,5 m, 0,6 m i 1 m; w KRON86 tylko 0,5 m i 1 m."
+options.0_5m.label = "0,5 m"
+options.0_5m.description = "0,5 m — piksel 50 centymetrów, 0.5 m, 50 cm, pół metra"
+options.0_6m.label = "0,6 m (tylko EVRF2007)"
+options.0_6m.description = "0,6 m — piksel 60 centymetrów, 0.6 m, 60 cm (tylko EVRF2007)"
+options.1m.label = "1 m"
+options.1m.description = "1 m — piksel 1 metr, 100 cm"
+options.unspecified.description = "Nie podano rozdzielczości NMPT — dopytaj, o którą chodzi"
 
 [operations.download_sheet_hierarchy.params.vertical_crs]
-label = "Układ wysokościowy NMT"
-question = "W jakim układzie wysokościowym pobrać arkusze NMT?"
+label = "Układ wysokościowy arkuszy"
+question = "W jakim układzie wysokościowym pobrać arkusze: EVRF2007 czy KRON86?"
 model_question = "Jaki układ wysokościowy wymienia polecenie?"
-help = "Ten wybór dotyczy tylko NMT. 5 m i KRON86 nie mogą być łączone."
+help = "Dotyczy NMT i NMPT. KRON86 jest dostępny tylko dla rozdzielczości 0,5 m i 1 m."
 options.evrf2007.label = "EVRF2007"
 options.evrf2007.description = "EVRF2007 — europejski układ wysokościowy, poziom odniesienia Amsterdam"
-options.kron86.label = "KRON86 (tylko NMT 1 m)"
-options.kron86.description = "KRON86 — Kronsztadt 86, tylko NMT 1 m"
+options.kron86.label = "KRON86 (tylko 0,5 m i 1 m)"
+options.kron86.description = "KRON86 — Kronsztadt 86, układ historyczny (tylko 0,5 m i 1 m)"
 options.unspecified.description = "Nie podano układu wysokościowego — dopytaj o EVRF2007 albo KRON86"
 
+[operations.download_sheet_hierarchy.params.color]
+label = "Wariant barwny ortofotomapy"
+question = "W jakim wariancie barwnym pobrać ortofotomapę: RGB (barwy naturalne), CIR (bliska podczerwień) czy czarno-białą?"
+model_question = "Jaki wariant barwny ortofotomapy wymienia polecenie?"
+help = "GUGiK publikuje ten sam arkusz w trzech wariantach: RGB (barwy naturalne), CIR (kolor w bliskiej podczerwieni, roślinność na czerwono) i czarno-biały (B/W). Dla arkusza bez wybranego wariantu GUGiK nie ma danych; wariantu nie podmieniam."
+options.rgb.label = "RGB (barwy naturalne)"
+options.rgb.description = "RGB — ortofotomapa w barwach naturalnych, true color, zwykłe zdjęcie lotnicze (sam kolor bez słowa o podczerwieni nie rozstrzyga między RGB a CIR)"
+options.cir.label = "CIR (bliska podczerwień)"
+options.cir.description = "CIR — ortofotomapa w bliskiej podczerwieni, color infrared, fałszywe barwy, roślinność na czerwono, podczerwień"
+options.bw.label = "Czarno-biała (B/W)"
+options.bw.description = "B/W — ortofotomapa czarno-biała, w skali szarości, w odcieniach szarości, panchromatyczna"
+options.unspecified.description = "Nie podano wariantu barwnego — dopytaj o RGB, CIR albo czarno-białą"
+
 [operations.download_elevation_cutout]
-label = "Wycinek NMT albo NMPT dla prostokąta"
-description = "Pobierz jeden wycinek wysokościowy GeoTIFF z WCS GUGiK: NMT (numeryczny model terenu, DEM, DTM, rzeźba terenu) albo NMPT (numeryczny model pokrycia terenu, DSM) dla prostokąta współrzędnych."
+label = "Wycinek NMT albo NMPT 1 m dla prostokąta lub obszaru"
+description = "Pobierz jeden wycinek wysokościowy GeoTIFF z WCS GUGiK: NMT (numeryczny model terenu, DEM, DTM, rzeźba terenu) albo NMPT (numeryczny model pokrycia terenu, DSM) dla prostokąta współrzędnych albo obwiedni pliku geometrii."
+
+[operations.download_elevation_cutout.check]
+notice = "Zapytam usługi GUGiK (skorowidz arkuszy WFS i warstwę PRG) o dane dla prostokąta albo pliku z planu. Wycinek składa serwer WCS, więc skorowidz arkuszy tylko przybliża, co będzie w wyniku."
 
 [operations.download_elevation_cutout.params.product]
 label = "Produkt wycinka"
 question = "Czy wycinek ma zawierać NMT (teren) czy NMPT (pokrycie terenu)?"
 model_question = "Jakiego rodzaju dane wymienia polecenie?"
-help = "Wycinek WCS ma rozdzielczość 1 m, pochodzi z kompozycji danych serwera (wybór rocznika i kampanii nie jest obsługiwany)."
+help = "Wycinek WCS ma zawsze rozdzielczość 1 m (to jedyna rozdzielczość tego trybu) i pochodzi z kompozycji lotów serwera GUGiK; rocznika ani kampanii nie wybierasz — rocznik wybiera się przy pobieraniu arkuszy."
 options.dem.label = "NMT (numeryczny model terenu)"
 options.dem.description = "NMT — numeryczny model terenu, DEM, DTM, rzeźba terenu"
 options.dsm.label = "NMPT (numeryczny model pokrycia terenu)"
@@ -108,10 +167,11 @@ options.dsm.description = "NMPT — numeryczny model pokrycia terenu, DSM, zabud
 options.unspecified.description = "Nie podano produktu — dopytaj o NMT lub NMPT"
 
 [operations.download_elevation_cutout.params.area]
-label = "Prostokąt wycinka"
-question = "Jaki prostokąt współrzędnych wyciąć z danych wysokościowych?"
-help = "Podaj granice prostokąta w PL-1992 (EPSG:2180) lub WGS84 (EPSG:4326). Pliki geometrii SHP/GPKG nie są przyjmowane: publiczne API Kartografa nie udostępnia ich dokładnego prostokąta, a argument geometry wycinka WCS jest nieaktywny."
+label = "Prostokąt lub obszar wycinka"
+question = "Jaki prostokąt współrzędnych albo plik geometrii wyciąć z danych wysokościowych?"
+help = "Podaj granice prostokąta w PL-1992 (EPSG:2180) lub WGS84 (EPSG:4326) albo plik SHP/GPKG. Dla pliku wycinek obejmuje prostokąt wszystkich jego obiektów i nie jest przycinany do kształtu; brak danych jest tylko poza lądem Polski."
 example = "530000,382000,530100,382100 EPSG:2180"
+geometry_note = "jeden prostokąt obejmujący wszystkie obiekty warstwy; nie przycina do wieloboku; poza lądem Polski brak danych"
 
 [operations.download_elevation_cutout.params.target_crs]
 label = "Układ współrzędnych wyniku"
@@ -133,38 +193,102 @@ options.kron86.description = "KRON86 — Kronsztadt 86"
 options.unspecified.description = "Nie podano układu wysokościowego — dopytaj o EVRF2007 albo KRON86"
 
 [operations.download_bdot10k]
-label = "Pobranie BDOT10k"
-description = "Pobierz BDOT10k: bazę danych obiektów topograficznych, wektory topograficzne i pokrycie terenu dla powiatu TERYT, arkusza lub prostokąta."
+label = "Pobranie BDOT10k (bieżące paczki powiatów)"
+description = "Pobierz BDOT10k: bazę danych obiektów topograficznych, wektory topograficzne i pokrycie terenu dla powiatu TERYT, arkusza, prostokąta lub pliku geometrii."
+
+[operations.download_bdot10k.check]
+notice = "Zapytam usługę PRG GUGiK, które powiaty przecina obszar z planu, i sprawdzę, czy ich paczki BDOT10k są już w magazynie. Dla kodu TERYT nie łączę się z siecią."
 
 [operations.download_bdot10k.params.area]
 label = "Obszar BDOT10k"
-question = "Dla jakiego powiatu (TERYT), arkusza albo prostokąta pobrać BDOT10k?"
-help = "Kod TERYT powiatu ma 4 cyfry. Dla prostokąta lub godła pobierany jest pełen pakiet każdego przecinanego powiatu, nie przycięcie do obszaru; plik może być duży."
+question = "Dla jakiego powiatu (TERYT), arkusza, prostokąta albo pliku geometrii pobrać BDOT10k?"
+help = "Kod TERYT powiatu ma 4 cyfry. Dla prostokąta, godła albo pliku pobierany jest pełny, bieżący pakiet każdego powiatu przecinanego przez obwiednię obszaru (wszystkie warstwy), nie przycięcie do obszaru; Kartograf odrzuca obszar o ponad 100 pakietach lub ponad 10 GB."
 example = "TERYT 2264 lub N-34-130-D-d-2-4"
+geometry_note = "pełne pakiety wszystkich powiatów przecinających obwiednię obszaru; lista powiatów dopiero po zapytaniu do PRG (sieć, po potwierdzeniu)"
 
 [operations.download_bdot10k.params.format]
 label = "Format BDOT10k"
 question = "Czy zapisać wektory BDOT10k jako GeoPackage czy Shapefile?"
 model_question = "Jaki format plików wymienia polecenie?"
-help = "GeoPackage to jeden plik .gpkg. Kartograf zwraca Shapefile jako archiwum ZIP; Retman rozpakowuje wszystkie .shp wraz z plikami towarzyszącymi do katalogu wyniku."
+help = "GeoPackage to jeden plik .gpkg na powiat. Kartograf zwraca Shapefile jako archiwum ZIP; Retman rozpakowuje wszystkie .shp wraz z plikami towarzyszącymi do folderu wyniku."
 options.gpkg.label = "GeoPackage (.gpkg)"
 options.gpkg.description = "GeoPackage (.gpkg, GPKG) — baza geoprzestrzenna SQLite, jeden plik"
 options.shp.label = "Shapefile (.shp)"
 options.shp.description = "Shapefile (.shp, SHP) — wszystkie warstwy z pakietu ZIP wraz z .dbf/.shx/.prj"
 options.unspecified.description = "Nie podano formatu — dopytaj o GeoPackage albo Shapefile"
 
+# Ostrzeżenia wyniku. Klucze równe kodom uwag Kartografa zastępują jego tekst
+# (ASCII, z nazwami flag wiersza poleceń); pozostałe uwagi ostrzegawcze są
+# pokazywane dosłownie (core: warnings.tool_notice).
 [warnings]
-no_coverage = "GUGiK nie ma danych dla {count} z {total} arkuszy."
-failed_sheets = "Nie udało się pobrać {count} z {total} arkuszy; dostępne wyniki zapisano."
-failed_counties = "Nie udało się pobrać {count} z {total} pakietów powiatowych BDOT10k."
+sheets_missing = "Pobrano {count} z {total} arkuszy."
+sheets_failed = "Nie udało się pobrać części arkuszy: {detail}"
+no_coverage_sheets = "GUGiK nie ma ortofotomapy w wybranym wariancie dla {count} z {total} arkuszy (np. morze, obszar za granicą albo brak tego wariantu barwnego)."
+failed_sheets = "Nie udało się pobrać {count} z {total} arkuszy ({units}); powtórz pobranie."
+incomplete_campaign = "Najnowszy lot GUGiK jest niepełny dla części arkuszy: pliki mogą mieć duże obszary bez danych (nodata lub czerń)."
+no_coverage_some = "GUGiK nie ma danych dla części arkuszy (np. morze albo obszar za granicą)."
+check_failed = "Skorowidz GUGiK był niedostępny; użyto zapisanych wersji bez sprawdzenia nowszych."
+sheet_crs_mismatch = "Część arkuszy GUGiK opublikował w innym układzie, niż wskazuje godło: {text}"
+download_size = "Duży plik do pobrania: {text}"
+cache_disabled = "Pamięć podręczna metadanych Kartografa jest wyłączona: {text}"
+failed_counties = "Nie udało się pobrać {count} z {total} pakietów powiatowych BDOT10k (powiaty: {units})."
 all_nodata = "Wycinek nie zawiera ważnych danych wysokościowych (cały wynik to nodata)."
 masked_pixels = "Poza lądem zamaskowano {count} pikseli jako nodata."
-unverified = "Dla {count} arkuszy nie sprawdzono najnowszej kampanii, ponieważ skorowidz GUGiK był niedostępny; użyto lokalnych danych."
 
+# Błędy Kartografa po stałym kodzie błędu; jego własny tekst jest tylko {detail}
 [errors]
-no_sheet_coverage = "GUGiK nie ma danych dla żadnego z żądanych arkuszy. Sprawdź godło, skalę i rozdzielczość."
-all_sheets_failed = "Nie udało się pobrać żadnego z żądanych arkuszy."
-no_counties = "Wybrany obszar nie przecina żadnego powiatu w PRG (Państwowym Rejestrze Granic)."
-all_counties_failed = "Nie udało się pobrać żadnego pakietu powiatowego BDOT10k."
-unsafe_archive = "Archiwum shapefile zawiera niedozwoloną ścieżkę lub plik spoza katalogu wyniku."
-missing_shapefiles = "Pobrane archiwum BDOT10k shapefile nie zawiera plików .shp."
+kartograf_error = "Kartograf zgłosił błąd: {detail}"
+invalid_input = "Kartograf odrzuca ten wybór: {detail}"
+invalid_sheet_code = "Niepoprawne godło arkusza: {detail}"
+download_failed = "Nie udało się pobrać danych z usługi GUGiK. Szczegóły: {detail}"
+no_coverage = "GUGiK nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: {detail}"
+year_out_of_range = "GUGiK ma dane dla tego obszaru, ale nie z żądanego zakresu lat. Szczegóły: {detail}"
+cache_error = "Pamięć podręczna metadanych Kartografa nie działa: {detail}"
+invalid_sidecar = "Plik metadanych zapisany przez Kartografa w magazynie jest uszkodzony: {detail}"
+transform_failed = "Nie udało się przeliczyć współrzędnych: {detail}"
+transform_unavailable = "Brak bezpiecznego przeliczenia między wybranymi układami: {detail}"
+io_error = "Kartograf nie może zapisać danych (sprawdź miejsce na dysku i to, czy dysk obsługuje twarde dowiązania): {detail}"
+internal_error = "Wewnętrzny błąd Kartografa: {detail}"
+all_counties_failed = "Nie udało się pobrać żadnego pakietu powiatowego BDOT10k ({detail})."
+unsafe_archive = "Archiwum shapefile zawiera niedozwoloną ścieżkę lub plik spoza folderu wyniku ({detail})."
+invalid_archive = "Pobrane archiwum BDOT10k shapefile jest uszkodzone ({detail})."
+missing_shapefiles = "Pobrane archiwum BDOT10k shapefile nie zawiera plików .shp ({detail})."
+orthophoto_needs_sheet = "Ortofotomapę pobieram tylko dla godła arkusza, nie dla obszaru typu „{detail}”."
+
+# Powody, dla których plan trzeba poprawić przed potwierdzeniem (podgląd bez sieci)
+[problems]
+scale_unavailable = "Godła {code} (PL-2000) nie można rozwinąć do wybranej skali. Dostępne skale: {allowed}."
+no_descendants = "Arkusz {code} (PL-2000) nie ma arkuszy potomnych w skalach, które mogę pobrać. Podaj godło arkusza nadrzędnego."
+no_sheets = "Plik geometrii nie przecina żadnego arkusza w wybranej skali."
+orthophoto_needs_sheet = "Ortofotomapę pobieram tylko dla godła arkusza, nie dla pliku geometrii. Podaj godło albo wybierz inne dane."
+outside_poland = "Obszar z pliku leży poza Polską, a BDOT10k obejmuje tylko Polskę."
+
+# Dodatkowe wiersze planu (podgląd bez sieci)
+[preview.envelope]
+label = "Obwiednia obszaru"
+value = "{width_km} × {height_km} km (EPSG:2180: E {min_x}–{max_x}, N {min_y}–{max_y})"
+
+[preview.sheets]
+label = "Liczba arkuszy"
+value = "{count} × {scale} (PL-{system})"
+
+[preview.province_files]
+label = "Zakres danych"
+value = "pliki województw (NMT 100 m nie dzieli się na arkusze)"
+
+# Wiersze sprawdzenia dostępności (osobny krok z siecią)
+[check]
+selection_available = "  Twój wybór: {product} {resolution}, {vertical_crs} — komplet arkuszy, najnowszy rok {year}"
+selection_partial = "  Twój wybór: {product} {resolution}, {vertical_crs} — dane tylko dla części obszaru (rok {year}: {full} pełnych i {partial} niepełnych arkuszy)"
+selection_unavailable = "  Twój wybór: {product} {resolution}, {vertical_crs} — brak danych dla tego obszaru"
+cutout_note = "  Wycinek składa serwer WCS z najnowszych lotów; skorowidz arkuszy tylko to przybliża."
+alternatives = "  Dostępne także dla tego obszaru:"
+alternative = "    {product} {resolution}, {vertical_crs} — rok {year}, komplet arkuszy"
+province_files = "  NMT 100 m to pliki województw: skorowidz arkuszy ich nie obejmuje, więc niczego nie sprawdzono."
+incomplete = "  Nie udało się sprawdzić całego obszaru; wynik może być niepełny."
+orthophoto_none = "  GUGiK nie ma ortofotomapy RGB dla tego obszaru. {detail}"
+orthophoto_sheets = "  Ortofotomapa RGB: {published} z {total} arkuszy ma dane, najnowszy lot z dnia {newest}"
+orthophoto_variant = "  Skorowidz ortofotomapy zna tylko wariant RGB; CIR i czarno-białej nie sprawdzono."
+in_store = "  {count} z nich jest już w magazynie."
+counties = "  Powiaty obszaru: {count} ({units})"
+no_counties = "  Obszar nie przecina żadnego powiatu."

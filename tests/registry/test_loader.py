@@ -1,4 +1,4 @@
-"""Manifest completeness, global IDs and numeric version boundaries."""
+"""Manifest completeness, global IDs, numeric version boundaries and categories."""
 
 import tomllib
 from copy import deepcopy
@@ -11,6 +11,7 @@ from retman.exceptions import ManifestError
 from retman.i18n.loader import Texts, load_texts
 from retman.registry.loader import load_operations, version_matches
 from retman.registry.manifest import validate_manifest
+from retman.registry.operation import two_stage
 
 
 @pytest.fixture
@@ -20,6 +21,10 @@ def dummy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     from dummy_tool.manifest import MANIFEST
 
     return deepcopy(MANIFEST), fixture_dir / "dummy_tool"
+
+
+def _operation(manifest, operation_id: str):
+    return next(item for item in manifest["operations"] if item["id"] == operation_id)
 
 
 @pytest.mark.parametrize(
@@ -68,7 +73,11 @@ def test_load_operations_disables_absent_out_of_range_and_disabled(dummy):
     )
 
     assert missing == old == disabled == {}
-    assert set(available) == {"make_dem", "copy_dem", "broken_dem", "escape_dem"}
+    assert {item["id"] for item in manifest["operations"]} == set(available)
+    # The tool's client reference travels with each of its operations
+    assert {op.client for op in available.values()} == {
+        "dummy_tool.client:create_client"
+    }
 
 
 def test_validate_manifest_detects_unknown_kind_extractor_and_duplicate_id(dummy):
@@ -124,6 +133,11 @@ def test_validate_manifest_reports_missing_language_option_and_example(dummy):
         validate_manifest(
             manifest, {"pl": Texts(no_model_question, "no model question")}
         )
+    # An optional parameter the plan cannot explain when left unset (N-11)
+    no_unset = tomllib.loads((folder / "pl.toml").read_text(encoding="utf-8"))
+    del no_unset["operations"]["cut_dem"]["params"]["name"]["unset"]
+    with pytest.raises(ManifestError, match="params.name.unset"):
+        validate_manifest(manifest, {"pl": Texts(no_unset, "no unset text")})
 
 
 def test_load_operations_missing_translation_file_is_manifest_error(dummy):
@@ -136,30 +150,174 @@ def test_load_operations_missing_translation_file_is_manifest_error(dummy):
         )
 
 
-def test_load_operations_rejects_more_than_ten_operation_options(
+def _fetch_param(manifest, name: str):
+    return next(
+        p for p in _operation(manifest, "fetch_dem")["params"] if p["name"] == name
+    )
+
+
+# Each declaration of the command layer that must fail at load time, with the reason
+BROKEN_DECLARATIONS = {
+    "calls without commands": (
+        "calls need the list of commands",
+        lambda m: _operation(m, "fetch_dem").pop("commands"),
+    ),
+    "calls without a tool client": ("declares no client", lambda m: m.pop("client")),
+    "neither handler nor calls": (
+        "neither handler nor calls",
+        lambda m: _operation(m, "make_dem").pop("handler"),
+    ),
+    "describe without calls": (
+        "describe needs calls",
+        lambda m: _operation(m, "make_dem").update(describe="dummy_tool.calls:x"),
+    ),
+    "reference without a colon": (
+        "invalid preview",
+        lambda m: _operation(m, "fetch_dem").update(preview="no_colon"),
+    ),
+    "client without an attribute": (
+        "invalid client",
+        lambda m: m.update(client="dummy_tool.client:"),
+    ),
+    "option key with a dot": (
+        "option keys must match",
+        lambda m: _fetch_param(m, "resolution").update(
+            options=["0.5m", "1m", "5m"], tool_values={}
+        ),
+    ),
+    "tool value for an unknown option": (
+        "invalid tool_values",
+        lambda m: _fetch_param(m, "resolution").update(tool_values={"2m": "2m"}),
+    ),
+    "tool values that collide": (
+        "invalid tool_values",
+        lambda m: _fetch_param(m, "resolution").update(tool_values={"0_5m": "1m"}),
+    ),
+    "excluded value that is offered": (
+        "excluded 0.5m is offered",
+        lambda m: _operation(m, "fetch_dem").update(
+            excluded={"resolution": {"0.5m": "reason"}}
+        ),
+    ),
+    "excluded without a reason": (
+        "has no reason",
+        lambda m: _operation(m, "fetch_dem").update(
+            excluded={"resolution": {"100m": " "}}
+        ),
+    ),
+    "excluded for a free parameter": (
+        "excluded needs a choice parameter",
+        lambda m: _operation(m, "fetch_dem").update(excluded={"area": {"x": "why"}}),
+    ),
+    "no_check without a reason": (
+        "no_check has no reason",
+        lambda m: _operation(m, "make_dem").update(no_check=" "),
+    ),
+    "check and no_check together": (
+        "declares both check and no_check",
+        lambda m: _operation(m, "fetch_dem").update(no_check="nothing to ask"),
+    ),
+    "option_meta that is not JSON": (
+        "option_meta is not JSON",
+        lambda m: _fetch_param(m, "resolution").update(
+            option_meta={"1m": {"x": object()}}
+        ),
+    ),
+    "option_meta for an unknown option": (
+        "invalid option_meta",
+        lambda m: _fetch_param(m, "resolution").update(option_meta={"2m": {}}),
+    ),
+    "category with a dot": (
+        "category must match",
+        lambda m: _operation(m, "make_dem").update(category="a.b"),
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    ("pattern", "change"),
+    list(BROKEN_DECLARATIONS.values()),
+    ids=list(BROKEN_DECLARATIONS),
+)
+def test_validate_manifest_rejects_broken_command_layer_declarations(
+    dummy, pattern, change
+):
+    manifest, folder = dummy
+    texts = {"pl": load_texts(folder / "pl.toml")}
+    change(manifest)
+
+    with pytest.raises(ManifestError, match=pattern):
+        validate_manifest(manifest, texts)
+
+
+def test_check_needs_the_notice_text_the_user_confirms(dummy):
+    manifest, folder = dummy
+    data = tomllib.loads((folder / "pl.toml").read_text(encoding="utf-8"))
+    del data["operations"]["fetch_dem"]["check"]
+
+    with pytest.raises(ManifestError, match="fetch_dem.check.notice"):
+        validate_manifest(manifest, {"pl": Texts(data, "no notice")})
+
+
+def _crowded(manifest, folder, monkeypatch, layout: dict[str, int], *, texts=True):
+    """A tool with ``layout`` = operations per category (and category texts)."""
+    template = _operation(manifest, "copy_dem")
+    data: dict = {"operations": {}, "categories": {}}
+    operations = []
+    for category, count in layout.items():
+        for index in range(count):
+            operation = deepcopy(template)
+            operation["id"] = f"{category}_{index}"
+            operation["category"] = category
+            operations.append(operation)
+            data["operations"][operation["id"]] = {
+                "label": f"Operacja {operation['id']}",
+                "description": f"Opis {operation['id']}",
+            }
+        if texts:
+            data["categories"][category] = {
+                "label": f"Grupa {category}",
+                "description": f"Opis grupy {category}",
+            }
+    manifest["operations"] = operations
+    monkeypatch.setattr(
+        "retman.registry.loader.load_texts", lambda _: Texts(data, "crowded")
+    )
+    return load_operations(
+        "pl", manifests=[(manifest, folder)], version_lookup=lambda _: "1.2"
+    )
+
+
+def test_more_operations_than_one_question_offers_are_grouped_by_category(
     dummy, monkeypatch: pytest.MonkeyPatch
 ):
     manifest, folder = dummy
-    for index in range(6):
-        operation = deepcopy(manifest["operations"][1])
-        operation["id"] = f"copy_dem_{index}"
-        manifest["operations"].append(operation)
-    translations = {
-        "operations": {
-            item["id"]: {
-                "label": f"Operacja {item['id']}",
-                "description": f"Operacja {item['id']}",
-            }
-            for item in manifest["operations"]
-        }
-    }
-    translations["operations"]["make_dem"] = load_texts(folder / "pl.toml").table(
-        "operations.make_dem"
-    )
-    custom_texts = Texts(translations, "test")
-    monkeypatch.setattr("retman.registry.loader.load_texts", lambda _: custom_texts)
 
-    with pytest.raises(ManifestError, match="more than 10"):
-        load_operations(
-            "pl", manifests=[(manifest, folder)], version_lookup=lambda _: "1.2"
-        )
+    loaded = _crowded(manifest, folder, monkeypatch, {"a": 4, "b": 4, "c": 4})
+
+    assert len(loaded) == 12 and two_stage(loaded)
+
+
+def test_nine_operations_need_no_categories(dummy, monkeypatch: pytest.MonkeyPatch):
+    manifest, folder = dummy
+
+    loaded = _crowded(manifest, folder, monkeypatch, {"a": 9}, texts=False)
+
+    assert len(loaded) == 9 and not two_stage(loaded)
+
+
+@pytest.mark.parametrize(
+    ("layout", "texts", "message"),
+    [
+        ({"a": 10}, True, "category a: more than 9 operations"),
+        ({f"c{index}": 1 for index in range(10)}, True, "more than 9 operation"),
+        ({"a": 5, "b": 5}, False, "missing category text categories.a.label"),
+    ],
+)
+def test_category_limits_and_texts_are_enforced_when_grouping_is_needed(
+    dummy, monkeypatch: pytest.MonkeyPatch, layout, texts, message
+):
+    manifest, folder = dummy
+
+    with pytest.raises(ManifestError, match=message):
+        _crowded(manifest, folder, monkeypatch, layout, texts=texts)

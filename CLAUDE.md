@@ -6,10 +6,11 @@ dopytuje o braki, pokazuje plan do potwierdzenia i wywołuje publiczne API narz�
 Działa jako CLI `retman` i biblioteka Python; model językowy jest osobną usługą
 (basal-serve albo serwer zgodny z API OpenAI). Wprowadzenie: `README.md`.
 
-**Stan:** przed v0.1.0 — pionowy przekrój na Kartografie 0.7.2 (rdzeń, CLI, `retman doctor`,
-`retman-eval`, backend `openai_compatible`, sprawdzony z Bielikiem 11B w LM Studio);
-decyzje ADR-001–011; bieżący stan i backlog w `docs/PROGRESS.md`. Obowiązują `docs/PRD.md`
-i `docs/ARCHITECTURE.md`.
+**Stan:** przed v0.1.0 — rdzeń z warstwą komend (podgląd offline planu, sprawdzenie dostępności
+na życzenie), CLI, `retman doctor`, `retman-eval`, `retman-scaffold` (`list`, `draft`, `--check`),
+backend `openai_compatible` (sprawdzony z Bielikiem 11B w LM Studio) oraz adaptery Kartografa 0.8.0
+(4 operacje) i IMGWTools 3.0.0 (26 operacji, rozpoznawanie dwustopniowe); decyzje ADR-001–019;
+bieżący stan i backlog w `docs/PROGRESS.md`. Obowiązują `docs/PRD.md` i `docs/ARCHITECTURE.md`.
 
 ## Zasady pracy (krytyczne)
 
@@ -17,13 +18,18 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 
 - **Narzędzia nic nie wiedzą o Retmanie** (PRD N-03, ARCHITECTURE 3.2.1): nie edytuj
   repozytoriów Hydrografa, Kartografa, IMGWTools, Hydrologa ani innych narzędzi; Retman
-  korzysta wyłącznie z ich publicznego API, a manifesty, handlery i tłumaczenia mieszkają
-  w `retman/tools/<narzędzie>/`.
+  korzysta wyłącznie z ich publicznego API Pythona (nie przez ich serwery MCP, ADR-018),
+  a manifesty, wywołania, klienty, handlery i tłumaczenia mieszkają w `retman/tools/<narzędzie>/`.
 - **Retman nie zawiera modelu** (N-10, ARCHITECTURE 3.3, 9.3): żadnych bibliotek ML, SDK
   dostawców ani pakietu `basal` w zależnościach; backendy to własne zapytania HTTP.
   Zależności podstawowe: tylko klient HTTP.
 - **Zawsze potwierdzenie przed wykonaniem** w wersjach 0.x (W-05, ARCHITECTURE 6.3) —
-  nie dodawaj ścieżki wykonania bez `plan.confirm()`.
+  nie dodawaj ścieżki wykonania bez `plan.confirm()`; `Plan.from_dict` nigdy nie odtwarza
+  potwierdzenia.
+- **Bez sieci przed potwierdzeniem** (N-12, ARCHITECTURE 3.2.4, 6.5): narzędzia wołamy
+  z siecią dopiero po `plan.confirm()`; planowanie (buildery wywołań, podgląd, ekstraktory)
+  widzi tylko `PlanView`. Jedyny wyjątek: `retman.check()` po osobnej zgodzie
+  `plan.confirm_check()`.
 - **Nie zgadywać po cichu** (W-02, ARCHITECTURE 1.1, 5.3, 6.1): liczby wyciąga kod
   (ekstraktory), model wybiera tylko z list; przy niejednoznaczności Retman pyta.
 - **Brak ukrytych wartości domyślnych** (N-11, ARCHITECTURE 9.1): każda używana wartość
@@ -31,10 +37,11 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 - Język (ARCHITECTURE 1.3): kod, identyfikatory, komentarze i docstringi po angielsku;
   teksty dla użytkownika i modelu wyłącznie w plikach tłumaczeń (`pl.toml`);
   dokumentacja po polsku.
-- Środowisko przez `uv`, Python ≥ 3.12 (ADR-002), wyłącznie z `.venv` (STANDARDS 6.1); ręczne
-  uruchomienia CLI poza repo, testy nie dotykają prawdziwego `retman.toml` (STANDARDS 6.4).
-- Testy offline bez GPU i bez serwera modelu: `FakeDecisionBackend`, `-m "not live"`
-  (STANDARDS 6.3, 10.4).
+- Środowisko przez `uv` (`uv sync --all-extras --group tools`), Python ≥ 3.12 (ADR-002),
+  wyłącznie z `.venv` (STANDARDS 6.1); ręczne uruchomienia CLI poza repo, testy nie dotykają
+  prawdziwego `retman.toml` (STANDARDS 6.4).
+- Testy offline bez GPU i bez serwera modelu: `FakeDecisionBackend`, `FakeToolClient`,
+  `-m "not live"` (STANDARDS 6.3, 10.4); bez `conftest.py` w podfolderach `tests/`.
 - Bramka przed commitem/merge: pytest offline zielone, `ruff check .`
   i `ruff format --check .` czyste, `mypy retman/ tests/` bez błędów,
   `retman-scaffold --check` (STANDARDS 6.3, 18).
@@ -67,11 +74,11 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 | Zasady projektowe, język kodu i tekstów | `docs/ARCHITECTURE.md` 1 |
 | Przebieg polecenia (kroki ①–⑥) | ARCHITECTURE 2 |
 | Moduły pakietu | ARCHITECTURE 3.1 |
-| Adaptery narzędzi: manifest, handler, wspólny adapter, `kind`, wersje | ARCHITECTURE 3.2 |
+| Adaptery narzędzi: manifest, warstwa komend (`calls`, klient, podgląd, sprawdzenie), handler, wspólny adapter, `kind`, wersje, `retman-scaffold` | ARCHITECTURE 3.2 |
 | Modele: `DecisionBackend`/`TextBackend`, backendy, pewność, ograniczenia basala | ARCHITECTURE 3.3–3.4 |
 | Manifest, tłumaczenia, typy parametrów, prawdopodobieństwo, łańcuchy | ARCHITECTURE 4 |
 | Przestrzeń robocza, numery wyników, dziennik i ślad audytowy | ARCHITECTURE 5 |
-| Dopytywanie, progi pewności, plan, rozmowa w terminalu, kody wyjścia | ARCHITECTURE 6 |
+| Dopytywanie, progi pewności, plan, rozmowa w terminalu, kody wyjścia, sprawdzenie dostępności | ARCHITECTURE 6 |
 | CLI, API Pythona, `retman doctor`, `Result`, GUI | ARCHITECTURE 7 |
 | Zbiór testowy, miary jakości, `retman-eval`, testy | ARCHITECTURE 8 |
 | `retman.toml`, sprzęt, pakiet, instalacja | ARCHITECTURE 9 |

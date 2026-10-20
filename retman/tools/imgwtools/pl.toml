@@ -1,0 +1,1053 @@
+[categories.imgw_catalog]
+label = "Stacje i rejestr danych IMGW"
+description = "Wyszukiwanie stacji hydrologicznych i meteorologicznych IMGW-PIB i ČHMÚ po nazwie, rzece lub kodzie, budowa katalogu stacji w magazynie, lista dostępnych zbiorów danych i dostawców"
+
+[categories.imgw_current]
+label = "Dane bieżące i ostrzeżenia IMGW"
+description = "Aktualne pomiary z serwera IMGW-PIB: stan wody i przepływ, dane meteorologiczne i synoptyczne, ostrzeżenia hydrologiczne i meteorologiczne, stany alarmowe i ostrzegawcze stacji"
+
+[categories.imgw_pmaxtp]
+label = "Opady maksymalne PMAXTP"
+description = "Opady maksymalne prawdopodobne PMAXTP (kwantyle opadu dla czasu trwania i prawdopodobieństwa) dla punktu o podanych współrzędnych albo dla zapisanej komórki siatki"
+
+[categories.imgw_series]
+label = "Szeregi czasowe stacji IMGW i ČHMÚ"
+description = "Szeregi dobowe i miesięczne stacji IMGW-PIB i ČHMÚ: opady, przepływy, stany wody, temperatury; eksport do CSV, pokrycie danych stacji, budowa szeregów w magazynie"
+
+[categories.imgw_archives]
+label = "Archiwa i magazyn danych IMGW"
+description = "Archiwa danych IMGW-PIB i ČHMÚ: pobieranie plików archiwalnych, sprawdzanie i synchronizacja lokalnego magazynu, eksport zapisanych archiwów, inicjalizacja i podgląd magazynu"
+
+[categories.imgw_projects]
+label = "Projekty danych IMGW"
+description = "Projekty danych IMGW: manifest zadań w folderze projektu, dodawanie i usuwanie zadań, pobieranie i przypinanie wersji danych, sprawdzanie aktualności i sum kontrolnych"
+
+[operations.find_imgw_stations]
+label = "Wyszukanie stacji IMGW i ČHMÚ"
+description = "Znajdź stacje hydrologiczne albo meteorologiczne IMGW-PIB i ČHMÚ po nazwie, rzece, rodzaju lub dostawcy: kody stacji, nazwy, rzeki, współrzędne; wodowskazy, stacje opadowe, klimatyczne i synoptyczne; z serwera albo z katalogu stacji w magazynie."
+summary = "Gotowe. Wynik #{number}: lista stacji ({count}) zapisana w pliku CSV."
+
+[operations.find_imgw_stations.params.data_source]
+label = "Źródło listy stacji"
+question = "Skąd wziąć listę stacji: z serwera IMGW (sieć) czy z katalogu w lokalnym magazynie (bez sieci)?"
+model_question = "Czy polecenie mówi, skąd wziąć listę stacji: z serwera czy z lokalnego magazynu?"
+help = "Serwer zwraca aktualne listy stacji i wymaga internetu. Katalog w magazynie działa bez sieci, ale trzeba go wcześniej zbudować („Zbuduj katalog stacji IMGW”)."
+options.server.label = "Z serwera (sieć)"
+options.server.description = "z serwera IMGW, aktualna lista stacji, z internetu, online, pobierz listę"
+options.store.label = "Z katalogu w magazynie (bez sieci)"
+options.store.description = "z magazynu, z katalogu stacji, lokalnie, offline, bez internetu, już zbudowany katalog"
+options.unspecified.description = "Polecenie nie mówi, skąd wziąć listę stacji"
+
+[operations.find_imgw_stations.params.provider]
+unset = "obaj dostawcy (IMGW-PIB i ČHMÚ)"
+label = "Dostawca danych"
+question = "Stacje którego dostawcy: IMGW-PIB (Polska) czy ČHMÚ (Czechy)?"
+model_question = "Czy polecenie ogranicza stacje do jednego dostawcy: IMGW-PIB (Polska) albo ČHMÚ (Czechy)?"
+options.imgw_pib.label = "IMGW-PIB (Polska)"
+options.imgw_pib.description = "IMGW, IMGW-PIB, polskie stacje, Polska, Instytut Meteorologii i Gospodarki Wodnej"
+options.chmi.label = "ČHMÚ (Czechy)"
+options.chmi.description = "ČHMÚ, CHMU, CHMI, czeskie stacje, Czechy, Český hydrometeorologický ústav"
+options.unspecified.description = "Polecenie nie ogranicza stacji do jednego dostawcy"
+
+[operations.find_imgw_stations.params.kind]
+unset = "wszystkie rodzaje (hydrologiczne i meteorologiczne)"
+label = "Rodzaj stacji"
+question = "Jakie stacje: hydrologiczne (wodowskazy) czy meteorologiczne?"
+model_question = "Czy polecenie ogranicza stacje do hydrologicznych albo meteorologicznych?"
+options.hydro.label = "Hydrologiczne"
+options.hydro.description = "hydrologiczne, hydro, wodowskazy, posterunki wodowskazowe, stan wody, przepływ, rzeki"
+options.meteo.label = "Meteorologiczne"
+options.meteo.description = "meteorologiczne, meteo, opadowe, klimatyczne, synoptyczne, pogoda, deszczomierze"
+options.unspecified.description = "Polecenie nie ogranicza rodzaju stacji"
+
+[operations.find_imgw_stations.params.query]
+unset = "bez filtra nazwy (wszystkie stacje)"
+label = "Nazwa lub rzeka"
+question = "Jakiej nazwy stacji albo rzeki szukać?"
+example = "Wisła"
+help = "Podaj fragment nazwy stacji, miejscowości albo rzeki (np. „Poznań”, „na Wiśle”); wielkość liter i polskie znaki nie mają znaczenia."
+
+[operations.build_imgw_station_catalog]
+label = "Budowa katalogu stacji w magazynie"
+description = "Zbuduj albo odśwież katalog stacji IMGW-PIB lub ČHMÚ w lokalnym magazynie IMGW (stations.geojson): listy stacji ze współrzędnymi, potrzebny do wyszukiwania stacji po nazwie bez internetu; zapisuje w magazynie, wymaga sieci."
+summary = "Gotowe. Wynik #{number}: katalog stacji {provider} w magazynie ({station_count} stacji, bez położenia: {without_location}, stan: {status})."
+
+[operations.build_imgw_station_catalog.check]
+notice = "Zapytam serwery IMGW-PIB albo ČHMÚ (listy stacji), czy katalog w magazynie jest aktualny."
+
+[operations.build_imgw_station_catalog.params.provider]
+label = "Dostawca danych"
+question = "Katalog stacji którego dostawcy zbudować: IMGW-PIB czy ČHMÚ?"
+model_question = "Którego dostawcy katalog stacji ma zbudować polecenie: IMGW-PIB (Polska) czy ČHMÚ (Czechy)?"
+help = "Katalog jest osobny dla każdego dostawcy; dla danych czeskich zbuduj katalog ČHMÚ."
+options.imgw_pib.label = "IMGW-PIB (Polska)"
+options.imgw_pib.description = "IMGW, IMGW-PIB, polskie stacje, Polska, Instytut Meteorologii i Gospodarki Wodnej"
+options.chmi.label = "ČHMÚ (Czechy)"
+options.chmi.description = "ČHMÚ, CHMU, CHMI, czeskie stacje, Czechy, Český hydrometeorologický ústav"
+options.unspecified.description = "Polecenie nie wskazuje dostawcy katalogu stacji"
+
+[operations.build_imgw_station_catalog.params.user_locations]
+unset = "brak (tylko położenia z list IMGW i z serii w magazynie)"
+label = "Plik z położeniami stacji"
+question = "Jaki plik CSV z położeniami stacji dołączyć do katalogu?"
+example = "polozenia_stacji.csv"
+help = "Opcjonalny plik CSV z kolumnami station_code, latitude i longitude (opcjonalnie source) uzupełnia współrzędne stacji, których nie ma na listach IMGW."
+
+[operations.list_imgw_datasets]
+label = "Lista zbiorów danych IMGW i ČHMÚ"
+description = "Pokaż, jakie zbiory danych i dostawców obsługuje IMGWTools: dobowe, miesięczne i półroczne dane hydrologiczne i meteorologiczne, zakres lat, zmienne, licencje, które zbiory są w magazynie; bez internetu."
+summary = "Gotowe. Wynik #{number}: zbiorów danych: {datasets}, dostawców: {providers}."
+
+[operations.list_imgw_datasets.params.provider]
+unset = "obaj dostawcy (IMGW-PIB i ČHMÚ)"
+label = "Dostawca danych"
+question = "Zbiory którego dostawcy pokazać: IMGW-PIB czy ČHMÚ?"
+model_question = "Czy polecenie ogranicza listę zbiorów do jednego dostawcy: IMGW-PIB (Polska) albo ČHMÚ (Czechy)?"
+options.imgw_pib.label = "IMGW-PIB (Polska)"
+options.imgw_pib.description = "IMGW, IMGW-PIB, polskie stacje, Polska, Instytut Meteorologii i Gospodarki Wodnej"
+options.chmi.label = "ČHMÚ (Czechy)"
+options.chmi.description = "ČHMÚ, CHMU, CHMI, czeskie stacje, Czechy, Český hydrometeorologický ústav"
+options.unspecified.description = "Polecenie nie ogranicza listy do jednego dostawcy"
+
+[operations.list_imgw_datasets.params.kind]
+unset = "wszystkie rodzaje (hydrologiczne i meteorologiczne)"
+label = "Rodzaj zbiorów"
+question = "Jakie zbiory pokazać: hydrologiczne czy meteorologiczne?"
+model_question = "Czy polecenie ogranicza listę zbiorów do hydrologicznych albo meteorologicznych?"
+options.hydro.label = "Hydrologiczne"
+options.hydro.description = "hydrologiczne, hydro, stan wody, przepływ, wodowskazy"
+options.meteo.label = "Meteorologiczne"
+options.meteo.description = "meteorologiczne, meteo, opady, temperatura, klimat, synoptyczne"
+options.unspecified.description = "Polecenie nie ogranicza rodzaju zbiorów"
+
+[operations.fetch_current_observations]
+label = "Aktualne pomiary stacji"
+description = "Pobierz z serwera IMGW-PIB aktualne dane pomiarowe: bieżący stan wody, przepływ i temperatura wody ze stacji hydrologicznych, dane meteorologiczne albo synoptyczne (temperatura powietrza, wiatr, wilgotność, opad, ciśnienie), dla wszystkich stacji albo jednej."
+summary = "Gotowe. Wynik #{number}: aktualne dane stacji, wierszy: {rows} (pobrano {fetched_at})."
+
+[operations.fetch_current_observations.params.source]
+label = "Rodzaj danych bieżących"
+question = "Jakie dane bieżące pobrać: hydrologiczne, meteorologiczne czy synoptyczne?"
+model_question = "Jakiego rodzaju aktualnych danych dotyczy polecenie: hydrologicznych (stan wody, przepływ), meteorologicznych czy synoptycznych?"
+help = "Dane hydrologiczne to stan wody, przepływ i temperatura wody z wodowskazów; meteorologiczne pochodzą ze stacji automatycznych; synoptyczne ze stacji synoptycznych."
+options.hydro.label = "Hydrologiczne (stan wody, przepływ)"
+options.hydro.description = "hydrologiczne, stan wody, poziom wody, przepływ, temperatura wody, wodowskaz, rzeka, zjawiska lodowe"
+options.meteo.label = "Meteorologiczne (stacje automatyczne)"
+options.meteo.description = "meteorologiczne, temperatura powietrza, wiatr, wilgotność, opad 10-minutowy, stacje automatyczne"
+options.synop.label = "Synoptyczne"
+options.synop.description = "synoptyczne, synop, stacje synoptyczne, temperatura, ciśnienie, widzialność, zachmurzenie, pogoda"
+options.unspecified.description = "Polecenie nie mówi, jakich danych bieżących dotyczy"
+
+[operations.fetch_current_observations.params.station]
+unset = "wszystkie stacje"
+label = "Stacja"
+question = "Ze stacji o jakiej nazwie lub kodzie pobrać dane?"
+example = "Poznań-Bogdanka"
+help = "Podaj nazwę stacji (np. „Poznań-Bogdanka”) albo 9-cyfrowy kod IMGW-PIB. Bez stacji pobiorę dane wszystkich stacji."
+
+[operations.fetch_current_observations.params.synop_station]
+unset = "wszystkie stacje synoptyczne"
+label = "Stacja synoptyczna"
+question = "Jaką stację synoptyczną wybrać (nazwa albo 5-cyfrowy kod)?"
+example = "Warszawa"
+help = "Podaj fragment nazwy stacji synoptycznej albo jej 5-cyfrowy kod (np. kod 12375). Bez stacji pobiorę dane wszystkich stacji synoptycznych."
+
+[operations.fetch_imgw_warnings]
+label = "Ostrzeżenia hydrologiczne i meteorologiczne"
+description = "Pobierz aktualne ostrzeżenia IMGW-PIB: hydrologiczne (wezbranie, przekroczenie stanów ostrzegawczych i alarmowych, susza hydrologiczna) i meteorologiczne (silny wiatr, burze, intensywne opady, mróz) wraz ze stopniem zagrożenia, obszarem i czasem obowiązywania."
+summary = "Gotowe. Wynik #{number}: ostrzeżeń w mocy: {rows}."
+
+[operations.fetch_imgw_warnings.params.kind]
+unset = "wszystkie (hydrologiczne i meteorologiczne)"
+label = "Rodzaj ostrzeżeń"
+question = "Jakie ostrzeżenia pobrać: hydrologiczne czy meteorologiczne?"
+model_question = "Czy polecenie ogranicza ostrzeżenia do hydrologicznych albo meteorologicznych?"
+options.hydro.label = "Hydrologiczne"
+options.hydro.description = "hydrologiczne, wezbranie, powódź, stany ostrzegawcze, susza hydrologiczna, rzeki"
+options.meteo.label = "Meteorologiczne"
+options.meteo.description = "meteorologiczne, pogodowe, wiatr, burze, ulewy, śnieg, mróz, upał"
+options.unspecified.description = "Polecenie nie ogranicza rodzaju ostrzeżeń"
+
+[operations.fetch_hydro_states]
+label = "Stany wody na stacjach (alarmowe i ostrzegawcze)"
+description = "Pobierz stan wody na stacjach hydrologicznych IMGW-PIB względem stanów ostrzegawczych i alarmowych: które stacje mają stan alarmowy, ostrzegawczy, wysoki albo normalny; wszystkie stacje albo tylko główne; ze współrzędnymi stacji."
+summary = "Gotowe. Wynik #{number}: stanów wody stacji: {rows}."
+
+[operations.fetch_hydro_states.params.main_only]
+label = "Tylko stacje główne"
+question = "Czy pobrać tylko główne stacje hydrologiczne?"
+model_question = "Czy polecenie mówi, że chodzi tylko o główne stacje hydrologiczne?"
+help = "Stacje główne to wybrane, najważniejsze wodowskazy. Bez tego ograniczenia lista obejmuje wszystkie stacje hydrologiczne."
+
+[operations.get_pmaxtp]
+label = "Opady maksymalne PMAXTP dla punktu"
+description = "Pobierz z serwera IMGW opady maksymalne prawdopodobne PMAXTP dla punktu o podanych współrzędnych: tabela kwantyli opadu dla czasów trwania od 5 do 180 minut i prawdopodobieństw przewyższenia, metoda POT albo AMP, z możliwością zapisu komórki siatki w magazynie."
+summary = "Gotowe. Wynik #{number}: tabela PMAXTP (metoda {method}) dla punktu {latitude}°N, {longitude}°E, wierszy: {rows}."
+
+[operations.get_pmaxtp.params.point]
+label = "Punkt"
+question = "Dla jakiego punktu (współrzędne) pobrać opady maksymalne?"
+example = "52.23, 21.01"
+help = "Podaj współrzędne w WGS84 (szerokość i długość geograficzna, np. 52.23 21.01) albo w PL-1992. PMAXTP obejmuje obszar Polski: szerokość 49–55°, długość 14–24,5°."
+
+[operations.get_pmaxtp.params.method]
+label = "Metoda obliczeń"
+question = "Którą metodą pobrać PMAXTP: POT czy AMP?"
+model_question = "Którą metodę obliczeń PMAXTP wymienia polecenie: POT czy AMP?"
+help = "POT to metoda maksimów ponadprogowych, AMP — maksimów rocznych; wyniki obu metod różnią się."
+options.pot.label = "POT (maksima ponadprogowe)"
+options.pot.description = "POT, peaks over threshold, metoda ponadprogowa, maksima przekraczające próg"
+options.amp.label = "AMP (maksima roczne)"
+options.amp.description = "AMP, annual maximum precipitation, metoda maksimów rocznych, roczne maksima"
+options.unspecified.description = "Polecenie nie podaje metody POT ani AMP"
+
+[operations.get_pmaxtp.params.storage]
+label = "Zapis w magazynie"
+question = "Czy zapisać komórkę PMAXTP także w magazynie IMGW, czy tylko w pliku wyniku?"
+model_question = "Czy polecenie każe zapisać dane PMAXTP w magazynie albo mówi, że wynik ma być tylko w pliku?"
+help = "Zapis w magazynie zachowuje komórkę siatki do późniejszego odczytu bez internetu; sam plik wyniku nie zostawia nic w magazynie."
+options.none.label = "Tylko plik wyniku"
+options.none.description = "tylko plik wyniku, bez zapisu w magazynie, jednorazowo, bez magazynu"
+options.store.label = "Zapisz także w magazynie"
+options.store.description = "zapisz w magazynie, zapamiętaj komórkę, zachowaj w magazynie, na później, do odczytu offline"
+options.unspecified.description = "Polecenie nic nie mówi o zapisie w magazynie"
+
+[operations.get_pmaxtp.params.probability]
+unset = "wszystkie prawdopodobieństwa z tabeli PMAXTP"
+label = "Prawdopodobieństwo"
+question = "Dla jakiego prawdopodobieństwa przewyższenia zawęzić tabelę (np. 1%, 2%, 10%)?"
+example = "1%"
+help = "Opcjonalny filtr wyniku: tabela PMAXTP zawiera kilka prawdopodobieństw, podaj te, które Cię interesują (np. 1% i 10%)."
+
+[operations.get_pmaxtp.params.duration]
+unset = "wszystkie czasy trwania z tabeli PMAXTP"
+label = "Czas trwania opadu"
+question = "Dla jakiego czasu trwania opadu zawęzić tabelę (np. 15 min, 1 h)?"
+example = "15 min"
+help = "Opcjonalny filtr wyniku: PMAXTP podaje opady dla czasów od 5 do 180 minut, podaj te, które Cię interesują."
+
+[operations.read_stored_pmaxtp]
+label = "Odczyt zapisanej komórki PMAXTP"
+description = "Odczytaj z lokalnego magazynu IMGW zapisaną wcześniej komórkę siatki PMAXTP (indeksy ind_x i ind_y, np. 751/317) bez internetu: tabela opadów maksymalnych prawdopodobnych tej komórki."
+summary = "Gotowe. Wynik #{number}: tabela PMAXTP komórki {cell[ind_x]}/{cell[ind_y]} (metoda {method}), wierszy: {rows}."
+
+[operations.read_stored_pmaxtp.params.cell]
+label = "Komórka siatki PMAXTP"
+question = "Którą komórkę siatki PMAXTP odczytać (ind_x/ind_y)?"
+example = "751/317"
+help = "Podaj indeksy komórki, np. 751/317 albo „ind_x 751 ind_y 317”. Indeksy znasz z wyniku wcześniejszego pobrania PMAXTP z zapisem w magazynie."
+
+[operations.read_stored_pmaxtp.params.method]
+label = "Metoda obliczeń"
+question = "Którą metodą policzoną komórkę odczytać: POT czy AMP?"
+model_question = "Którą metodę obliczeń PMAXTP wymienia polecenie: POT czy AMP?"
+help = "W magazynie komórka jest zapisana osobno dla każdej metody."
+options.pot.label = "POT (maksima ponadprogowe)"
+options.pot.description = "POT, peaks over threshold, metoda ponadprogowa, maksima przekraczające próg"
+options.amp.label = "AMP (maksima roczne)"
+options.amp.description = "AMP, annual maximum precipitation, metoda maksimów rocznych, roczne maksima"
+options.unspecified.description = "Polecenie nie podaje metody POT ani AMP"
+
+[operations.export_station_series]
+label = "Eksport szeregu stacji do CSV"
+description = "Pobierz albo wyeksportuj szereg czasowy jednej stacji do CSV: dobowe opady, przepływy, stany wody, temperatura; IMGW-PIB, IMGW, ČHMÚ, Czechy; z serwera przez magazyn albo z lokalnego magazynu."
+summary = "Gotowe. Wynik #{number}: szereg stacji {station_code} ({rows} wierszy, {first_date} – {last_date}) zapisany w pliku CSV."
+
+[operations.export_station_series.check]
+notice = "Zapytam serwer IMGW o archiwa, które trzeba pobrać do magazynu dla tej stacji i okresu (zapytania HEAD, bez pobierania plików)."
+
+[operations.export_station_series.params.dataset]
+label = "Zbiór danych"
+question = "Z którego zbioru danych wyeksportować szereg?"
+model_question = "Jakiego rodzaju dane i z jakiej sieci stacji dotyczy polecenie?"
+help = "Lista stacji IMGW nie mówi, czy stacja jest opadowa, czy klimatyczna; wskaż zbiór, a stację dopasuję do niego. Dane hydrologiczne i meteorologiczne ČHMÚ dotyczą Czech."
+options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
+options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne"
+options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
+options.pl_hydro_monthly.description = "miesięczne dane hydrologiczne: minimalny, średni i maksymalny stan wody, przepływ i temperatura wody w miesiącu; stacje hydrologiczne IMGW-PIB; ekstrema miesięczne"
+options.pl_hydro_semiannual.label = "Dane hydrologiczne półroczne i roczne IMGW-PIB"
+options.pl_hydro_semiannual.description = "półroczne i roczne dane hydrologiczne: ekstrema stanu wody, przepływu i temperatury wody w półroczu zimowym, letnim i w roku; stacje hydrologiczne IMGW-PIB"
+options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
+options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
+options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
+options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
+options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
+options.cz_meteo_daily.description = "czeskie dane meteorologiczne ČHMÚ: opad, temperatura średnia, maksymalna i minimalna; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.unspecified.description = "Polecenie nie wskazuje rodzaju danych ani sieci stacji (opady, klimat, hydrologia, IMGW-PIB czy ČHMÚ)"
+
+[operations.export_station_series.params.station]
+label = "Stacja"
+question = "Dla jakiej stacji (nazwa albo kod) wyeksportować szereg?"
+example = "Poznań-Ławica"
+help = "Podaj nazwę stacji, miejscowość albo rzekę, albo kod: 9 cyfr (IMGW-PIB) lub identyfikator WIGOS (ČHMÚ). Nazwy dopasowuję do katalogu stacji w magazynie; gdy go nie ma, podaj kod."
+
+[operations.export_station_series.params.period]
+label = "Okres"
+question = "Jaki okres danych wyeksportować (lata albo daty od–do)?"
+example = "2000–2020"
+help = "Podaj lata (np. 2000–2020, „z lat 2010-2015”, rok 2015) albo daty (np. od 1.01.2000 do 31.12.2005). Czy lata są kalendarzowe czy hydrologiczne, ustalam osobno."
+
+[operations.export_station_series.params.year_type]
+label = "Rodzaj lat"
+question = "Czy podane lata to lata kalendarzowe (1 I – 31 XII) czy hydrologiczne (1 XI – 31 X)?"
+help = "Rok hydrologiczny trwa od 1 listopada poprzedniego roku do 31 października i nosi nazwę roku, w którym się kończy (rok hydrologiczny 2020 to 1.11.2019 – 31.10.2020). Rodzaj lat decyduje o zakresie dat i o numeracji lat w pliku."
+options.hydrological.label = "Hydrologiczne (1 XI – 31 X)"
+options.calendar.label = "Kalendarzowe (1 I – 31 XII)"
+
+[operations.export_station_series.params.data_source]
+label = "Źródło danych"
+question = "Czy pobrać dane z serwera IMGW (sieć, uzupełni magazyn) czy użyć lokalnego magazynu (bez sieci)?"
+model_question = "Czy polecenie mówi, skąd wziąć dane: z serwera, czy z lokalnego magazynu?"
+help = "Z serwera: pobiorę z sieci brakujące archiwa do magazynu i zbuduję szereg (archiwa obejmują cały kraj). Z magazynu: użyję szeregu, który już tam jest, bez internetu."
+options.server.label = "Z serwera (sieć, uzupełni magazyn)"
+options.server.description = "pobierz z serwera, ściągnij, zaktualizuj dane, aktualne dane z internetu, uzupełnij magazyn"
+options.store.label = "Z lokalnego magazynu (bez sieci)"
+options.store.description = "z magazynu, lokalnie, offline, już pobrane dane, bez internetu"
+options.unspecified.description = "Polecenie nie określa źródła danych"
+
+[operations.export_station_series.params.variables]
+unset = "wszystkie zmienne zbioru"
+label = "Zmienne"
+question = "Które zmienne (np. opad, przepływ, stan wody) wyeksportować?"
+example = "przepływ i stan wody"
+help = "Opcjonalnie zawęż plik do wybranych zmiennych zbioru (np. Q, H, P); bez tego eksportuję wszystkie zmienne zbioru."
+
+[operations.show_station_coverage]
+label = "Pokrycie danych stacji w magazynie"
+description = "Pokaż, za jakie lata i zmienne magazyn IMGW ma dane stacji (szeregu): pierwszy i ostatni dzień, liczba pomiarów, luki w danych; dla jednej stacji, kilku albo wszystkich stacji zbioru; bez internetu."
+summary = "Gotowe. Wynik #{number}: pokrycie danych: stacji {stations}, od {first} do {last}, luk: {gaps_total}."
+
+[operations.show_station_coverage.params.dataset]
+label = "Zbiór danych"
+question = "Dla którego zbioru danych pokazać pokrycie?"
+model_question = "Jakiego rodzaju dane i z jakiej sieci stacji dotyczy polecenie?"
+help = "Lista stacji IMGW nie mówi, czy stacja jest opadowa, czy klimatyczna; wskaż zbiór, a stację dopasuję do niego. Dane hydrologiczne i meteorologiczne ČHMÚ dotyczą Czech."
+options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
+options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne"
+options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
+options.pl_hydro_monthly.description = "miesięczne dane hydrologiczne: minimalny, średni i maksymalny stan wody, przepływ i temperatura wody w miesiącu; stacje hydrologiczne IMGW-PIB; ekstrema miesięczne"
+options.pl_hydro_semiannual.label = "Dane hydrologiczne półroczne i roczne IMGW-PIB"
+options.pl_hydro_semiannual.description = "półroczne i roczne dane hydrologiczne: ekstrema stanu wody, przepływu i temperatury wody w półroczu zimowym, letnim i w roku; stacje hydrologiczne IMGW-PIB"
+options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
+options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
+options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
+options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
+options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
+options.cz_meteo_daily.description = "czeskie dane meteorologiczne ČHMÚ: opad, temperatura średnia, maksymalna i minimalna; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.unspecified.description = "Polecenie nie wskazuje rodzaju danych ani sieci stacji (opady, klimat, hydrologia, IMGW-PIB czy ČHMÚ)"
+
+[operations.show_station_coverage.params.station]
+unset = "wszystkie stacje zbioru"
+label = "Stacje"
+question = "Dla jakich stacji pokazać pokrycie danych (nazwy albo kody)?"
+example = "Poznań-Ławica"
+help = "Podaj jedną lub kilka stacji (nazwa albo kod). Bez stacji pokażę pokrycie wszystkich stacji zbioru, co daje bardzo długi raport."
+
+[operations.build_imgw_series]
+label = "Budowa szeregów zbioru w magazynie"
+description = "Zbuduj albo odśwież szereg czasowy zbioru danych z archiwów zapisanych w magazynie IMGW (pliki Parquet): potrzebne po dopisaniu archiwów do magazynu; bez internetu, zapisuje w magazynie."
+summary = "Gotowe. Wynik #{number}: szereg zbioru {dataset} w magazynie: {status}, stacji: {stations}."
+
+[operations.build_imgw_series.params.dataset]
+label = "Zbiór danych"
+question = "Dla którego zbioru danych zbudować szereg?"
+model_question = "Jakiego rodzaju dane i z jakiej sieci stacji dotyczy polecenie?"
+help = "Lista stacji IMGW nie mówi, czy stacja jest opadowa, czy klimatyczna; wskaż zbiór, a stację dopasuję do niego. Dane hydrologiczne i meteorologiczne ČHMÚ dotyczą Czech."
+options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
+options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne"
+options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
+options.pl_hydro_monthly.description = "miesięczne dane hydrologiczne: minimalny, średni i maksymalny stan wody, przepływ i temperatura wody w miesiącu; stacje hydrologiczne IMGW-PIB; ekstrema miesięczne"
+options.pl_hydro_semiannual.label = "Dane hydrologiczne półroczne i roczne IMGW-PIB"
+options.pl_hydro_semiannual.description = "półroczne i roczne dane hydrologiczne: ekstrema stanu wody, przepływu i temperatury wody w półroczu zimowym, letnim i w roku; stacje hydrologiczne IMGW-PIB"
+options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
+options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
+options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
+options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
+options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
+options.cz_meteo_daily.description = "czeskie dane meteorologiczne ČHMÚ: opad, temperatura średnia, maksymalna i minimalna; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.unspecified.description = "Polecenie nie wskazuje zbioru danych, z którego ma powstać szereg"
+
+[operations.download_hydro_archives]
+label = "Pobranie archiwów hydrologicznych do folderu wyniku"
+description = "Pobierz pliki archiwalne danych hydrologicznych IMGW-PIB albo ČHMÚ do folderu wyniku, bez przetwarzania i bez zapisu w magazynie: dobowe, miesięczne i półroczne dane hydrologiczne (stan wody, przepływ, temperatura wody), zjawiska lodowe i zarastanie rzek; archiwa ZIP z serwera, surowe dane źródłowe, paczki z lat."
+summary = "Gotowe. Wynik #{number}: pobrano archiwa — plików: {files} ({size}); pliki są w folderze wyniku."
+
+[operations.download_hydro_archives.params.dataset]
+label = "Zbiór danych"
+question = "Archiwa którego zbioru danych hydrologicznych pobrać?"
+model_question = "Jakiego rodzaju dane hydrologiczne (dobowe, miesięczne, półroczne, zjawiska lodowe, Czechy) wymienia polecenie?"
+help = "Dane hydrologiczne IMGW-PIB są dobowe, miesięczne albo półroczne i roczne; osobny zbiór to zjawiska lodowe i zarastanie rzek. Dane czeskie to zbiór ČHMÚ."
+options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
+options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne; hydro dobowe"
+options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
+options.pl_hydro_monthly.description = "miesięczne dane hydrologiczne: minimalny, średni i maksymalny stan wody, przepływ i temperatura wody w miesiącu; stacje hydrologiczne IMGW-PIB; hydro miesięczne"
+options.pl_hydro_semiannual.label = "Dane hydrologiczne półroczne i roczne IMGW-PIB"
+options.pl_hydro_semiannual.description = "półroczne i roczne dane hydrologiczne: ekstrema stanu wody, przepływu i temperatury wody w półroczu zimowym, letnim i w roku; stacje hydrologiczne IMGW-PIB"
+options.pl_hydro_phenomena.label = "Zjawiska lodowe i zarastanie rzek IMGW-PIB"
+options.pl_hydro_phenomena.description = "zjawiska lodowe i zarastanie rzek: lód, śryż, pokrywa lodowa, zator, zarastanie koryta; zjawiska hydrologiczne IMGW-PIB"
+options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
+options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.unspecified.description = "Polecenie nie wskazuje, jakich danych hydrologicznych dotyczą archiwa"
+
+[operations.download_hydro_archives.params.years]
+label = "Lata archiwów"
+question = "Z jakich lat pobrać archiwa (np. „2000–2020”)?"
+example = "2000-2020"
+help = "Lata numeruje IMGW: archiwum danych hydrologicznych IMGW-PIB ma rok hydrologiczny (od 1 listopada poprzedniego roku do 31 października), dane ČHMÚ rok kalendarzowy. Podaj zakres („2000–2020”) albo listę („2010, 2012 i 2015”)."
+
+[operations.download_hydro_archives.params.hydro_params]
+label = "Parametry danych półrocznych"
+question = "Które parametry pobrać: stan wody (H), przepływ (Q), temperaturę wody (T) czy wszystkie?"
+model_question = "Który parametr hydrologiczny wymienia polecenie: stan wody, przepływ, temperaturę wody, czy wszystkie?"
+help = "Dane półroczne i roczne IMGW-PIB są w osobnych plikach dla każdego parametru."
+options.h.label = "Stan wody (H)"
+options.h.description = "stan wody, poziom wody, H, wodowskaz, cm"
+options.q.label = "Przepływ (Q)"
+options.q.description = "przepływ, wydatek, Q, metry sześcienne na sekundę"
+options.t.label = "Temperatura wody (T)"
+options.t.description = "temperatura wody, T, stopnie Celsjusza"
+options.all.label = "Wszystkie (H, Q, T)"
+options.all.description = "wszystkie parametry, komplet, stan wody, przepływ i temperatura wody"
+options.unspecified.description = "Polecenie nie wskazuje parametrów danych półrocznych"
+
+[operations.download_hydro_archives.params.stations]
+label = "Stacje ČHMÚ"
+question = "Dla których stacji ČHMÚ pobrać pliki? Podaj kody (identyfikatory WIGOS) albo nazwy stacji."
+example = "0-203-1-001000"
+help = "Pliki ČHMÚ są osobne dla każdej stacji, więc stacje są wymagane. Kod WIGOS ma postać „0-203-1-001000”."
+
+[operations.download_meteo_archives]
+label = "Pobranie archiwów meteorologicznych do folderu wyniku"
+description = "Pobierz pliki archiwalne danych meteorologicznych IMGW-PIB albo ČHMÚ do folderu wyniku, bez przetwarzania i bez zapisu w magazynie: dobowe dane klimatyczne i opadowe, miesięczne dane klimatyczne, opadowe i synoptyczne, dane terminowe; stacje klimatyczne, opadowe i synoptyczne; archiwa ZIP z serwera, surowe dane źródłowe."
+summary = "Gotowe. Wynik #{number}: pobrano archiwa — plików: {files} ({size}); pliki są w folderze wyniku."
+
+[operations.download_meteo_archives.params.dataset]
+label = "Zbiór danych"
+question = "Archiwa którego zbioru danych meteorologicznych pobrać?"
+model_question = "Jakiego rodzaju dane meteorologiczne (klimatyczne, opadowe, synoptyczne; dobowe, miesięczne, terminowe; Czechy) wymienia polecenie?"
+help = "Stacje klimatyczne mierzą temperaturę i opad, stacje opadowe tylko opad i pokrywę śnieżną, synoptyczne dają dane miesięczne. Dane czeskie to zbiór ČHMÚ."
+options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
+options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
+options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
+options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.pl_meteo_climate_monthly.label = "Dane klimatyczne miesięczne IMGW-PIB"
+options.pl_meteo_climate_monthly.description = "miesięczne dane klimatyczne: średnie, ekstrema i sumy miesięczne temperatury i opadu ze stacji klimatycznych IMGW-PIB"
+options.pl_meteo_precip_monthly.label = "Opady miesięczne ze stacji opadowych IMGW-PIB"
+options.pl_meteo_precip_monthly.description = "miesięczne sumy opadów ze stacji opadowych IMGW-PIB; opad miesięczny"
+options.pl_meteo_synop_monthly.label = "Dane synoptyczne miesięczne IMGW-PIB"
+options.pl_meteo_synop_monthly.description = "miesięczne dane ze stacji synoptycznych IMGW-PIB: temperatura, wilgotność, ciśnienie, wiatr, zachmurzenie, opad; synop"
+options.pl_meteo_climate_terms.label = "Dane terminowe stacji klimatycznych IMGW-PIB"
+options.pl_meteo_climate_terms.description = "dane terminowe: obserwacje stacji klimatycznych IMGW-PIB w terminach pomiarowych (7, 14, 21), po jednym pliku na miesiąc"
+options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
+options.cz_meteo_daily.description = "czeskie dane meteorologiczne ČHMÚ: opad, temperatura średnia, maksymalna i minimalna; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.unspecified.description = "Polecenie nie wskazuje, jakich danych meteorologicznych dotyczą archiwa"
+
+[operations.download_meteo_archives.params.years]
+label = "Lata archiwów"
+question = "Z jakich lat pobrać archiwa (np. „2000–2020”)?"
+example = "2000-2020"
+help = "Archiwa danych meteorologicznych IMGW-PIB mają lata kalendarzowe. Podaj zakres („2000–2020”) albo listę („2010, 2012 i 2015”). Dla dobowych danych ČHMÚ lat się nie podaje: plik stacji obejmuje całą jej historię."
+
+[operations.download_meteo_archives.params.stations]
+label = "Stacje ČHMÚ"
+question = "Dla których stacji ČHMÚ pobrać pliki? Podaj kody (identyfikatory WIGOS) albo nazwy stacji."
+example = "0-203-0-11514"
+help = "Pliki ČHMÚ są osobne dla każdej stacji, więc stacje są wymagane. Kod WIGOS ma postać „0-203-0-11514”."
+
+[operations.check_imgw_archives]
+label = "Sprawdzenie archiwów względem magazynu"
+description = "Sprawdź w sieci, które archiwa wybranego zbioru i lat są nowsze na serwerach IMGW albo brakują w magazynie, bez pobierania danych: lista plików, daty i rozmiary na serwerze, ile i ile MB trzeba pobrać; zapisuje plan do pliku, który można potem wykonać operacją „Pobierz do magazynu według planu”."
+summary = "Gotowe. Wynik #{number}: sprawdzono archiwa — plików: {items}, do pobrania: {to_download} ({size_to_download}); plan zapisano w wyniku."
+
+[operations.check_imgw_archives.params.dataset]
+label = "Zbiór danych"
+question = "Archiwa którego zbioru danych sprawdzić?"
+model_question = "Jakiego rodzaju dane i z jakiej sieci stacji dotyczy polecenie?"
+help = "Magazyn przechowuje zbiory, z których IMGWTools buduje szeregi czasowe: hydrologiczne dobowe, miesięczne i półroczne, klimatyczne i opadowe dobowe oraz dane czeskie ČHMÚ."
+options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
+options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne; hydro dobowe"
+options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
+options.pl_hydro_monthly.description = "miesięczne dane hydrologiczne: minimalny, średni i maksymalny stan wody, przepływ i temperatura wody w miesiącu; stacje hydrologiczne IMGW-PIB; hydro miesięczne"
+options.pl_hydro_semiannual.label = "Dane hydrologiczne półroczne i roczne IMGW-PIB"
+options.pl_hydro_semiannual.description = "półroczne i roczne dane hydrologiczne: ekstrema stanu wody, przepływu i temperatury wody w półroczu zimowym, letnim i w roku; stacje hydrologiczne IMGW-PIB"
+options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
+options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
+options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
+options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
+options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
+options.cz_meteo_daily.description = "czeskie dane meteorologiczne ČHMÚ: opad, temperatura średnia, maksymalna i minimalna; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.unspecified.description = "Polecenie nie wskazuje zbioru danych, którego archiwa dotyczą"
+
+[operations.check_imgw_archives.params.years]
+label = "Lata archiwów"
+question = "Z jakich lat sprawdzić archiwa (np. „2000–2020”)?"
+example = "2000-2020"
+help = "Lata numeruje IMGW: archiwum danych hydrologicznych IMGW-PIB ma rok hydrologiczny (od 1 listopada poprzedniego roku do 31 października), meteorologicznych i ČHMÚ rok kalendarzowy. Dla dobowych danych meteorologicznych ČHMÚ lat się nie podaje."
+
+[operations.check_imgw_archives.params.stations]
+label = "Stacje ČHMÚ"
+question = "Dla których stacji ČHMÚ sprawdzić pliki? Podaj kody (identyfikatory WIGOS) albo nazwy stacji."
+example = "0-203-1-001000"
+help = "Pliki ČHMÚ są osobne dla każdej stacji, więc stacje są wymagane."
+
+[operations.sync_imgw_store]
+label = "Pobranie archiwów do magazynu"
+description = "Pobierz do lokalnego magazynu IMGW nowe i brakujące archiwa wybranego zbioru i lat, a potem zbuduj szeregi czasowe: aktualizacja magazynu, synchronizacja, uzupełnienie lokalnych danych, ściągnięcie opadów, przepływów albo stanów wody do magazynu; zapisuje w magazynie, wymaga sieci."
+summary = "Gotowe. Wynik #{number}: magazyn IMGW zaktualizowany — nowych wersji archiwów: {created}, szeregów zbudowanych: {series_created}."
+
+[operations.sync_imgw_store.check]
+notice = "Zapytam serwery IMGW-PIB albo ČHMÚ (listy plików i nagłówki HEAD) o archiwa z planu: ile jest nowszych albo brakujących i ile to danych."
+
+[operations.sync_imgw_store.params.dataset]
+label = "Zbiór danych"
+question = "Archiwa którego zbioru danych pobrać do magazynu?"
+model_question = "Jakiego rodzaju dane i z jakiej sieci stacji dotyczy polecenie?"
+help = "Magazyn przechowuje zbiory, z których IMGWTools buduje szeregi czasowe: hydrologiczne dobowe, miesięczne i półroczne, klimatyczne i opadowe dobowe oraz dane czeskie ČHMÚ."
+options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
+options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne; hydro dobowe"
+options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
+options.pl_hydro_monthly.description = "miesięczne dane hydrologiczne: minimalny, średni i maksymalny stan wody, przepływ i temperatura wody w miesiącu; stacje hydrologiczne IMGW-PIB; hydro miesięczne"
+options.pl_hydro_semiannual.label = "Dane hydrologiczne półroczne i roczne IMGW-PIB"
+options.pl_hydro_semiannual.description = "półroczne i roczne dane hydrologiczne: ekstrema stanu wody, przepływu i temperatury wody w półroczu zimowym, letnim i w roku; stacje hydrologiczne IMGW-PIB"
+options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
+options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
+options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
+options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
+options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
+options.cz_meteo_daily.description = "czeskie dane meteorologiczne ČHMÚ: opad, temperatura średnia, maksymalna i minimalna; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.unspecified.description = "Polecenie nie wskazuje zbioru danych, którego archiwa mają trafić do magazynu"
+
+[operations.sync_imgw_store.params.years]
+label = "Lata archiwów"
+question = "Z jakich lat pobrać archiwa do magazynu (np. „2000–2020”)?"
+example = "2000-2020"
+help = "Lata numeruje IMGW: archiwum danych hydrologicznych IMGW-PIB ma rok hydrologiczny (od 1 listopada poprzedniego roku do 31 października), meteorologicznych i ČHMÚ rok kalendarzowy. Dla dobowych danych meteorologicznych ČHMÚ lat się nie podaje."
+
+[operations.sync_imgw_store.params.stations]
+label = "Stacje ČHMÚ"
+question = "Dla których stacji ČHMÚ pobrać pliki do magazynu? Podaj kody (identyfikatory WIGOS) albo nazwy stacji."
+example = "0-203-1-001000"
+help = "Pliki ČHMÚ są osobne dla każdej stacji, więc stacje są wymagane."
+
+[operations.sync_imgw_store_by_plan]
+label = "Pobranie do magazynu według planu"
+description = "Pobierz do lokalnego magazynu IMGW dokładnie to, co wymienia zapisany plan sprawdzenia archiwów (wynik operacji „Sprawdź archiwa”): synchronizacja według planu, wykonaj plan, plan #5, pobierz według zapisanego planu; zapisuje w magazynie, wymaga sieci."
+summary = "Gotowe. Wynik #{number}: magazyn IMGW zaktualizowany według planu — nowych wersji archiwów: {created}, szeregów zbudowanych: {series_created}."
+
+[operations.export_imgw_archive]
+label = "Eksport zapisanych archiwów z magazynu"
+description = "Wyeksportuj do CSV albo JSONL rekordy archiwów zapisanych w magazynie IMGW dla wybranego zbioru i lat: dane z archiwów jako tabela, rozpakowane archiwum, eksport z magazynu, bez internetu; zapisuje pliki w folderze wyniku."
+summary = "Gotowe. Wynik #{number}: wyeksportowano archiwa — plików: {files}, rekordów: {rows}, format {format}; pliki są w folderze wyniku."
+
+[operations.export_imgw_archive.params.dataset]
+label = "Zbiór danych"
+question = "Archiwa którego zbioru danych wyeksportować z magazynu?"
+model_question = "Jakiego rodzaju dane i z jakiej sieci stacji dotyczy polecenie?"
+help = "Eksportuję tylko to, co magazyn już ma; brakujące archiwa najpierw pobierz do magazynu."
+options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
+options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne; hydro dobowe"
+options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
+options.pl_hydro_monthly.description = "miesięczne dane hydrologiczne: minimalny, średni i maksymalny stan wody, przepływ i temperatura wody w miesiącu; stacje hydrologiczne IMGW-PIB; hydro miesięczne"
+options.pl_hydro_semiannual.label = "Dane hydrologiczne półroczne i roczne IMGW-PIB"
+options.pl_hydro_semiannual.description = "półroczne i roczne dane hydrologiczne: ekstrema stanu wody, przepływu i temperatury wody w półroczu zimowym, letnim i w roku; stacje hydrologiczne IMGW-PIB"
+options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
+options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
+options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
+options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
+options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
+options.cz_meteo_daily.description = "czeskie dane meteorologiczne ČHMÚ: opad, temperatura średnia, maksymalna i minimalna; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.unspecified.description = "Polecenie nie wskazuje zbioru danych, którego archiwa mają być wyeksportowane"
+
+[operations.export_imgw_archive.params.years]
+label = "Lata archiwów"
+question = "Z jakich lat wyeksportować archiwa (np. „2000–2020”)?"
+example = "2000-2020"
+help = "Lata numeruje IMGW: archiwum danych hydrologicznych IMGW-PIB ma rok hydrologiczny (od 1 listopada poprzedniego roku do 31 października), meteorologicznych i ČHMÚ rok kalendarzowy. Dla dobowych danych meteorologicznych ČHMÚ lat się nie podaje: eksportuję wszystko, co jest w magazynie."
+
+[operations.export_imgw_archive.params.format]
+label = "Format eksportu"
+question = "W jakim formacie zapisać rekordy: CSV czy JSONL?"
+model_question = "Jaki format plików wymienia polecenie: CSV (tabela) czy JSONL (JSON Lines, jeden rekord w wierszu)?"
+help = "CSV to płaska tabela; JSONL zachowuje strukturę rekordu (pomiary z flagami) w jednym obiekcie JSON na wiersz."
+options.csv.label = "CSV (tabela)"
+options.csv.description = "CSV, tabela, arkusz, Excel, plik z kolumnami, rozdzielany przecinkami"
+options.jsonl.label = "JSONL (JSON Lines)"
+options.jsonl.description = "JSONL, JSON Lines, JSON, rekordy jako obiekty, jeden obiekt w wierszu"
+options.unspecified.description = "Polecenie nie wskazuje formatu eksportu"
+
+[operations.init_imgw_store]
+label = "Utworzenie magazynu IMGW"
+description = "Utwórz (zainicjuj) pusty lokalny magazyn IMGW w folderze z konfiguracji: pierwszy krok przed pobieraniem danych do magazynu, założenie magazynu danych; nie pobiera danych, nie zmienia istniejącego magazynu."
+summary = "Gotowe. Wynik #{number}: magazyn IMGW jest gotowy: {store}."
+
+[operations.inspect_imgw_store]
+label = "Opis magazynu IMGW"
+description = "Pokaż, co jest w lokalnym magazynie IMGW: czy magazyn jest gotowy, jakie wersje zawiera (archiwa, szeregi, katalogi stacji, komórki PMAXTP, obserwacje), problemy i sumy kontrolne SHA-256; co mam w magazynie; bez internetu."
+summary = "Gotowe. Wynik #{number}: opis magazynu IMGW zapisano w wyniku (wpisów: {entries}, problemów: {problem_count})."
+
+[operations.inspect_imgw_store.params.kind]
+unset = "wszystkie rodzaje wpisów"
+label = "Rodzaj wpisów"
+question = "Jakich wpisów magazynu dotyczy opis: archiwów, szeregów, katalogów stacji, komórek PMAXTP, obserwacji czy problemów?"
+model_question = "Czy polecenie ogranicza opis magazynu do jednego rodzaju wpisów: archiwów, szeregów, katalogów stacji, komórek PMAXTP, obserwacji albo problemów?"
+help = "Bez wskazania rodzaju opisuję wszystkie wpisy magazynu."
+options.archive.label = "Archiwa"
+options.archive.description = "archiwa, pliki archiwalne, ZIP, pobrane archiwa danych"
+options.series.label = "Szeregi"
+options.series.description = "szeregi, szeregi czasowe, zbudowane szeregi stacji, Parquet"
+options.catalog.label = "Katalogi stacji"
+options.catalog.description = "katalogi stacji, katalog stacji, stations.geojson, lista stacji z położeniem"
+options.pmaxtp.label = "Komórki PMAXTP"
+options.pmaxtp.description = "PMAXTP, komórki PMAXTP, opady maksymalne, zapisane komórki siatki"
+options.observation.label = "Obserwacje"
+options.observation.description = "obserwacje, zapisane sygnały serwera, ETag, daty modyfikacji"
+options.problem.label = "Problemy"
+options.problem.description = "problemy, błędy, uszkodzone wersje, przerwane zapisy, nieprawidłowe wpisy"
+options.unspecified.description = "Polecenie nie ogranicza opisu do jednego rodzaju wpisów"
+
+[operations.inspect_imgw_store.params.provider]
+unset = "obaj dostawcy (IMGW-PIB i ČHMÚ)"
+label = "Dostawca danych"
+question = "Wpisy którego dostawcy opisać: IMGW-PIB czy ČHMÚ?"
+model_question = "Czy polecenie ogranicza opis magazynu do jednego dostawcy: IMGW-PIB (Polska) albo ČHMÚ (Czechy)?"
+help = "Bez wskazania dostawcy opisuję wpisy obu dostawców."
+options.imgw_pib.label = "IMGW-PIB (Polska)"
+options.imgw_pib.description = "IMGW, IMGW-PIB, polskie stacje, Polska, Instytut Meteorologii i Gospodarki Wodnej"
+options.chmi.label = "ČHMÚ (Czechy)"
+options.chmi.description = "ČHMÚ, CHMU, CHMI, czeskie stacje, Czechy, Český hydrometeorologický ústav"
+options.unspecified.description = "Polecenie nie ogranicza opisu do jednego dostawcy"
+
+[operations.init_imgw_project]
+label = "Utworzenie projektu danych IMGW"
+description = "Utwórz projekt danych IMGW w folderze projektu (plik imgw-project.json z listą zadań) wskazujący magazyn IMGW z konfiguracji: projekt przypina wersje danych, aby wyniki dało się odtworzyć; założenie projektu, nowy projekt IMGW."
+summary = "Gotowe. Wynik #{number}: projekt danych IMGW utworzony (manifest {manifest})."
+
+[operations.add_imgw_project_task]
+label = "Dodanie zadania do projektu danych IMGW"
+description = "Dodaj zadanie do projektu danych IMGW: wybór szeregów czasowych stacji (stacja albo obszar z pliku GeoJSON, lata, zmienne: przepływy, opady, stany wody) albo komórka PMAXTP dla punktu; zadanie tylko zapisuje się w manifeście projektu, dane pobiera dopiero „Pobierz dane projektu”."
+summary = "Gotowe. Wynik #{number}: dodano zadanie „{task}” do projektu IMGW (zadań w manifeście: {task_count})."
+
+[operations.add_imgw_project_task.params.task]
+label = "Rodzaj zadania"
+question = "Jakie zadanie dodać do projektu: szeregi czasowe stacji czy komórkę PMAXTP?"
+model_question = "Jakiego rodzaju zadanie wymienia polecenie: szeregi czasowe stacji (przepływy, opady, stany wody, temperatury) czy opady maksymalne PMAXTP dla punktu?"
+help = "Zadanie szeregów wybiera stacje, lata i zmienne; zadanie PMAXTP zapisuje komórkę opadów maksymalnych dla punktu."
+options.series.label = "Szeregi czasowe stacji"
+options.series.description = "szeregi stacji, przepływy, opady, stany wody, temperatury, dane ze stacji, lata pomiarów"
+options.pmaxtp.label = "Komórka PMAXTP"
+options.pmaxtp.description = "PMAXTP, opady maksymalne, opady maksymalne prawdopodobne, punkt, współrzędne, komórka siatki"
+options.unspecified.description = "Polecenie nie wskazuje, czy zadanie dotyczy szeregów stacji, czy PMAXTP"
+
+[operations.add_imgw_project_task.params.task_name]
+label = "Nazwa zadania"
+question = "Jak nazwać zadanie? Nazwa: małe litery a–z, cyfry, „_” i „-”, do 64 znaków."
+example = "opady_poznan"
+help = "Nazwa musi być unikalna w projekcie, zaczynać się od litery lub cyfry i mieć tylko małe litery a–z, cyfry, „_” i „-” (np. „opady_poznan”). Nazwy nie poprawiam sam."
+
+[operations.add_imgw_project_task.params.dataset]
+label = "Zbiór danych"
+question = "Z którego zbioru danych wybrać szeregi do zadania?"
+model_question = "Jakiego rodzaju dane i z jakiej sieci stacji dotyczy polecenie?"
+help = "Lista stacji IMGW nie mówi, czy stacja jest opadowa, czy klimatyczna; wskaż zbiór, a stację dopasuję do niego. Dane ČHMÚ dotyczą Czech."
+options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
+options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne; hydro dobowe"
+options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
+options.pl_hydro_monthly.description = "miesięczne dane hydrologiczne: minimalny, średni i maksymalny stan wody, przepływ i temperatura wody w miesiącu; stacje hydrologiczne IMGW-PIB; hydro miesięczne"
+options.pl_hydro_semiannual.label = "Dane hydrologiczne półroczne i roczne IMGW-PIB"
+options.pl_hydro_semiannual.description = "półroczne i roczne dane hydrologiczne: ekstrema stanu wody, przepływu i temperatury wody w półroczu zimowym, letnim i w roku; stacje hydrologiczne IMGW-PIB"
+options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
+options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
+options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
+options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
+options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
+options.cz_meteo_daily.description = "czeskie dane meteorologiczne ČHMÚ: opad, temperatura średnia, maksymalna i minimalna; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
+options.unspecified.description = "Polecenie nie wskazuje zbioru danych zadania"
+
+[operations.add_imgw_project_task.params.selection]
+label = "Wybór stacji"
+question = "Czy wskazać stacje nazwą albo kodem, czy wybrać wszystkie stacje leżące w obszarze z pliku GeoJSON?"
+model_question = "Czy polecenie wskazuje stacje (nazwą albo kodem), czy obszar z pliku GeoJSON, w którym leżą stacje?"
+help = "Wybór obszarem czyta stacje z katalogu stacji w magazynie i zapisuje ich listę w zadaniu."
+options.stations.label = "Wskazane stacje (nazwa lub kod)"
+options.stations.description = "stacja, stacje, nazwa stacji, kod stacji, wodowskaz, posterunek, konkretne stacje"
+options.area.label = "Stacje z obszaru (plik GeoJSON)"
+options.area.description = "obszar, plik GeoJSON, geojson, zlewnia, granica, wszystkie stacje w obszarze, stacje w zlewni"
+options.unspecified.description = "Polecenie nie mówi, czy wskazuje stacje, czy obszar"
+
+[operations.add_imgw_project_task.params.stations]
+label = "Stacje"
+question = "Jakie stacje wybrać do zadania? Podaj nazwy albo kody stacji."
+example = "Poznań-Ławica"
+help = "Podaj jedną lub kilka stacji (nazwa albo kod: 9 cyfr dla IMGW-PIB, identyfikator WIGOS dla ČHMÚ)."
+
+[operations.add_imgw_project_task.params.area_file]
+label = "Plik obszaru (GeoJSON)"
+question = "Jaki plik GeoJSON wyznacza obszar, w którym leżą stacje? Plik musi leżeć w folderze projektu."
+example = "zlewnia.geojson"
+help = "GeoJSON w WGS84 (Polygon, MultiPolygon, Feature albo FeatureCollection) w folderze projektu, bez „..” i dowiązań symbolicznych. Wymaga katalogu stacji w magazynie („Zbuduj katalog stacji IMGW”)."
+
+[operations.add_imgw_project_task.params.period]
+label = "Lata zadania"
+question = "Z jakich lat ma być zadanie? Zadanie obejmuje całe lata, np. „2000–2020”."
+example = "2000-2020"
+help = "Zadanie wybiera całe lata (kalendarzowe albo hydrologiczne); okresu z datami (od dnia do dnia) zadanie nie przyjmuje. Podaj zakres lat, np. „2000–2020”."
+
+[operations.add_imgw_project_task.params.year_type]
+label = "Rodzaj roku"
+question = "Czy lata zadania to lata kalendarzowe (od 1 stycznia do 31 grudnia), czy hydrologiczne (od 1 listopada do 31 października)?"
+help = "Rok hydrologiczny „2020” trwa od 1 listopada 2019 do 31 października 2020. Pytam o to zawsze, gdy polecenie nie mówi wprost."
+options.hydrological.label = "Lata hydrologiczne (1 XI – 31 X)"
+options.calendar.label = "Lata kalendarzowe (1 I – 31 XII)"
+
+[operations.add_imgw_project_task.params.variables]
+unset = "wszystkie zmienne zbioru"
+label = "Zmienne"
+question = "Jakie zmienne uwzględnić w zadaniu (np. opad, przepływ, stan wody)?"
+example = "przepływ i stan wody"
+help = "Opcjonalnie zawęż zadanie do wybranych zmiennych zbioru (np. Q, H, P); bez tego zadanie obejmuje wszystkie zmienne zbioru."
+
+[operations.add_imgw_project_task.params.point]
+label = "Punkt"
+question = "Dla jakiego punktu zapisać komórkę PMAXTP? Podaj szerokość i długość geograficzną (WGS84) albo współrzędne w PL-1992."
+example = "52.23, 21.01"
+help = "Punkt musi leżeć w obszarze danych PMAXTP (szerokość 49–55° N, długość 14–24,5° E)."
+
+[operations.add_imgw_project_task.params.method]
+label = "Metoda PMAXTP"
+question = "Którą metodę opadów maksymalnych zastosować: POT czy AMP?"
+model_question = "Jaką metodę opadów maksymalnych wymienia polecenie: POT (przekroczenia progu) czy AMP (maksima roczne)?"
+help = "POT korzysta z przekroczeń progu (seria częściowa), AMP z maksimów rocznych."
+options.pot.label = "POT (przekroczenia progu)"
+options.pot.description = "POT, peaks over threshold, przekroczenia progu, seria częściowa"
+options.amp.label = "AMP (maksima roczne)"
+options.amp.description = "AMP, annual maximum, maksima roczne, seria maksimów rocznych"
+options.unspecified.description = "Polecenie nie wskazuje metody PMAXTP"
+
+[operations.download_imgw_project]
+label = "Pobranie i przypięcie danych projektu IMGW"
+description = "Pobierz do magazynu dane zadań projektu IMGW i zapisz w manifeście przypięte wersje (sumy SHA-256): odtworzenie przypiętych wersji (nowe zadania zostaną pobrane i przypięte po raz pierwszy) albo aktualizacja danych do najnowszych wersji ze zmianą przypięć; pobierz i przypnij dane projektu; zapisuje w magazynie i w manifeście, wymaga sieci."
+summary = "Gotowe. Wynik #{number}: dane projektu IMGW pobrane — zadań przypiętych: {pinned_count} z {task_count}."
+
+[operations.download_imgw_project.check]
+notice = "Zapytam serwery IMGW-PIB albo ČHMÚ (listy plików i nagłówki HEAD) o dane zadań projektu: co jest nowsze albo brakuje i ile to danych. Niczego nie pobieram."
+
+[operations.download_imgw_project.params.update]
+label = "Tryb pobierania"
+question = "Czy odtworzyć przypięte wersje danych (zadania nowe zostaną pobrane i przypięte po raz pierwszy), czy zaktualizować dane do najnowszych wersji i zmienić przypięcia?"
+model_question = "Czy polecenie każe odtworzyć dane zgodnie z przypięciami, czy zaktualizować je do najnowszych wersji (zmienić przypięcia)?"
+help = "Odtworzenie nie zmienia przypięć zadań już przypiętych: brakujące pliki są pobierane ponownie tylko wtedy, gdy mają identyczną sumę SHA-256. Aktualizacja przypina zadania na nowo do najnowszych wersji danych."
+options.pinned.label = "Odtwórz przypięte wersje"
+options.pinned.description = "odtwórz, przywróć, zgodnie z przypięciami, przypięte wersje, pobierz brakujące, pobierz i przypnij, pierwsze pobranie, bez zmiany przypięć"
+options.upgrade.label = "Zaktualizuj dane i zmień przypięcia"
+options.upgrade.description = "zaktualizuj, odśwież, najnowsze wersje, nowsze dane, przepnij, zmień przypięcia, upgrade, aktualizacja danych projektu"
+options.unspecified.description = "Polecenie nie mówi, czy odtworzyć przypięte wersje, czy zaktualizować dane"
+
+[operations.download_imgw_project.params.tasks]
+unset = "wszystkie zadania projektu"
+label = "Zadania projektu"
+question = "Których zadań projektu dotyczy operacja? Podaj ich nazwy."
+example = "opady_poznan, przeplywy_warta"
+help = "Bez wskazania zadań operacja obejmuje wszystkie zadania projektu."
+
+[operations.check_imgw_project]
+label = "Sprawdzenie aktualności danych projektu IMGW"
+description = "Sprawdź w sieci, czy dane zadań projektu IMGW są aktualne: co jest nowsze albo brakuje na serwerach, bez pobierania i bez zmian w magazynie; zapisuje plan do pliku; sprawdź aktualność danych projektu."
+summary = "Gotowe. Wynik #{number}: sprawdzono dane projektu (zadań: {task_count}), do pobrania plików: {to_download} ({size_to_download}); plan zapisano w wyniku."
+
+[operations.check_imgw_project.params.tasks]
+unset = "wszystkie zadania projektu"
+label = "Zadania projektu"
+question = "Których zadań projektu dotyczy sprawdzenie? Podaj ich nazwy."
+example = "opady_poznan, przeplywy_warta"
+help = "Bez wskazania zadań sprawdzam wszystkie zadania projektu."
+
+[operations.verify_imgw_project]
+label = "Weryfikacja przypiętych danych projektu IMGW"
+description = "Zweryfikuj przypięte dane projektu IMGW bez internetu: stan plików (istnienie i opisy) albo pełne sumy kontrolne SHA-256; czy dane projektu nie zostały zmienione ani usunięte z magazynu; weryfikacja sum kontrolnych projektu."
+summary = "Gotowe. Wynik #{number}: raport z weryfikacji projektu zapisano w wyniku (zadań: {task_count}, bez uwag: {tasks_ok}, z uwagami: {tasks_issues})."
+
+[operations.verify_imgw_project.params.depth]
+label = "Zakres weryfikacji"
+question = "Czy sprawdzić tylko stan plików (istnienie i opisy), czy pełne sumy kontrolne SHA-256?"
+model_question = "Czy polecenie każe sprawdzić stan przypiętych plików, czy zweryfikować pełne sumy kontrolne SHA-256?"
+help = "Stan plików jest szybki; pełna weryfikacja liczy SHA-256 każdego przypiętego pliku i może potrwać."
+options.status.label = "Stan plików (szybko)"
+options.status.description = "stan, status, istnienie plików, czy pliki są, szybkie sprawdzenie, bez sum kontrolnych"
+options.verify.label = "Pełne sumy kontrolne SHA-256"
+options.verify.description = "sumy kontrolne, SHA-256, SHA256, zweryfikuj, weryfikacja, integralność, czy dane nie zostały zmienione, dokładne sprawdzenie"
+options.unspecified.description = "Polecenie nie mówi, czy sprawdzić stan plików, czy sumy kontrolne"
+
+[operations.verify_imgw_project.params.tasks]
+unset = "wszystkie zadania projektu"
+label = "Zadania projektu"
+question = "Których zadań projektu dotyczy weryfikacja? Podaj ich nazwy."
+example = "opady_poznan, przeplywy_warta"
+help = "Bez wskazania zadań weryfikuję wszystkie zadania projektu."
+
+[operations.remove_imgw_project_task]
+label = "Usunięcie zadania z projektu danych IMGW"
+description = "Usuń zadanie z projektu danych IMGW (z manifestu imgw-project.json); wersje danych w magazynie zostają nietknięte; usuń zadanie, skasuj zadanie z projektu."
+summary = "Gotowe. Wynik #{number}: usunięto zadanie „{task}” z projektu IMGW (zadań w manifeście: {task_count})."
+
+[operations.remove_imgw_project_task.params.task_name]
+label = "Nazwa zadania"
+question = "Które zadanie usunąć z projektu? Podaj jego nazwę."
+example = "opady_poznan"
+help = "Podaj nazwę zadania dokładnie tak, jak jest w projekcie."
+
+[operations.set_imgw_project_store]
+label = "Wskazanie projektowi bieżącego magazynu IMGW"
+description = "Wskaż projektowi IMGW magazyn z konfiguracji: zmiana magazynu projektu po zweryfikowaniu przypiętych plików w nowym magazynie (sumy SHA-256); przenieś projekt do innego magazynu, ustaw magazyn projektu."
+summary = "Gotowe. Wynik #{number}: projekt IMGW wskazuje teraz magazyn {store}."
+
+# --- Teksty wspólne dla operacji narzędzia ------------------------------------------
+# Kody błędów narzędzia ({detail} to opis narzędzia; {hint}, {option}, {allowed} także).
+[errors]
+validation_error = "IMGWTools odrzuca ten wybór: {detail}"
+not_found = "IMGWTools nie znalazł danych: {detail}"
+conflict = "IMGWTools zgłasza konflikt w magazynie: {detail}"
+source_unavailable = "Serwer danych jest niedostępny: {detail}. Spróbuj ponownie później."
+missing_dependency = "Brakuje dodatku IMGWTools: {detail}. Sprawdź: retman doctor"
+data_error = "Dane IMGWTools są nieprawidłowe lub niekompletne: {detail}"
+store_unavailable = "Magazyn IMGW jest niedostępny: {detail}. Sprawdź: retman doctor"
+io_error = "Błąd zapisu lub odczytu pliku: {detail}"
+cancelled = "Operację przerwano: {detail}"
+internal_error = "Błąd wewnętrzny IMGWTools: {detail}"
+store_write_unsupported = "Ten dysk nie pozwala IMGWTools zapisywać do magazynu ({detail}). Magazyn musi leżeć na systemie plików z dowiązaniami twardymi. Sprawdź: retman doctor"
+failed = "Operacja nie powiodła się: {detail}"
+
+# Ostrzeżenia operacji; uwagi o licencji (license_terms) narzędzia podajemy dosłownie.
+[warnings]
+license_terms = "{text}"
+partial_items = "Nie udało się przetworzyć {failed} z {total} pozycji; szczegóły są w dokumencie narzędzia w folderze wyniku (tool_*.json)."
+no_rows = "Narzędzie nie zwróciło żadnych wierszy."
+stations_without_location = "{count} stacji katalogu nie ma położenia (współrzędnych); można je uzupełnić plikiem z położeniami stacji."
+pmaxtp_probability_missing = "W tabeli PMAXTP nie ma prawdopodobieństwa {requested} %; dostępne: {available} %."
+pmaxtp_duration_missing = "W tabeli PMAXTP nie ma czasu trwania {requested} min; dostępne: {available} min."
+pmaxtp_nothing_selected = "Żadna z żądanych wartości nie występuje w tabeli PMAXTP; zapisano całą tabelę."
+arch_not_published = "Serwer nie publikuje {count} z {total} żądanych plików; pozostałe pobrano."
+arch_export_partial = "Magazyn ma tylko {found} z {total} plików archiwów wybranego zbioru i lat; pozostałych nie wyeksportowano."
+
+# Problemy planu wykryte offline: z parametrami — pytanie zadane ponownie, bez — plan się nie uda.
+[problems]
+store_missing = "Magazyn IMGW ({path}) nie jest jeszcze utworzony. Utwórz go poleceniem „Utwórz magazyn IMGW” albo przez „retman init”."
+store_not_imgw = "Folder {path} zawiera inne pliki i nie jest magazynem IMGW. Wskaż pusty folder w ustawieniu store_dir sekcji [tools.imgwtools] pliku retman.toml."
+store_unsupported = "Magazyn IMGW w {path} ma nieobsługiwany schemat ({schema}). Zaktualizuj IMGWTools."
+pyarrow_missing = "Do szeregów w magazynie IMGW potrzebny jest pakiet pyarrow. Zainstaluj IMGWTools z dodatkiem store (imgwtools[store])."
+station_catalog_missing = "Magazyn IMGW nie ma katalogu stacji. Wybierz źródło „serwer” albo najpierw zbuduj katalog („Zbuduj katalog stacji IMGW”)."
+user_locations_missing = "Nie można odczytać pliku z położeniami stacji ({path})."
+user_locations_invalid = "Plik z położeniami stacji ({path}) musi być plikiem CSV w UTF-8 z kolumnami station_code, latitude i longitude."
+pmaxtp_cell_missing = "Magazyn nie ma zapisanej komórki PMAXTP {cell} (metoda {method}). Zapisz ją operacją pobrania PMAXTP z zapisem w magazynie."
+series_missing = "Magazyn IMGW nie ma szeregu zbioru {dataset}. Wybierz źródło „serwer” (pobierze archiwa i zbuduje szereg) albo zbuduj szereg z archiwów w magazynie."
+station_not_in_series = "Stacji {station} nie ma w szeregu zbioru {dataset} w magazynie. Wybierz inną stację, inny zbiór albo źródło „serwer”."
+variables_not_in_series = "Szereg nie ma wybranych zmiennych: {detail}"
+period_outside_coverage = "Magazyn ma dane tej stacji tylko za okres {first} – {last}; wybrany okres jest poza nim."
+archives_rejected = "IMGWTools odrzuca wybrany okres albo stację: {detail}"
+arch_plan_other_store = "Plan dotyczy innego magazynu ({plan_store}) niż skonfigurowany ({store}). Wybierz plan sprawdzony dla bieżącego magazynu."
+arch_nothing_to_export = "W magazynie nie ma archiwów zbioru {dataset} z lat {years}. Wybierz inne lata albo zbiór, albo najpierw pobierz dane do magazynu."
+arch_nothing_to_export_all = "W magazynie nie ma archiwów zbioru {dataset}. Wybierz inny zbiór albo najpierw pobierz dane do magazynu."
+proj_manifest_missing = "W folderze projektu nie ma pliku {path}. Najpierw utwórz projekt danych IMGW („Utwórz projekt danych IMGW”)."
+proj_manifest_invalid = "Nie można odczytać manifestu projektu {path} ({detail})."
+proj_inside_store = "Folder projektu ({project}) leży w magazynie IMGW ({store}); projekt musi być poza magazynem."
+proj_other_store = "Projekt wskazuje magazyn {manifest_store}, a w konfiguracji ([tools.imgwtools] store_dir) jest {store}. Wskaż projektowi bieżący magazyn („Wskaż projektowi bieżący magazyn IMGW”) albo zmień konfigurację."
+proj_task_exists = "W projekcie jest już zadanie „{name}” (zadania: {tasks}). Podaj inną nazwę."
+proj_task_missing = "W projekcie nie ma zadania „{name}” (zadania: {tasks})."
+proj_tasks_unknown = "W projekcie nie ma zadań: {names} (zadania projektu: {known})."
+proj_no_tasks = "Projekt nie ma żadnych zadań ({path}). Najpierw dodaj zadanie („Dodaj zadanie do projektu danych IMGW”)."
+proj_area_missing = "Nie znaleziono pliku obszaru {file}."
+proj_area_outside = "Plik obszaru {file} musi leżeć w folderze projektu ({project}), bez „..” w ścieżce i bez dowiązań symbolicznych."
+proj_area_invalid = "Plik {file} nie jest poprawnym plikiem GeoJSON z obszarem (Polygon, MultiPolygon, Feature albo FeatureCollection)."
+proj_catalog_missing = "Wybór stacji obszarem wymaga katalogu stacji dostawcy {provider} w magazynie. Najpierw zbuduj katalog („Zbuduj katalog stacji IMGW”)."
+proj_period_early = "Zbiór {dataset} zaczyna się od roku {first_year}; wybierz późniejsze lata."
+
+# Wiersze podglądu planu (offline).
+[preview.store]
+label = "Magazyn IMGW"
+value = "{path} (z konfiguracji)"
+
+[preview.station_matches]
+label = "Pasujące stacje"
+value = "{count} w katalogu magazynu"
+
+[preview.reference_present]
+label = "Położenia stacji (plik statyczny)"
+value = "{file} w folderze {path}"
+
+[preview.reference_absent]
+label = "Położenia stacji (plik statyczny)"
+value = "brak pliku {file} w folderze {path}; stacje bez położenia na listach zostaną bez współrzędnych"
+
+[preview.user_locations_file]
+label = "Plik z położeniami stacji"
+value = "{name} ({count} stacji)"
+
+[preview.all_hydro]
+label = "Zakres"
+value = "wszystkie stacje hydrologiczne IMGW-PIB (cała lista)"
+
+[preview.all_meteo]
+label = "Zakres"
+value = "wszystkie stacje meteorologiczne IMGW-PIB (cała lista)"
+
+[preview.all_synop]
+label = "Zakres"
+value = "wszystkie stacje synoptyczne IMGW-PIB (cała lista)"
+
+[preview.warnings_both]
+label = "Rodzaj ostrzeżeń"
+value = "hydrologiczne i meteorologiczne"
+
+[preview.pmaxtp_cell]
+label = "Komórka w magazynie"
+value = "{cell} (metoda {method}), punkt {latitude}°N, {longitude}°E"
+
+[preview.store_coverage]
+label = "Dane w magazynie"
+value = "{first} – {last}, luk: {gaps}"
+
+[preview.store_no_series]
+label = "Dane w magazynie"
+value = "brak szeregu tego zbioru; powstanie po pobraniu archiwów"
+
+[preview.store_no_station]
+label = "Dane w magazynie"
+value = "stacji nie ma jeszcze w szeregu; pojawi się po pobraniu archiwów"
+
+[preview.period_partial]
+label = "Okres w magazynie"
+value = "magazyn pokrywa tylko część wybranego okresu ({first} – {last})"
+
+[preview.archives]
+label = "Pliki archiwów do sprawdzenia"
+value = "najwyżej {count}: od {first} do {last}; rozmiar nieznany bez sprawdzenia w sieci"
+
+[preview.all_stations]
+label = "Stacje"
+value = "wszystkie stacje zbioru {dataset}"
+
+[preview.arch_file]
+label = "Archiwum"
+value = "{name}; rozmiar nieznany bez sprawdzenia w sieci"
+
+[preview.arch_files]
+label = "Archiwa"
+value = "liczba plików: {count} ({first} … {last}); rozmiar nieznany bez sprawdzenia w sieci"
+
+[preview.arch_span_hydrological]
+label = "Zakres danych"
+value = "{start} – {end} (lata hydrologiczne, od 1 listopada do 31 października)"
+
+[preview.arch_span_calendar]
+label = "Zakres danych"
+value = "{start} – {end} (lata kalendarzowe)"
+
+[preview.arch_plan]
+label = "Plan synchronizacji"
+value = "plików: {total}; do pobrania: {to_download} ({size}); aktualnych: {current}; sprawdzony {checked_at} UTC"
+
+[preview.arch_export]
+label = "Archiwa do eksportu"
+value = "w magazynie: {found} z {total} plików archiwów zbioru (format {format}); brakujących nie wyeksportuję"
+
+[preview.arch_export_found]
+label = "Archiwa do eksportu"
+value = "w magazynie: {found} plików archiwów zbioru (format {format})"
+
+[preview.arch_store_missing]
+label = "Stan magazynu"
+value = "folder nie istnieje — zostanie utworzony i zainicjowany"
+
+[preview.arch_store_empty]
+label = "Stan magazynu"
+value = "pusty folder — zostanie zainicjowany"
+
+[preview.arch_store_ready]
+label = "Stan magazynu"
+value = "magazyn już istnieje — operacja niczego nie zmieni"
+
+[preview.proj_manifest_new]
+label = "Manifest projektu"
+value = "{path} — zostanie utworzony"
+
+[preview.proj_manifest_exists]
+label = "Manifest projektu"
+value = "{path} — już istnieje, bez zmian"
+
+[preview.proj_manifest_write]
+label = "Manifest projektu"
+value = "{path} — zostanie zmieniony"
+
+[preview.proj_manifest_read]
+label = "Manifest projektu"
+value = "{path} — tylko odczyt"
+
+[preview.proj_store]
+label = "Magazyn projektu"
+value = "{path} (z manifestu projektu)"
+
+[preview.proj_store_other]
+label = "Magazyn projektu"
+value = "{path} (z manifestu projektu; w konfiguracji jest inny magazyn: {configured})"
+
+[preview.proj_store_same]
+label = "Zmiana magazynu"
+value = "projekt już wskazuje ten magazyn ({path}); przypięte pliki zostaną tylko zweryfikowane"
+
+[preview.proj_year_type_fixed]
+label = "Rodzaj roku"
+value = "hydrologiczny — jedyny, w jakim istnieją szeregi półroczne"
+
+[preview.proj_tasks]
+label = "Zadania w projekcie"
+value = "{count}: {names}"
+
+[preview.proj_download_pinned]
+label = "Przypięcia"
+value = "nowych zadań do pobrania i przypięcia: {new}; przypiętych do odtworzenia (przypięcia bez zmian): {pinned}"
+
+[preview.proj_download_upgrade]
+label = "Przypięcia"
+value = "wszystkie wybrane zadania ({count}) zostaną przypięte na nowo do najnowszych wersji — przypięcia się zmienią"
+
+[preview.proj_task_pinned]
+label = "Przypięte pliki"
+value = "zadanie „{name}” jest przypięte; pliki w magazynie zostają nietknięte"
+
+# Wiersze sprawdzenia dostępności (z siecią, osobna zgoda).
+[check]
+catalog_current = "Katalog stacji w magazynie jest aktualny."
+catalog_newer = "Listy stacji u źródła są nowsze niż katalog; zostanie zbudowany od nowa."
+catalog_missing = "Katalogu stacji nie ma jeszcze w magazynie; zostanie zbudowany."
+catalog_unverifiable = "Nie da się porównać katalogu z listami stacji u źródła."
+catalog_check_failed = "Nie udało się sprawdzić list stacji u źródła."
+sources = "Listy stacji u źródła: {reachable} z {total} dostępne."
+from_store = "Dane pochodzą z magazynu; sieć nie jest potrzebna."
+archives = "Do pobrania {to_download} z {total} plików ({size} MB); {current} już aktualnych w magazynie."
+archives_unsized = "Do pobrania {to_download} z {total} plików (serwer nie podał rozmiaru); {current} już aktualnych w magazynie."
+items_unpublished = "Nieopublikowane u źródła: {count} plików."
+items_failed = "Nie udało się sprawdzić: {count} plików."
+arch_summary = "Plików: {total}; do pobrania: {to_download} ({size}); już aktualnych: {current}."
+arch_size_unknown = "Liczba plików bez podanego przez serwer rozmiaru: {count}; rozmiar do pobrania jest niepełny."
+arch_unpublished = "Liczba plików, których serwer nie publikuje: {count}."
+arch_no_signal = "Liczba plików bez nagłówków porównania na serwerze: {count}; nie wiadomo, czy są aktualne."
+arch_failed = "Liczba plików, których nie udało się sprawdzić: {count} ({detail})."
+arch_series = "Po pobraniu zostaną zbudowane albo przebudowane szeregi: {names}."
+proj_state_missing = "Zadanie „{name}”: do pobrania i przypięcia ({detail})."
+proj_state_newer = "Zadanie „{name}”: są nowsze dane ({detail})."
+proj_state_current = "Zadanie „{name}”: dane aktualne ({detail})."
+proj_state_unverifiable = "Zadanie „{name}”: aktualności nie da się sprawdzić ({detail})."
+proj_state_failed = "Zadanie „{name}”: sprawdzenie nie powiodło się ({detail})."

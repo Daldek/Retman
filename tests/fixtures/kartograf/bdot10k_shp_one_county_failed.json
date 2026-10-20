@@ -1,0 +1,54 @@
+{
+ "schema": "kartograf-download/1",
+ "files": [
+  {
+   "unit": "0208",
+   "country": "PL",
+   "file": {
+    "path": "<store>/landcover/pl_bdot10k_shp/teryt/0208.zip",
+    "status": "new",
+    "label": "2026-10-19",
+    "sha256": "716577db035f73333f5a3ded56970fc712b67efdbf6536e2ddaf20288b78f125",
+    "version_path": "<store>/landcover/pl_bdot10k_shp/versions/teryt/2026-10-19_716577db/0208.zip",
+    "newer": null,
+    "unverified": null,
+    "same_as": null
+   }
+  },
+  {
+   "unit": "0261",
+   "country": "PL",
+   "file": {
+    "path": "<store>/landcover/pl_bdot10k_shp/teryt/0261.zip",
+    "status": "new",
+    "label": "2026-10-19",
+    "sha256": "716577db035f73333f5a3ded56970fc712b67efdbf6536e2ddaf20288b78f125",
+    "version_path": "<store>/landcover/pl_bdot10k_shp/versions/teryt/2026-10-19_716577db/0261.zip",
+    "newer": null,
+    "unverified": null,
+    "same_as": null
+   }
+  }
+ ],
+ "raw": [],
+ "inputs": [],
+ "failed": [
+  {
+   "unit": "0224",
+   "country": "PL",
+   "error": "BDOT10k TERYT 0224: HTTP 500",
+   "kind": "download"
+  }
+ ],
+ "stale": [],
+ "superseded": [],
+ "summary": null,
+ "notices": [
+  {
+   "level": "info",
+   "code": "unit_list",
+   "text": "bdot10k: powiaty obszaru wg PRG (3): 0208, 0224, 0261"
+  }
+ ],
+ "ok": false
+}

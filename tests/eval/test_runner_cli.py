@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from retman.backends.base import Decision
 from retman.config import config_template
+from retman.eval.dataset import DEFAULT_COMMANDS, load_commands
 from retman.eval.runner import main
 from retman.testing import FakeDecisionBackend
 
@@ -20,6 +22,7 @@ def test_cli_validates_packaged_dataset_filters_and_writes_private_results(
     )
     raw = tmp_path / "raw.jsonl"
     report = tmp_path / "report.md"
+    repeat = 2
     args = [
         "--config",
         str(config),
@@ -28,7 +31,7 @@ def test_cli_validates_packaged_dataset_filters_and_writes_private_results(
         "--tags",
         "near_miss",
         "--repeat",
-        "2",
+        str(repeat),
         "--target-error",
         "0.01",
         "--output",
@@ -40,7 +43,14 @@ def test_cli_validates_packaged_dataset_filters_and_writes_private_results(
     records = [
         json.loads(line) for line in raw.read_text(encoding="utf-8").splitlines()
     ]
-    assert len(records) == 10
+    # The filters pick the near-miss commands the packaged dataset marks out of scope
+    selected = [
+        command
+        for command in load_commands(DEFAULT_COMMANDS)
+        if command.operation == "out_of_scope" and "near_miss" in command.tags
+    ]
+    assert selected
+    assert len(records) == repeat * len(selected)
     assert all(record["outcome"] == "out_of_scope" for record in records)
     assert [record["repeat"] for record in records[:2]] == [0, 1]
     text = report.read_text(encoding="utf-8")
@@ -50,13 +60,12 @@ def test_cli_validates_packaged_dataset_filters_and_writes_private_results(
     assert secret_url not in raw.read_text(encoding="utf-8") + text
     assert str(tmp_path) not in raw.read_text(encoding="utf-8") + text
 
-    assert (
-        main(
-            args,
-            backend=FakeDecisionBackend({"download_dem_sheet": "download_dem_sheet"}),
-        )
-        == 4
-    )
+    # Above nine operations the model chooses a category first, then the operation
+    rules: dict[str, str | Decision] = {
+        "spatial_data": "spatial_data",
+        "download_dem_sheet": "download_dem_sheet",
+    }
+    assert main(args, backend=FakeDecisionBackend(rules)) == 4
     assert "Naruszenia W-03" in report.read_text(encoding="utf-8")
     assert any(
         record["outcome"] == "plan"

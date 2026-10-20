@@ -2,12 +2,15 @@
 
 import json
 from dataclasses import dataclass
+from datetime import date
 from importlib import resources
 from pathlib import Path
 from typing import Any
 
+from retman.eval.stations import catalog_lookup
 from retman.exceptions import EvalDatasetError
-from retman.extractors import EXTRACTORS, VALIDATORS
+from retman.extractors import read_command, validate_value
+from retman.extractors.base import ExtractionContext
 from retman.registry.loader import discover_manifests
 from retman.registry.manifest import OperationSpec, ParamSpec
 
@@ -107,11 +110,13 @@ def load_commands(path: Path) -> list[EvalCommand]:
     return commands
 
 
-def _valid_free(param: ParamSpec, value: Any, command: str) -> str | None:
+def _valid_free(
+    param: ParamSpec, value: Any, command: str, context: ExtractionContext
+) -> str | None:
     """Use the pipeline's extractor registry and matching/acceptance semantics."""
     accepts = param.get("accepts")
     values = value if param.get("multiple") and isinstance(value, list) else [value]
-    matches = EXTRACTORS[param["extractor"]](command)
+    matches = read_command(param["extractor"], command, context)
     readings = [
         reading.value
         for match in matches
@@ -122,7 +127,7 @@ def _valid_free(param: ParamSpec, value: Any, command: str) -> str | None:
     for item in values:
         if accepts and (not isinstance(item, dict) or item.get("type") not in accepts):
             return "area form outside accepts"
-        if VALIDATORS[param["extractor"]](item) is not None:
+        if validate_value(param["extractor"], item, context) is not None:
             return "invalid extracted value"
         bounds = param.get("range")
         if bounds is not None and (
@@ -148,8 +153,8 @@ def _applicable(param: ParamSpec, values: dict[str, Any]) -> bool | None:
 
 def validate_commands(commands: list[EvalCommand]) -> None:
     """Check per-entry validity against all shipped manifests, installed or not."""
-    operations: dict[str, OperationSpec] = {
-        operation["id"]: operation
+    operations: dict[str, tuple[str, OperationSpec]] = {
+        operation["id"]: (manifest["tool"], operation)
         for manifest, _ in discover_manifests()
         for operation in manifest["operations"]
     }
@@ -170,7 +175,9 @@ def validate_commands(commands: list[EvalCommand]) -> None:
             if entry.params or entry.expect_clarify:
                 problems.append(f"{identifier}: out_of_scope cannot have parameters")
             continue
-        operation = operations.get(entry.operation)
+        found = operations.get(entry.operation)
+        operation = found[1] if found is not None else None
+        tool = found[0] if found is not None else ""
         if operation is None:
             problems.append(f"{identifier}: unknown operation {entry.operation}")
             continue
@@ -197,10 +204,19 @@ def validate_commands(commands: list[EvalCommand]) -> None:
                 continue
             if "default" in param and name in clarified and name not in supplied:
                 problems.append(f"{identifier}: default parameter {name} is redundant")
+            # An optional parameter (no ``required``, no ``default``) is left unset
+            # when the command does not state it, and Retman never asks about it:
+            # it is no expectation either way, and cannot be a clarification
+            optional = not param.get("required") and "default" not in param
+            if optional and name in clarified and name not in supplied:
+                problems.append(
+                    f"{identifier}: optional parameter {name} is never asked"
+                )
             if (
                 applicable is True
                 and name not in supplied | clarified
                 and "default" not in param
+                and not optional
             ):
                 problems.append(f"{identifier}: missing applicable parameter {name}")
             if name not in supplied:
@@ -213,7 +229,21 @@ def validate_commands(commands: list[EvalCommand]) -> None:
                 if type(value) is not bool:
                     problems.append(f"{identifier}: {name} must be boolean")
             else:
-                invalid = _valid_free(param, value, entry.command)
+                scope: dict[str, Any] = {}
+                for other_name, other in params.items():
+                    if other["type"] == "choice" and other_name in values:
+                        scope.update(
+                            other.get("option_meta", {}).get(values[other_name], {})
+                        )
+                context = ExtractionContext(
+                    tool=tool,
+                    settings={},
+                    project_dir=Path("."),
+                    scope=scope,
+                    lookup=catalog_lookup,
+                    today=date.today(),
+                )
+                invalid = _valid_free(param, value, entry.command, context)
                 if invalid:
                     problems.append(f"{identifier}: {name} {invalid}")
     if problems:

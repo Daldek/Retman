@@ -30,14 +30,19 @@ dev = [
 [project.scripts]
 retman = "retman.cli:main"
 retman-eval = "retman.eval.runner:main"
+retman-scaffold = "retman.devtools.scaffold:main"
 
 [project.urls]
 Repository = "https://github.com/Daldek/Retman"
 
 [dependency-groups]
 # Tools used by handler tests and manual smoke runs (ARCHITECTURE 3.2.7, ADR-003).
-# Not a runtime dependency of Retman (ARCHITECTURE 9.3).
-tools = ["kartograf @ git+https://github.com/Daldek/Kartograf@v0.7.2"]
+# Not a runtime dependency of Retman (ARCHITECTURE 9.3). Pushed release commits
+# until the tags v0.8.0 and v3.0.0 exist; then pin the tags.
+tools = [
+    "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169",
+    "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@0d98f3babeeeee49b2146a977b62bfa92114beea",
+]
 
 [tool.hatch.version]
 path = "retman/__init__.py"
@@ -65,9 +70,14 @@ python_version = "3.12"
 warn_unused_ignores = true
 warn_redundant_casts = true
 check_untyped_defs = true
+# Folders without __init__.py are no packages: tests/tools/<tool>/ carries the
+# tool's name, and as a PEP 420 namespace package it would shadow an installed
+# tool that ships no py.typed (imgwtools), so `import imgwtools` in a test would
+# resolve to the test folder and every attribute of the tool would be "missing"
+namespace_packages = false
 
 [[tool.mypy.overrides]]
-module = ["kartograf", "kartograf.*"]
+module = ["kartograf", "kartograf.*", "imgwtools", "imgwtools.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

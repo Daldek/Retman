@@ -34,6 +34,23 @@ results_dir = "retman-output"  # results folder created inside the project folde
 # The optional "enabled" list only NARROWS that set.
 # enabled = ["kartograf"]
 
+[tools.kartograf]
+# The store: every downloaded file is kept here as an immutable version and shared by all
+# projects. Absolute path without symbolic links, on a disk with hard links (not FAT/exFAT).
+# Keep it on the same disk as the IMGWTools store, in a separate folder.
+store_dir = @KARTOGRAF_STORE_DIR@
+# Metadata cache (SQLite). Keep it on a LOCAL disk, never on a network share.
+cache_file = @KARTOGRAF_CACHE_FILE@
+workers = 4         # parallel transfers
+update = "local"    # "local" = use stored versions, ask no source | "upgrade" = also download newer versions | "force" = download again
+
+[tools.imgwtools]
+# The IMGWTools store (archives, series, station catalog): a separate folder next to the
+# Kartograf store; neither store may contain the other. Absolute path without symbolic links.
+store_dir = @IMGWTOOLS_STORE_DIR@
+# Optional reference files for the station catalog (hydro_stations_locations.csv); may stay empty.
+reference_data_dir = @IMGWTOOLS_REFERENCE_DIR@
+
 [log]
 journal_commands = true    # store command texts and answers in the project journal
 diagnostic_level = "info"  # technical log in the user's log directory: "debug" | "info" | "warning"
@@ -43,4 +60,4 @@ diagnostic_level = "info"  # technical log in the user's log directory: "debug" 
 # in one file, to build and tune the test set (ARCHITECTURE 5.4, rozdz. 10). Separate from
 # the project journal; stays on this computer, nothing is sent anywhere. retman init asks.
 collect_commands = @COLLECT_COMMANDS@
-collect_path = '@COLLECT_PATH@'
+collect_path = @COLLECT_PATH@

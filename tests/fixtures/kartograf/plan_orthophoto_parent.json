@@ -1,0 +1,78 @@
+{
+ "schema": "kartograf-plan/1",
+ "store": "<store>",
+ "checked_at": "2026-10-19T20:07:22+00:00",
+ "kartograf_version": "0.8.0",
+ "items": [
+  {
+   "track": "pl_sheet",
+   "segment": "orto/pl_1992",
+   "hierarchy": "N-34/130/D/d/2/1",
+   "name": "N-34-130-D-d-2-1.tif",
+   "unit": "N-34-130-D-d-2-1",
+   "local_label": null,
+   "local_sha256": null,
+   "available_label": "2025-04-26_82712",
+   "available_signal": {
+    "url": "https://opendata.geoportal.gov.pl/ortofotomapa/82712/82712_1482341_N-34-130-D-d-2-1.tif",
+    "date": "2025-04-26",
+    "pzgik_date": "2025-09-24"
+   },
+   "status": "missing",
+   "error": null
+  },
+  {
+   "track": "pl_sheet",
+   "segment": "orto/pl_1992",
+   "hierarchy": "N-34/130/D/d/2/2",
+   "name": "N-34-130-D-d-2-2.tif",
+   "unit": "N-34-130-D-d-2-2",
+   "local_label": null,
+   "local_sha256": null,
+   "available_label": "2025-04-26_82712",
+   "available_signal": {
+    "url": "https://opendata.geoportal.gov.pl/ortofotomapa/82712/82712_1482342_N-34-130-D-d-2-2.tif",
+    "date": "2025-04-26",
+    "pzgik_date": "2025-09-24"
+   },
+   "status": "missing",
+   "error": null
+  },
+  {
+   "track": "pl_sheet",
+   "segment": "orto/pl_1992",
+   "hierarchy": "N-34/130/D/d/2/3",
+   "name": "N-34-130-D-d-2-3.tif",
+   "unit": "N-34-130-D-d-2-3",
+   "local_label": null,
+   "local_sha256": null,
+   "available_label": "2025-04-26_82712",
+   "available_signal": {
+    "url": "https://opendata.geoportal.gov.pl/ortofotomapa/82712/82712_1482343_N-34-130-D-d-2-3.tif",
+    "date": "2025-04-26",
+    "pzgik_date": "2025-09-24"
+   },
+   "status": "missing",
+   "error": null
+  },
+  {
+   "track": "pl_sheet",
+   "segment": "orto/pl_1992",
+   "hierarchy": "N-34/130/D/d/2/4",
+   "name": "N-34-130-D-d-2-4.tif",
+   "unit": "N-34-130-D-d-2-4",
+   "local_label": null,
+   "local_sha256": null,
+   "available_label": "2025-04-26_82712",
+   "available_signal": {
+    "url": "https://opendata.geoportal.gov.pl/ortofotomapa/82712/82712_1482344_N-34-130-D-d-2-4.tif",
+    "date": "2025-04-26",
+    "pzgik_date": "2025-09-24"
+   },
+   "status": "missing",
+   "error": null
+  }
+ ],
+ "notices": [],
+ "ok": true
+}

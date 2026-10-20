@@ -10,7 +10,13 @@ from pathlib import Path
 from retman.exceptions import ManifestError
 from retman.i18n.loader import load_texts
 from retman.registry.manifest import ManifestSpec, validate_manifest
-from retman.registry.operation import Operation
+from retman.registry.operation import (
+    MAX_OPTIONS,
+    Operation,
+    category_groups,
+    category_text,
+    two_stage,
+)
 
 _VERSION = re.compile(r"(>=|<=|==|!=|>|<)\s*(\d+(?:\.\d+)*)\Z")
 _RELEASE = re.compile(r"\d+(?:\.\d+)*")
@@ -89,8 +95,29 @@ def load_operations(
         if not version_matches(version, manifest["supported_versions"]):
             continue
         for spec in manifest["operations"]:
-            op = Operation(spec, tool, version, translations[language])
+            op = Operation(
+                spec, tool, version, translations[language], manifest.get("client")
+            )
             operations[op.id] = op
-    if len(operations) + 1 > 10:
-        raise ManifestError("more than 10 operation options including out_of_scope")
+    _check_category_limits(operations)
     return operations
+
+
+def _check_category_limits(operations: dict[str, Operation]) -> None:
+    """More operations than one question offers need categories (ARCHITECTURE 3.4).
+
+    The model then chooses a category and afterwards an operation of it, each
+    among at most ``MAX_OPTIONS`` options besides "out of scope".
+    """
+    if not two_stage(operations):
+        return
+    groups = category_groups(operations.values())
+    if len(groups) > MAX_OPTIONS:
+        raise ManifestError(f"more than {MAX_OPTIONS} operation categories")
+    for category, members in groups.items():
+        if len(members) > MAX_OPTIONS:
+            raise ManifestError(
+                f"category {category}: more than {MAX_OPTIONS} operations"
+            )
+        for suffix in ("label", "description"):
+            category_text(members, category, suffix)

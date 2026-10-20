@@ -4,10 +4,18 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from retman.registry.manifest import ToolAudit
+
 
 @dataclass
 class Result:
-    """Outcome of execution, including outputs by data kind and a short summary."""
+    """Outcome of execution, including outputs by data kind and a short summary.
+
+    ``warnings`` are the translated notices of the operation (partial results,
+    the tool's data-quality and licence notices); callers must show them.
+    ``error_code`` is the tool's stable error code when a tool error failed the
+    operation; ``tool`` is the audit block of the catalog commands that ran.
+    """
 
     ok: bool
     number: int
@@ -20,10 +28,15 @@ class Result:
     warnings: list[str] = field(default_factory=list)
     error: str | None = None
     summary: str = ""
+    error_code: str | None = None
+    tool: ToolAudit | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Represent the public result with JSON-compatible values."""
-        return {
+        """Represent the public result with JSON-compatible values.
+
+        ``error_code`` and ``tool`` appear only when they carry information.
+        """
+        record: dict[str, Any] = {
             "ok": self.ok,
             "number": self.number,
             "operation": self.operation,
@@ -39,3 +52,8 @@ class Result:
             "error": self.error,
             "summary": self.summary,
         }
+        if self.error_code is not None:
+            record["error_code"] = self.error_code
+        if self.tool is not None:
+            record["tool"] = self.tool
+        return record

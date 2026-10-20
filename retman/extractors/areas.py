@@ -7,9 +7,10 @@ from typing import Any, TypeGuard
 from retman.extractors.base import Match, Reading
 from retman.extractors.paths import extract_paths
 
-# Copied from Kartograf 0.7.2: core/sheet_parser.py:82-93,109-112,185-226,
-# 308-330 and core/parser_2000.py:86-93,188-204. This module must not import
-# Kartograf: merely interpreting the user's command must work without tools.
+# Copied from Kartograf 0.8.0: core/sheet_parser.py:88-117,197-238,320-346 and
+# core/parser_2000.py:87-93,188-201 (PL-2000 as in 0.7.2; the 8-part PL-1992
+# level, the true-orthophoto sheets, is new in 0.8.0). This module must not
+# import Kartograf: merely interpreting the user's command must work without tools.
 _PL1992_PATTERNS = (
     r"[A-Z]-[0-9]{1,2}",
     r"[A-Z]-[0-9]{1,2}-[A-D]",
@@ -18,6 +19,7 @@ _PL1992_PATTERNS = (
     r"[A-Z]-[0-9]{1,2}-[0-9]{1,3}-[A-D]-[a-d]",
     r"[A-Z]-[0-9]{1,2}-[0-9]{1,3}-[A-D]-[a-d]-[1-4]",
     r"[A-Z]-[0-9]{1,2}-[0-9]{1,3}-[A-D]-[a-d]-[1-4]-[1-4]",
+    r"[A-Z]-[0-9]{1,2}-[0-9]{1,3}-[A-D]-[a-d]-[1-4]-[1-4]-[1-4]",
 )
 _PL2000_PATTERNS = (
     r"[5-8]\.[0-9]{1,3}\.[0-9]{1,2}",
@@ -26,7 +28,7 @@ _PL2000_PATTERNS = (
     r"[5-8]\.[0-9]{1,3}\.[0-9]{1,2}\.[0-9]{2}\.[1-4]",
     r"[5-8]\.[0-9]{1,3}\.[0-9]{1,2}\.[0-9]{2}\.[1-4]\.[1-4]",
 )
-_PL1992_CANDIDATE = r"[A-Za-z]-[0-9]{1,2}(?:-[A-Za-z0-9]{1,3}){0,5}"
+_PL1992_CANDIDATE = r"[A-Za-z]-[0-9]{1,2}(?:-[A-Za-z0-9]{1,3}){0,6}"
 _PL2000_CANDIDATE = r"[5-8]\.[0-9]{1,3}\.[0-9]{1,2}(?:\.[0-9]{1,2}){0,3}"
 _SHEET_RE = re.compile(
     rf"(?<![\w.-])(?:{_PL1992_CANDIDATE}|{_PL2000_CANDIDATE})(?![\w-]|\.[\w])"
@@ -38,7 +40,14 @@ _TERYT_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Kartograf 0.7.2: core/bbox.py:36-43 and cli/_parser.py:49-90,170-189.
+# Geometry files Kartograf reads. GeoJSON and GML are still recognised in a
+# command, so the user is told why they are not accepted (W-02) instead of the
+# area looking missing.
+_GEOMETRY_EXTENSIONS = (".shp", ".gpkg")
+_GEOMETRY_READ_EXTENSIONS = (*_GEOMETRY_EXTENSIONS, ".geojson", ".gml")
+
+# Kartograf 0.8.0: core/bbox.py:36-52 (the CLI parser of ``--bbox`` moved into the
+# command catalog: ``min_x,min_y,max_x,max_y`` plus ``bbox_crs``).
 # The BBox fields follow GIS/CLI order: x = easting or longitude; y = northing
 # or latitude (pyproj's always_xy, not EPSG:2180's official axis names).
 _NUMBER = r"[0-9]+(?:[.,][0-9]{1,3})?"
@@ -272,7 +281,7 @@ def extract_area(text: str) -> list[Match]:
             matches.append(Match(found.start(), found.end(), readings))
     for match in extract_paths(text):
         path = match.readings[0].value
-        if path.lower().endswith((".shp", ".gpkg")):
+        if path.lower().endswith(_GEOMETRY_READ_EXTENSIONS):
             matches.append(
                 Match(
                     match.start,
@@ -318,11 +327,16 @@ def validate_area(value: Any) -> str | None:
         )
     if area_type == "geometry":
         path = value.get("path")
-        return (
-            None
-            if isinstance(path, str) and path.lower().endswith((".shp", ".gpkg"))
-            else "extractors.errors.invalid_geometry"
-        )
+        if not isinstance(path, str) or not path.lower().endswith(_GEOMETRY_EXTENSIONS):
+            return "extractors.errors.invalid_geometry"
+        # The pipeline fills the layer in: None for a shapefile, the feature
+        # table name for a GeoPackage
+        layer = value.get("layer")
+        if layer is not None and (
+            not isinstance(layer, str) or not layer or path.lower().endswith(".shp")
+        ):
+            return "extractors.errors.invalid_geometry_layer"
+        return None
     if area_type != "bbox":
         return "extractors.errors.invalid_area"
     numbers = (

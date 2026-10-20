@@ -1,6 +1,6 @@
 # Retman — architektura
 
-> **Status dokumentu:** szkic (2026-10-11) · **Licencja:** MIT · **Język dokumentu:** polski
+> **Status dokumentu:** szkic (2026-10-11, uzupełniony 2026-10-19) · **Licencja:** MIT · **Język dokumentu:** polski
 > **Wymagania i zakres produktu:** [PRD.md](PRD.md)
 
 Ten dokument opisuje, **jak** zrealizować wymagania z PRD. Oznaczenia w nawiasach kwadratowych,
@@ -14,20 +14,22 @@ np. [W-02] albo [N-03], wskazują wymagania z PRD, które dana część realizuj
 
 | Zasada | Co oznacza w praktyce | Wymagania |
 | --- | --- | --- |
-| **Narzędzia nic nie wiedzą o Retmanie** | Hydrograf i reszta nie zawierają żadnego kodu, plików ani zależności związanych z Retmanem. Retman korzysta wyłącznie z ich publicznego API (p. 3.2). Jedyny możliwy wyjątek w przyszłości: opcjonalny panel czatu w GUI (p. 7.4). | [N-03] |
+| **Narzędzia nic nie wiedzą o Retmanie** | Hydrograf i reszta nie zawierają żadnego kodu, plików ani zależności związanych z Retmanem. Retman korzysta wyłącznie z ich publicznego API Pythona (p. 3.2; nie przez ich serwery MCP, p. 3.2.1). Jedyny możliwy wyjątek w przyszłości: opcjonalny panel czatu w GUI (p. 7.4). | [N-03] |
 | **Retman nie zawiera modelu** | Model to osobna usługa (np. LM Studio, Ollama, basal-serve, API dostawcy), z którą Retman łączy się przez API. Kod nie zależy od konkretnego modelu — wybór modelu to tylko konfiguracja (p. 3.3). | [N-02], [N-10] |
 | **Liczby liczy kod, nie model** | Model wybiera operację i opcje. Współrzędne, daty, prawdopodobieństwa i inne wartości wyciąga i sprawdza kod. | [W-01], [W-08] |
 | **Listy dla wyborów, liczby dla wartości** | Metody czy typy analiz to wybór z listy. Wartości ciągłe (np. prawdopodobieństwo) to liczby, nie listy. | [W-08] |
 | **Nie zgadywać po cichu** | Gdy pewność jest za niska albo brakuje danych, Retman dopytuje. Gdy pasuje kilka wcześniejszych wyników, pyta, którego użyć (p. 5.3). Wartości domyślne i wcześniejsze wyniki są zawsze pokazane w planie. | [W-02], [W-04], [W-07] |
-| **Zawsze potwierdzenie przed wykonaniem** | Użytkownik widzi plan i zatwierdza go. W wersjach 0.x bez wyjątków (p. 6.3). | [W-05] |
+| **Zawsze potwierdzenie przed wykonaniem** | Użytkownik widzi plan i zatwierdza go. W wersjach 0.x bez wyjątków (p. 6.3). Potwierdzenia nie da się wczytać z zapisanego planu. | [W-05] |
+| **Bez sieci przed potwierdzeniem** | Przed `plan.confirm()` Retman nie woła żadnej funkcji narzędzia z efektem sieciowym ani zapisem: planowanie to ekstraktory w kodzie, walidacja offline przez narzędzie i podgląd planu, a kod planowania widzi tylko połowę offline klienta narzędzia (p. 3.2.4). Sieć dopiero po potwierdzeniu planu albo — jako osobny krok z własną zgodą — w sprawdzeniu dostępności (p. 6.5). Serwer modelu jest poza tą regułą (N-04). | [N-12], [W-17] |
 
 ### 1.2. Świadome ograniczenia projektowe
 
 - **Model nie planuje łańcuchów.** Łańcuchy (v0.2) buduje kod na podstawie zależności między
   operacjami, a model wybiera tylko cel i parametry (p. 4.5).
-- **Dokumentacja narzędzi nie jest czytana w trakcie działania.** Służy do generowania
-  i sprawdzania opisów (p. 3.2.3).
-- **Brak trybu wykonania bez potwierdzenia** w wersjach 0.x.
+- **Katalogi i dokumentacja narzędzi nie są czytane w trakcie działania.** Służą do szkiców
+  i kontroli zgodności opisów (p. 3.2.3); opcje w manifestach są statyczne.
+- **Brak trybu wykonania bez potwierdzenia** w wersjach 0.x i brak sieci narzędzi przed
+  potwierdzeniem, poza sprawdzeniem dostępności na życzenie.
 
 ### 1.3. Język
 
@@ -45,14 +47,14 @@ tłumaczeń, a kod odwołuje się do nich przez angielskie klucze.
 
 ## 2. Przegląd działania
 
-Każde polecenie przechodzi przez sześć kroków [W-01], [W-02], [W-04], [W-05]:
+Każde polecenie przechodzi przez sześć kroków [W-01], [W-02], [W-04], [W-05], [W-17], [N-12]:
 
 ```
  Polecenie użytkownika
         │
         ▼
- 1 ROZPOZNANIE OPERACJI ──── model decyzyjny: "którą operację wybrać?" (choice)
-        │
+ 1 ROZPOZNANIE OPERACJI ──── model decyzyjny: "którą operację wybrać?" (choice);
+        │                    gdy operacji jest więcej niż 9: najpierw kategoria, potem operacja (p. 3.4)
         ▼
  2 PARAMETRY Z LIST ──────── model decyzyjny: "który rodzaj danych? jaka metoda?" (choice)
         │
@@ -60,14 +62,14 @@ Każde polecenie przechodzi przez sześć kroków [W-01], [W-02], [W-04], [W-05]
  3 PARAMETRY SWOBODNE ───── kod: ekstraktory (współrzędne, daty, prawdopodobieństwa, stacje, pliki)
         │                    + przestrzeń robocza (wcześniejsze wyniki, rozdz. 5)
         ▼
- 4 WALIDACJA I DOPYTANIE ── czego brakuje? co ma za niską pewność? → pytanie do użytkownika
-        │
+ 4 WALIDACJA I DOPYTANIE ── czego brakuje? co ma za niską pewność? → pytanie do użytkownika;
+        │                    kompletny plan sprawdza offline narzędzie (podgląd) — odrzuca → pytanie ponownie
         ▼
  5 PLAN + POTWIERDZENIE ─── "Pobiorę dobowe opady ze stacji Poznań (2000–2020). Wykonać?"
-        │
-        ▼
- 6 WYKONANIE + OPIS ─────── handler w Retmanie → publiczne API narzędzia → wynik
-                             → zapis w przestrzeni roboczej → (opcjonalnie) opis po polsku przez model tekstowy
+        │                    opcjonalnie `s`: sprawdzenie dostępności (sieć, osobna zgoda, p. 6.5)
+        ▼  ─────────────── do tego miejsca bez sieci narzędzi (N-12) ───────────────
+ 6 WYKONANIE + OPIS ─────── wywołania albo handler w Retmanie → publiczne API narzędzia → wynik
+                            → zapis w przestrzeni roboczej → (opcjonalnie) opis po polsku przez model tekstowy
 ```
 
 ### Przykład (pojedyncza operacja, model decyzyjny: basal)
@@ -79,9 +81,9 @@ Polecenie: *„Pobierz dobowe opady ze stacji Poznań z lat 2000–2020”*
 | ① | basal | operacja = `fetch_imgw_data` (pewność 0.96) |
 | ② | basal | `variable` = `precipitation` (0.98), `interval` = `daily` (0.94) |
 | ③ | ekstraktory | stacja „Poznań” → dopasowanie do listy stacji IMGW; okres = 2000-01-01 – 2020-12-31 |
-| ④ | walidator | wszystkie wymagane parametry są, pewności powyżej progów; gdyby nazwie „Poznań” odpowiadało kilka stacji, Retman dopyta, o którą chodzi |
-| ⑤ | Retman | pokazuje plan i czeka na potwierdzenie |
-| ⑥ | handler IMGWTools w Retmanie | wywołuje IMGWTools, zapisuje wynik w przestrzeni roboczej (rozdz. 5) |
+| ④ | walidator, narzędzie | wszystkie wymagane parametry są, pewności powyżej progów; gdyby nazwie „Poznań” odpowiadało kilka stacji, Retman dopyta, o którą chodzi; kompletny plan narzędzie sprawdza offline (np. rok przed początkiem serii) |
+| ⑤ | Retman | pokazuje plan (z wierszami podglądu) i czeka na potwierdzenie; użytkownik może najpierw zlecić sprawdzenie dostępności (`s`) |
+| ⑥ | wykonawca wywołań IMGWTools w Retmanie | wykonuje komendy katalogu IMGWTools, zapisuje wynik w przestrzeni roboczej (rozdz. 5) |
 
 > Przykład jest poglądowy: nazwy operacji i parametrów zostaną ustalone razem z listą operacji (PRD).
 
@@ -99,27 +101,30 @@ to łańcuchy w v0.2 (p. 4.5).
 ```
 retman/
 ├── core/
-│   ├── pipeline.py          # steps ①–⑥, main logic
-│   ├── plan.py              # Plan object (operation + parameters + confidences + sources)
+│   ├── pipeline.py          # steps ①–⑥, main logic; Retman.check() (p. 6.5)
+│   ├── plan.py              # Plan object (operation + parameters + confidences + sources, review state, consent)
 │   ├── result.py            # Result object (p. 7.3)
+│   ├── check.py             # CheckReport: the availability check report (p. 6.5)
+│   ├── geometry.py          # geometry files as areas: GeoPackage layers (stdlib sqlite3), checksums (p. 6.1)
 │   ├── workspace.py         # project results: numbering, lookup by kind, input selection (ch. 5)
 │   ├── journal.py           # project journal and audit data (p. 5.4)
+│   ├── collection.py        # optional collection of commands from all projects (p. 5.4, ADR-010)
 │   └── dialog.py            # questions and answers, independent of the user interface (p. 6.4)
 ├── registry/
-│   ├── operation.py         # internal Operation and parameter model
-│   ├── manifest.py          # manifest schema and validation (p. 4.1)
-│   └── loader.py            # loading tool descriptions, checking installed tool versions
+│   ├── operation.py         # internal Operation and parameter model; two-stage recognition helpers (p. 3.4)
+│   ├── manifest.py          # manifest schema, hook output types and validation (p. 4.1)
+│   └── loader.py            # loading tool descriptions, checking installed tool versions, category limits
 ├── adapters/
-│   └── manifest_adapter.py  # generic adapter: params → handler → Result
-├── tools/                   # descriptions and handlers for each supported tool (p. 3.2.2)
+│   ├── catalog.py           # command layer: CatalogCall, ToolRun, ToolError, PlanClient/RunClient, ToolContext, run_calls (p. 3.2.4)
+│   └── manifest_adapter.py  # generic adapter: params → handler/calls → Result; offline preview, availability check
+├── tools/                   # descriptions, call builders, clients and handlers for each supported tool (p. 3.2.2)
 │   ├── hydrograf/
 │   ├── hydrolog/
 │   ├── imgwtools/
 │   ├── kartograf/
 │   └── basichydraulics/
-├── devtools/
-│   └── scaffold.py          # draft generation and API drift check (p. 3.2.3)
-├── kinds.py                 # registry of data kinds and their file formats (p. 3.2.6)
+├── devtools/                # retman-scaffold: list, draft and the drift check (p. 3.2.3)
+├── kinds.py                 # registry of data kinds and their file validators (p. 3.2.6)
 ├── i18n/
 │   ├── loader.py            # loading translation files
 │   └── pl.toml              # Polish texts for core messages
@@ -129,13 +134,18 @@ retman/
 │   ├── basal.py             # basal-serve API
 │   └── native/              # providers with their own API (optional extras, v0.2)
 ├── extractors/
-│   ├── coordinates.py       # geographic coordinates and PL-1992
-│   ├── areas.py             # areas: map sheet codes (godło), bounding boxes, TERYT codes (ADR-001)
+│   ├── base.py              # Match, Reading, Hint and ExtractionContext: offline facts for context-aware extractors (p. 4.3)
+│   ├── text.py              # folding, word spans and typo tolerance shared by the extractors
+│   ├── coordinates.py       # points (WGS84, PL-1992 converted in pure Python) and PMAXTP grid cells
+│   ├── areas.py             # areas: map sheet codes (godło), bounding boxes, TERYT codes, geometry files (ADR-001, ADR-016)
 │   ├── crs.py               # coordinate systems and their role: input rectangle vs result (ADR-009)
-│   ├── numbers.py           # numbers with units (km², mm, m³/s)
+│   ├── numbers.py           # Polish numerals and durations (15 min, 2 godziny)
 │   ├── probability.py       # exceedance probability and return period (p. 4.4)
-│   ├── dates.py             # dates and periods
-│   ├── stations.py          # station names → IMGW station list
+│   ├── dates.py             # years, periods and the kind of year (hydrological or calendar)
+│   ├── stations.py          # station names and codes → the offline station catalog of the IMGWTools store
+│   ├── places.py            # place and river names as search fragments for the station search
+│   ├── variables.py         # measured variables checked against the chosen dataset
+│   ├── identifiers.py       # names given by the user (e.g. a project task)
 │   ├── paths.py             # file paths mentioned in the command
 │   └── results.py           # result numbers mentioned in the command, e.g. "#3" (p. 5.2)
 ├── chains/
@@ -146,12 +156,15 @@ retman/
 │   ├── metrics.py           # quality measures, threshold curve (p. 8.2)
 │   ├── report.py            # Markdown report (p. 8.2)
 │   └── commands.jsonl       # test command set, shipped as package data (p. 8.1)
-├── testing.py               # test helpers: fake backend, manifest validation
-├── exceptions.py            # RetmanError hierarchy, e.g. PlanNotConfirmedError (p. 6.3)
+├── testing.py               # test helpers: FakeDecisionBackend, FakeToolClient, tool_context (p. 8.3)
+├── exceptions.py            # RetmanError hierarchy, e.g. PlanNotConfirmedError, CheckNotConfirmedError (p. 6.3, 6.5)
 ├── doctor.py                # environment check (p. 7.2)
+├── stores.py                # tool stores on disk: checks for doctor, set-up for init (p. 9.1)
+├── initialize.py            # retman init: config file, store folders, IMGWTools store (p. 9.1)
 ├── add_tool.py              # retman add-tool: installs a known tool via uv (v0.5+, p. 9.4)
 ├── cli.py                   # terminal conversation built on core/dialog.py (p. 6.4)
-└── config.py                # central config file: location, loading, `retman init` (p. 9.1)
+├── config.py                # central config file: location, loading, validation (p. 9.1)
+└── config_template.toml     # the commented template that `retman init` writes (p. 9.1)
 ```
 
 ### 3.2. Adaptery: jak Retman łączy się z narzędziami [N-03], [W-06]
@@ -160,12 +173,19 @@ retman/
 
 Narzędzia nie zawierają żadnego kodu, plików ani zależności związanych z Retmanem.
 Wszystko, czego Retman potrzebuje, mieszka w repo Retmana, a z narzędzi korzysta on wyłącznie
-przez ich **publiczne API** — tak samo jak każdy inny użytkownik tych bibliotek.
+przez ich **publiczne API Pythona** — tak samo jak każdy inny użytkownik tych bibliotek.
+Serwery MCP narzędzi (`kartograf-mcp`, `imgw mcp`) nie są używane (ADR-018): to cienka nakładka
+na te same wywołania biblioteki, dokładałaby zależności, a bramki W-05 i N-12 trzeba by
+utrzymywać w osobnym procesie z jego własną polityką zapisu.
 
 Od narzędzi Retman oczekuje tylko dobrych praktyk, które są korzystne niezależnie od niego:
 - **stabilne publiczne API** i wersjonowanie semantyczne (zmiana łamiąca zgodność = nowa wersja główna),
-- **podpowiedzi typów**, zwłaszcza `Literal` (lub `Enum`) dla wyborów i `Path` dla plików,
-- **docstringi w stylu NumPy** (styl już stosowany we wszystkich narzędziach).
+- **katalog komend czytelny dla maszyn** (nazwy komend, opcje z dozwolonymi wartościami, skutki:
+  sieć i zapis), **walidacja offline** (`validate_command`), dokumenty wyniku w JSON z polem
+  `schema` i stabilne kody błędów — Kartograf 0.8.0 i IMGWTools 3.0.0 to mają i na tym opiera się
+  warstwa komend (p. 3.2.4),
+- dla narzędzi bez katalogu: **podpowiedzi typów**, zwłaszcza `Literal` (lub `Enum`) dla wyborów
+  i `Path` dla plików, oraz **docstringi w stylu NumPy**.
 
 #### 3.2.2. Co mieszka w Retmanie
 
@@ -176,12 +196,18 @@ retman/tools/hydrolog/
 └── pl.toml        # Polish texts and synonyms (p. 4.2)
 ```
 
+Narzędzie z katalogiem komend (Kartograf, IMGWTools) ma w tym samym folderze dodatkowo
+budowniczych wywołań, klienta oraz funkcje podglądu i sprawdzenia (p. 3.2.4).
+
 | Element | Rola |
 | --- | --- |
-| **Manifest** | opis operacji: parametry, dozwolone wartości, wejścia i wyjścia, obsługiwane wersje narzędzia |
-| **Handlery** | cienkie funkcje, które wywołują publiczne API narzędzia i zamieniają wyniki na pliki |
-| **Tłumaczenia** | polskie teksty i synonimy dla basala i użytkownika |
-| **Wspólny adapter** | jeden dla wszystkich narzędzi: waliduje parametry, wywołuje handler, buduje `Result` |
+| **Manifest** | opis operacji: parametry, dozwolone wartości, wejścia i wyjścia, obsługiwane wersje narzędzia, odwołania do budowniczych, podglądu i sprawdzenia |
+| **Buildery wywołań** | czyste funkcje zamieniające parametry Retmana na wywołania komend katalogu narzędzia (`CatalogCall`); te same służą walidacji w planie i wykonaniu |
+| **Klient narzędzia** | jedna cienka klasa na narzędzie: importuje je leniwie, tłumaczy wywołania na jego publiczne API, błędy narzędzia na `ToolError`, a dokumenty wyniku na `ToolRun` |
+| **Handlery** | funkcje, które wołają publiczne API (albo wspólnego wykonawcę wywołań) i zamieniają wyniki na pliki — tam, gdzie wynik wymaga obróbki |
+| **Podgląd i sprawdzenie** | funkcja offline, która dopowiada wiersze planu i problemy (podgląd), oraz funkcja sieciowa na życzenie (sprawdzenie dostępności) |
+| **Tłumaczenia** | polskie teksty i synonimy dla basala i użytkownika, komunikaty błędów i ostrzeżeń |
+| **Wspólny adapter** | jeden dla wszystkich narzędzi: waliduje parametry, wykonuje wywołania albo handler, buduje `Result` |
 | **Rejestr rodzajów danych** | nazwy `kind` i ich formaty plików (p. 3.2.6) |
 
 Zasady:
@@ -190,55 +216,182 @@ Zasady:
 - Procedury złożone, które narzędzie już ma (np. w Hydrografie), są **jedną operacją**.
   Retman nie odtwarza ich krok po kroku.
 
-#### 3.2.3. Rola dokumentacji narzędzi
+#### 3.2.3. Rola katalogów i dokumentacji narzędzi
 
-Dokumentacja narzędzi (sygnatury funkcji, typy, docstringi) jest **źródłem, z którego Retman
-generuje i sprawdza swoje opisy**. Nie jest czytana w trakcie działania.
+Katalogi komend i dokumentacja narzędzi są **źródłem, z którego Retman generuje szkice
+i sprawdza zgodność swoich opisów**. Nie są czytane w trakcie działania, a manifesty są statyczne
+(ADR-019): opcje nigdy nie są wyprowadzane z zainstalowanego narzędzia przy ładowaniu. Powody:
 
-**Dwa narzędzia deweloperskie** (`retman.devtools`, dla autora, nie dla użytkownika końcowego):
+1. każda opcja potrzebuje polskich tekstów i synonimów, inaczej narzędzie się nie załaduje,
+   a tekst pisany maszynowo naruszałby p. 1.3 i ADR-007;
+2. katalog nie ma kształtu opcji Retmana: dozwolone rozdzielczości Kartografa to suma 14 wartości
+   po produktach i krajach, a basal przyjmuje 9 opcji (p. 3.4) — poprawne wartości zależą
+   od produktu i układu wysokościowego;
+3. zbiór `retman-eval` musi być powtarzalny, a zawartość i kolejność katalogu zmieniają się
+   między wersjami narzędzi; opisy przechowywane w Retmanie są przejrzane, przetestowane
+   i zmieniają się tylko świadomie;
+4. ładowanie manifestów nie może importować narzędzi (p. 3.2.5), a mały model nie zbuduje
+   wiarygodnie wywołania na podstawie samego opisu.
 
-1. **Generator szkiców**
+**Narzędzie deweloperskie `retman-scaffold`** (pakiet `retman.devtools`, dla autora, nie dla
+użytkownika końcowego; skrypt pakietu podstawowego, bez własnych zależności) czyta maszynowe
+katalogi narzędzi (`get_catalog` i `list_sources` Kartografa, `command_schema` IMGWTools) przez
+małe czytniki w `retman/devtools/readers/` — bez sieci:
 
-   ```bash
-   retman-scaffold hydrolog.peak_flow
-   ```
+```bash
+retman-scaffold list <tool>                     # catalog commands, which operations use them, suggested use
+retman-scaffold draft <tool> "<command>" [--fix k=v] [--only a,b] [--id op] [--write]
+retman-scaffold --check [--tool T] [--operation OP] [--json] [--require-tools] [--verbose]
+```
 
-   Odczytuje sygnaturę i docstring funkcji (statycznie, bez uruchamiania narzędzia, np. biblioteką
-   `griffe`), w tym sekcje `Parameters` i `Returns` docstringów w stylu NumPy, i tworzy szkic:
-   wpis w manifeście, szkielet handlera i puste pola w `pl.toml`.
-   Autor uzupełnia to, czego w dokumentacji nie ma (tabela niżej).
+Szkic (`draft`) niczego nie nadpisuje: pisze na standardowe wyjście, a z `--write` do
+`retman/tools/<narzędzie>/_drafts/` (folder poza gitem). Autor uzupełnia to, czego w katalogu nie
+ma (tabela niżej); teksty polskie, kategoria, rodzaje danych i ekstraktory mają w szkicu znacznik
+`TODO`, a test odrzuca każdy taki znacznik w zatwierdzonym `pl.toml`. Kody wyjścia: `0` — bez
+błędów, `1` — wykryto błędy (albo polecenie się nie powiodło), `2` — błędne użycie.
 
-2. **Kontrola rozjazdów**
+**Co da się wyczytać z katalogu, a co trzeba dopisać:**
 
-   ```bash
-   retman-scaffold --check
-   ```
-
-   Porównuje opisy przechowywane w Retmanie z aktualnym publicznym API narzędzi i zgłasza
-   różnice: nowe, usunięte lub przemianowane parametry, zmienione dozwolone wartości (`Literal`),
-   zmienione wartości domyślne. Uruchamiana w CI Retmana.
-
-**Co da się wyczytać z dokumentacji, a co trzeba dopisać:**
-
-| Informacja | Z dokumentacji? |
+| Informacja | Z katalogu narzędzia? |
 | --- | --- |
-| parametry, typy, wartości domyślne | tak (sygnatura) |
-| dozwolone wybory | tak, jeśli `Literal` lub `Enum` |
-| opis po angielsku | tak (docstring) |
-| pliki wejściowe i wyjściowe | częściowo (`Path`); rodzaj danych (`kind`) trzeba dopisać |
-| zakresy wartości | tylko jeśli są w docstringu w ustalonej formie; zwykle trzeba dopisać |
+| parametry, ich typy i wymagalność | tak (Kartograf: opis parametrów komendy; IMGWTools: schemat JSON komendy) |
+| dozwolone wybory | tak (`allowed`, `enum`), ale jako suma po produktach i krajach — wartości właściwe dla operacji zawęża próba przez `validate_command`; listy dłuższe niż 9 trzeba podzielić |
+| wartości domyślne | tak, ale Retman ich nie przejmuje: nie ma ukrytych wartości domyślnych (ADR-006) |
+| zakresy wartości | IMGWTools tak (`minimum`, `maximum`); Kartograf zwykle trzeba dopisać |
+| zależności między parametrami | częściowo (opis ograniczeń); egzekwuje je `validate_command` |
+| opis po angielsku | IMGWTools tak; Kartograf tylko po polsku, bez diakrytyków |
+| skutki komendy (sieć, zapis) | tak |
+| pliki wejściowe i wyjściowe | tylko jako nazwy produktów; rodzaj danych (`kind`) trzeba dopisać |
 | polskie teksty i synonimy | nie — trzeba dopisać |
-| które funkcje udostępnić w Retmanie | nie — decyzja autora |
+| które komendy udostępnić w Retmanie | nie — decyzja autora |
 
-**Dlaczego dokumentacja nie jest czytana w trakcie działania:**
-1. nie zawiera wszystkich potrzebnych informacji (tabela wyżej),
-2. mały model nie zbuduje wiarygodnie wywołania funkcji na podstawie samego opisu,
-3. zmiana docstringu zmieniałaby po cichu zachowanie Retmana — a opisy przechowywane
-   w Retmanie są przejrzane, przetestowane i zmieniają się tylko świadomie.
+**Kontrola zgodności** (`retman-scaffold --check`, ADR-019) to **zgodność przez wykonanie**: dla
+każdego zainstalowanego narzędzia w obsługiwanym zakresie wersji uruchamia prawdziwych budowniczych
+wywołań na siatce wyborów z manifestu, a każde wywołanie sprawdza offline samo narzędzie
+(`validate_command`, tak jak w planie). Całość działa pod strażnikiem, który zapisuje każdą próbę
+użycia sieci i każdy utworzony plik. Niezmiennik pokrycia (X4) sprawia, że „wszystkie rozdzielczości”
+pozostaje prawdą z konstrukcji: nowa wartość narzędzia nie pojawia się niezauważona.
 
-#### 3.2.4. Handler
+| Kontrola | Co znajduje | Ważność |
+| --- | --- | --- |
+| X1 | zadeklarowana komenda, której nie ma w katalogu albo która nie jest komendą danych; budowniczy emituje niezadeklarowaną komendę | błąd |
+| X2 | odrzucenie, które nie jest odpowiedzią, jaką użytkownik może zmienić (brakująca lub nieznana opcja, odrzucenie niewskazujące parametru); odrzucone pary siatki kartezjańskiej (np. 5 m z KRON86) są tylko raportowane | błąd; info |
+| X3 | opcja manifestu, której narzędzie nie przyjmuje w żadnym punkcie siatki | błąd |
+| X4 | **pokrycie:** wartość, którą narzędzie przyjmuje, a manifest jej ani nie oferuje, ani nie wymienia w `excluded` | błąd |
+| X5 | przestarzały wpis `excluded` | ostrzeżenie |
+| X6 | wartość domyślna na opcji wymaganej przez narzędzie albo parametr opcjonalny za taką opcją (ADR-006) | ostrzeżenie |
+| X7 | `lookup` klienta przyjmuje komendę ze skutkami; sprawdzenie offline dotknęło sieci albo zapisało plik; operacja z komendą sieciową i zapisującą bez `check` i bez uzasadnionego `no_check`; `no_check` przy operacji, której żadna komenda go nie potrzebuje | błąd; ostrzeżenie |
+| X8 | kod błędu narzędzia bez tekstu `[errors.<kod>]`; schemat dokumentu nieznany klientowi | błąd |
+| X9 | komendy danych katalogu, których nie wystawia żadna operacja | info |
+| X10 | brak kompletnego wiersza `retman-eval` z wartościami swobodnymi dla operacji (siatka nie powstała) | ostrzeżenie |
 
-Handler mieszka w Retmanie i tłumaczy „język Retmana” na wywołanie publicznego API narzędzia:
+Kontrola działa w pytest i w CI Retmana (p. 3.2.7).
+
+#### 3.2.4. Wywołania, handler, podgląd i sprawdzenie
+
+Tłumaczenie „języka Retmana” na wywołanie publicznego API narzędzia mieszka w Retmanie i ma
+dwie formy; operacja deklaruje co najmniej jedną z nich (p. 4.3):
+
+- **`calls` — warstwa komend.** Dla narzędzi z katalogiem komend (Kartograf, IMGWTools): czysty
+  *budowniczy wywołań* zamienia parametry na listę wywołań komend katalogu, a wspólny wykonawca
+  wykonuje je przez *klienta narzędzia* (`retman/adapters/catalog.py`). Powód: katalog jest
+  deklarowanym źródłem prawdy tych narzędzi — ma walidację offline z tymi samymi regułami co
+  uruchomienie, stabilne kody błędów i dokumenty wyniku — a typowane funkcje i klasy dostawców
+  zmieniły się w Kartografie 0.8.0 tak, że zepsuły wszystkie handlery (ADR-013).
+- **`handler` — własna funkcja.** Dla operacji, które muszą obrobić wynik (np. rozpakować
+  archiwum) albo dla narzędzi bez katalogu. Handler może sam wołać wspólnego wykonawcę
+  (`run_calls`) albo klienta (`ctx.runner`).
+
+**Wywołania i klient.** Budowniczy jest czysty: nie dotyka systemu plików ani sieci i jest wołany
+dwa razy tym samym kodem — w planie (walidacja) i przy wykonaniu:
+
+```python
+# retman/tools/<tool>/calls.py (illustrative)
+def fetch_dem(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
+    area = params["area"]
+    options = {
+        "product": "nmt",
+        "resolution": ctx.tool_value("resolution", params["resolution"]),   # "0_5m" -> "0.5m"
+        "sheet": area["code"],
+    }
+    return [CatalogCall("elevation download", options, kind="dem", params={"sheet": "area"})]
+```
+
+`CatalogCall` niesie: `command` (komenda katalogu), `options` (w formie JSON, dokładnie tak, jak
+przyjmują je `validate_command` i `run_command`; **bez** argumentów środowiskowych — magazynu,
+liczby wątków, cache, trybu aktualizacji — bo dodaje je klient z `[tools.<narzędzie>]`, p. 9.1),
+`kind` (rodzaj plików, które wywołanie daje: klucz w `files`) i `params` (opcja narzędzia →
+parametr Retmana, gdy nazwy się różnią; kieruje odrzucenie przez narzędzie do parametru, o który
+trzeba zapytać ponownie). Operacja złożona to kilka wywołań; wykonawca zatrzymuje się na
+pierwszym wywołaniu zakończonym `failed` albo `cancelled`, a `partial` kontynuuje z ostrzeżeniami.
+
+Klient jest **podzielony według możliwości**, więc bramka [W-05], [N-12] wynika ze struktury kodu:
+
+| Obiekt | Gdzie istnieje | Metody |
+| --- | --- | --- |
+| `PlanClient` (dla kodu planowania opakowany w `PlanView`) | w planowaniu: buildery, podgląd, ekstraktory kontekstowe | `validate(call)` — walidacja przez narzędzie, offline; `command_line(call)` — dokładna linia komendy (offline, do śladu audytowego); `lookup(call)` — komenda bez skutków (bez sieci i zapisu), np. lista stacji z magazynu; inna komenda to `ToolError("not_offline")` |
+| `RunClient` (dodaje do `PlanClient`) | tylko w `execute()` i w `Retman.check()` po zgodzie na sprawdzenie | `run(call)` — komenda danych (zapisuje magazyn narzędzia); `check(call)` — plan świeżości narzędzia (krok sieciowy); `query(call)` — zapytanie sieciowe tylko do odczytu (np. raport dostępności) |
+
+`PlanView` nie ma atrybutów `run`, `check` ani `query`: krok sieciowy przed potwierdzeniem jest
+niemożliwy z konstrukcji, a nie tylko z konwencji. Klient powstaje z fabryki z manifestu (klucz
+`client`): `factory(settings) -> RunClient` dostaje zwalidowaną tabelę `[tools.<narzędzie>]`,
+nie może użyć sieci ani nic zapisać przy tworzeniu, jest budowana leniwie, raz na `Retman`
+i narzędzie, a `ImportError` kończy się błędem `RetmanError` z podpowiedzią `retman doctor`.
+Błędy narzędzia klient zgłasza jako `ToolError` (stabilny `code`, opcja lub opcje, których dotyczy,
+dozwolone wartości, tekst i wskazówka narzędzia), wyniki jako `ToolRun` (`status`: `ok`, `partial`,
+`failed`, `cancelled`; pliki z sumą SHA-256 i etykietą wersji; porażki; uwagi `info`, `warning`,
+`error`; pełny dokument JSON; dokładna linia komendy; schemat dokumentu).
+
+Wszystko, co budowniczy, podgląd, sprawdzenie i handler wolno wiedzieć o otoczeniu, niesie
+`ToolContext`: `tool`, `settings` (tabela `[tools.<narzędzie>]`), `project_dir`, `output_dir`
+(`None` w planowaniu — folder wyniku jeszcze nie istnieje), `inputs` (zwalidowane wejścia),
+`client`, `specs` (parametry operacji z manifestu), `operation` (planowana albo wykonywana
+operacja — po to, żeby handler mógł oddać zwykłe wywołania katalogu wykonawcy `run_calls`)
+oraz pomocniki `ctx.runner` (pełny klient; w planowaniu zgłasza błąd), `ctx.store_dir`,
+`ctx.tool_value(parametr, klucz)` i `ctx.option_meta(parametr, klucz)`.
+
+**Podgląd planu (offline) [N-12].** Gdy plan jest kompletny, adapter wykonuje `preview_operation`:
+
+1. każde wywołanie budowniczego waliduje narzędzie (`PlanClient.validate`) — to samo żądanie,
+   które wykonałoby operację, bez sieci i zapisu. Odrzucenie (`ToolError` z opcją lub opcjami,
+   których dotyczy) jest kierowane na parametry Retmana (przez `CatalogCall.params` albo takie
+   same nazwy) i staje się pytaniem zadanym ponownie z powodem (`Plan.reopened`, p. 6.3).
+   Opcja zagnieżdżona w innej opcji (np. opcje zadania w IMGWTools `project add`) ma ścieżkę
+   `options.<nazwa>` w `ToolError.option` i w `CatalogCall.params`, więc też trafia do swojego
+   parametru. Odrzucenie, którego nie da się skierować na żaden parametr, to `ToolDriftError`:
+   zainstalowane narzędzie nie przyjmuje już tego, co opisuje manifest (`retman doctor`,
+   `retman-scaffold --check`);
+2. jeśli narzędzie przyjęło wszystkie wywołania, woła `preview(params, ctx)`, która zwraca
+   `PreviewOutput` = `{values, rows, problems}`: `values` trafiają tylko do audytu
+   (`result.json["preview"]`), `rows` to dodatkowe wiersze planu (z oznaczeniem
+   `← podgląd, bez sieci`; teksty `[preview.<klucz>]`), `problems` to kolejne powody ponownego
+   zapytania (niepusta lista parametrów operacji i klucz tekstu z `[problems.<klucz>]`).
+
+Dla obszarów z pliku geometrii podgląd pokazuje np. obwiednię i liczbę arkuszy, które Retman
+liczy publicznymi funkcjami narzędzia offline, więc plan mówi, co plik faktycznie oznacza
+dla tej operacji (p. 6.1, 6.3).
+
+**Sprawdzenie dostępności (sieć, na życzenie).** `check(params, ctx) -> CheckOutput` =
+`{status, items}` jest wołane wyłącznie przez `Retman.check()` po osobnej zgodzie (p. 6.5),
+z pełnym klientem: `ctx.runner.check(call)` (plan świeżości narzędzia) albo
+`ctx.runner.query(call)` (zapytanie tylko do odczytu). Każdy zadeklarowany `check` traktujemy
+jako krok sieciowy — także wtedy, gdy narzędzie w niektórych przypadkach nie łączy się z siecią.
+
+**Wynik i pliki.** Wykonawca zapisuje pełny dokument każdego wywołania jako
+`output_dir/tool_<n>_<komenda>.json` i dołącza do wyniku blok audytowy `tool` (komenda, opcje,
+linia komendy, status, pliki z sumami, nazwa i suma dokumentu; p. 5.4). Funkcja `describe` operacji
+(albo mapowanie ogólne) zamienia wywołania i ich wyniki na `HandlerOutput` = `{values, files,
+warnings[, tool]}`. Klucze w `files` to rodzaje danych (`kind`, p. 3.2.6); plik musi leżeć
+w `output_dir` **albo w magazynie narzędzia** (`[tools.<narzędzie>] store_dir`) — gdzie indziej
+to błąd. Pliki z magazynu wynik wskazuje ścieżką bezwzględną i sumą SHA-256, niczego nie kopiując.
+
+**Komunikaty.** Użytkownik widzi własny tekst Retmana wybrany po stabilnym kodzie błędu
+narzędzia (`[errors.<kod>]`, p. 4.2), a tekst narzędzia — często po polsku bez diakrytyków
+i z flagami wiersza poleceń — tylko jako cytat (`{detail}`). Uwagi o jakości danych i licencji są
+pokazywane dosłownie, bo dokumenty narzędzi nie dają o nich ustrukturyzowanych liczb ani
+sformułowań prawnych; uwagi `info` zostają w śladzie audytowym.
+
+Przykład handlera (narzędzie bez katalogu):
 
 ```python
 # retman/tools/hydrograf/handlers.py
@@ -246,67 +399,82 @@ from pathlib import Path
 
 import hydrograf  # public API only
 
+from retman.adapters.catalog import ToolContext
+from retman.registry.manifest import HandlerOutput
 
-def delineate_catchment(params: dict, inputs: dict[str, Path], output_dir: Path) -> dict:
+
+def delineate_catchment(
+    params: dict, inputs: dict[str, Path], output_dir: Path, ctx: ToolContext
+) -> HandlerOutput:
     """
     Delineate a catchment for a point using the hydrograf public API.
 
-    params     – validated parameter values, e.g. {"point": (52.41, 16.93)}
+    params     – validated parameter values, e.g. {"point": {"latitude": 52.41, "longitude": 16.93, ...}}
     inputs     – input files by input name (none for this operation)
     output_dir – the only directory the handler may write to
+    ctx        – [tools.hydrograf] settings and the tool's client (p. 3.2.4)
     """
-    lat, lon = params["point"]
-    catchment = hydrograf.delineate(lat=lat, lon=lon)  # illustrative name of a public function
+    point = params["point"]
+    catchment = hydrograf.delineate(lat=point["latitude"], lon=point["longitude"])  # illustrative name of a public function
 
     out_file = output_dir / "catchment.geojson"
     catchment.to_geojson(out_file)                     # illustrative method
 
     return {
         "values": {"area_km2": catchment.area_km2},     # short results
-        "files": {"catchment_characteristics": out_file},  # key = output kind
+        "files": {"catchment_characteristics": [out_file]},  # key = output kind, value = list of paths
         "warnings": [],
     }
 ```
 
 > Nazwy funkcji Hydrografa w przykładzie są poglądowe.
 
-Zasady handlera:
+Zasady handlerów i budowniczych:
 1. **Tylko publiczne API narzędzia** — żadnych odwołań do elementów prywatnych (`_nazwa`).
-2. **Dane wejściowe przychodzą jako pliki**, wyniki wychodzą jako pliki w `output_dir`.
-   Klucze w `files` to rodzaje danych (`kind`, p. 3.2.6). Zamiana obiektów narzędzia na pliki
-   (i z powrotem) to zadanie handlera.
+2. **Dane wejściowe przychodzą jako pliki**, wyniki wychodzą jako pliki w `output_dir` albo
+   w magazynie narzędzia. Klucze w `files` to rodzaje danych (`kind`, p. 3.2.6). Zamiana obiektów
+   narzędzia na pliki (i z powrotem) to zadanie handlera albo klienta.
 3. **Żadnej rozmowy z użytkownikiem**: bez `input()` i `print()`. Dopytywanie i komunikaty
    to zadanie Retmana.
-4. **Błędy zgłasza zwykłym wyjątkiem.** Wspólny adapter go przechwytuje i zwraca
-   `Result(ok=False)`; awaria jednego narzędzia nie blokuje pozostałych.
-5. **Zapis tylko do `output_dir`.** Handler nie zmienia plików użytkownika.
+4. **Błędy zgłasza wyjątkiem.** Błąd narzędzia klient zamienia na `ToolError`; wspólny adapter
+   przechwytuje każdy wyjątek i zwraca `Result(ok=False)` (z `error_code`, gdy to błąd narzędzia);
+   awaria jednego narzędzia nie blokuje pozostałych.
+5. **Zapis tylko do `output_dir`.** Handler nie zmienia plików użytkownika; magazyn narzędzia
+   zapisuje samo narzędzie, przez klienta.
+6. **Buildery, podgląd i ekstraktory są czyste i offline** [N-12]: nie dotykają systemu plików
+   ani sieci i widzą tylko `PlanClient`.
 
 #### 3.2.5. Co robi wspólny adapter
 
-1. **Przy starcie:** dla każdego narzędzia z `retman/tools/` sprawdza, czy jest zainstalowane
-   i czy jego wersja mieści się w obsługiwanym zakresie (p. 3.2.7). Wczytuje opisy i je waliduje:
-   unikalność identyfikatorów, znane rodzaje danych, komplet tłumaczeń. Operacje narzędzi
-   niezainstalowanych są niedostępne (`retman doctor` podpowiada, jak je doinstalować).
-2. **Przy planowaniu:** zamienia manifesty na wewnętrzne obiekty `Operation`, z których korzysta pipeline.
-3. **Przy wykonaniu:** dopiero teraz importuje handler i narzędzie (szybszy start, a uszkodzone
-   narzędzie nie psuje reszty), przygotowuje `output_dir` i pliki wejściowe, wywołuje handler,
-   sprawdza zwrócone pliki z deklaracją `outputs`, buduje `Result` i zapisuje go w przestrzeni roboczej.
+1. **Przy starcie:** dla każdego narzędzia z `retman/tools/` sprawdza — bez importowania go —
+   czy jest zainstalowane i czy jego wersja mieści się w obsługiwanym zakresie (p. 3.2.7).
+   Wczytuje opisy i je waliduje: unikalność identyfikatorów, znane rodzaje danych, komplet
+   tłumaczeń, reguły kluczy `handler`/`calls`/`client`/`excluded`, limity kategorii (p. 3.4).
+   Operacje narzędzi niezainstalowanych są niedostępne (`retman doctor` podpowiada, jak je
+   doinstalować).
+2. **Przy planowaniu:** zamienia manifesty na wewnętrzne obiekty `Operation`, z których korzysta
+   pipeline. Narzędzie wybranej operacji jest importowane dopiero teraz, przez klienta, a kod
+   planowania dostaje tylko jego połowę offline (`PlanView`): ekstraktory kontekstowe wyszukują
+   w katalogu, a podgląd waliduje wywołania (p. 3.2.4). Sieci ani zapisu nie ma (N-12).
+3. **Przy wykonaniu:** buduje pełnego klienta (`RunClient`), przygotowuje `output_dir` i pliki
+   wejściowe, liczy sumy kontrolne plików geometrii, wywołuje handler albo wykonawcę wywołań,
+   sprawdza zwrócone pliki z deklaracją `outputs` (rodzaj, walidator, położenie w `output_dir`
+   albo w magazynie narzędzia), tłumaczy ostrzeżenia, buduje `Result` i zapisuje go w przestrzeni
+   roboczej. Uszkodzone narzędzie nie psuje reszty: błąd jest wynikiem tej operacji.
+4. **Przy sprawdzeniu dostępności:** po osobnej zgodzie woła funkcję `check` operacji z pełnym
+   klientem, tłumaczy pozycje raportu i zwraca `CheckReport`; nie tworzy wyniku (p. 6.5).
 
 #### 3.2.6. Rejestr rodzajów danych (`kind`)
 
-Rodzaj danych to nazwa + format pliku + prosty walidator, np.:
+Rodzaj danych to nazwa + akceptowane rozszerzenia + prosty walidator offline, napisany wyłącznie
+na bibliotece standardowej (bez bibliotek geoprzestrzennych i bez sieci). Rejestr
+(`retman/kinds.py`) jest w Retmanie. Narzędzia nie znają tych nazw — zamianą ich wyników na pliki
+danego rodzaju zajmują się wywołania i handlery. Jeden wynik może zawierać kilka plików tego
+samego rodzaju (np. arkusze NMT), więc `files` przypisuje rodzajowi listę ścieżek. Walidator
+sprawdza rozszerzenie i nagłówek (albo kolumny, albo schemat), a niezgodność zgłasza jako
+`KindValidationError` z powodem (klucz w `[kinds.errors]` pliku tłumaczeń).
 
-| `kind` | Format | Walidator sprawdza m.in. |
-| --- | --- | --- |
-| `catchment_characteristics` | GeoJSON z atrybutami | geometria poligonu, wymagane atrybuty (powierzchnia itd.) |
-| `precipitation_series` | CSV | kolumny daty i wartości, jednostka |
-
-Rejestr jest w Retmanie. Narzędzia nie znają tych nazw — zamianą ich obiektów na pliki
-danego rodzaju zajmują się handlery. Jeden wynik może zawierać kilka plików tego samego
-rodzaju (np. arkusze NMT), więc `files` przypisuje rodzajowi listę ścieżek.
-
-Rodzaje danych Kartografa (ADR-004) — format jest taki, jaki zwraca Kartograf; walidator
-sprawdza rozszerzenie i nagłówek pliku, bez bibliotek geoprzestrzennych:
+Rodzaje danych Kartografa (ADR-004, ADR-016) — format jest taki, jaki zwraca Kartograf:
 
 | `kind` | Format | Walidator sprawdza m.in. |
 | --- | --- | --- |
@@ -314,42 +482,218 @@ sprawdza rozszerzenie i nagłówek pliku, bez bibliotek geoprzestrzennych:
 | `dsm` | NMPT: jak `dem` | jak `dem` |
 | `orthophoto` | GeoTIFF (`.tif`) | sygnatura TIFF |
 | `topographic_vector` | BDOT10k: GeoPackage (`.gpkg`) albo Shapefile (`.shp`) | nagłówek SQLite (GPKG) albo kod pliku Shapefile |
+| `dem_archive` | NMT 100 m: archiwum ZIP z plikiem XYZ na województwo (`.zip`) | sygnatura ZIP |
+| `area_geometry` | plik użytkownika z geometrią obszaru: GeoPackage albo Shapefile | jak `topographic_vector`; waliduje obszar z pliku w planie (p. 6.1), zarezerwowany też jako rodzaj wyjściowy przyszłych operacji (łańcuchy, v0.2) |
 
-Lista rodzajów pozostałych narzędzi to otwarta kwestia (rozdz. 12).
+Rodzaje danych IMGWTools (ADR-017) — pliki tabelaryczne i dokumenty JSON; walidatory czytają
+tylko początek pliku (nagłówek i kilka pierwszych wierszy):
+
+| `kind` | Format | Walidator sprawdza m.in. |
+| --- | --- | --- |
+| `station_list` | lista stacji (CSV) | kolumny `provider`, `kind`, `station_code`, `name`, `river`, `latitude`, `longitude` |
+| `hydro_series` | szereg czasowy stacji hydrologicznej (CSV) | nagłówek `date,year,<zmienna> [<jednostka>],<zmienna>_flag,…,attribution_source,attribution_processed`; zmienne H, Q, T (także `_min`, `_mean`, `_max`); ČHMÚ dodaje kolumny `_quality` i `_source_flag` |
+| `meteo_series` | szereg czasowy stacji meteorologicznej (CSV) | jak `hydro_series`, bez zmiennych hydrologicznych |
+| `pmaxtp_table` | opady maksymalne PMAXTP (CSV) | kolumny `duration_min`, `probability_percent`, `ks_mm`, `sg_mm`, `rb_mm`, `attribution_source`, `attribution_processed` |
+| `current_hydro` | dane bieżące hydrologiczne (CSV) | kolumny `station_code`, `station_name`, `water_level_cm`, `flow_m3s` |
+| `current_meteo` | dane bieżące meteorologiczne (CSV) | kolumny `station_code`, `station_name`, `air_temp_c`, `wind_speed_ms` |
+| `current_synop` | dane bieżące synoptyczne (CSV) | kolumny `station_code`, `station_name`, `measurement_date`, `temperature_c` |
+| `imgw_warnings` | ostrzeżenia IMGW (CSV) | kolumny `id`, `kind`, `level` |
+| `hydro_states` | stany wody na stacjach (CSV) | kolumny `station_code`, `name`, `water_state` |
+| `archive_records` | rekordy wyeksportowane z magazynu archiwów (CSV albo JSON Lines) | pola `station_code`, `dataset`, `date` (nagłówek CSV albo pierwszy rekord) |
+| `imgw_archive` | archiwum IMGW tak, jak opublikowane (`.zip`, `.json`, `.csv`, `.txt`) | sygnatura ZIP, początek JSON (`{` albo `[`) albo tekst niebinarny |
+| `imgw_plan` | plan pobrania lub synchronizacji IMGWTools (JSON) | dokument ze `schema` równym `imgw-plan/1` |
+| `imgw_report` | raport IMGWTools (JSON) | dokument `imgw-result/1` — pierwszy klucz to `schema` |
+
+Rodzaje pozostałych narzędzi (Hydrolog, Hydrograf, BasicHydraulics) to otwarta kwestia
+(rozdz. 12).
 
 #### 3.2.7. Wersje i zgodność
 
 Pilnowanie zgodności to rola Retmana, nie narzędzi. Narzędzia rozwijają się niezależnie,
 a Retman dostosowuje się do nich:
 
-- Każde narzędzie ma w manifeście **obsługiwany zakres wersji** (np. `">=1.1,<2"`), odpowiadający
-  tagom wydań w repozytorium narzędzia na GitHubie. Retman sprawdza wersję zainstalowanego
-  narzędzia przy starcie (p. 3.2.5); sam z siebie narzędzi nie instaluje (p. 9.3, 9.4).
-- **CI Retmana** uruchamia testy handlerów na najstarszej i najnowszej obsługiwanej wersji
-  każdego narzędzia, a regularnie (np. co noc) także na bieżącej gałęzi głównej narzędzi —
-  zmiana API, która zepsułaby Retmana, wychodzi od razu.
-- **Kontrola rozjazdów** (`retman-scaffold --check`, p. 3.2.3) działa w tym samym CI.
+- Każde narzędzie ma w manifeście **obsługiwany zakres wersji**: Kartograf `>=0.8.0,<0.9`
+  (wydania 0.x mogą łamać zgodność), IMGWTools `>=3.0.0,<4` (wersjonowanie semantyczne i kontrakty
+  dokumentów `/1`; ADR-012). Zakres odpowiada tagom wydań w repozytorium narzędzia na GitHubie;
+  do czasu wypchnięcia tagów `v0.8.0` i `v3.0.0` grupa zależności `tools` przypina wypchnięte
+  commity (p. 9.3). Retman sprawdza wersję zainstalowanego narzędzia przy starcie (p. 3.2.5); sam
+  z siebie narzędzi nie instaluje (p. 9.3, 9.4).
+- **CI Retmana** uruchamia testy handlerów i kontrolę zgodności (`retman-scaffold --check`,
+  p. 3.2.3) na najstarszej i najnowszej obsługiwanej wersji każdego narzędzia, a regularnie
+  (np. co noc) także na bieżącej gałęzi głównej narzędzi — zmiana API, która zepsułaby Retmana,
+  wychodzi od razu.
 - `retman doctor` pokazuje zainstalowaną wersję każdego narzędzia na tle obsługiwanego zakresu.
 
 #### 3.2.8. Testy narzędzi
 
 Wszystkie testy związane z narzędziami są w repo Retmana:
-- walidacja manifestów (identyfikatory, rodzaje danych, komplet tłumaczeń),
-- testy handlerów na prawdziwych narzędziach z małymi danymi testowymi,
-- kontrola rozjazdów z aktualnym API.
+- walidacja manifestów (identyfikatory, rodzaje danych, komplet tłumaczeń, reguły kluczy),
+- buildery wywołań i mappery wyników na **nagranych prawdziwych dokumentach** narzędzi
+  (`tests/fixtures/<narzędzie>/`), z atrapą klienta `FakeToolClient` zamiast monkeypatchowania
+  wnętrz narzędzia (p. 8.3),
+- testy na prawdziwych narzędziach z małymi danymi, offline (IMGWTools: jego pakietowy magazyn
+  fikcyjny, `imgwtools.testing.build_fixture_store`); pomijane (`pytest.importorskip`), gdy narzędzia
+  nie ma, oraz testy `live` uruchamiane świadomie,
+- kontrola zgodności z aktualnym API (`retman-scaffold --check`).
 
 #### 3.2.9. Narzędzia ekosystemu
 
-| Narzędzie | Przykładowy zakres operacji | Zależy od |
-| --- | --- | --- |
-| Kartograf | pobieranie danych przestrzennych | — |
-| IMGWTools | pobieranie danych pomiarowych IMGW | — |
-| Hydrolog | obliczenia hydrologiczne (przepływy, metody) | — |
-| BasicHydraulics | proste obliczenia hydrauliczne | — |
-| Hydrograf | wyznaczanie zlewni, procedury złożone | Hydrolog (i inne) |
+| Narzędzie | Zakres operacji | Zależy od | Stan |
+| --- | --- | --- | --- |
+| Kartograf | pobieranie danych przestrzennych (NMT, NMPT, ortofotomapa, BDOT10k) | — | v0.1, wersja 0.8.0 |
+| IMGWTools | dane pomiarowe IMGW-PIB i ČHMÚ: stacje, dane bieżące, PMAXTP, szeregi, archiwa i magazyn, projekty danych | — | v0.1, wersja 3.0.0 |
+| Hydrolog | obliczenia hydrologiczne (przepływy, metody) | — | planowane (v0.2) |
+| BasicHydraulics | proste obliczenia hydrauliczne | — | planowane (v0.2) |
+| Hydrograf | wyznaczanie zlewni, procedury złożone | Hydrolog (i inne) | planowane (v0.2) |
 
-Kolumna „Przykładowy zakres” jest orientacyjna; konkretne operacje ustala PRD.
-Narzędzia innych autorów obsługuje się tak samo: opis i handlery w `retman/tools/`.
+Konkretne operacje ustala PRD (p. 7.2); opisy operacji Kartografa i IMGWTools: p. 3.2.10
+i 3.2.11. Narzędzia innych autorów obsługuje się tak samo: opis, budowniczowie lub handlery
+i klient w `retman/tools/`.
+
+#### 3.2.10. Operacje Kartografa 0.8.0
+
+Cztery operacje (ADR-001, ADR-012, ADR-016) w jednej kategorii, `spatial_data` („Dane przestrzenne
+GUGiK”). Wszystkie idą przez warstwę komend (`calls`), mają podgląd offline i sprawdzenie
+dostępności (`check`):
+
+| Operacja (`id`) | Komendy katalogu | Obszar (`accepts`) | Parametry, o które Retman dopytuje | Rodzaje wyjściowe |
+| --- | --- | --- | --- | --- |
+| `download_dem_sheet` — NMT dla arkusza lub obszaru | `elevation download` | `sheet`, `geometry` | rozdzielczość (0,15; 0,5; 0,6; 1; 5; 10 albo 100 m); układ wysokościowy (EVRF2007 albo KRON86; nie dotyczy 100 m) | `dem`; NMT 100 m: `dem_archive` |
+| `download_sheet_hierarchy` — arkusze potomne: NMT, NMPT albo ortofotomapa | `elevation download`, `imagery download` | `sheet`, `geometry` (ortofotomapa tylko `sheet`) | produkt; skala docelowa (1:10000 w PL-1992; 1:5000, 1:2000, 1:1000, 1:500 w PL-2000); rozdzielczość NMT (0,15–10 m) albo NMPT (0,5; 0,6; 1 m); układ wysokościowy; kolor ortofotomapy (RGB, CIR, B/W) | `dem`, `dsm`, `orthophoto` |
+| `download_elevation_cutout` — wycinek NMT albo NMPT 1 m | `elevation download` | `bbox`, `geometry` | produkt; układ wyniku (EPSG:2180, 5514, 3045 — czyta go kod, nie model, ADR-009); układ wysokościowy | `dem`, `dsm` |
+| `download_bdot10k` — BDOT10k (bieżące paczki powiatów) | `landcover download` | `teryt`, `bbox`, `sheet`, `geometry` | format (GeoPackage albo Shapefile) | `topographic_vector` |
+
+Operacje Kartografa nie mają wartości domyślnych (ADR-006): o rozdzielczość, układ wysokościowy,
+skalę, kolor i format Retman pyta, gdy polecenie ich nie zawiera. Obsługiwane są wszystkie
+rozdzielczości siatek ASC Kartografa (ADR-012); to, co narzędzie mimo to nie przyjmuje, jest
+w `excluded` z uzasadnieniem (np. NMT 100 m w arkuszach potomnych: to pliki województw).
+Model dostaje do wyboru sumaryczną listę rozdzielczości, a niepoprawną parę (np. 5 m z KRON86)
+odrzuca Kartograf w podglądzie, offline — Retman pyta wtedy ponownie o oba parametry, z powodem
+(„Kartograf odrzuca ten wybór: …”, p. 6.3).
+
+**Obszar z pliku geometrii** (ADR-016). Plik czyta Kartograf; Retman wypisuje tylko warstwy
+GeoPackage (pyta, gdy jest ich kilka), liczy sumy SHA-256 plików i pokazuje w podglądzie
+obwiednię (EPSG:2180) oraz — dla arkuszy — liczbę arkuszy. Co plik oznacza, mówi plan
+(`geometry_note`):
+
+| Operacja | Znaczenie pliku | Uwagi |
+| --- | --- | --- |
+| NMT dla arkusza, arkusze potomne | arkusze w danej skali, których obwiednia styka się z obwiednią któregokolwiek obiektu warstwy; kształt wieloboku nie jest uwzględniany | liczba arkuszy 0 to problem podglądu |
+| wycinek | jeden prostokąt obejmujący wszystkie obiekty warstwy, bez przycinania do wieloboku | poza lądem Polski brak danych |
+| BDOT10k | pełne pakiety wszystkich powiatów przecinających obwiednię | obszar poza Polską odrzuca podgląd; listę powiatów zna dopiero usługa PRG (sieć, po potwierdzeniu albo w sprawdzeniu) |
+| ortofotomapa (arkusze potomne) | plik nie jest przyjmowany — klasa dostawcy bierze tylko godła | problem podglądu: Retman pyta ponownie o produkt i obszar |
+
+**Wynik i magazyn.** Kartograf zapisuje pobrane pliki w swoim magazynie (`[tools.kartograf]
+store_dir`) jako niezmienne wersje; wynik wskazuje je ścieżką bezwzględną i sumą SHA-256 (p. 5.4)
+i zawiera dokument narzędzia (`tool_<n>_<komenda>.json`). Wyjątek: BDOT10k w Shapefile Kartograf
+zwraca w magazynie archiwa ZIP, a mapper rozpakowuje wszystkie `.shp` wraz z plikami towarzyszącymi
+do folderu wyniku (z odrzuceniem niebezpiecznych ścieżek w archiwum). Ortofotomapa w wybranym
+kolorze idzie przez własny handler (klasa dostawcy narzędzia, ADR-013), do tego samego magazynu.
+Uwagi Kartografa o jakości danych (np. niepełny lot, inny układ arkusza, brak danych dla części
+arkuszy) wynik pokazuje własnym tekstem z `[warnings]` albo dosłownie; częściowy wynik jest wynikiem
+z ostrzeżeniem.
+
+**Sprawdzenie dostępności** (`s`, p. 6.5): dla NMT, NMPT i wycinka pyta usługi GUGiK (skorowidz
+arkuszy WFS i warstwę PRG) o lata, rozdzielczości, układy wysokościowe i kompletność arkuszy dla
+obszaru z planu (`elevation availability`); dla wycinka to przybliżenie, bo wycinek składa serwer
+WCS. Dla ortofotomapy sprawdza plan świeżości dla wariantu RGB (skorowidz zna tylko RGB); dla BDOT10k
+pyta usługę PRG, które powiaty przecina obszar i ile ich paczek jest już w magazynie (dla kodu TERYT
+bez sieci). NMT 100 m (pliki województw) i warianty CIR i czarno-biały nie mają skorowidza — sprawdzenie
+niczego wtedy nie sprawdza i mówi to wprost.
+
+#### 3.2.11. Operacje IMGWTools 3.0.0
+
+Całe IMGWTools w v0.1 (ADR-017): 26 operacji w sześciu kategoriach, na danych IMGW-PIB i ČHMÚ.
+Razem z kategorią `spatial_data` Kartografa jest ich siedem (w żadnej nie więcej niż 9 operacji),
+więc rozpoznawanie jest dwustopniowe (p. 3.4). Wszystkie operacje idą przez warstwę komend; te,
+które łączą się z serwerem, robią to dopiero po potwierdzeniu planu. Operacje oznaczone `check`
+oferują sprawdzenie dostępności (p. 6.5).
+
+| Kategoria (`id`) | Operacja (`id`) — co robi | Rodzaj wyniku | Sieć i zapis |
+| --- | --- | --- | --- |
+| `imgw_catalog` — stacje i rejestr danych | `find_imgw_stations` — wyszukanie stacji po nazwie, rzece, dostawcy i rodzaju | `station_list` | z magazynu bez sieci; z serwera sieć |
+| | `build_imgw_station_catalog` — budowa katalogu stacji w magazynie, opcjonalnie z plikiem położeń; `check` | — | sieć; zapis w magazynie |
+| | `list_imgw_datasets` — zbiory danych i dostawcy | `imgw_report` | bez sieci |
+| `imgw_current` — dane bieżące i ostrzeżenia | `fetch_current_observations` — aktualne pomiary stacji hydrologicznej, meteorologicznej albo synoptycznej | `current_hydro`, `current_meteo`, `current_synop` | sieć |
+| | `fetch_imgw_warnings` — ostrzeżenia hydrologiczne i meteorologiczne | `imgw_warnings` | sieć |
+| | `fetch_hydro_states` — stany wody na stacjach (alarmowe i ostrzegawcze) | `hydro_states` | sieć |
+| `imgw_pmaxtp` — opady maksymalne PMAXTP | `get_pmaxtp` — tabela opadów maksymalnych dla punktu (metoda POT albo AMP; filtry: prawdopodobieństwo i czas trwania; zapis komórki w magazynie albo nie) | `pmaxtp_table` | sieć; z zapisem także magazyn |
+| | `read_stored_pmaxtp` — odczyt zapisanej komórki siatki | `pmaxtp_table` | bez sieci |
+| `imgw_series` — szeregi czasowe stacji | `export_station_series` — szereg stacji (zbiór, okres, rodzaj roku, zmienne) do CSV; `check` | `hydro_series`, `meteo_series` | z magazynu bez sieci; z serwera pobranie archiwów do magazynu (sieć, zapis) |
+| | `show_station_coverage` — pokrycie danych stacji w magazynie (lata, luki) | `imgw_report` | bez sieci |
+| | `build_imgw_series` — budowa szeregów zbioru z archiwów w magazynie | — | zapis w magazynie |
+| `imgw_archives` — archiwa i magazyn | `download_hydro_archives`, `download_meteo_archives` — pobranie archiwów do folderu wyniku, bez magazynu | `imgw_archive` | sieć |
+| | `check_imgw_archives` — plan: co trzeba pobrać względem magazynu | `imgw_plan` | sieć |
+| | `sync_imgw_store` — pobranie archiwów do magazynu; `check` | — | sieć; zapis w magazynie |
+| | `sync_imgw_store_by_plan` — pobranie według planu z wyniku `check_imgw_archives` (wejście `imgw_plan`, np. „#5”) | — | sieć; zapis w magazynie |
+| | `export_imgw_archive` — eksport zapisanych archiwów do CSV albo JSON Lines | `archive_records` | bez sieci |
+| | `init_imgw_store` — utworzenie magazynu | — | zapis (znacznik magazynu) |
+| | `inspect_imgw_store` — opis magazynu (wpisy, wersje, problemy) | `imgw_report` | bez sieci |
+| `imgw_projects` — projekty danych | `init_imgw_project`, `add_imgw_project_task`, `remove_imgw_project_task`, `set_imgw_project_store` — manifest projektu (`imgw-project.json`) w folderze projektu | — | zapis w folderze projektu |
+| | `download_imgw_project` — pobranie i przypięcie danych zadań projektu; `check` | — | sieć; zapis |
+| | `check_imgw_project` — plan aktualności danych projektu | `imgw_plan` | sieć |
+| | `verify_imgw_project` — weryfikacja przypiętych danych (stan albo sumy kontrolne) | `imgw_report` | bez sieci |
+
+Operacje zapisujące tylko do magazynu albo do folderu projektu (bez rodzaju wyniku) zostawiają
+w folderze wyniku `result.json` i dokumenty narzędzia; pozostałe zapisują CSV i raporty w folderze
+wyniku — IMGWTools nigdy nie wskazuje w wyniku plików magazynu. Operacje, których wynikiem jest
+dokument bez pliku (listy, tabele), zapisują go jako CSV (tabele) albo JSON.
+
+**Zasady wspólne dla operacji IMGWTools:**
+
+- **Magazyn** (`[tools.imgwtools] store_dir`, p. 9.1) jest opcją `root` każdej komendy, którą
+  dodaje klient. Brak magazynu, folder obcy albo magazyn o nieobsługiwanym schemacie to
+  **problem podglądu** z poleceniem naprawy („Utwórz magazyn IMGW”, `retman init`); żadna
+  operacja nie tworzy magazynu po cichu. `reference_data_dir` klient eksportuje raz jako zmienną
+  `IMGW_DATA_DIR` przed pierwszym importem narzędzia — jedyny wyjątek od zasady „bez zmiennych
+  środowiskowych”, bo narzędzie nie ma opcji dla pliku statycznych położeń stacji; wartość
+  pochodzi z pliku centralnego, a nie z otoczenia.
+- **Stacje** czyta ekstraktor `station` **offline z katalogu w magazynie** (kody: 9 cyfr
+  IMGW-PIB, identyfikator WIGOS ČHMÚ; nazwy z odmianą polską, odmieniona nazwa wymaga
+  potwierdzenia, p. 6.1). Bez katalogu Retman czyta tylko kody i wskazuje operację
+  `build_imgw_station_catalog` (jawna, potwierdzana, z siecią); do tego czasu nie szuka stacji
+  przez sieć w trakcie pytań.
+- **Okres: dwie semantyki, nigdy mieszane.** Operacje archiwów biorą `years` — lata w numeracji
+  archiwów narzędzia (dla hydrologicznych zbiorów IMGW-PIB są to lata hydrologiczne). Operacje
+  szeregów biorą `period` (lata albo daty) i `year_type` (rok hydrologiczny albo kalendarzowy) —
+  **zawsze pytanie**, gdy nie padło w poleceniu, bo to zmienia daty (1 listopada – 31 października
+  wobec 1 stycznia – 31 grudnia). Retman nie wystawia `months` narzędzia (dla danych hydrologicznych
+  to indeks pliku w roku hydrologicznym).
+- **Zbiory danych** (`dataset`) to zamknięte listy dla modelu (klucze bez kropek, `tool_values`
+  zamienia je na klucze rejestru narzędzia, np. `pl_hydro_daily` → `pl.imgw.hydro_daily`):
+  siedem zbiorów dla komend magazynu i szeregów (IMGW-PIB: hydro dobowe, miesięczne i półroczne,
+  meteo klimatyczne dobowe i opadowe dobowe; ČHMÚ: hydro dobowe i meteo dobowe), a dla pobrania
+  archiwów do folderu wyniku dwie operacje — hydrologiczna (5 zbiorów, w tym zjawiska
+  hydrologiczne) i meteorologiczna (7 zbiorów, w tym miesięczne, synoptyczne i terminowe) —
+  zbiory drugiej operacji są w `excluded` pierwszej (kontrola pokrycia, p. 3.2.3). Metadane zbioru
+  (dostawca, rodzaj, zmienne, numeracja lat) niesie `option_meta`; z nich korzystają ekstraktory
+  kontekstowe (np. zmienne dostępne w zbiorze, stacje właściwego dostawcy i rodzaju).
+- **PMAXTP:** żądanie do narzędzia przyjmuje tylko punkt i metodę, a wynikiem jest tabela
+  (czas trwania × prawdopodobieństwo; kolumny `ks_mm`, `sg_mm`, `rb_mm`). `probability` i `duration`
+  z polecenia są więc **filtrami wyjścia** (p. 4.4): wartość spoza tabeli nie ginie po cichu, tylko
+  daje ostrzeżenie, a gdy żadna nie występuje, zapisywana jest cała tabela. Punkt w PL-1992 Retman
+  przelicza sam, bez bibliotek geoprzestrzennych; punkt poza ramką PMAXTP (49–55° N, 14–24,5° E)
+  jest odrzucany z powodem.
+- **Licencja i atrybucja:** uwagi `license_terms` dostawcy są pokazywane dosłownie w ostrzeżeniach
+  wyniku, a atrybucja rejestru jest w kolumnach CSV (`attribution_source`, `attribution_processed`).
+- **Podgląd** (offline) dopowiada w planie m.in. stan magazynu i liczbę stacji pasujących do nazwy,
+  zakres danych w magazynie (lata, luki) i liczbę plików archiwów do sprawdzenia, a odrzuca plan,
+  którego magazyn nie obsłuży (np. brak szeregu zbioru albo stacji w szeregu przy źródle „magazyn”).
+  **Sprawdzenie dostępności** (`check`) mają tylko operacje, w których sieć zmienia to, co się
+  wydarzy: budowa katalogu stacji (czy listy źródła są nowsze), eksport szeregu (przy źródle
+  „serwer”: ile archiwów trzeba pobrać; przy źródle „magazyn” sprawdzenie nie łączy się z siecią
+  i mówi to wprost) i synchronizacja archiwów (ile plików jest nowszych albo brakuje i ile to
+  danych — zapytania HEAD bez pobierania), pobranie danych projektu (stan zadań). Operacje punktowe
+  i „na żywo” oraz operacje-artefakty (`check_imgw_archives`, `check_imgw_project`) nie mają `check`: sprawdzenie
+  nie powiedziałoby nic, czego nie powie samo wykonanie, a wynik tych operacji jest planem
+  (`imgw_plan`), który użytkownik potwierdza i wykonuje (`sync_imgw_store_by_plan`).
+- **Wyłączone komendy katalogu** (7 z 37, każda osiągalna przez CLI i API IMGWTools): `datasets
+  files`, `pmaxtp url`, `pmaxtp check` i `series select` to wyszukiwania offline używane przez
+  podglądy i mappery, nie osobne operacje; `series read` daje te same rekordy co eksport szeregu
+  (a plik z kolumnami licencyjnymi daje `export_station_series`); `commands schema` i `commands guide`
+  opisują sam katalog (Retman czyta schematy wyłącznie w `retman-scaffold`). Komenda `project add`
+  jest wystawiona dla zadań `series select` i `pmaxtp sync`; pozostałe typy zadań nie mają czego
+  przypinać albo są objęte zadaniem szeregu.
 
 ### 3.3. Modele: Retman nie zawiera modelu [N-01], [N-02], [N-10]
 
@@ -464,8 +808,18 @@ Opis wyników przez model tekstowy działa od v0.2; w v0.1 wyniki opisuje szablo
 Dotyczy konfiguracji z basalem. Część zasad (pkt 2, 4–6) obowiązuje także dla modeli
 generatywnych, bo upraszcza im zadanie.
 
-1. **Maks. 10 opcji na pytanie.** Gdy operacji będzie więcej, rozpoznanie jest **dwustopniowe**:
-   najpierw kategoria (np. opady, przepływy, zlewnia), potem operacja w kategorii.
+1. **Maks. 10 opcji na pytanie.** Pytanie o operację zawiera operacje i opcję `out_of_scope`
+   (pkt 6), więc jedno pytanie obsłuży do 9 operacji. Operacji jest więcej (od v0.1 Kartograf
+   i całe IMGWTools), więc rozpoznanie jest **dwustopniowe**: model wybiera najpierw
+   **kategorię** (opcje: kategorie i `out_of_scope`), potem **operację w kategorii** (opcje:
+   operacje tej kategorii i `out_of_scope`). Decyzje mają nazwy `category` i `operation`
+   (p. 5.4); niepewny wybór kategorii kończy się pytaniem `category` z 2–3 najbardziej
+   prawdopodobnymi grupami (p. 6.1). Loader wymusza limity przy starcie: najwyżej 9 kategorii,
+   najwyżej 9 operacji w kategorii, a każda kategoria ma `label` i `description` w pliku
+   tłumaczeń narzędzia (`[categories.<id>]`, p. 4.2; kategorię o tej samej nazwie w kilku
+   narzędziach opisuje pierwsze z nich, które ma jej tekst). Parametr `choice` ma osobny limit:
+   najwyżej 9 opcji plus `unspecified` (p. 4.3) — dłuższe listy wartości narzędzia dzieli się
+   na parametry albo operacje.
 2. **Słaby w dokładnych liczbach.** Wartości liczbowe zawsze wyciągają ekstraktory (krok ③).
 3. **Kolejność opcji ma znaczenie.** basal uśrednia kolejność prostą i odwróconą; mimo to
    testy (rozdz. 8) muszą sprawdzać stabilność przy przetasowaniu opcji.
@@ -474,8 +828,9 @@ generatywnych, bo upraszcza im zadanie.
 5. **Opcja „nie da się ustalić”.** Każde pytanie o parametr, który może nie paść w poleceniu,
    ma dodatkową opcję `unspecified` („polecenie tego nie określa”).
 6. **Opcja „żadna z powyższych”** [W-03]. Pytanie o operację (krok ①) zawsze zawiera opcję
-   `out_of_scope` („polecenie nie dotyczy żadnej z dostępnych operacji”). Jej wybór kończy
-   się komunikatem o tym, co Retman potrafi, a nie zgadywaniem najbliższej operacji.
+   `out_of_scope` („polecenie nie dotyczy żadnej z dostępnych operacji”) — przy rozpoznawaniu
+   dwustopniowym na obu stopniach. Jej wybór kończy się komunikatem o tym, co Retman potrafi
+   (przy dwóch stopniach: o grupach operacji), a nie zgadywaniem najbliższej operacji.
    Opcja liczy się do limitu 10 opcji.
 
 ---
@@ -485,12 +840,21 @@ generatywnych, bo upraszcza im zadanie.
 ### 4.1. Manifest — definicja operacji
 
 Operacje każdego narzędzia opisuje manifest w `retman/tools/<narzędzie>/manifest.py`:
-zwykły słownik Pythona, po angielsku. Szkic manifestu można wygenerować z dokumentacji
-narzędzia (p. 3.2.3). Każda operacja deklaruje też **co przyjmuje** (`inputs`) i **co zwraca**
+zwykły słownik Pythona, po angielsku. Manifest jest **statyczny i przeglądany przez człowieka**:
+opcje nigdy nie są wyprowadzane z zainstalowanego narzędzia przy ładowaniu (ADR-019) — mają
+polskie teksty i synonimy, zbiór `retman-eval` musi być powtarzalny, a start Retmana nie
+importuje narzędzi. Szkic manifestu można wygenerować z katalogu komend narzędzia
+(`retman-scaffold draft`, p. 3.2.3), a zgodność manifestu z zainstalowanym narzędziem sprawdza
+`retman-scaffold --check`. Każda operacja deklaruje też **co przyjmuje** (`inputs`) i **co zwraca**
 (`outputs`) — na tej podstawie działa przestrzeń robocza (rozdz. 5), a w v0.2 łańcuchy (p. 4.5).
 
+Klucze narzędzia: `tool`, `distribution` (nazwa pakietu do sprawdzenia wersji), `source`
+(wymaganie dla `--with` w podpowiedziach `retman doctor`, p. 9.4), `supported_versions`,
+`translations`, `operations` oraz `client` — fabryka klienta narzędzia (`"moduł:funkcja"`,
+p. 3.2.4), wymagana, gdy któraś operacja deklaruje `calls`.
+
 ```python
-# retman/tools/hydrolog/manifest.py
+# retman/tools/hydrolog/manifest.py — a tool without a command catalog: operations with a handler
 MANIFEST = {
     "tool": "hydrolog",
     "distribution": "hydrolog",              # package name for the installed-version check
@@ -530,10 +894,69 @@ MANIFEST = {
 }
 ```
 
+Operacja narzędzia z katalogiem komend (Kartograf, IMGWTools) zamiast handlera ma budowniczego
+wywołań, a do tego podgląd i sprawdzenie. Fragment manifestu Kartografa:
+
+```python
+# retman/tools/kartograf/manifest.py (fragment)
+MANIFEST = {
+    "tool": "kartograf",
+    "distribution": "kartograf",
+    "source": "git+https://github.com/Daldek/Kartograf",
+    "supported_versions": ">=0.8.0,<0.9",
+    "translations": {"pl": "pl.toml"},
+    "client": "retman.tools.kartograf.client:create",    # factory(settings) -> RunClient (p. 3.2.4)
+    "operations": [
+        {
+            "id": "download_dem_sheet",
+            "category": "spatial_data",                   # first stage of the recognition (p. 3.4)
+            "description": "Download a GUGiK digital terrain model for a map sheet",
+            "inputs": [],
+            "outputs": ["dem", "dem_archive"],
+            "commands": ["elevation download"],           # commands the builder may use (p. 3.2.3)
+            "calls": "retman.tools.kartograf.calls:download_dem_sheet",          # pure builder: params → catalog calls
+            "describe": "retman.tools.kartograf.describe:download_dem_sheet",    # runs → files, values, warnings
+            "preview": "retman.tools.kartograf.preview:download_dem_sheet",      # offline: plan rows and problems
+            "check": "retman.tools.kartograf.checks:download_dem_sheet",         # network step on request (p. 6.5)
+            "params": [
+                {"name": "area", "type": "free", "extractor": "area",
+                 "accepts": ["sheet", "geometry"], "required": True},
+                {
+                    "name": "resolution",
+                    "type": "choice",
+                    "options": ["0_15m", "0_5m", "0_6m", "1m", "5m", "10m", "100m"],
+                    "tool_values": {"0_15m": "0.15m", "0_5m": "0.5m", "0_6m": "0.6m"},  # option keys have no dots
+                    "required": True,
+                },
+                {
+                    "name": "vertical_crs",
+                    "type": "choice",
+                    "options": ["evrf2007", "kron86"],
+                    "tool_values": {"evrf2007": "EVRF2007", "kron86": "KRON86"},
+                    "required": True,
+                    # NMT 100 m has no height system: asking would be a question the call drops
+                    "depends_on": {"resolution": ["0_15m", "0_5m", "0_6m", "1m", "5m", "10m"]},
+                },
+            ],
+        },
+        # ... download_sheet_hierarchy, download_elevation_cutout, download_bdot10k
+    ],
+}
+```
+
+Operacja `download_sheet_hierarchy` ma obok `calls` także `handler`: ortofotomapa z wariantem
+barwnym (RGB, CIR, B/W) idzie przez klasę dostawcy narzędzia, bo komenda katalogu `imagery download`
+nie ma opcji koloru (ADR-013). Ma też `excluded` — wartości narzędzia, których Retman świadomie
+nie wystawia, z uzasadnieniem (np. `"resolution": {"100m": "NMT 100 m is published as province
+files, not as sheets"}`); kontrola pokrycia (p. 3.2.3) wymaga, by każda wartość narzędzia była
+albo oferowana, albo tu wymieniona.
+
 ### 4.2. Teksty dla użytkownika i modelu (pliki tłumaczeń)
 
 Pytania do basala, opisy opcji i etykiety w planie są w plikach tłumaczeń, z kluczami
-odpowiadającymi identyfikatorom z manifestu. Każde narzędzie ma w Retmanie własny plik.
+odpowiadającymi identyfikatorom z manifestu. Każde narzędzie ma w Retmanie własny plik, a rdzeń
+własny (`retman/i18n/pl.toml`: plan, dialog, CLI, wyniki, dziennik, błędy, ostrzeżenia,
+sprawdzenie dostępności, rodzaje danych, `retman init`, `retman doctor`, ekstraktory).
 
 ```toml
 # retman/tools/hydrolog/pl.toml
@@ -572,45 +995,122 @@ Zasady:
   (ADR-008).
 - Parametr `free` ma też `example` (przykład formatu w pytaniu), a każdy parametr może
   mieć `help` (odpowiedź na `?`, p. 6.4).
-- Test automatyczny sprawdza, że każda operacja, parametr i opcja ma tekst w każdym
-  obsługiwanym języku. Brak tłumaczenia = test nie przechodzi.
+- Klucze opcji i kategorie to proste słowa `[a-z0-9_]+`: kropka w kluczu psuje wyszukiwanie
+  tłumaczeń (rozdziela ono klucze po kropkach). Wartość narzędzia z kropką ma więc osobny klucz
+  i wpis `tool_values` — rozdzielczość „0,5 m” to opcja `0_5m` odpowiadająca wartości `0.5m`
+  narzędzia (p. 4.3).
+- Test automatyczny (`validate_manifest`) sprawdza, że każda operacja, parametr i opcja ma tekst
+  w każdym obsługiwanym języku; dla operacji z `check` także `check.notice`, a dla parametru
+  czytanego przez ekstraktor tylko teksty dla użytkownika (bez tekstów dla modelu). Brak
+  tłumaczenia = test nie przechodzi.
+
+W `[operations.<id>]` oprócz `label` i `description` mogą być: `summary` — szablon wiersza
+wyniku (miejsca na klucze `values` wyniku oraz `number`, `operation`, `directory`; bez niego
+działa ogólny tekst rdzenia), `check.notice` — zdanie o tym, co sprawdzenie dostępności
+kontaktuje (obowiązkowe przy `check`, p. 6.5), a w parametrze obszaru `geometry_note` — zdanie
+dopisywane w planie do obszaru z pliku geometrii, które mówi, co ta operacja z nim robi.
+Poza `[operations.*]` plik narzędzia ma tabele obsługujące rozpoznawanie i komunikaty:
+
+| Tabela | Treść |
+| --- | --- |
+| `[categories.<id>]` | `label` i `description` kategorii (dla modelu i użytkownika); wymagane dla każdej kategorii, gdy łączna liczba operacji przekracza 9 (rozpoznawanie dwustopniowe, p. 3.4); tekst bierze się od pierwszego narzędzia, które opisuje kategorię |
+| `[errors.<kod>]` | tekst Retmana dla stabilnego kodu błędu narzędzia (miejsca `{tool}`, `{code}`, `{detail}`, `{hint}`, `{option}`, `{option_label}`, `{allowed}`); tekst samego narzędzia pojawia się tylko jako `{detail}`; bez wpisu działa ogólny tekst rdzenia |
+| `[problems.<klucz>]` | teksty problemów podglądu (`PreviewProblem.key`, p. 3.2.4) |
+| `[preview.<klucz>]` | `label` i `value` dodatkowego wiersza planu z podglądu |
+| `[check.<klucz>]` | linie raportu sprawdzenia dostępności (`CheckItem.key`) |
+| `[warnings.<klucz>]` | teksty ostrzeżeń składanych przez Retmana (kody uwag narzędzia i klucze `HandlerWarning`); inne uwagi `warning` i `error` narzędzia są pokazywane dosłownie za ogólnym tekstem rdzenia, a uwagi `info` zostają w śladzie audytowym. Gdy jedno wywołanie zgłasza ponad 5 uwag o tym samym kodzie, wynik pokazuje pierwsze 3 i jedną linię `tool_notices_more` z liczbą pozostałych (pełna lista zostaje w dokumencie narzędzia `tool_<n>_<komenda>.json`) |
 
 ### 4.3. Typy parametrów i pola operacji
 
 | Typ parametru | Skąd wartość | Przykłady |
 | --- | --- | --- |
-| `choice` | model decyzyjny, wybór z listy; z kluczem `extractor` — kod (ekstraktor), bez modelu | metoda, rodzaj danych, typ analizy; układ wyniku wycinka (`crs`) |
-| `free` | ekstraktor w kodzie | współrzędne, data, prawdopodobieństwo, powierzchnia, stacja, ścieżka pliku |
+| `choice` | model decyzyjny, wybór z listy (najwyżej 9 opcji, z `unspecified` 10; p. 3.4); z kluczem `extractor` — kod (ekstraktor), bez modelu | metoda, rodzaj danych, rozdzielczość, zbiór danych; układ wyniku wycinka (`crs`), rodzaj roku (`year_type`) |
+| `free` | ekstraktor w kodzie | współrzędne, punkt, data, okres, lata, prawdopodobieństwo, czas trwania, powierzchnia, stacja, zmienne, ścieżka pliku, nazwa |
 | `bool` | model decyzyjny, tak/nie | „czy uwzględnić retencję?” |
 
-Dodatkowe klucze parametrów: `required`, `default`, `multiple` (kilka wartości naraz),
-`range` (dozwolony zakres dla liczb), `accepts` (które rodzaje wartości ekstraktora
-przyjmuje operacja, np. ekstraktor `area` daje godło arkusza, prostokąt, kod TERYT albo plik
-z geometrią, a pobranie BDOT10k przyjmuje tylko `["teryt", "bbox", "sheet"]`), `depends_on`
-(parametr dotyczy tylko wybranych wartości innego parametru `choice`, np. rozdzielczość tylko
-dla NMT: `{"product": ["dem"]}`).
+Dodatkowe klucze parametrów: `required`, `default`, `multiple` (kilka wartości naraz; wartość
+podana pojedynczo jest opakowywana w listę), `range` (dozwolony zakres dla liczb), `accepts`
+(które rodzaje wartości ekstraktora przyjmuje operacja, np. ekstraktor `area` daje godło arkusza,
+prostokąt, kod TERYT albo plik z geometrią, a wycinek przyjmuje tylko `["bbox", "geometry"]`),
+`depends_on` (parametr dotyczy tylko wybranych wartości innego parametru `choice`, np.
+rozdzielczość tylko dla NMT: `{"product": ["dem"]}`). Dla `choice` dochodzą jeszcze trzy klucze.
 
-Parametr `choice` z kluczem `extractor` ma też `option_values` (klucz opcji → wartość
-ekstraktora, np. `{"epsg_2180": "EPSG:2180"}`). Wartość ustala wtedy kod: dokładnie jedna
-obsługiwana wartość z polecenia → plan; brak, kilka albo wartość nieobsługiwana → pytanie
-z listą opcji. Model nie dostaje takiego parametru, więc nie ma on `model_question` ani
-opisów opcji dla modelu (ADR-009). Stosujemy to tam, gdzie model myli rolę wartości
-w zdaniu — np. układ prostokąta wejściowego z układem wyniku.
+- `option_values` (z kluczem `extractor`): klucz opcji → wartość ekstraktora, np.
+  `{"epsg_2180": "EPSG:2180"}`. Wartość ustala wtedy kod: dokładnie jedna obsługiwana wartość
+  z polecenia → plan; brak, kilka albo wartość nieobsługiwana → pytanie z listą opcji. Model nie
+  dostaje takiego parametru, więc nie ma on `model_question` ani opisów opcji dla modelu
+  (ADR-009). Stosujemy to tam, gdzie model myli rolę wartości w zdaniu — np. układ prostokąta
+  wejściowego z układem wyniku — albo gdzie wolno pytać tylko o to, co użytkownik rzeczywiście
+  powiedział (rodzaj roku).
+- `tool_values`: klucz opcji → wartość, jaką zna narzędzie, gdy się różnią, np.
+  `{"0_5m": "0.5m", "evrf2007": "EVRF2007"}`. Budowniczy wywołań czyta ją przez
+  `ctx.tool_value(parametr, klucz)`; bez wpisu wartością narzędzia jest sam klucz. Wartości
+  narzędzia muszą być niepuste i unikalne w obrębie parametru.
+- `option_meta`: klucz opcji → nieprzezroczysty słownik JSON dla budowniczych i ekstraktorów
+  kontekstowych, np. dostawca, rodzaj i zmienne zbioru danych (`ctx.option_meta(parametr,
+  klucz)`). Klucze `tool_values` i `option_meta` muszą być kluczami opcji.
 
 | Pole operacji | Znaczenie |
 | --- | --- |
 | `id` | identyfikator (po angielsku), unikalny w całym Retmanie |
-| `category` | kategoria (do dwustopniowego rozpoznania w v0.2) |
+| `category` | kategoria (`[a-z0-9_]+`) — pierwszy stopień rozpoznawania dwustopniowego (p. 3.4) |
 | `description` | krótki opis po angielsku (dla programistów; tekst dla użytkownika jest w tłumaczeniach) |
 | `inputs` | wejścia: nazwa + rodzaj danych (`kind`); źródło to plik, przestrzeń robocza, (v0.2) wcześniejszy krok łańcucha |
 | `outputs` | rodzaje danych zwracanych przez operację |
 | `params` | parametry |
-| `handler` | ścieżka do funkcji handlera w Retmanie (`moduł:funkcja`) |
+| `handler` | handler w Retmanie (`moduł:funkcja`), wołany jako `handler(params, inputs, output_dir, ctx)` — dla operacji, które muszą obrobić wynik (p. 3.2.4) |
+| `calls` | czysty budowniczy wywołań (`moduł:funkcja`) `calls(params, ctx) -> list[CatalogCall]`; wołany offline w planowaniu (walidacja przez narzędzie) i przy wykonaniu przez wspólnego wykonawcę (p. 3.2.4) |
+| `commands` | komendy katalogu, których budowniczy może użyć (inwentarz dla kontroli zgodności, p. 3.2.3); niepuste przy `calls` |
+| `describe` | mapper wyników wywołań na `HandlerOutput` (`moduł:funkcja`); wymaga `calls`, bez niego działa mapowanie ogólne |
+| `excluded` | świadomie nieobsługiwane wartości narzędzia w parametrach `choice`: `{parametr: {wartość narzędzia: uzasadnienie}}`; wartość nie może być jednocześnie oferowana, uzasadnienie jest niepuste (kontrola pokrycia, p. 3.2.3) |
+| `preview` | funkcja offline `preview(params, ctx) -> PreviewOutput`, wołana, gdy plan jest kompletny (p. 3.2.4) |
+| `check` | funkcja sprawdzenia dostępności `check(params, ctx) -> CheckOutput`; jej obecność włącza odpowiedź `s` (p. 6.5) i wymaga tekstu `check.notice` |
+| `no_check` | jawne, przejrzane uzasadnienie (po angielsku, dla opiekunów), dlaczego operacja z komendą sieciową i zapisującą nie ma kroku `check`; wyklucza `check`, akceptuje je kontrola X7 |
+
+Operacja deklaruje co najmniej jedno z `handler` i `calls` (handler może sam wołać wspólnego
+wykonawcę, p. 3.2.4); `calls` wymaga niepustego `commands` i klucza `client` w narzędziu;
+`handler`, `calls`, `describe`, `preview`, `check` i `client` to odwołania `"moduł:atrybut"`
+importowane leniwie. `validate_manifest` sprawdza przy ładowaniu także: unikalność `id`, znane
+rodzaje danych (`kind`), `default` wśród opcji, spójność `depends_on`, `option_values`,
+`tool_values`, `option_meta` i `excluded` oraz komplet tłumaczeń. Przy więcej niż 9 operacjach
+loader wymaga co najwyżej 9 kategorii, co najwyżej 9 operacji w kategorii i tekstów każdej
+kategorii (p. 3.4).
+
+**Ekstraktory** (wartości czyta kod, nigdy model; rejestr w `retman/extractors/__init__.py`).
+Ekstraktory kontekstowe (`station`, `years`, `period`, `variables`) dostają dodatkowo
+`ExtractionContext`: ustawienia `[tools.<narzędzie>]`, folder projektu, dzisiejszą datę (stałą
+w obrębie jednego `Retman`, więc planowanie jest powtarzalne), `scope` — scalone `option_meta`
+opcji już wybranych w parametrach `choice` (np. dostawca, rodzaj i zmienne zbioru danych;
+parametr zbioru musi więc stać w manifeście przed stacją i zmiennymi) oraz `lookup` — offline
+wyszukiwanie w katalogu narzędzia (`PlanClient.lookup`; jedyne takie wyszukiwanie to lista stacji
+z magazynu IMGWTools, `stations find` ze `source=store`). Nie importują narzędzi i nie używają sieci.
+
+| Ekstraktor | Co czyta | Wartość |
+| --- | --- | --- |
+| `area` | godło arkusza (także 8-członowe godło PL-1992), prostokąt w PL-1992 albo WGS84, kod TERYT powiatu, plik geometrii (SHP, GPKG) | `{type: sheet\|bbox\|teryt\|geometry, …}`; geometria: `{type: geometry, path, layer}` (p. 6.1) |
+| `crs` | układ współrzędnych wyniku (nie prostokąta wejściowego) | `EPSG:<kod>` przez `option_values` |
+| `point` | punkt WGS84 albo PL-1992; kolejność osi nigdy nie jest zgadywana | `{type: point, latitude, longitude, input_crs}` (PL-1992: także `easting`, `northing`) |
+| `grid_cell` | komórka siatki PMAXTP („751/317”) | `{type: grid_cell, ind_x, ind_y}` |
+| `probability` | prawdopodobieństwo i okres powtarzalności (p. 4.4) | ułamek `p` (lista przy `multiple`) |
+| `duration` | czas trwania opadu („15 min”, „2 godziny”, „półgodzinny”) | liczba minut (lista przy `multiple`) |
+| `station` | stacja IMGW-PIB albo ČHMÚ po kodzie (9 cyfr, WIGOS) albo po nazwie, offline z katalogu w magazynie; zawężana przez `scope` (dostawca, rodzaj) | `{type: station, provider, kind, code, name, river, in_catalog}` |
+| `synop_station` | stacja synoptyczna (kod 5 cyfr albo fragment nazwy) | `{type: synop_station, code, name}` |
+| `place_query` | fragment nazwy stacji albo rzeki do wyszukiwania (odmieniona forma sprowadzona do tematu) | `{type: query, text, raw}` |
+| `years` | lata archiwów w numeracji narzędzia („2000–2020”, „2010, 2012 i 2015”) | `{type: years, first, last}` albo `{type: year_list, years}` |
+| `period` | okres: lata albo daty („od 1 stycznia 2000 do 31 grudnia 2020”) | wartość `years` albo `{type: dates, start, end}` |
+| `year_type` | rok hydrologiczny albo kalendarzowy; przy braku w poleceniu zawsze pytanie | wybór `hydrological` / `calendar` przez `option_values` |
+| `variables` | zmienne pomiarowe zbioru danych (kody albo słowa: „przepływ”, „stan wody”), sprawdzane względem `scope["variables"]` | lista kodów zmiennych |
+| `identifier` | nazwa nadana przez użytkownika (np. zadania projektu) | tekst zgodny z `^[a-z0-9][a-z0-9_-]{0,63}$` — bez cichego „poprawiania” |
+| `path` | ścieżka pliku wymieniona w poleceniu | ścieżka |
+| `result` | numer wyniku („#3”, p. 5.2) | liczba |
 
 ### 4.4. Prawdopodobieństwo i okres powtarzalności [W-08]
 
 Prawdopodobieństwo jest **liczbą**, bo obliczenia można wykonać dla dowolnej wartości.
-Wyciąga je ekstraktor `probability` w kodzie, bez udziału modelu.
+Wyciąga je ekstraktor `probability` w kodzie, bez udziału modelu. W operacjach PMAXTP (IMGWTools)
+służy jako **filtr wyjścia**: żądanie do narzędzia nie przyjmuje prawdopodobieństwa, a tabela
+wyniku ma ich wiele, więc wartość z polecenia nie ginie po cichu (podobnie czas trwania opadu,
+ekstraktor `duration`).
 
 **Przechowywanie:** zawsze jako ułamek `p` (np. `0.01`). W planie pokazywane jako procent
 i okres powtarzalności: „1% (T = 100 lat)”, gdzie T = 1/p.
@@ -635,11 +1135,16 @@ Przymiotniki liczebnikowe („dziesięcioletnia”, „dwudziestoletnia”, „p
 | --- | --- | --- |
 | „Q50”, „Q20”, „Q2” (bez %) | może oznaczać p = 50% albo T = 50 lat (p = 2%) | pyta, o które chodzi |
 | „Q10” | oba odczyty dają 10% | przyjmuje 10%, bez pytania |
-| „Q100”, „Q500” | p = 100% i więcej jest niemożliwe | przyjmuje T (1%, 0,2%) i pokazuje to w planie |
+| „Q1”, „Q100”, „Q500” | jeden z odczytów (T = 1 rok albo p = 100% i więcej) jest niemożliwy | „Q1” przyjmuje jako 1%; „Q100” i „Q500” jako T (1%, 0,2%) i pokazuje to w planie |
 | „dla 1”, „dla 0,5” (liczba bez „%”, bez „Q” i bez okresu w latach) | 1% czy p = 1? 0,5% czy p = 0,5? | **zawsze** pyta — także gdy jeden z odczytów jest niemożliwy |
+| „Q50 i Q10” (lista z niejednoznacznym elementem) | ten sam problem dla każdego elementu | cała lista ma kilka odczytów (p = 50%, 10% albo T = 50 lat, p = 10%): pyta o odczyt całej listy, nie miesza ich |
 
-**Walidacja:** `0 < p < 1` oraz zakres `range` z manifestu operacji (metoda może mieć własne
-ograniczenia). Wartość poza zakresem → komunikat z dozwolonym zakresem.
+Liczba bez znaku („%”, „Q”, „T =”, okresu w latach) jest czytana tylko po słowie wskazującym
+(„dla”, „prawdopodobieństwo”, „p =”) albo w liście rozpoczętej takim słowem — nigdy jako część
+punktu, daty, roku, godła arkusza ani innej liczby.
+
+**Walidacja:** `0 < p < 1` (obie granice wyłączone) oraz zakres `range` z manifestu operacji
+(metoda może mieć własne ograniczenia). Wartość poza zakresem → komunikat z dozwolonym zakresem.
 
 ### 4.5. Łańcuchy operacji (v0.2) [W-12]
 
@@ -706,6 +1211,11 @@ Wyniki trafiają do podfolderu wyników w tym folderze; jego nazwę określa pli
         └── ...
 ```
 
+Pliki wyniku leżą w jego podfolderze albo — gdy narzędzie trzyma dane w swoim magazynie —
+w magazynie, który leży poza folderem projektu i jest wspólny dla projektów (p. 9.1): wynik
+wskazuje wtedy te pliki ścieżką bezwzględną i sumą SHA-256 (p. 5.4), niczego nie kopiując.
+Wynik może być wejściem kolejnej operacji w obu przypadkach (p. 5.3).
+
 ### 5.2. Numery wyników
 
 - Każdy wynik dostaje **kolejny numer w projekcie** (#1, #2, …), który Retman pokazuje
@@ -767,7 +1277,9 @@ miesiącach i na innym komputerze. To ważne zwłaszcza dla administracji, któr
 podstawie obliczeń.
 
 Wyjątek: przy `journal_commands = false` (p. 9.1) `result.json` i dziennik nie zawierają treści
-poleceń ani odpowiedzi użytkownika; pozostałe dane audytowe są zapisywane zawsze (PRD W-15).
+poleceń ani odpowiedzi użytkownika, a dziennik także innych pokazanych użytkownikowi tekstów,
+które mogą je cytować (planu, powodu ponownego zadania pytania, linii raportu dostępności);
+pozostałe dane audytowe są zapisywane zawsze (PRD W-15).
 
 **1. Dane audytowe w `result.json`** (przy każdym wyniku):
 
@@ -775,10 +1287,15 @@ poleceń ani odpowiedzi użytkownika; pozostałe dane audytowe są zapisywane za
 | --- | --- |
 | `number`, `operation` | numer wyniku i wykonana operacja |
 | `command` | polecenie użytkownika i odpowiedzi na pytania Retmana (jeśli `journal_commands = true`, p. 9.1) |
-| `params` | każda użyta wartość razem ze źródłem: `command`, `default`, `workspace`, `known`, `user` (p. 7.1) |
+| `params` | każda użyta wartość razem ze źródłem: `command`, `default`, `workspace`, `known`, `user` (p. 7.1); dla obszaru z pliku geometrii wartość niesie też wybraną warstwę, a wpis ma `files` — sumy kontrolne SHA-256 plików geometrii według nazw (Shapefile: `.shp`, `.shx`, `.dbf`, `.prj`) |
 | `decisions` | decyzje modelu: pytanie, wybrana opcja, prawdopodobieństwa, pewność i jej metoda (`basal`, `logprobs`, `consistency`, `none`) |
 | `inputs` | źródło każdego wejścia: wynik #N albo plik — ścieżka i suma kontrolna SHA-256, żeby było widać, czy plik później się zmienił |
-| `outputs`, `values`, `files`, `warnings`, `error` | jak w `Result` (p. 7.3); pliki wynikowe także z sumami kontrolnymi |
+| `outputs`, `values`, `files`, `warnings`, `error` | jak w `Result` (p. 7.3); każdy plik wynikowy z sumą kontrolną SHA-256: ścieżka względna wobec projektu, a dla pliku w magazynie narzędzia ścieżka bezwzględna i `store` (nazwa narzędzia) |
+| `error_code` | stabilny kod błędu narzędzia, gdy operacja nie powiodła się z jego powodu (tylko wtedy) |
+| `tool` | blok wywołań katalogu narzędzia (tylko operacje przez warstwę komend, p. 3.2.4): narzędzie i jego wersja oraz dla każdego wywołania komenda, opcje, dokładna linia komendy (z argumentami środowiskowymi), schemat dokumentu, status, pliki (ścieżka, SHA-256, etykieta wersji, status) i nazwa oraz suma SHA-256 pełnego dokumentu narzędzia, zapisanego w folderze wyniku jako `tool_<n>_<komenda>.json` |
+| `unset` | parametry nieobowiązkowe, których polecenie nie podało, z tekstem, co to znaczy (p. 6.3); tylko gdy niepuste |
+| `preview` | wartości ustalone przez podgląd offline (np. obwiednia obszaru, liczba arkuszy); tylko gdy niepuste |
+| `checks` | raporty sprawdzeń dostępności wykonanych dla końcowego stanu planu (`CheckReport.to_dict()`, p. 6.5); tylko gdy były |
 | `environment` | wersja Retmana, wersje użytych narzędzi, model decyzyjny (backend, nazwa, adres serwera), wersja Pythona, system |
 | `timing` | zatwierdzenie planu, początek i koniec wykonania, czas trwania |
 
@@ -787,9 +1304,10 @@ poleceń ani odpowiedzi użytkownika; pozostałe dane audytowe są zapisywane za
 | Zdarzenie | Zapisywane |
 | --- | --- |
 | polecenie | treść (jeśli `journal_commands = true`), czas, identyfikator sesji |
-| pytanie i odpowiedź | treść pytania, odpowiedź użytkownika (jeśli `journal_commands = true`) |
+| pytanie i odpowiedź | treść pytania, odpowiedź użytkownika (jeśli `journal_commands = true`); przy pytaniu zadanym ponownie po odrzuceniu przez narzędzie także powód (`reason`, jeśli `journal_commands = true`) |
 | plan | pokazany plan i jego decyzja: **zatwierdzony / odrzucony / zmieniony / anulowany**; do tego dane: wartości ze źródłami (`values`, `inputs`), otwarte pytania, decyzje modelu z pewnością (`decisions`), a przy zmianie — nazwa zmienianej wartości (`changed`) |
 | poza zakresem | decyzja modelu, że polecenie nie dotyczy żadnej operacji (z pewnością) |
+| sprawdzenie dostępności | `check` (p. 6.5): zgoda i wykonanie (`approved`, „wykonane”) albo odmowa zgody (`rejected`, „pominięte”, bez użycia sieci); wynik (`available`, `partial`, `unavailable`, `unknown`), błąd, narzędzie i jego wersja, linie raportu (jeśli `journal_commands = true`) oraz dane planu, które zostały wysłane (wartości ze źródłami, wejścia, decyzje modelu); zapisywane także przy przerwaniu (Ctrl+C); nie trafia do zbioru poleceń (ADR-010) |
 | wykonanie | numer wyniku albo opis błędu |
 
 Dziennik jest **tylko dopisywany** — Retman nigdy nie zmienia ani nie usuwa wpisów. Zapisuje
@@ -806,6 +1324,9 @@ $ retman log
 2026-10-11 15:02  pytanie: Której zlewni użyć? → #1
 2026-10-11 15:03  plan odrzucony
 ```
+
+`retman log` pokazuje też zdarzenie „sprawdzenie dostępności” z rozstrzygnięciem „wykonane”
+albo „pominięte”.
 
 **3. Log techniczny** — osobny, do diagnozowania problemów Retmana (połączenia, czasy odpowiedzi,
 błędy), w katalogu logów użytkownika: Linux `~/.local/state/retman/`, macOS
@@ -847,22 +1368,32 @@ domyślnie Linux `~/.local/share/retman/collected.jsonl`, macOS
 | Sytuacja | Reakcja |
 | --- | --- |
 | Pewność wyboru operacji < próg | Pokazuje 2–3 najbardziej prawdopodobne operacje do wyboru |
-| Wybrano `out_of_scope` | Informuje, że polecenie nie pasuje do żadnej operacji, i pokazuje listę dostępnych |
+| Pewność wyboru kategorii < próg (rozpoznawanie dwustopniowe, p. 3.4) | Pokazuje 2–3 najbardziej prawdopodobne grupy operacji do wyboru; operację w wybranej grupie wskazuje potem model |
+| Wybrano `out_of_scope` (w którymkolwiek stopniu rozpoznawania) | Informuje, że polecenie nie pasuje do żadnej operacji (przy rozpoznawaniu dwustopniowym — do żadnej grupy), i pokazuje listę dostępnych |
 | Wymagany parametr = `unspecified` | Pyta o ten parametr, pokazując listę opcji |
 | Pewność parametru < próg | Pyta: „Czy chodziło o X?” |
 | Ekstraktor nic nie znalazł | Prosi o wartość i podaje przykład formatu |
 | Ekstraktor znalazł kilka dopasowań (np. kilka stacji o podobnej nazwie) | Pokazuje kandydatów do wyboru |
+| Dopasowanie nieścisłe: nazwa stacji tylko w formie odmienionej („w Poznaniu”, „z Opola”) | Pokazuje odczyt i prosi o jego potwierdzenie wyborem z listy; odmienionej nazwy nie przyjmuje po cichu. Nazw nie poprawia też po literówkach |
+| Stacja podana nazwą, a w magazynie IMGWTools nie ma katalogu stacji | Katalog istnieje dopiero po operacji budującej go (sieć, po potwierdzeniu), więc do tego czasu Retman czyta tylko kody stacji (9 cyfr, WIGOS) i pyta o kod |
+| Rodzaj roku (hydrologiczny czy kalendarzowy) nie padł w poleceniu | **Zawsze** pyta — nie ma wartości domyślnej. Słowo „hydrologiczne” opisujące dane („dane hydrologiczne z lat 2000–2020”) nie jest odpowiedzią |
+| Okres względny lub otwarty („ostatnie 10 lat”, „od 2010”) | Nie zgaduje dat: prosi o lata albo daty. Sama czterocyfrowa liczba nie jest rokiem (może być kodem TERYT, godłem albo kodem EPSG) |
 | W projekcie jest kilka pasujących wyników (np. kilka zlewni) | Pyta, którego użyć (p. 5.3) |
 | Zapis niejednoznaczny (np. „Q50”, p. 4.4) | Pyta, który odczyt jest właściwy |
+| Plik geometrii w GeoPackage z kilkoma warstwami | Pokazuje listę warstw do wyboru; warstwy nie zgaduje (jedna warstwa jest używana i pokazana w planie, Shapefile warstw nie ma) |
+| Plik obszaru w formacie, którego narzędzia nie czytają (GeoJSON, GML) | Odmawia z powodem: geometria musi być plikiem SHP albo GPKG |
+| Narzędzie odrzuca wybór offline (np. rozdzielczość i układ wysokościowy, które nie tworzą poprawnej pary) | Pyta ponownie o parametry, które narzędzie wskazało, z powodem w pytaniu (p. 6.3) |
 | Brak wymaganego wejścia (ani w pliku, ani w przestrzeni roboczej) | Informuje, czego brakuje i jak to uzyskać |
 | Wartość poza zakresem (np. współrzędne poza Polską, prawdopodobieństwo poza `range`) | Informuje i prosi o poprawkę |
 | Prawdopodobnie zamieniona kolejność współrzędnych | Patrz uwaga niżej |
 
 **Uwaga o współrzędnych.** Kolejność osi bywa myląca: w WGS84 ludzie piszą raz „szerokość, długość”,
 raz odwrotnie, a w układzie PL-1992 (EPSG:2180) oś X oznacza kierunek północny, odwrotnie niż
-w intuicyjnym „X = wschód”. Ekstraktor rozpoznaje układ i kolejność po zakresach wartości dla Polski.
-Gdy interpretacja jest niejednoznaczna, Retman pokazuje w planie, jak odczytał współrzędne
-(np. „52.41° N, 16.93° E”), i prosi o potwierdzenie.
+w intuicyjnym „X = wschód”. Ekstraktor rozpoznaje układ i kolejność po etykietach i po rozłącznych
+zakresach wartości dla Polski; para pasująca do obu kolejności daje dwa odczyty, więc Retman
+pyta, zamiast wybierać. Współrzędne PL-1992 przelicza w czystym Pythonie, bez bibliotek
+geoprzestrzennych i bez narzędzia. Plan zawsze pokazuje, jak Retman odczytał współrzędne
+(np. „52.41° N, 16.93° E”), i prosi o potwierdzenie, gdy interpretacja jest niejednoznaczna.
 
 ### 6.2. Progi pewności [N-05]
 
@@ -871,7 +1402,7 @@ Gdy interpretacja jest niejednoznaczna, Retman pokazuje w planie, jak odczytał 
 - Można je **nadpisać** liczbą w konfiguracji (p. 9.1).
 - Progi basala dobrano na prostych formatach pytań (opisy opcji, pytania tak/nie). Dla pytań
   Retmana należy je **dostroić na własnym zbiorze testowym** (rozdz. 8) i wpisać do konfiguracji.
-- Osobny próg dla rozpoznania operacji i dla parametrów.
+- Osobny próg dla rozpoznania operacji (także wyboru kategorii, p. 3.4) i dla parametrów.
 - Dla modeli bez skalibrowanej pewności progi z kalibracji basala nie mają zastosowania.
   Przy pewności z `logprobs` lub zgodności progi trzeba dostroić osobno dla danego modelu
   i wpisać liczbą; `"auto"` z backendem innym niż `basal` (np. `openai_compatible`) to **błąd
@@ -897,10 +1428,27 @@ Wykonać? [t]ak / [n]ie / [z]mień
 
 Zasady:
 - W wersjach 0.x **każde wykonanie wymaga potwierdzenia**. Nie ma trybu, który je pomija.
-- Parametry uzupełnione wartością domyślną, odczyty niejednoznacznych zapisów oraz wejścia
-  wzięte z przestrzeni roboczej są wyraźnie oznaczone, żeby użytkownik mógł je zmienić.
+- Plan jest kompletny wtedy i tylko wtedy, gdy nie ma otwartych pytań. Gdy jest kompletny,
+  narzędzie sprawdza go **offline** (podgląd, p. 3.2.4): waliduje każde wywołanie, które
+  wykonałoby operację, i może dopisać do planu wiersze oznaczone `← podgląd, bez sieci` (np.
+  liczbę arkuszy dla obszaru z pliku geometrii). Gdy narzędzie odrzuca wartość, Retman pyta
+  ponownie o parametry, które narzędzie wskazało, z powodem w pytaniu — plan, którego narzędzie
+  nie przyjmuje, nie da się potwierdzić. Wartości podanych z zewnątrz (`known`) nie otwiera
+  ponownie, a gdy nie ma nic do otwarcia, zgłasza błąd (`RetmanError`) zamiast zapętlać pytania.
+  Odrzucenie, którego żadna odpowiedź nie naprawi (zainstalowane narzędzie nie przyjmuje już
+  tego, co opisuje manifest), kończy się błędem `ToolDriftError` z podpowiedzią `retman doctor`.
+- Parametry uzupełnione wartością domyślną, odczyty niejednoznacznych zapisów, wejścia wzięte
+  z przestrzeni roboczej i wiersze podglądu są wyraźnie oznaczone, żeby użytkownik mógł je zmienić.
+- Parametr nieobowiązkowy (bez `required` i bez `default`), którego polecenie nie podało, nie jest
+  pytaniem, ale ma w planie własny wiersz z tekstem `params.<p>.unset` (np. „Rodzaj stacji:
+  wszystkie rodzaje (hydrologiczne i meteorologiczne) ← nie podano w poleceniu, parametr
+  nieobowiązkowy”); `validate_manifest` wymaga tego tekstu, a `result.json["unset"]` go zapisuje
+  (N-11: nic nie dzieje się po cichu).
+- Potwierdzenie dotyczy dokładnie tego planu: każda zmiana (odpowiedź, `z`) i każde sprawdzenie
+  dostępności (p. 6.5) je cofa. Kolejność to zawsze: sprawdzenie, potwierdzenie, wykonanie.
 - W API Pythona `execute()` przyjmuje wyłącznie plan potwierdzony przez `plan.confirm()`.
-  Bez tego zgłasza błąd `PlanNotConfirmedError`.
+  Bez tego zgłasza błąd `PlanNotConfirmedError`. Potwierdzenia nie przenosi serializacja:
+  `Plan.from_dict` zawsze zwraca plan niepotwierdzony (p. 7.1).
 - Testy jakości (rozdz. 8) sprawdzają planowanie, nie wykonanie, więc obowiązkowe
   potwierdzenie im nie przeszkadza.
 
@@ -952,12 +1500,16 @@ Gotowe. Wynik #4: pobrano 4018 dni pomiarów. Pliki: retman-output/004_fetch_img
 - **`?`** przy dowolnym pytaniu pokazuje krótkie wyjaśnienie parametru (z pliku tłumaczeń).
 - **`anuluj`** albo Ctrl+C przerywa bez wykonania czegokolwiek.
 - Przy planie: **`t`** wykonuje, **`n`** rezygnuje, **`z`** pozwala zmienić wybraną wartość
-  (lista numerowana) bez wpisywania polecenia od nowa.
+  (lista numerowana) bez wpisywania polecenia od nowa; **`s`** — tylko gdy operacja oferuje
+  sprawdzenie dostępności — uruchamia osobny krok z własną uwagą i zgodą (p. 6.5).
+- Po wykonaniu CLI drukuje podsumowanie wyniku, a potem każde ostrzeżenie narzędzia w osobnej
+  linii „Uwaga: …” (uwagi o jakości danych i licencyjne).
 - Odpowiedzi trafiają do planu ze źródłem `user` (p. 7.1).
 
 **Bez terminala** (skrypty, potoki, CI — wejście nie jest terminalem) Retman nie zadaje pytań
-i niczego nie wykonuje. Wypisuje, czego brakuje albo jaki byłby plan, i kończy pracę
-z odpowiednim kodem wyjścia. To konsekwencja obowiązkowego potwierdzenia (p. 6.3).
+i niczego nie wykonuje, ani nie sprawdza dostępności (p. 6.5). Wypisuje, czego brakuje albo jaki
+byłby plan, i kończy pracę z odpowiednim kodem wyjścia. To konsekwencja obowiązkowego
+potwierdzenia (p. 6.3) i reguły „bez sieci przed potwierdzeniem” (N-12).
 
 | Kod wyjścia | Znaczenie |
 | --- | --- |
@@ -968,11 +1520,88 @@ z odpowiednim kodem wyjścia. To konsekwencja obowiązkowego potwierdzenia (p. 6
 
 **Jedna logika, wiele interfejsów.** Rozmowa w terminalu to tylko warstwa wyświetlania. Pytania
 tworzy i odpowiedzi sprawdza `core/dialog.py`, dostępny też z Pythona (`plan.questions`,
-`plan.answer()`, p. 7.1). Dzięki temu te same pytania obsłużą później serwer MCP, API HTTP i GUI
-(p. 7.4, 7.5).
+`plan.answer()`, `plan.can_check`, `plan.confirm_check()`, p. 7.1). Dzięki temu te same pytania
+obsłużą później serwer MCP, API HTTP i GUI (p. 7.4, 7.5).
 
 **Zależności:** w v0.1 wyłącznie biblioteka standardowa Pythona (`input()`), bez bibliotek
 do interfejsów terminalowych.
+
+### 6.5. Sprawdzenie dostępności [W-17], [N-12]
+
+Walidacja offline (p. 6.3) wie, czy narzędzie przyjmie żądanie, ale nie wie, **co źródło danych
+faktycznie ma** dla wybranego obszaru: które lata i rozdzielczości istnieją, czy pokrycie jest
+pełne, które archiwa IMGW są już opublikowane. Można się tego dowiedzieć tylko przez sieć,
+a przed potwierdzeniem planu Retman jej nie używa (N-12). Dlatego sprawdzenie jest **osobnym
+krokiem na życzenie**, z własną uwagą i własną zgodą — jedynym wyjątkiem od tej reguły.
+
+Odpowiedź **`s`** w pytaniu o plan jest dostępna tylko wtedy, gdy operacja deklaruje `check`
+(p. 4.3) i plan jest kompletny (przykład poglądowy; linie raportu pochodzą z `pl.toml` narzędzia):
+
+```
+Plan:
+  Operacja:                 Pobranie NMT dla arkusza
+  Godło arkusza NMT:        godło arkusza N-34-130-D-d-2-4
+  Rozdzielczość NMT:        1 m
+  Układ wysokościowy NMT:   EVRF2007
+Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
+> s
+Sprawdzenie dostępności to osobny krok i jedyny, który łączy się z internetem przed wykonaniem planu.
+Zapytam usługi GUGiK (skorowidz arkuszy WFS i warstwę PRG) o dane dla godła z planu.
+Nie pobiera plików, niczego nie zapisuje w wynikach i nie wysyła Twojego polecenia — tylko wartości z planu.
+Połączyć się z internetem i sprawdzić? [t]ak / [n]ie
+> t
+Sprawdzam… (Ctrl+C przerywa)
+Sprawdzenie dostępności (Kartograf 0.8.0, 2026-10-19 16:12): dane dostępne
+  Twój wybór: NMT, 1 m, EVRF2007 — dostępny, rok 2023, komplet arkuszy
+  Dostępne także dla tego obszaru:
+    NMT 0,5 m, EVRF2007 — rok 2025, komplet
+    NMT 1 m, KRON86 — rok 2019, komplet
+Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
+```
+
+**Reguły bramki** (testowalne niezmienniki):
+
+1. `Retman.check()` zgłasza `CheckNotConfirmedError`, jeśli nie było `plan.confirm_check()`. Zgoda
+   jest jednorazowa (`check()` ją zużywa), nie jest częścią stanu planu (`to_dict()` jej nie
+   zapisuje, a `from_dict` zawsze daje „brak zgody”) i jest cofana każdą zmianą planu.
+2. `confirm_check()` nie potwierdza planu. `check()` **cofa** potwierdzenie planu, bo podsumowanie
+   się zmieniło — użytkownik potwierdza dopiero po zobaczeniu raportu.
+3. `confirm_check()` i `check()` wymagają kompletnego planu i zadeklarowanego `check`
+   (inaczej `PlanIncompleteError`).
+4. Sprawdzenie nie tworzy numeru ani folderu wyniku i niczego nie zapisuje w przestrzeni
+   roboczej. Jedyne punkty wejścia zdolne do użycia sieci narzędzia to `execute()` (po `confirm()`)
+   i `check()` (po `confirm_check()`) — tylko one budują pełnego klienta narzędzia (`RunClient`,
+   p. 3.2.4).
+5. Sprawdzenie **nigdy nie zmienia wartości planu**: informuje, a decyduje użytkownik (W-02).
+   `plan.checks` opisuje zawsze dokładnie bieżący stan planu (zmiana planu je czyści), wcześniejsze
+   sprawdzenia zostają w dzienniku. Po sprawdzeniu plan pokazuje wiersz „Sprawdzenie dostępności:
+   <status> (<czas>)”, więc zatwierdzony plan i dziennik zapisują, że użytkownik zdecydował po
+   zobaczeniu raportu. Sprawdzenie nie blokuje `t` — także przy statusie „brak danych”.
+6. Awaria sprawdzenia (brak sieci, błąd usługi) to **raport ze statusem `unknown`** i powodem
+   w `error`, a nie wyjątek. Przerwanie (`KeyboardInterrupt`) propaguje się, a dziennik i tak
+   dostaje zdarzenie `check`.
+
+**Statusy** (`CheckReport.status`): `available` — wybór z planu może być obsłużony tak, jak
+określono; `partial` — część (brakujące lub niekompletne arkusze, pliki); `unavailable` — nic;
+`unknown` — nie dało się ustalić. Linie raportu (`items` → `lines`) są w kolejności: najpierw własny
+wybór z planu, potem alternatywy (np. inne lata albo rozdzielczości dla tego obszaru); tekst
+każdej linii pochodzi z tabeli `[check]` w `pl.toml` narzędzia.
+
+**Co sprawdzenie wysyła:** wyłącznie wartości z planu (obszar, produkt, lata…) do tych samych
+usług danych, które zapytałoby wykonanie; nigdy treści polecenia, odpowiedzi, danych modelu ani
+zawartości plików. Uwaga przed zgodą (`operations.<id>.check.notice`) mówi, które usługi zostaną
+zapytane. W `retman.toml` nie ma przełącznika wyłączającego sprawdzenia: każde wymaga zgody
+na ekranie.
+
+**CLI:** każda odpowiedź inna niż `t` w pytaniu o zgodę jest **odmową** (zamknięcie awaryjne):
+dziennik zapisuje „pominięte”, Retman mówi „Sprawdzenie pominięte.” i wraca do pytania o plan.
+Po raporcie wraca to samo pytanie o plan, a `z` działa jak zwykle — każda nowa wartość przechodzi
+znów przez podgląd offline. Bez terminala i z `--plan-only` Retman nigdy nie sprawdza (kody wyjścia
+bez zmian). Ctrl+C w trakcie sprawdzenia kończy rozmowę kodem 3 („Anulowano.”).
+
+**Dziennik i wynik:** zdarzenie `check` (p. 5.4) zapisuje zgodę albo odmowę, status, błąd, narzędzie
+i jego wersję, linie raportu oraz dane planu, które zostały wysłane; zapisywane jest także przy
+przerwaniu. Raporty końcowego stanu planu trafiają do `result.json` (`checks`).
 
 ---
 
@@ -987,10 +1616,13 @@ retman "Pobierz dobowe opady ze stacji Poznań z lat 2000–2020"   # one comman
 retman                     # session: many commands in one conversation (p. 6.4)
 retman --plan-only "..."   # show the plan only, run nothing
 retman --explain "..."     # show model decisions and confidences (diagnostics)
+retman --config <file> ... # use another central config file (e.g. for tests)
 retman doctor              # environment check (p. 7.2)
+retman doctor --deep       # also the slow checks: a trial write to the IMGWTools store (p. 7.2)
+retman doctor --json       # the same report as JSON, for bug reports
 retman results             # list results of the current project (p. 5.2)
 retman log                 # show the project journal (p. 5.4)
-retman init                # create the central config file (p. 9.1); a wizard from v0.5
+retman init                # create the central config file and the tool stores (p. 9.1); a wizard from v0.5
 retman add-tool kartograf  # add a known tool to Retman's environment (from v0.5, p. 9.4)
 ```
 
@@ -1012,10 +1644,23 @@ while plan.questions:
     plan = plan.answer(question.name, input("> "))
     # The answer is checked with the same extractors and validators as the command.
     # An invalid answer keeps the question open and explains why in question.error.
+    # A complete plan has been checked offline by the tool (p. 3.2.4): if the tool
+    # rejects a value, the parameters it names come back as questions with the reason.
 
-print(plan.summary())                    # human-readable plan; defaults and workspace inputs are marked
+print(plan.summary())                    # human-readable plan; defaults, workspace inputs and preview rows are marked
+
+# Optional: ask the tool's data services what exists for this plan (a separate network step, p. 6.5)
+if plan.can_check:
+    print(plan.check_notice())           # what the step contacts and what it sends
+    if input("Check availability? [y/n] ") == "y":
+        plan.confirm_check()             # separate, single-use consent; does NOT confirm the plan
+        report = retman.check(plan)      # CheckReport; raises CheckNotConfirmedError without confirm_check()
+        print(report.summary())          # status and lines; the plan's values are untouched
+    else:
+        retman.record_check(plan, "rejected")    # journal entry; no network was used
+
 if input("Execute? [y/n] ") == "y":
-    plan.confirm()                       # explicit confirmation is mandatory
+    plan.confirm()                       # explicit confirmation is mandatory (check() withdraws it)
     result = retman.execute(plan)        # raises PlanNotConfirmedError without confirm()
 
     if result.ok:
@@ -1023,16 +1668,34 @@ if input("Execute? [y/n] ") == "y":
         print("Files:", result.files)
     else:
         print("Error:", result.error)
+    for warning in result.warnings:      # tool notices (data quality, licence): always show them
+        print("Warning:", warning)
 ```
 
 `Retman.from_config()` bez argumentu wczytuje plik centralny (p. 9.1) — ten sam, z którego
-korzysta CLI; jawną ścieżkę można podać opcjonalnie, np. w testach.
+korzysta CLI; jawną ścieżkę (`path`), atrapę modelu (`backend`) i folder projektu (`project_dir`)
+można podać opcjonalnie, np. w testach. Konstruktor `Retman(config, backend, project_dir)`
+przyjmuje dodatkowo `clients={narzędzie: klient}` (wstrzyknięcie klientów narzędzi, np.
+`FakeToolClient`; domyślnie klient jest budowany leniwie z manifestu, p. 3.2.4) i `today`
+(data, względem której ekstraktory czytają wyrażenia względne).
 
 | Element | Znaczenie |
 | --- | --- |
-| `plan.questions` | lista otwartych pytań (`Question`); pusta, gdy plan jest kompletny |
-| `Question` | `name` (parametr), `type` (`choice`, `value`, `confirm`), `text` (treść w języku użytkownika), `options` (dla wyborów), `default`, `example` (przykład formatu), `error` (dlaczego poprzednia odpowiedź była błędna) |
+| `plan.questions` | lista otwartych pytań (`Question`); pusta, gdy plan jest kompletny (i zaakceptowany przez podgląd narzędzia) |
+| `Question` | `name` (parametr), `type` (`choice`, `value`, `confirm`), `text` (treść w języku użytkownika), `options` (dla wyborów), `default`, `example` (przykład formatu), `error` (dlaczego poprzednia odpowiedź była błędna albo dlaczego narzędzie odrzuciło wartość), `help` (odpowiedź na `?`) |
 | `plan.answer(name, answer)` | zwraca nowy plan z odpowiedzią; numer opcji albo własne słowa |
+| `plan.change(name)` | ponownie otwiera pokazaną wartość do poprawy (`z` w CLI) |
+| `plan.preview_rows`, `plan.preview_values` | to, co narzędzie ustaliło offline o kompletnym planie: wiersze (pokazane w planie z oznaczeniem) i wartości (tylko do audytu, p. 5.4) |
+| `plan.reopened` | parametry, które narzędzie odrzuciło po odpowiedzi użytkownika, z tekstem pokazanym przy ponownym pytaniu (p. 6.3) |
+| `plan.can_check` | czy operacja oferuje sprawdzenie dostępności, a plan jest kompletny (p. 6.5) |
+| `plan.check_notice()` | tekst do pokazania przed zgodą: co sprawdzenie kontaktuje i co wysyła |
+| `plan.confirm_check()` | jednorazowa zgoda na jedno sprawdzenie; nie potwierdza planu |
+| `retman.check(plan)` | sprawdzenie dostępności; zwraca `CheckReport`; bez zgody `CheckNotConfirmedError`; cofa potwierdzenie planu; nie tworzy wyniku |
+| `retman.record_check(plan, "rejected")` | wpis w dzienniku o odmowie zgody (bez użycia sieci) |
+| `plan.checks` | raporty sprawdzeń dla bieżącego stanu planu |
+| `CheckReport` | `operation`, `tool`, `version`, `checked_at`, `status` (`available`, `partial`, `unavailable`, `unknown`), `header`, `items` (fakty dla maszyn), `lines` (linie pokazane użytkownikowi), `error`; `summary()`, `to_dict()` |
+| `result.warnings` | przetłumaczone ostrzeżenia operacji; wywołujący musi je pokazać (p. 7.3) |
+| `result.error_code` | stabilny kod błędu narzędzia, gdy operacja nie powiodła się z jego powodu |
 
 **Plan jako dane i wartości znane z zewnątrz** (przygotowanie pod współpracę z GUI, p. 7.4):
 
@@ -1047,8 +1710,14 @@ plan = retman.plan(
 )
 
 state = plan.to_dict()          # JSON-serializable: operation, values and the source of each value
-same_plan = Plan.from_dict(state)
+same_plan = Plan.from_dict(state, retman=retman)    # `retman=` lets the loaded plan answer questions
 ```
+
+`to_dict()` zawiera wartości ze źródłami, pytania, decyzje modelu, `reopened`, wiersze i wartości
+podglądu oraz raporty sprawdzeń. Zgoda na sprawdzenie nie jest częścią stanu, a `Plan.from_dict`
+**zawsze zwraca plan niepotwierdzony** — także gdy zapisany stan niesie `confirmed`: potwierdzenie
+trzeba dać ponownie (`plan.confirm()`), co zamyka lukę, przez którą przesłany plan mógłby wykonać
+się bez człowieka [W-05].
 
 Źródło każdej wartości w planie: `command` (z polecenia), `default` (wartość domyślna),
 `workspace` (wcześniejszy wynik), `known` (podana z zewnątrz, np. w GUI), `user` (odpowiedź na pytanie Retmana).
@@ -1061,10 +1730,12 @@ same_plan = Plan.from_dict(state)
 
 | Obszar | Sprawdzenia |
 | --- | --- |
-| Konfiguracja | ścieżka i poprawność pliku centralnego; folder bieżącego projektu i czy folder wyników jest zapisywalny |
+| Konfiguracja | ścieżka i poprawność pliku centralnego (wszystkie problemy naraz, także brak `[tools.*]`); folder bieżącego projektu i czy folder wyników jest zapisywalny |
 | Model decyzyjny | **adres serwera**; czy odpowiada; jaki model jest załadowany; **pytanie testowe** z oczywistą odpowiedzią (czy model odpowiada sensownie); skąd pochodzi pewność (`basal`, `logprobs`, zgodność, niedostępna) i progi (`"auto"` z backendem innym niż `basal` to błąd konfiguracji, p. 6.2) |
 | Model tekstowy | czy jest włączony; **adres serwera**; czy odpowiada |
 | Narzędzia | które są zainstalowane; czy ich wersje mieszczą się w obsługiwanym zakresie; liczba dostępnych operacji |
+| Magazyny danych narzędzi | dla narzędzi w użyciu (zainstalowanych, w obsługiwanej wersji, niewyłączonych): ścieżka magazynu bez dowiązań symbolicznych (IMGWTools takiej nie przyjmuje: błąd; Kartograf: ostrzeżenie), folder istnieje albo da się go utworzyć i można w nim zapisywać, **dowiązania twarde działają w obu magazynach** (próba w magazynie albo w najbliższym istniejącym folderze tego samego dysku); Kartograf: cache metadanych (brak to ostrzeżenie — Kartograf działa wolniej); IMGWTools: znacznik `imgw-store.json` i jego schemat (brak magazynu to ostrzeżenie z podpowiedzią, folder obcy albo uszkodzony znacznik to błąd), `pyarrow` (szeregi czasowe), folder danych referencyjnych; z `--deep` także próbny zapis do magazynu IMGWTools |
+| Zgodność opisów z narzędziami | lekka wersja `retman-scaffold --check` (p. 3.2.3) dla narzędzi w użyciu: komendy z manifestu są w katalogu zainstalowanego narzędzia, a narzędzie nie oferuje wartości, której manifest ani nie oferuje, ani nie wyłącza (np. „kartograf 0.8.1 przyjmuje rozdzielczość 0,3 m”); operacje bez wiersza w zbiorze `retman-eval` są zgłoszone jako niesprawdzone. Linie ostrzegają, ale nie blokują pracy (kod wyjścia bez zmian) |
 | Tłumaczenia | komplet tekstów dla języka z `[ui] language` |
 | Przestrzeń robocza | folder wyników bieżącego projektu; liczba wyników; czy `result.json` dają się odczytać |
 
@@ -1079,14 +1750,25 @@ Konfiguracja
   ✓ projekt: ~/projekty/zlewnia-a → wyniki w retman-output/ (5 wyników, zapis możliwy)
 
 Model decyzyjny
-  ✓ basal-serve: http://127.0.0.1:8000 (lokalnie)
-  ✓ model: basal-1.5-mini, pytanie testowe: poprawna odpowiedź
-  ! progi pewności: "auto" — zalecane dostrojenie na własnym zbiorze testowym (p. 6.2)
+  ✓ adres modelu (basal): http://127.0.0.1:8000
+  ✓ model: basal-1.5-mini dostępny na serwerze
+  ✓ pytanie testowe: poprawna odpowiedź (pewność 0,99 z basala)
+  ! progi pewności: "auto" — zalecane dostrojenie na własnym zbiorze testowym (retman-eval, ARCHITECTURE 6.2)
 
 Narzędzia
-  ✓ imgwtools  0.4.2   obsługiwane >=0.4,<0.5   3 operacje
-  ! hydrolog   2.0.0   obsługiwane >=1.1,<2      wersja spoza zakresu — operacje wyłączone
-  ✗ kartograf  nie zainstalowany                 → uv tool install … --with git+https://github.com/Daldek/Kartograf (p. 9.4)
+  ✓ imgwtools 3.0.0, obsługiwane >=3.0.0,<4, 26 operacji
+  ✓ kartograf 0.8.0, obsługiwane >=0.8.0,<0.9, 4 operacje
+
+Magazyny danych narzędzi
+  ✓ kartograf: magazyn /dane/retman/stores/kartograf (zapis możliwy, dowiązania twarde działają)
+  ✓ kartograf: cache metadanych /home/ola/.local/share/retman/kartograf_cache.db
+  ✓ imgwtools: magazyn /dane/retman/stores/imgwtools (znacznik imgw-store.json, schemat imgw-store/1, dowiązania twarde działają)
+  ✓ imgwtools: pyarrow 18.1.0 (szeregi czasowe)
+  ✓ imgwtools: dane referencyjne /home/ola/.local/share/retman/imgw-reference (hydro_stations_locations.csv: brak)
+
+Zgodność opisów z narzędziami (retman-scaffold --check)
+  ✓ imgwtools 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
+  ✓ kartograf 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
 
 Tłumaczenia (pl)
   ✓ komplet
@@ -1098,17 +1780,25 @@ Model tekstowy
 Adres każdego modelu jest pokazany bez oceniania go — o tym, gdzie działa model, decyduje
 użytkownik w pliku centralnym (rozdz. 10).
 
-Gdy serwer modelu nie działa, raport podpowiada, jak go uruchomić, np.:
+Gdy serwer modelu nie działa albo magazyn nie nadaje się do zapisu, raport podpowiada, co zrobić, np.:
 
 ```
 Model decyzyjny
-  ✗ basal-serve nie odpowiada (http://127.0.0.1:8000) → uruchom basal-serve (instrukcja w README)
+  ✗ serwer modelu nie odpowiada (http://127.0.0.1:8000) → uruchom serwer modelu (np. LM Studio albo basal-serve, instrukcja w README) i sprawdź [decision] url w ~/.config/retman/retman.toml
+
+Magazyny danych narzędzi
+  ✗ imgwtools: system plików magazynu (/mnt/usb/imgwtools) nie obsługuje dowiązań twardych (Operation not permitted) → oba magazyny narzędzi wymagają dowiązań twardych (nie ma ich FAT/exFAT ani część udziałów sieciowych); wskaż magazyn na innym dysku w [tools.imgwtools] store_dir (~/.config/retman/retman.toml)
 ```
 
 Zasady:
 - Każdy problem ma **podpowiedź, jak go naprawić** (polecenie, ustawienie albo odnośnik do README).
-- Kod wyjścia: `0` gdy da się pracować, `1` gdy coś blokuje pracę (np. brak modelu albo brak narzędzi).
+- Kod wyjścia: `0` gdy da się pracować, `1` gdy coś blokuje pracę (np. brak modelu, brak jakichkolwiek
+  operacji albo magazyn, w którym narzędzie nie zapisze danych).
 - `retman doctor --json` — ten sam raport w formacie do wklejenia w zgłoszeniu błędu.
+- `retman doctor --deep` — dodatkowo wolniejsze sprawdzenia: próbny zapis do magazynu IMGWTools
+  na wbudowanych danych testowych narzędzia, w katalogu tymczasowym i bez sieci (inicjacja
+  magazynu, archiwa, szereg, katalog stacji). Pokazuje, że zainstalowana wersja narzędzia zapisuje
+  magazyn na tym systemie; wymaga `pyarrow`.
 - Gdy zwykłe polecenie nie może połączyć się z modelem, komunikat błędu podpowiada `retman doctor`.
 
 ### 7.3. Wynik operacji [W-09]
@@ -1123,14 +1813,20 @@ Zasady:
 | `params` | parametry faktycznie użyte (z oznaczeniem, które były domyślne) |
 | `inputs` | źródła wejść (plik, wcześniejszy wynik) |
 | `outputs` | rodzaje zwróconych danych (`kind`) — podstawa przestrzeni roboczej |
-| `values` | wyniki liczbowe lub krótkie (np. `{"peak_flow_m3s": 42.7}`) |
-| `files` | ścieżki do zapisanych plików, według rodzaju danych |
-| `warnings` | ostrzeżenia z narzędzia (np. luki w danych) |
-| `error` | opis błędu, gdy `ok = False` |
-| `summary` | krótki opis w języku użytkownika (szablon albo `TextBackend`) |
+| `values` | wyniki liczbowe lub krótkie (np. `{"file_count": 12}`) |
+| `files` | ścieżki do zapisanych plików, według rodzaju danych: w folderze wyniku albo w magazynie narzędzia (p. 3.2.4) |
+| `warnings` | przetłumaczone ostrzeżenia: wynik częściowy, uwagi narzędzia o jakości danych i licencji (dosłownie; uwagi czysto informacyjne zostają w śladzie audytowym). Wywołujący musi je pokazać — CLI drukuje je po podsumowaniu |
+| `error` | opis błędu, gdy `ok = False`; dla błędu narzędzia — tekst Retmana wybrany po stabilnym kodzie błędu, a tekst narzędzia tylko jako cytat |
+| `error_code` | stabilny kod błędu narzędzia (np. `no_coverage`), gdy operacja nie powiodła się z jego powodu; inaczej `None` |
+| `tool` | blok audytowy wywołań katalogu narzędzia (p. 5.4); `None` dla operacji bez takich wywołań |
+| `summary` | krótki opis w języku użytkownika (szablon operacji, ogólny szablon albo `TextBackend`) |
 
 Pliki trafiają do folderu wyników bieżącego projektu, w podkatalogu z numerem wyniku i nazwą
-operacji, np. `retman-output/004_fetch_imgw_data/`, razem z plikiem `result.json`, który zawiera też dane audytowe (p. 5.4).
+operacji, np. `retman-output/004_export_station_series/`, razem z plikiem `result.json`, który
+zawiera też dane audytowe (p. 5.4). Wyjątek: pliki, które narzędzie trzyma w swoim magazynie
+(Kartograf), zostają w magazynie — wynik wskazuje je ścieżką bezwzględną i sumą SHA-256, a podkatalog
+wyniku zawiera `result.json` i dokumenty narzędzia (`tool_<n>_<komenda>.json`); podsumowanie
+mówi wtedy, gdzie leżą pliki.
 
 ### 7.4. Integracja z GUI narzędzi (v0.5+) [W-13]
 
@@ -1141,9 +1837,12 @@ z nich. Potwierdzenie planu odpowiada przyciskowi „Uruchom” w GUI. Scenarius
 w GUI, resztę ustalam z Retmanem” to plan z częścią wartości ze źródła `known`.
 
 **Co v0.1 zapewnia już teraz** (mały koszt, otwarta droga na później):
-- plan serializowany do JSON (`to_dict()` / `from_dict()`), ze źródłem każdej wartości (p. 7.1),
+- plan serializowany do JSON (`to_dict()` / `from_dict()`), ze źródłem każdej wartości (p. 7.1);
+  odczytany plan jest zawsze niepotwierdzony,
 - wartości znane z zewnątrz (`known`): Retman ich nie zmienia, uzupełnia tylko brakujące,
 - rozdzielenie planowania od wykonania (p. 6.3),
+- sprawdzenie dostępności jako osobny krok z własną zgodą (`plan.can_check`, `plan.confirm_check()`,
+  `retman.check()`, p. 6.5) — w GUI to osobny przycisk „Sprawdź dostępność”,
 - wyniki jako pliki z `result.json` (p. 7.3), które GUI może wczytać.
 
 **Dobra praktyka po stronie GUI:** formularze oparte na tych samych funkcjach publicznego API,
@@ -1168,9 +1867,64 @@ w naturalny sposób. Samodzielny Retman (CLI, API Pythona) nadal wykonuje operac
 
 | Interfejs | Wersja | Uwagi |
 | --- | --- | --- |
-| Serwer MCP | v0.3 | te same operacje dostępne dla dowolnego klienta MCP |
+| Serwer MCP | v0.3 | opcjonalny dodatek `retman[mcp]` (stdio): plany Retmana z potwierdzeniem człowieka w kliencie i śladem audytowym (p. 7.5.1, ADR-018) |
 | API HTTP | v0.4 | dostęp do Retmana dla aplikacji webowej i integracji z GUI (model na serwerze jednostki działa bez tego od v0.1, p. 3.3.4) |
 | Czat w przeglądarce | v0.5+ | dla użytkowników końcowych |
+
+#### 7.5.1. Serwer MCP (v0.3) [W-16]
+
+Projekt zapisany w ADR-018; w v0.1 i v0.2 nie ma kodu, zależności ani konfiguracji MCP. Retman
+rozmawia z narzędziami przez ich API Pythona (p. 3.2.1), a sam staje się serwerem MCP dla
+zewnętrznych asystentów AI. Daje im to, czego serwery MCP narzędzi nie mają: plan pokazany ze
+źródłem każdej wartości, potwierdzenie człowieka, ślad audytowy i numerowaną przestrzeń roboczą.
+
+- **Pakiet:** moduł `retman/mcp_server.py` (SDK importowany leniwie), opcjonalny dodatek
+  `retman[mcp]` (`mcp>=2.3,<3`), nigdy w zależnościach podstawowych (p. 9.3). Uruchomienie:
+  `retman mcp --project <katalog>` (stdio; `--project` jest obowiązkowe, bez domyślnego bieżącego
+  katalogu). Streamable HTTP dopiero z API HTTP (v0.4).
+- **Stan po stronie serwera:** plany w pamięci (`plan_id` → `Plan`, z limitem czasu życia i liczby).
+  Serwer **nigdy nie wczytuje planu przysłanego przez klienta**; `Plan.from_dict` i tak nie przywraca
+  potwierdzenia (p. 7.1).
+
+| Narzędzie MCP | Zachowanie |
+| --- | --- |
+| `retman_operations` | lista operacji zainstalowanych narzędzi (id, polska etykieta, parametry, rodzaje danych); tylko do odczytu |
+| `retman_plan(command, known?)` | `Retman.plan`; zwraca plan i jego podsumowanie; wartości przekazane przez agenta w `known` są w planie oznaczone tym źródłem |
+| `retman_answer(plan_id, name, answer)` | `plan.answer`; zwraca nowy plan z otwartymi pytaniami |
+| `retman_check(plan_id)` | sprawdzenie dostępności (p. 6.5) z własnym elicitation i własną zgodą człowieka; zgoda nigdy nie pochodzi od agenta |
+| `retman_execute(plan_id)` | **jedyna** ścieżka wykonania |
+
+`retman_execute` zachowuje niezmiennik W-05: plan musi istnieć i nie mieć otwartych pytań; serwer
+pyta **człowieka** przez MCP elicitation, pokazując pełne podsumowanie planu (`plan.summary()`
+z oznaczonymi wartościami domyślnymi, z przestrzeni roboczej i `known`) i pole logiczne
+`confirm`; dopiero przy zgodzie dla tego planu woła `plan.confirm()`, a potem `execute()`.
+Odmowa albo anulowanie kończy się wpisem „plan odrzucony” w dzienniku. **Zamknięcie awaryjne:**
+klient, który nie deklaruje elicitation (albo odpowiada inaczej), nie wykona niczego — dostaje
+błąd `confirmation_unavailable` z podsumowaniem planu i instrukcją uruchomienia w terminalu;
+`retman_plan` i `retman_answer` nadal działają. Agent nie ma argumentu `confirm` ani przełącznika
+w konfiguracji.
+
+Pytania Retmana (W-02) wracają do agenta jako dane, ale każda wartość dostarczona przez agenta jest
+w planie oznaczona (źródło `known` albo `user` z `channel: "mcp"`), więc trafia do planu, który
+przegląda człowiek: bramka człowieka jest na planie końcowym, nie na każdym pytaniu (do
+rozstrzygnięcia na starcie v0.3: rozdz. 12, pkt 16).
+
+**Ślad audytowy** (addytywnie): `result.json` i dziennik dostają `channel` (`cli`, `python`, `mcp`),
+a dla `mcp` także `client` (nazwa i wersja z `initialize`), `confirmation` (metoda i czas)
+oraz `command.origin = "agent"` (tekst polecenia to parafraza agenta, nie słowa użytkownika).
+
+**Prywatność** (N-04): klient-agent jest usługą spoza `retman.toml`, zwykle modelem w chmurze.
+Sekcja `[mcp]` pojawi się w szablonie konfiguracji dopiero w v0.3: `transport = "stdio"`,
+`confirmation = "elicitation"`, `plan_ttl_seconds`, `max_open_plans` i `expose_command_text = false`
+(treść poleceń jest ukryta przed agentem nawet przy `journal_commands = true`). Zasoby
+`retman://results` zwracają `result.json` bez `command` i bez ścieżek bezwzględnych;
+`retman doctor` dostaje linię „MCP”. Audyt obejmuje tylko operacje wykonane przez Retmana — kto
+uruchamia serwery MCP narzędzi bezpośrednio, omija ślad.
+
+**Testy** (offline, pamięciowy transport SDK z `FakeDecisionBackend`): `retman_execute` bez zgody
+w elicitation nie ma skutku; klient bez elicitation dostaje `confirmation_unavailable`, nic nie jest
+wykonane ani zapisane; słownik planu z `confirmed = true` nie jest honorowany; zasób nie ujawnia
+treści poleceń ani ścieżek bezwzględnych; dziennik zapisuje `channel = "mcp"` oraz odmowy.
 
 ---
 
@@ -1210,6 +1964,11 @@ Zasady budowy zbioru:
 | Błąd przy pewności | % błędnych decyzji wśród tych powyżej progu; cel wstępny ≤ 1% (PRD W-02) |
 | Trafne dopytania | % przypadków, w których Retman dopytał o to, czego faktycznie brakowało |
 
+Przy rozpoznawaniu dwustopniowym (p. 3.4) `retman-eval` zapisuje w rekordzie także pytanie
+o kategorię (`category_question`: czy padło i co zaproponowano), odpowiada na nie kategorią
+oczekiwanej operacji i liczy je jako dopytanie użytkownika. Osobnej miary trafności kategorii
+nie ma — o poprawności decyduje operacja końcowa.
+
 Polecenie `retman-eval --backend basal` uruchamia zbiór i drukuje raport. Ten sam zbiór służy
 do porównywania backendów (basal-1.5-mini vs basal-1.5 vs model generatywny).
 
@@ -1219,15 +1978,27 @@ obowiązkowe dla backendów innych niż basal (p. 6.2).
 
 ### 8.3. Testy jednostkowe i integracyjne
 
-- Ekstraktory testowane bez modelu (czysty kod, `pytest`), w tym wszystkie formy z p. 4.4.
+- Ekstraktory testowane bez modelu (czysty kod, `pytest`), w tym wszystkie formy z p. 4.4;
+  ekstraktory kontekstowe (stacje, zmienne) na sztucznym katalogu i atrapie wyszukiwania offline.
 - Pipeline testowany z **atrapą backendu** (`FakeDecisionBackend`) — testy nie wymagają GPU.
-- Wspólny adapter testowany na narzędziu-atrapie (manifest + handlery w testach).
-- Opisy narzędzi: walidacja manifestów i tłumaczeń, testy handlerów na prawdziwych narzędziach,
-  kontrola rozjazdów z API (p. 3.2.7–3.2.8).
+- Wspólny adapter testowany na narzędziu-atrapie (`tests/fixtures/dummy_tool`: manifest, buildery
+  wywołań, handlery, podgląd, sprawdzenie i klient) z atrapą klienta `FakeToolClient`
+  (`retman/testing.py`). Atrapa zapisuje każde wywołanie (`calls`, `network_calls`), więc test
+  bramki [N-12] sprawdza, że przed `plan.confirm()` nie było żadnego wywołania `run`, `check`
+  ani `query`, a przed `plan.confirm_check()` — żadnego wywołania `check` ani `query` (p. 6.5).
+- Opisy narzędzi: walidacja manifestów i tłumaczeń (także tekstów kategorii i komunikatów
+  kodów błędów narzędzia), buildery wywołań i mappery wyników na nagranych prawdziwych
+  dokumentach narzędzi (`tests/fixtures/<narzędzie>/`), zgodność z katalogiem zainstalowanego
+  narzędzia przez wykonanie (`retman-scaffold --check`, p. 3.2.3) i testy na prawdziwych
+  narzędziach z małymi danymi, a dla IMGWTools na pakietowym magazynie fikcyjnym
+  (`imgwtools.testing.build_fixture_store`), offline (p. 3.2.7–3.2.8).
 - Przestrzeń robocza: zapis i odczyt `result.json`, numeracja wyników, reguły wyboru wejścia
   z p. 5.3 (w tym pytanie przy kilku kandydatach).
-- Dziennik projektu: wpis dla każdego kroku, także dla odrzuconych planów, anulowania i błędów;
-  komplet danych audytowych w `result.json` (p. 5.4).
+- Dziennik projektu: wpis dla każdego kroku, także dla odrzuconych planów, anulowania i błędów,
+  oraz dla sprawdzeń dostępności (wykonanych, odrzuconych i przerwanych); komplet danych
+  audytowych w `result.json` (p. 5.4).
+- Sprawdzenie dostępności i podgląd: zgoda jednorazowa, cofana zmianą planu, niezapisywana
+  w planie; ponowne otwarcie parametrów po odrzuceniu przez narzędzie (p. 6.5, 6.3).
 
 ---
 
@@ -1235,8 +2006,9 @@ obowiązkowe dla backendów innych niż basal (p. 6.2).
 
 ### 9.1. Plik centralny `retman.toml` [N-11]
 
-Ustawienia **niezależne od projektu** — m.in. modele, progi pewności, język i prywatność — są
-w **jednym pliku na komputerze**, w standardowym katalogu konfiguracji systemu:
+Ustawienia **niezależne od projektu** — m.in. modele, progi pewności, język, prywatność
+i magazyny danych narzędzi — są w **jednym pliku na komputerze**, w standardowym katalogu
+konfiguracji systemu:
 
 | System | Ścieżka |
 | --- | --- |
@@ -1246,19 +2018,42 @@ w **jednym pliku na komputerze**, w standardowym katalogu konfiguracji systemu:
 
 - `retman init` tworzy pełny plik ze wszystkimi ustawieniami i komentarzami. **Retman nie ma
   ukrytych wartości domyślnych** — każda wartość, której używa, jest widoczna w pliku.
-  Bez pliku Retman nie startuje i podpowiada `retman init`. Od wersji łatwej (0.5+)
-  `retman init` działa jako kreator: pyta, gdzie działa model, sprawdza połączenie i zapisuje
-  plik (p. 9.4).
+  Bez pliku Retman nie startuje i podpowiada `retman init`. W terminalu `retman init` pyta
+  o zbieranie poleceń (p. 5.4) i o folder na magazyny narzędzi, tworzy foldery (magazyn
+  Kartografa, folder cache i danych referencyjnych), sprawdza, że dysk ma dowiązania twarde,
+  i dopiero potem zapisuje plik; na końcu, za zgodą, inicjuje magazyn IMGWTools (`store init`,
+  bez sieci). Bez terminala zapisuje plik z widocznymi ścieżkami domyślnymi i niczego nie
+  tworzy. Od wersji łatwej (0.5+) `retman init` działa jako kreator: pyta też, gdzie działa
+  model, sprawdza połączenie i zapisuje plik (p. 9.4).
 - `retman doctor` pokazuje ścieżkę używanego pliku.
 - **Rzeczy zależne od projektu nie są w pliku centralnym.** Wyniki trafiają do folderu projektu
   (rozdz. 5); w pliku jest tylko nazwa podfolderu wyników.
+- **Magazyny narzędzi** [ADR-015]: Kartograf i IMGWTools trzymają pobrane dane w magazynie
+  poza folderami wyników, wspólnym dla wszystkich projektów. Argumenty środowiskowe narzędzi
+  (magazyn, liczba wątków, cache, tryb aktualizacji) klient bierze wyłącznie z tabel
+  `[tools.<narzędzie>]` (p. 3.2.4). Obie tabele są wymagane — plik bez nich jest odrzucany
+  (`retman init` od nowa albo dopisanie sekcji). Ścieżki są bezwzględne, bez `..`; magazyny
+  Kartografa i IMGWTools to dwa osobne foldery obok siebie na jednym dysku, a żaden nie zawiera
+  drugiego (cache Kartografa i dane referencyjne IMGWTools też nie leżą w magazynie). Dysk musi
+  mieć dowiązania twarde (nie mają ich FAT/exFAT ani część udziałów sieciowych); cache metadanych
+  Kartografa musi leżeć na dysku lokalnym. `update` Kartografa: `local` — użyj zapisanych wersji
+  i nie pytaj źródeł o nowsze, `upgrade` — pobierz także nowsze, `force` — pobierz ponownie.
+  Ścieżki domyślne `retman init` wpisuje do pliku w całości: magazyny w `<katalog danych>/stores/`
+  (foldery `kartograf` i `imgwtools`), cache i dane referencyjne obok, w `<katalog danych>`
+  (Linux `~/.local/share/retman/`, macOS `~/Library/Application Support/retman/`, Windows
+  `%LOCALAPPDATA%\retman\`). Dysk bez dowiązań twardych kończy `retman init` błędem przed
+  zapisem pliku (kod wyjścia 1), a odmowa `store init` przez IMGWTools z tego powodu zostawia
+  plik i podpowiada zmianę obu `store_dir`.
 - W pliku nie ma opisów narzędzi (manifestów) ani tekstów (tłumaczeń) — to część kodu Retmana,
   testowana w CI (p. 3.2, 4.2). Nie ma w nim też kluczy API, tylko nazwy zmiennych
-  środowiskowych (rozdz. 10).
+  środowiskowych (rozdz. 10). Sekcja `[mcp]` pojawi się dopiero w v0.3 (bez nieużywanych kluczy).
 
 ```toml
+# Retman central config file (ARCHITECTURE 9.1).
+# Every value Retman uses is in this file; there are no hidden defaults.
+
 [decision]
-backend = "basal"                   # "basal" (default) | "openai_compatible" | native providers (v0.2)
+backend = "basal"                   # "basal" (default) | "openai_compatible"
 url = "http://127.0.0.1:8000"       # basal-serve running locally (started separately)
 model = "basal-1.5-mini"
 timeout_s = 30                      # how long to wait for the model server
@@ -1267,10 +2062,10 @@ timeout_s = 30                      # how long to wait for the model server
 # url = "http://127.0.0.1:1234/v1"
 # model = "<model-name>"
 # api_key_env = "PROVIDER_API_KEY"  # external providers: NAME of the environment variable holding the key
-# confidence = "auto"               # "auto" | "logprobs" | "consistency" | "none" (p. 3.3.3)
-# consistency_runs = 3              # queries per decision for the consistency check (p. 3.3.3)
-# With this backend [decision.thresholds] must be numbers tuned for the model (p. 6.2);
-# with confidence = "none" the thresholds are ignored.
+# confidence = "auto"               # "auto" | "logprobs" | "consistency" | "none" (ARCHITECTURE 3.3.3)
+# consistency_runs = 3              # queries per decision for the consistency check
+# With this backend [decision.thresholds] must be numbers tuned for the model
+# (ARCHITECTURE 6.2); with confidence = "none" the thresholds are ignored.
 
 [decision.thresholds]
 operation = "auto"      # "auto" = basal calibration, allowed only with backend = "basal"; after tuning set a number, e.g. 0.90
@@ -1278,27 +2073,45 @@ parameter = "auto"
 
 [text]
 backend = "none"        # from v0.2: "openai_compatible" (e.g. Bielik in LM Studio)
-# url = "http://127.0.0.1:1234/v1"
-# model = "<bielik-model-name>"
 
 [ui]
 language = "pl"         # language of questions, options and messages
 
 [output]
-results_dir = "retman-output"  # results folder created inside the project folder, i.e. where Retman runs (ch. 5)
+results_dir = "retman-output"  # results folder created inside the project folder, i.e. where Retman runs
 
 [adapters]
 # By default Retman enables every supported tool that is installed in a supported version.
 # The optional "enabled" list only NARROWS that set.
-# enabled = ["imgwtools", "kartograf"]
+# enabled = ["kartograf"]
+
+[tools.kartograf]
+# The store: every downloaded file is kept here as an immutable version and shared by all
+# projects. Absolute path without symbolic links, on a disk with hard links (not FAT/exFAT).
+# Keep it on the same disk as the IMGWTools store, in a separate folder.
+store_dir = '/home/<user>/.local/share/retman/stores/kartograf'
+# Metadata cache (SQLite). Keep it on a LOCAL disk, never on a network share.
+cache_file = '/home/<user>/.local/share/retman/kartograf_cache.db'
+workers = 4         # parallel transfers
+update = "local"    # "local" = use stored versions, ask no source | "upgrade" = also download newer versions | "force" = download again
+
+[tools.imgwtools]
+# The IMGWTools store (archives, series, station catalog): a separate folder next to the
+# Kartograf store; neither store may contain the other. Absolute path without symbolic links.
+store_dir = '/home/<user>/.local/share/retman/stores/imgwtools'
+# Optional reference files for the station catalog (hydro_stations_locations.csv); may stay empty.
+reference_data_dir = '/home/<user>/.local/share/retman/imgw-reference'
 
 [log]
-journal_commands = true    # store command texts and answers in the project journal (p. 5.4)
+journal_commands = true    # store command texts and answers in the project journal
 diagnostic_level = "info"  # technical log in the user's log directory: "debug" | "info" | "warning"
 
 [privacy]
-collect_commands = false   # true only after the user agreed in retman init (ADR-010)
-collect_path = '/home/<user>/.local/share/retman/collected.jsonl'  # written for this system
+# Collect planning outcomes (command, plan, answers, model decisions) from ALL projects
+# in one file, to build and tune the test set (ARCHITECTURE 5.4, rozdz. 10). Separate from
+# the project journal; stays on this computer, nothing is sent anywhere. retman init asks.
+collect_commands = false
+collect_path = '/home/<user>/.local/share/retman/collected.jsonl'
 ```
 
 ### 9.2. Systemy i sprzęt [N-06], [N-09]
@@ -1333,7 +2146,10 @@ do dokumentacji jako wskazówka doboru modelu (PRD, N-07).
   z biblioteki standardowej; `retman init` zapisuje go z szablonu z komentarzami (p. 9.1),
   więc biblioteka do zapisu TOML nie jest potrzebna. **Pakiet nie zawiera modelu
   ani bibliotek uczenia maszynowego** (np. PyTorcha) ani SDK dostawców. Narzędzia hydrologiczne
-  **nie są** zależnościami podstawowymi.
+  **nie są** zależnościami podstawowymi. Biblioteka protokołu MCP (`mcp`) też nie jest zależnością
+  podstawową — nie jest SDK dostawcy modelu ani biblioteką ML, ale łamałaby regułę „tylko klient
+  HTTP” — i wolno ją dodać wyłącznie jako opcjonalny dodatek `retman[mcp]` dla interfejsu
+  z v0.3 (ADR-018). W v0.1 Retman nie ma kodu, zależności ani konfiguracji MCP.
 - **basal (basal-serve) nie jest zależnością Retmana** — ani podstawową, ani opcjonalną.
   Backend `basal` to własne zapytanie HTTP, bez klienta z pakietu `basal` (p. 3.3.2).
 - **Dystrybucja przez GitHub, bez PyPI.** Retman instaluje się z repozytorium, np.
@@ -1341,12 +2157,21 @@ do dokumentacji jako wskazówka doboru modelu (PRD, N-07).
 - Opisy narzędzi są wbudowane w Retmana (`retman/tools/`). **Retman nie instaluje niczego sam
   z siebie.** Narzędzia instaluje użytkownik razem z Retmanem, w tym samym środowisku (p. 9.4),
   a od wersji łatwej także na wyraźne polecenie `retman add-tool` (z potwierdzeniem). Retman
-  sprawdza ich wersje, a `retman doctor` podpowiada, jak doinstalować brakujące.
+  sprawdza ich wersje, a `retman doctor` podpowiada, jak doinstalować brakujące. Narzędzia są
+  importowane leniwie (`importlib`, p. 3.2.5), więc ani start Retmana, ani `mypy retman/ tests/`
+  nie zależą od tego, co jest zainstalowane.
+- Grupa zależności `tools` w `pyproject.toml` służy testom i ręcznym uruchomieniom; nie jest
+  zależnością środowiska użytkownika. Do czasu tagów `v0.8.0` (Kartograf) i `v3.0.0` (IMGWTools)
+  przypina wypchnięte commity: Kartografa `8e9bcbb0` (`origin/develop`) i IMGWTools z dodatkiem
+  `store` (`0d98f3b`, `origin/slave`); po wydaniu przechodzi na tagi (ADR-012). Dodatek `store`
+  IMGWTools instaluje `pyarrow` (szeregi czasowe to pliki Parquet).
 - Retman **nie ma dodatków instalujących narzędzia** (`retman[hydrograf]` itp.). Zależności
   wskazujące bezpośrednio na repozytoria Git wymuszałyby sztywne wersje zamiast zakresów
   i zablokowałyby ewentualną późniejszą publikację na PyPI.
-- Narzędzia deweloperskie (`retman-scaffold`) jako osobny dodatek: `retman[dev]`. `retman-eval`
-  należy do pakietu podstawowego razem ze zbiorem poleceń testowych (p. 8.2).
+- `retman-eval` i `retman-scaffold` należą do pakietu podstawowego (skrypty, bez dodatkowych
+  zależności): `retman-eval` razem ze zbiorem poleceń testowych (p. 8.2), `retman-scaffold`
+  (p. 3.2.3) jako narzędzie autora, które czyta katalogi zainstalowanych narzędzi. Dodatek
+  `retman[dev]` ma tylko narzędzia pracy nad kodem (pytest, ruff, mypy).
 
 ### 9.4. Instalacja [N-09], [W-14]
 
@@ -1376,21 +2201,26 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 #    irm https://astral.sh/uv/install.ps1 | iex
 
 # 2. Retman together with the tools you need, in ONE environment
-#    (@v0.1.0 = a tagged release, so testers have a stable version)
+#    (@v0.1.0 = a tagged release, so testers have a stable version).
+#    imgwtools[store] brings pyarrow: its time series are Parquet files
 uv tool install "git+https://github.com/Daldek/Retman@v0.1.0" \
-    --with "git+https://github.com/Daldek/IMGWTools" \
-    --with "git+https://github.com/Daldek/Hydrolog"
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@v0.8.0" \
+    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@v3.0.0"
 
 # 3. Model server: installed separately, following basal's instructions, then started
 basal-serve --model Remek/basal-1.5-mini --mode <depends on hardware>
 
-# 4. Central config and environment check
+# 4. Central config (asks where to keep the tool stores) and environment check
 retman init
 retman doctor
 ```
 
 - **Dodanie narzędzia później:** to samo polecenie z dodatkowym `--with`.
-- **Aktualizacja:** to samo polecenie z nowym tagiem wydania.
+- **Aktualizacja:** to samo polecenie z nowym tagiem wydania. Do czasu wypchnięcia tagów
+  `v0.8.0` i `v3.0.0` zamiast tagu podaje się commit z grupy `tools` w `pyproject.toml` (p. 9.3).
+- **Magazyny narzędzi** powstają przy `retman init` (p. 9.1); `retman doctor` sprawdza ich
+  ścieżki, prawa zapisu, dowiązania twarde, `pyarrow` i dane referencyjne, a z `--deep` także
+  próbny zapis do magazynu IMGWTools (p. 7.2).
 - **basal-serve** trzeba uruchomić przed pracą z Retmanem; jeśli nie działa, `retman doctor`
   i komunikat błędu podpowiadają, jak go uruchomić (p. 7.2).
 
@@ -1406,7 +2236,7 @@ retman doctor
 
    ```
    $ retman add-tool kartograf
-   Doinstaluję Kartograf 0.3.1 (obsługiwane wersje: >=0.3,<0.4) z GitHuba do środowiska Retmana.
+   Doinstaluję Kartograf 0.8.0 (obsługiwane wersje: >=0.8.0,<0.9) z GitHuba do środowiska Retmana.
    Wykonać? [t]ak / [n]ie
    ```
 
@@ -1418,8 +2248,9 @@ retman doctor
 #### Sprawdzanie w CI
 
 - **Test instalacji na czystych systemach** (Windows, Linux, macOS): instalacja Retmana ze wszystkimi
-  narzędziami, a potem `retman doctor`. Zależności narzędzi (np. biblioteki geoprzestrzenne) uznano
-  za niekłopotliwe — test potwierdza to na każdym systemie, zanim problem trafi do testerów.
+  narzędziami, a potem `retman doctor --deep` (z próbnym zapisem do magazynu IMGWTools na każdym
+  systemie). Zależności narzędzi (np. biblioteki geoprzestrzenne) uznano za niekłopotliwe — test
+  potwierdza to na każdym systemie, zanim problem trafi do testerów.
 - Od wersji łatwej ten sam test obejmuje skrypty instalacyjne.
 
 ---
@@ -1427,9 +2258,33 @@ retman doctor
 ## 10. Bezpieczeństwo i prywatność [N-04], [W-05]
 
 - Każde wykonanie operacji wymaga potwierdzenia planu (p. 6.3), bez wyjątków w wersjach 0.x.
-- Handlery zapisują wyłącznie do przydzielonego katalogu wyników (p. 3.2.4).
-- Retman nie wysyła poleceń ani danych poza skonfigurowane backendy.
-- Domyślna konfiguracja wskazuje wyłącznie na `localhost`.
+  Potwierdzenia nie da się wczytać z danych: `Plan.from_dict` zawsze zwraca plan niepotwierdzony
+  (p. 7.1), więc zapisany albo przesłany plan nigdy nie wykona się bez nowego potwierdzenia.
+- **Bez sieci przed potwierdzeniem** [N-12]: z klienta narzędzia kod planowania (buildery
+  wywołań, podgląd, ekstraktory kontekstowe) widzi tylko połowę offline (`PlanView`: walidacja,
+  linia komendy, wyszukiwanie w katalogu bez skutków; p. 3.2.4). Funkcje z efektem sieciowym lub
+  zapisem (`run`, `check`, `query`) istnieją dopiero w `execute()` i w sprawdzeniu dostępności
+  po osobnej zgodzie (p. 6.5). Serwer modelu jest poza tą regułą — konfiguruje go użytkownik.
+- **Sprawdzenie dostępności wysyła tylko wartości z planu** (obszar, produkt, lata…) do tych
+  samych usług danych, które zapytałoby wykonanie; nigdy treści polecenia, odpowiedzi, danych
+  modelu ani zawartości plików. Zgoda jest jednorazowa, nie jest częścią zapisanego planu,
+  a każda zmiana planu ją cofa (p. 6.5).
+- Handlery zapisują wyłącznie do przydzielonego katalogu wyników (p. 3.2.4). Magazyn narzędzia
+  zapisuje tylko samo narzędzie, przez swój klient, w folderze z `[tools.<narzędzie>] store_dir`;
+  Retman niczego w nim nie zmienia ani nie usuwa.
+- **Magazyny narzędzi** (p. 9.1): ścieżki są bezwzględne, bez `..` i bez składnika będącego
+  dowiązaniem symbolicznym (IMGWTools takiej ścieżki nie przyjmuje; `retman doctor` zgłasza ją
+  także dla Kartografa), magazyny są rodzeństwem (żaden nie leży w drugim; cache Kartografa
+  i dane referencyjne IMGWTools nie leżą w magazynie) i leżą na dysku z dowiązaniami twardymi
+  (p. 7.2). Pliki z magazynu są w wyniku wskazywane ścieżką bezwzględną i sumą SHA-256 (p. 5.4).
+- **Pliki geometrii** użytkownika (SHP, GPKG) Retman tylko odczytuje: listę warstw GeoPackage
+  czyta przez `sqlite3` w trybie tylko do odczytu, a w śladzie audytowym zapisuje nazwę warstwy
+  i sumy SHA-256 plików (p. 5.4). Plik czyta narzędzie; do usług danych trafiają parametry żądania,
+  nie plik.
+- Retman nie wysyła poleceń użytkownika ani jego odpowiedzi poza skonfigurowane backendy modeli.
+  Narzędzia łączą się z publicznymi usługami danych (GUGiK, IMGW, ČHMÚ) po potwierdzeniu planu
+  albo, na życzenie, w sprawdzeniu dostępności; do usług trafiają parametry żądania.
+- Domyślna konfiguracja modeli wskazuje wyłącznie na `localhost`.
 - **Gdzie działa model, decyduje użytkownik** w pliku centralnym. Retman nie ocenia adresów
   i nie ostrzega; `retman doctor` pokazuje adres każdego modelu (p. 7.2).
 - basal-serve nie ma własnej kontroli dostępu. Na serwerze jednostki zabezpieczenie dostępu
@@ -1438,12 +2293,18 @@ retman doctor
   nazwa zmiennej). Nigdy nie trafiają do plików konfiguracyjnych, logów ani `result.json`.
 - **Dziennik projektu i dane audytowe** zawierają treść poleceń, bo są zapisem pracy użytkownika;
   zostają w folderze projektu, a zapisywanie w nich treści poleceń i odpowiedzi można wyłączyć
-  (`journal_commands = false`, p. 5.4).
+  (`journal_commands = false`, p. 5.4). Wtedy dziennik nie zawiera też innych tekstów, które
+  mogą cytować słowa lub ścieżki użytkownika: pokazanego planu, powodu ponownego zadania pytania
+  i linii raportu dostępności.
 - **Log techniczny** jest zapisywany lokalnie, bez treści poleceń (p. 5.4).
 - Zbieranie poleceń ze wszystkich projektów w jednym pliku (`[privacy] collect_commands`,
   p. 5.4) jest **opcjonalne, domyślnie wyłączone i wymaga wyraźnej zgody** — `retman init`
   pyta o nią. Plik zostaje na komputerze użytkownika. Przekazywanie poleceń autorowi wymaga
   osobnej, wyraźnej zgody użytkownika i nigdy nie dzieje się automatycznie.
+- **Serwer MCP (od v0.3, p. 7.5.1):** wykonanie przez MCP tylko po potwierdzeniu człowieka
+  w kliencie; klient, który go nie potrafi uzyskać, dostaje tylko plan (zamknięcie awaryjne).
+  Asystent AI podłączony przez MCP jest usługą spoza `retman.toml` (N-04): treść poleceń
+  i ścieżki bezwzględne są dla niego domyślnie ukryte.
 
 ---
 
@@ -1453,9 +2314,9 @@ Zakres produktowy wersji opisuje PRD. Tu: które komponenty techniczne powstają
 
 | Wersja | Komponenty |
 | --- | --- |
-| **0.1** | rdzeń pipeline, backend `basal` (domyślny) i `openai_compatible` (alternatywa), ekstraktory (w tym prawdopodobieństwo), wspólny adapter, opisy i handlery dla narzędzi z pierwszych operacji, `retman-scaffold` (szkice + kontrola rozjazdów), CI z testami na obsługiwanych wersjach narzędzi, pliki tłumaczeń (PL), CLI i API Pythona (w tym plan jako dane i `known`), `retman doctor`, przestrzeń robocza w folderze projektu (numerowane wyniki, wybór wejścia bez zgadywania, `retman results`), plik centralny i `retman init`, dziennik projektu i ślad audytowy (`retman log`), `retman-eval`, pomiary czasu odpowiedzi (p. 9.2), CI na Windows, Linux i macOS, w tym test instalacji na czystych systemach (p. 9.4) |
-| 0.2 | resolver łańcuchów, kontrole sensowności między krokami, wznawianie łańcucha, nazwane wyniki, opis wyników przez model tekstowy, natywne API dostawców (opcjonalne), dwustopniowe rozpoznanie operacji, opisy i handlery pozostałych narzędzi ekosystemu |
-| 0.3 | serwer MCP |
+| **0.1** | rdzeń pipeline, backend `basal` (domyślny) i `openai_compatible` (alternatywa), ekstraktory (w tym prawdopodobieństwo, stacje, okresy, punkty, plik geometrii), wspólny adapter z warstwą komend (`calls`, klienci narzędzi, podgląd offline, sprawdzenie dostępności), adaptery Kartografa 0.8.0 i całego IMGWTools 3.0.0 z dwustopniowym rozpoznawaniem operacji, magazyny narzędzi w konfiguracji, `retman-scaffold` (`list`, `draft`, `--check`), CI z testami na obsługiwanych wersjach narzędzi, pliki tłumaczeń (PL), CLI i API Pythona (w tym plan jako dane i `known`), `retman doctor`, przestrzeń robocza w folderze projektu (numerowane wyniki, wybór wejścia bez zgadywania, `retman results`), plik centralny i `retman init`, dziennik projektu i ślad audytowy (`retman log`), `retman-eval`, pomiary czasu odpowiedzi (p. 9.2), CI na Windows, Linux i macOS, w tym test instalacji na czystych systemach (p. 9.4) |
+| 0.2 | resolver łańcuchów, kontrole sensowności między krokami, wznawianie łańcucha, nazwane wyniki, opis wyników przez model tekstowy, natywne API dostawców (opcjonalne), opisy i handlery pozostałych narzędzi ekosystemu (Hydrolog, Hydrograf, BasicHydraulics) |
+| 0.3 | serwer MCP (`retman[mcp]`, stdio, potwierdzenie przez elicitation, pole `channel` w śladzie; p. 7.5.1) |
 | 0.4 | API HTTP |
 | 0.5+ | okno czatu dla ścieżki prostej, skrypty instalacyjne (`install.sh`, `install.ps1`), kreator `retman init`, `retman add-tool`, integracja z GUI (p. 7.4), pliki `en.toml` |
 
@@ -1463,11 +2324,16 @@ Zakres produktowy wersji opisuje PRD. Tu: które komponenty techniczne powstają
 
 ## 12. Otwarte kwestie techniczne
 
-1. **Typy w publicznym API narzędzi** — docstringi są w stylu NumPy (ustalone). Do sprawdzenia:
-   czy wybory (np. metody obliczeń) są typowane jako `Literal`/`Enum`, a pliki jako `Path`.
-   Od tego zależy, ile generator szkiców wyczyta automatycznie.
-2. **Ekstrakcja parametrów swobodnych** — czy wystarczy kod, czy w trudnych przypadkach
-   (np. nazwa rzeki lub miejscowości zamiast współrzędnych) potrzebny będzie Bielik albo geokoder?
+1. **Typy w publicznym API narzędzi** — rozstrzygnięte dla Kartografa i IMGWTools: wybory nie są
+   typowane jako `Literal` (Kartograf: `str | None`), a maszynowym źródłem prawdy jest katalog
+   komend (`allowed`, `enum`, `validate_command`), więc `retman-scaffold` czyta katalogi,
+   a nie docstringi (ADR-013, ADR-019). Do sprawdzenia dla Hydrologa, Hydrografa
+   i BasicHydraulics: czy mają katalog komend, a jeśli nie — czy wybory są typowane
+   jako `Literal`/`Enum`, a pliki jako `Path`.
+2. **Ekstrakcja parametrów swobodnych** — dla stacji IMGW nazwy rozwiązuje kod, offline,
+   z katalogu w magazynie (p. 4.3). Otwarte zostaje to, czy w trudnych przypadkach
+   (np. obszar podany nazwą rzeki lub miejscowości zamiast współrzędnych) wystarczy kod,
+   czy potrzebny będzie Bielik albo geokoder.
 3. **`facts: "auto"` w basalu** — sprawdzić, czy wbudowane rozpoznawanie dat i kwot po polsku
    może zastąpić część ekstraktorów.
 4. **Progi pewności** — dostroić na własnym zbiorze testowym zamiast domyślnych.
@@ -1478,7 +2344,8 @@ Zakres produktowy wersji opisuje PRD. Tu: które komponenty techniczne powstają
    w Retmanie tylko kontrole przejść między krokami łańcucha.
 7. **Rodzaje danych** — pełna lista nazw `kind`, ich formatów plików i wymaganych atrybutów
    (p. 3.2.6). Formaty warto od początku dobierać tak, żeby przyszłe GUI mogły je wczytywać.
-   Ustalone dla Kartografa (ADR-004); pozostałe narzędzia otwarte.
+   Ustalone dla Kartografa (ADR-004, ADR-016) i IMGWTools (ADR-017); Hydrolog, Hydrograf
+   i BasicHydraulics otwarte.
 8. **Integracja z GUI** (p. 7.4) — wariant połączenia (A czy B) i technologia GUI, gdy GUI powstaną.
 9. **LM Studio jako serwer modelu** — czy jego API zwraca `logprobs` i obsługuje odpowiedzi
    ustrukturyzowane (lista dozwolonych wartości). Od tego zależy jakość decyzji modeli
@@ -1500,3 +2367,8 @@ Zakres produktowy wersji opisuje PRD. Tu: które komponenty techniczne powstają
     przepisów. Do oceny po dodaniu kolejnych narzędzi; razem z nią możliwe zastosowania n8n
     jako otoczenia Retmana (monitoring, kontrola jakości, rejestr wyników, kanały zleceń).
     Opis: `docs/PROGRESS.md`, Backlog, „Do rozważenia”.
+15. **Klienci MCP a potwierdzenie** (p. 7.5.1) — które klienty implementują elicitation z wydania
+    protokołu 2026-07-28. Test dymny przed v0.3; zamknięcie awaryjne obowiązuje niezależnie
+    od wyniku.
+16. **Pytania Retmana przez MCP** (p. 7.5.1) — wartości dostarczone przez agenta jako `known`
+    czy także wybory przez elicitation. Rozstrzygnięcie na starcie v0.3.

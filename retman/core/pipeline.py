@@ -3,23 +3,41 @@
 import platform
 import sys
 import uuid
+from collections.abc import Mapping
 from dataclasses import replace
+from datetime import date
 from pathlib import Path
 from time import monotonic
 from typing import Any
 
 from retman import __version__
-from retman.adapters import execute_operation
+from retman.adapters import (
+    Preview,
+    execute_operation,
+    failed_check,
+    preview_operation,
+    run_check,
+)
+from retman.adapters.catalog import (
+    NoClient,
+    PlanView,
+    RunClient,
+    ToolContext,
+    create_client,
+)
 from retman.backends import build_decision_backend
 from retman.backends.base import Decision, DecisionBackend
 from retman.config import Config, load_config
+from retman.core.check import CheckReport
 from retman.core.collection import Collection
 from retman.core.dialog import Option, Question
+from retman.core.geometry import GeometryFileError, describe_geometry, geometry_layers
 from retman.core.journal import Journal, sha256_file, utc_now
 from retman.core.plan import Plan, PlanValue, Source
 from retman.core.result import Result
 from retman.core.workspace import Workspace, WorkspaceFile
 from retman.exceptions import (
+    CheckNotConfirmedError,
     InvalidModelAnswerError,
     KindValidationError,
     OutOfScopeError,
@@ -27,16 +45,35 @@ from retman.exceptions import (
     PlanNotConfirmedError,
     RetmanError,
 )
-from retman.extractors import ANSWER_EXTRACTORS, EXTRACTORS, VALIDATORS
-from retman.extractors.base import Match, Reading
+from retman.extractors import (
+    EXTRACTORS,
+    describe_value,
+    read_answer,
+    read_command,
+    validate_value,
+)
+from retman.extractors.base import ExtractionContext, Match, Reading
 from retman.i18n.loader import load_core_texts
+from retman.kinds import validate_file
 from retman.registry.loader import load_operations
 from retman.registry.manifest import ParamSpec
-from retman.registry.operation import Operation
+from retman.registry.operation import (
+    Operation,
+    category_groups,
+    category_text,
+    two_stage,
+)
 
 
 class Retman:
-    """Plan and execute tool operations in a project-local workspace."""
+    """Plan and execute tool operations in a project-local workspace.
+
+    ``operations`` replaces the discovered operations (tests). ``clients``
+    injects the command client of a tool by tool name (tests, e.g. a
+    ``FakeToolClient``); otherwise it is built lazily from the manifest key
+    ``client`` and the ``[tools.<tool>]`` table. ``today`` fixes the date that
+    extractors resolve relative expressions against.
+    """
 
     def __init__(
         self,
@@ -45,6 +82,8 @@ class Retman:
         project_dir: Path,
         *,
         operations: dict[str, Operation] | None = None,
+        clients: Mapping[str, RunClient] | None = None,
+        today: date | None = None,
     ) -> None:
         self.config = config
         self.backend = backend
@@ -61,6 +100,10 @@ class Retman:
         self.collection = Collection(
             config.collect_path if config.collect_commands else None
         )
+        self._clients: dict[str, RunClient] = dict(clients or {})
+        self._today = today if today is not None else date.today()
+        # Lookups of one planning pass (e.g. the station catalog) are read once
+        self._memo: dict[str, Any] = {}
 
     @classmethod
     def from_config(
@@ -105,46 +148,173 @@ class Retman:
             and decision.confidence < threshold
         )
 
+    # --- tools: clients and contexts ----------------------------------------
+
+    def _tool_settings(self, operation: Operation) -> Mapping[str, Any]:
+        return self.config.tools.get(operation.tool, {})
+
+    def _run_client(self, operation: Operation) -> RunClient:
+        """The tool's full client, built on first use from the manifest.
+
+        Only ``execute()`` and ``check()`` may hand it to tool code; planning code
+        gets ``PlanView`` (see ``_plan_client``).
+        """
+        client = self._clients.get(operation.tool)
+        if client is None:
+            if operation.client is None:
+                return NoClient(operation.tool)
+            try:
+                client = create_client(operation.client, self._tool_settings(operation))
+            except ImportError as err:
+                raise RetmanError(
+                    self.texts.get("errors.tool_import", tool=operation.tool, error=err)
+                ) from err
+            self._clients[operation.tool] = client
+        return client
+
+    def _plan_client(self, operation: Operation) -> PlanView:
+        """The offline half of the tool's client: what planning code may use (N-12)."""
+        return PlanView(self._run_client(operation))
+
+    def _tool_context(
+        self,
+        operation: Operation,
+        client: RunClient | PlanView,
+        *,
+        output_dir: Path | None = None,
+        inputs: Mapping[str, Path] | None = None,
+    ) -> ToolContext:
+        return ToolContext(
+            tool=operation.tool,
+            settings=self._tool_settings(operation),
+            project_dir=self.workspace.project_dir,
+            output_dir=output_dir,
+            inputs=inputs or {},
+            client=client,
+            specs={param["name"]: param for param in operation.spec["params"]},
+            operation=operation,
+        )
+
+    @staticmethod
+    def _plan_inputs(plan: Plan) -> dict[str, Path]:
+        return {name: Path(entry.value["path"]) for name, entry in plan.inputs.items()}
+
+    def _extraction_context(
+        self, plan: Plan, operation: Operation
+    ) -> ExtractionContext:
+        """Offline facts for context-aware extractors; the tool is touched lazily."""
+        scope: dict[str, Any] = {}
+        for spec in operation.spec["params"]:
+            entry = plan.values.get(spec["name"])
+            if spec["type"] == "choice" and entry is not None:
+                scope.update(spec.get("option_meta", {}).get(entry.value, {}))
+        return ExtractionContext(
+            tool=operation.tool,
+            settings=self._tool_settings(operation),
+            project_dir=self.workspace.project_dir,
+            scope=scope,
+            lookup=lambda call: self._plan_client(operation).lookup(call),
+            today=self._today,
+            memo=self._memo,
+        )
+
+    # --- recognition --------------------------------------------------------
+
+    def _out_of_scope(
+        self, command: str, decisions: list[dict[str, Any]]
+    ) -> OutOfScopeError:
+        """Record that nothing fits (W-03) and build the error to raise."""
+        compact = self._compact(decisions)
+        self.journal.append("out_of_scope", decisions=compact)
+        self._collect(
+            {"status": "out_of_scope", "command": command, "operation": None},
+            decisions,
+        )
+        members = list(self.operations.values())
+        if two_stage(self.operations):
+            groups = category_groups(members)
+            labels = [category_text(ops, key, "label") for key, ops in groups.items()]
+        else:
+            labels = [operation.text("label") for operation in members]
+        return OutOfScopeError(
+            labels,
+            self.texts.get("dialog.out_of_scope_message", operations=", ".join(labels)),
+            compact,
+        )
+
     def plan(self, command: str, known: dict[str, Any] | None = None) -> Plan:
-        """Choose an operation and fill what code or model can determine safely."""
+        """Choose an operation and fill what code or model can determine safely.
+
+        With more operations than one question can offer, the model first
+        chooses a category, then an operation of it (ARCHITECTURE 3.4).
+        """
         if not self.operations:
             raise RetmanError(self.texts.get("dialog.no_operations"))
+        self._memo = {}
         self.journal.append("command", command=command)
-        options = {
-            key: operation.text("description")
-            for key, operation in self.operations.items()
-        }
-        options["out_of_scope"] = self.texts.get("dialog.out_of_scope")
-        question = self.texts.get("dialog.operation")
-        decision = self._choose(command, question, options)
-        if decision.key == "out_of_scope":
-            outcome = [self._audit_decision("operation", question, decision)]
-            self.journal.append("out_of_scope", decisions=self._compact(outcome))
-            self._collect(
-                {"status": "out_of_scope", "command": command, "operation": None},
-                outcome,
-            )
-            labels = [operation.text("label") for operation in self.operations.values()]
-            raise OutOfScopeError(
-                labels,
-                self.texts.get(
-                    "dialog.out_of_scope_message", operations=", ".join(labels)
-                ),
-            )
         plan = Plan(
             command,
             None,
             "",
-            operation_confidence=decision.confidence,
-            operation_unverified=decision.confidence is None,
             known=dict(known or {}),
             language=self.config.language,
-            decisions=[self._audit_decision("operation", question, decision)],
             _owner=self,
+        )
+        if not two_stage(self.operations):
+            return self._select_operation(plan, None)
+        groups = category_groups(self.operations.values())
+        question = self.texts.get("dialog.category")
+        options = {
+            key: category_text(members, key, "description")
+            for key, members in groups.items()
+        }
+        options["out_of_scope"] = self.texts.get("dialog.out_of_scope")
+        decision = self._choose(command, question, options)
+        plan.decisions.append(self._audit_decision("category", question, decision))
+        if decision.key == "out_of_scope":
+            raise self._out_of_scope(command, plan.decisions)
+        if self._uncertain(decision, "operation"):
+            likely = sorted(
+                groups, key=lambda key: decision.probabilities.get(key, 0), reverse=True
+            )[:3]
+            plan.questions.append(
+                Question(
+                    "category",
+                    "choice",
+                    question,
+                    [
+                        Option(key, category_text(groups[key], key, "label"))
+                        for key in likely
+                    ],
+                    help=self.texts.get("dialog.help_fallback"),
+                )
+            )
+            return plan
+        return self._select_operation(plan, decision.key)
+
+    def _select_operation(self, plan: Plan, category: str | None) -> Plan:
+        """Ask the model which operation (of ``category``, if given) the command is."""
+        members = {
+            key: operation
+            for key, operation in self.operations.items()
+            if category is None or operation.category == category
+        }
+        question = self.texts.get("dialog.operation")
+        options = {
+            key: operation.text("description") for key, operation in members.items()
+        }
+        options["out_of_scope"] = self.texts.get("dialog.out_of_scope")
+        decision = self._choose(plan.command, question, options)
+        plan.decisions.append(self._audit_decision("operation", question, decision))
+        if decision.key == "out_of_scope":
+            raise self._out_of_scope(plan.command, plan.decisions)
+        plan.operation_confidence = decision.confidence
+        plan.operation_unverified = any(
+            item["confidence"] is None for item in plan.decisions
         )
         if self._uncertain(decision, "operation"):
             likely = sorted(
-                self.operations,
+                members,
                 key=lambda key: decision.probabilities.get(key, 0),
                 reverse=True,
             )[:3]
@@ -153,14 +323,16 @@ class Retman:
                     "operation",
                     "choice",
                     question,
-                    [Option(key, self.operations[key].text("label")) for key in likely],
+                    [Option(key, members[key].text("label")) for key in likely],
                     help=self.texts.get("dialog.help_fallback"),
                 )
             )
             return plan
         plan.operation = decision.key
-        plan.operation_label = self.operations[decision.key].text("label")
+        plan.operation_label = members[decision.key].text("label")
         return self._populate(plan)
+
+    # --- questions and values -----------------------------------------------
 
     def _param_question(
         self,
@@ -208,32 +380,82 @@ class Retman:
                 return False
         return True
 
-    def _display(self, operation: Operation, spec: ParamSpec, value: Any) -> str:
-        if spec["type"] == "choice":
-            return operation.text(f"params.{spec['name']}.options.{value}.label")
+    def _unset(self, plan: Plan, operation: Operation) -> dict[str, tuple[str, str]]:
+        """Applicable optional parameters left unset, with what that means (N-11).
+
+        A parameter being asked about is not unset: its question is open.
+        """
+        asked = {question.name for question in plan.questions}
+        unset: dict[str, tuple[str, str]] = {}
+        for spec in operation.spec["params"]:
+            name = spec["name"]
+            if (
+                spec.get("required")
+                or "default" in spec
+                or name in plan.values
+                or name in asked
+                or name in plan.known
+                or self._applicable(spec, plan) is not True
+            ):
+                continue
+            unset[name] = (
+                operation.text(f"params.{name}.label"),
+                operation.text(f"params.{name}.unset"),
+            )
+        return unset
+
+    def _display_item(self, operation: Operation, spec: ParamSpec, value: Any) -> str:
+        area_type = value.get("type") if isinstance(value, dict) else None
+        # Area values are normalized (x = east, y = north), so the plan
+        # shows how Retman read them (ARCHITECTURE 6.1, note on coordinates)
+        if area_type in ("sheet", "teryt"):
+            return self.texts.get(f"extractors.area.{area_type}", code=value["code"])
+        if area_type == "geometry":
+            shown = (
+                self.texts.get(
+                    "extractors.area.geometry_layer",
+                    path=value["path"],
+                    layer=value["layer"],
+                )
+                if value.get("layer") is not None
+                else self.texts.get("extractors.area.geometry", path=value["path"])
+            )
+            note = f"operations.{operation.id}.params.{spec['name']}.geometry_note"
+            return (
+                f"{shown} ({operation.texts.get(note)})"
+                if operation.texts.has(note)
+                else shown
+            )
+        if area_type == "bbox":
+            crs_key = str(value["crs"]).replace("EPSG:", "")
+            return self.texts.get(
+                f"extractors.area.bbox_{crs_key}_plan",
+                **{
+                    name: f"{value[name]:g}"
+                    for name in ("min_x", "min_y", "max_x", "max_y")
+                },
+            )
+        described = (
+            describe_value(spec["extractor"], value, self.texts)
+            if "extractor" in spec
+            else None
+        )
+        if described is not None:
+            return described
         if isinstance(value, dict):
-            # Area values are normalized (x = east, y = north), so the plan
-            # shows how Retman read them (ARCHITECTURE 6.1, note on coordinates)
-            area_type = value.get("type")
-            if area_type in ("sheet", "teryt"):
-                return self.texts.get(
-                    f"extractors.area.{area_type}", code=value["code"]
-                )
-            if area_type == "geometry":
-                return self.texts.get("extractors.area.geometry", path=value["path"])
-            if area_type == "bbox":
-                crs_key = str(value["crs"]).replace("EPSG:", "")
-                return self.texts.get(
-                    f"extractors.area.bbox_{crs_key}_plan",
-                    **{
-                        name: f"{value[name]:g}"
-                        for name in ("min_x", "min_y", "max_x", "max_y")
-                    },
-                )
             return ", ".join(
                 f"{key}={item}" for key, item in value.items() if key != "type"
             )
         return str(value)
+
+    def _display(self, operation: Operation, spec: ParamSpec, value: Any) -> str:
+        if spec["type"] == "choice":
+            return operation.text(f"params.{spec['name']}.options.{value}.label")
+        if isinstance(value, list):
+            return ", ".join(
+                self._display_item(operation, spec, item) for item in value
+            )
+        return self._display_item(operation, spec, value)
 
     def _set_param(
         self,
@@ -249,8 +471,19 @@ class Retman:
         plan.labels[spec["name"]] = operation.text(f"params.{spec['name']}.label")
         plan.display[spec["name"]] = self._display(operation, spec, value)
 
-    def _readings(self, spec: ParamSpec, text: str) -> list[Match]:
-        matches = EXTRACTORS[spec["extractor"]](text)
+    def _readings(
+        self,
+        plan: Plan,
+        operation: Operation,
+        spec: ParamSpec,
+        text: str,
+        *,
+        answer: bool = False,
+    ) -> list[Match]:
+        """Readings of the parameter's extractor, narrowed by ``accepts``."""
+        context = self._extraction_context(plan, operation)
+        read = read_answer if answer else read_command
+        matches = read(spec["extractor"], text, context)
         accepts = spec.get("accepts")
         if accepts:
             return [
@@ -263,6 +496,7 @@ class Retman:
                         if isinstance(reading.value, dict)
                         and reading.value.get("type") in accepts
                     ),
+                    match.confirm,
                 )
                 for match in matches
                 if any(
@@ -279,7 +513,36 @@ class Retman:
             key = f"extractors.{key}"
         return self.texts.get(key, **reading.label_args)
 
-    def _validate_free(self, spec: ParamSpec, value: Any) -> str | None:
+    def _validate_geometry(self, item: dict[str, Any]) -> str | None:
+        """Why a geometry area cannot be used (file, kind, layer); None if it can."""
+        path = (self.workspace.project_dir / item["path"]).resolve()
+        if not path.is_file():
+            return self.texts.get("dialog.invalid_geometry", path=item["path"])
+        try:
+            validate_file("area_geometry", path)
+        except (KindValidationError, OSError) as err:
+            return self.texts.get("dialog.invalid_file", error=err)
+        layer = item.get("layer")
+        if layer is None:
+            return None
+        if path.suffix.lower() != ".gpkg":
+            return self.texts.get("dialog.invalid")
+        try:
+            known = geometry_layers(path)
+        except GeometryFileError as err:
+            return self.texts.get(
+                "dialog.geometry_unreadable", file=path.name, error=err.reason
+            )
+        if layer not in known:
+            return self.texts.get(
+                "dialog.geometry_layer_unknown", file=path.name, layer=layer
+            )
+        return None
+
+    def _validate_free(
+        self, plan: Plan, operation: Operation, spec: ParamSpec, value: Any
+    ) -> str | None:
+        context = self._extraction_context(plan, operation)
         values = value if spec.get("multiple") and isinstance(value, list) else [value]
         for item in values:
             accepts = spec.get("accepts")
@@ -287,7 +550,7 @@ class Retman:
                 not isinstance(item, dict) or item.get("type") not in accepts
             ):
                 return self.texts.get("dialog.invalid")
-            error_key = VALIDATORS[spec["extractor"]](item)
+            error_key = validate_value(spec["extractor"], item, context)
             if error_key:
                 key = (
                     error_key
@@ -305,9 +568,9 @@ class Retman:
                     "dialog.invalid_range", minimum=bounds[0], maximum=bounds[1]
                 )
             if isinstance(item, dict) and item.get("type") == "geometry":
-                path = (self.workspace.project_dir / item["path"]).resolve()
-                if not path.is_file():
-                    return self.texts.get("dialog.invalid_geometry", path=item["path"])
+                error = self._validate_geometry(item)
+                if error:
+                    return error
         return None
 
     def _normalize_free(self, value: Any) -> Any:
@@ -320,10 +583,57 @@ class Retman:
             return [self._normalize_free(item) for item in value]
         return value
 
+    def _complete_geometry(
+        self, operation: Operation, spec: ParamSpec, value: Any
+    ) -> tuple[Any, Question | None]:
+        """Decide the layer of a geometry area (never guessed, W-02).
+
+        A Shapefile has none, a GeoPackage with one feature table uses it (the
+        plan shows it) and with several the user chooses by number. Any other
+        value is returned unchanged. The value must be validated and normalized.
+        """
+        if (
+            not isinstance(value, dict)
+            or value.get("type") != "geometry"
+            or "layer" in value
+        ):
+            return value, None
+        path = Path(value["path"])
+        if path.suffix.lower() != ".gpkg":
+            return {**value, "layer": None}, None
+        try:
+            layers = geometry_layers(path)
+        except GeometryFileError as err:
+            return value, self._param_question(
+                operation,
+                spec,
+                error=self.texts.get(
+                    "dialog.geometry_unreadable", file=path.name, error=err.reason
+                ),
+            )
+        if not layers:
+            return value, self._param_question(
+                operation,
+                spec,
+                error=self.texts.get("dialog.geometry_no_layers", file=path.name),
+            )
+        if len(layers) == 1:
+            return {**value, "layer": layers[0]}, None
+        return value, Question(
+            spec["name"],
+            "choice",
+            self.texts.get("dialog.geometry_layer", file=path.name),
+            [
+                Option(str(index), layer, {**value, "layer": layer})
+                for index, layer in enumerate(layers, 1)
+            ],
+            help=self.texts.get("dialog.help_fallback"),
+        )
+
     def _extract_param(
         self, plan: Plan, operation: Operation, spec: ParamSpec
     ) -> Question | None:
-        matches = self._readings(spec, plan.command)
+        matches = self._readings(plan, operation, spec, plan.command)
         if not matches:
             if "default" in spec:
                 self._set_param(plan, operation, spec, spec["default"], "default")
@@ -331,7 +641,7 @@ class Retman:
             return (
                 self._param_question(operation, spec) if spec.get("required") else None
             )
-        if any(len(match.readings) > 1 for match in matches) or (
+        if any(match.ambiguous for match in matches) or (
             len(matches) > 1 and not spec.get("multiple")
         ):
             options = [
@@ -346,10 +656,15 @@ class Retman:
             if spec.get("multiple")
             else matches[0].readings[0].value
         )
-        error = self._validate_free(spec, value)
+        error = self._validate_free(plan, operation, spec, value)
         if error:
             return self._param_question(operation, spec, error=error)
-        self._set_param(plan, operation, spec, self._normalize_free(value), "command")
+        value, layer_question = self._complete_geometry(
+            operation, spec, self._normalize_free(value)
+        )
+        if layer_question is not None:
+            return layer_question
+        self._set_param(plan, operation, spec, value, "command")
         return None
 
     @staticmethod
@@ -375,7 +690,13 @@ class Retman:
         self, plan: Plan, operation: Operation, spec: ParamSpec
     ) -> Question | None:
         """A choice read by code, never by the model (ADR-009)."""
-        values = self._extracted_values(EXTRACTORS[spec["extractor"]](plan.command))
+        values = self._extracted_values(
+            read_command(
+                spec["extractor"],
+                plan.command,
+                self._extraction_context(plan, operation),
+            )
+        )
         if len(values) == 1 and values[0] in spec["option_values"].values():
             key = next(k for k, v in spec["option_values"].items() if v == values[0])
             self._set_param(plan, operation, spec, key, "command")
@@ -550,13 +871,33 @@ class Retman:
                     if spec["type"] == "bool" and not isinstance(value, bool):
                         raise RetmanError(self.texts.get("dialog.invalid_choice"))
                     if spec["type"] == "free":
-                        error = self._validate_free(spec, value)
+                        if spec.get("multiple") and not isinstance(value, list):
+                            value = [value]
+                        error = self._validate_free(plan, operation, spec, value)
                         if error:
                             raise RetmanError(error)
-                        value = self._normalize_free(value)
+                        value, layer_question = self._complete_geometry(
+                            operation, spec, self._normalize_free(value)
+                        )
+                        if layer_question is not None:
+                            # A fixed value is never asked about
+                            raise RetmanError(
+                                layer_question.error
+                                or self.texts.get(
+                                    "dialog.geometry_layer_required",
+                                    file=Path(value["path"]).name,
+                                )
+                            )
                     self._set_param(plan, operation, spec, value, "known")
                 continue
             if name in plan.values:
+                continue
+            if name in plan.reopened:
+                # The tool rejected the answer at preview: ask again, never
+                # derive the value from the command a second time
+                questions.append(
+                    self._param_question(operation, spec, error=plan.reopened[name])
+                )
                 continue
             if spec["type"] == "free":
                 question = self._extract_param(plan, operation, spec)
@@ -587,12 +928,65 @@ class Retman:
             if question:
                 questions.append(question)
         plan.questions = questions
+        plan.unset = self._unset(plan, operation)
+        if not questions:
+            return self._review(plan, operation)
         return plan
+
+    # --- offline review of a complete plan ----------------------------------
+
+    def _review(self, plan: Plan, operation: Operation) -> Plan:
+        """The tool validates the complete plan and previews it, offline (N-12).
+
+        A rejection reopens the parameters it names as questions; the plan is
+        complete, and so confirmable, only when the tool accepts it.
+        """
+        if "calls" not in operation.spec and "preview" not in operation.spec:
+            return plan
+        params = {name: entry.value for name, entry in plan.values.items()}
+        context = self._tool_context(
+            operation, self._plan_client(operation), inputs=self._plan_inputs(plan)
+        )
+        preview = preview_operation(operation, params, context, self.texts)
+        if preview.problems:
+            self._reopen(plan, operation, preview)
+            return self._populate(plan)
+        plan.preview_rows = preview.rows
+        plan.preview_values = preview.values
+        return plan
+
+    def _reopen(self, plan: Plan, operation: Operation, preview: Preview) -> None:
+        """Make the parameters of the problems questions again, with the reason.
+
+        The model's decision stays in ``plan.decisions`` (a truthful audit); the
+        value is dropped and ``plan.reopened`` keeps ``_populate`` from deriving
+        it from the command a second time. Fixed (``known``) values and
+        parameters without a value cannot be reopened; when nothing can be, the
+        plan could never become confirmable, so this raises instead of looping.
+        """
+        reopened: dict[str, str] = {}
+        for problem in preview.problems:
+            for name in problem.params:
+                if name in plan.values and name not in plan.known:
+                    reopened.setdefault(name, problem.text)
+        if not reopened:
+            raise RetmanError(preview.problems[0].text)
+        for name in reopened:
+            plan.values.pop(name)
+        plan.reopened.update(reopened)
+        plan.preview_rows = []
+        plan.preview_values = {}
 
     def answer_plan(self, plan: Plan, name: str, answer: str) -> Plan:
         """Interpret a user's number or own words, retaining invalid questions."""
         question = next(q for q in plan.questions if q.name == name)
-        self.journal.append("question", name=name, question=question.text)
+        self._memo = {}
+        self.journal.append(
+            "question",
+            name=name,
+            question=question.text,
+            **({"reason": question.error} if name in plan.reopened else {}),
+        )
         self.journal.append("answer", name=name, answer=answer)
         updated = plan._updated(
             values=dict(plan.values),
@@ -602,6 +996,7 @@ class Retman:
             decisions=list(plan.decisions),
             answers={**plan.answers, name: answer},
             questions=list(plan.questions),
+            reopened=dict(plan.reopened),
         )
         selection: Option | None = None
         if answer.isdecimal() and 1 <= int(answer) <= len(question.options):
@@ -610,6 +1005,17 @@ class Retman:
             value = question.default
         elif selection is not None:
             value = selection.value if selection.value is not None else selection.key
+        elif name == "category":
+            groups = category_groups(self.operations.values())
+            choices = {
+                option.key: category_text(groups[option.key], option.key, "description")
+                for option in question.options
+            }
+            decision = self._choose(answer, question.text, choices)
+            value = decision.key if not self._uncertain(decision, "operation") else None
+            updated.decisions.append(
+                self._audit_decision("category_answer", question.text, decision)
+            )
         elif name == "operation":
             choices = {
                 option.key: self.operations[option.key].text("description")
@@ -626,10 +1032,15 @@ class Retman:
             and spec["type"] == "choice"
             and "extractor" in spec
         ):
-            reader = ANSWER_EXTRACTORS.get(
-                spec["extractor"], EXTRACTORS[spec["extractor"]]
+            values = self._extracted_values(
+                read_answer(
+                    spec["extractor"],
+                    answer,
+                    self._extraction_context(
+                        updated, self.operations[updated.operation]
+                    ),
+                )
             )
-            values = self._extracted_values(reader(answer))
             value = next(
                 (
                     key
@@ -671,16 +1082,18 @@ class Retman:
             updated.operation is not None
             and (spec := self.operations[updated.operation].parameter(name)) is not None
         ):
-            matches = self._readings(spec, answer)
+            matches = self._readings(
+                updated, self.operations[updated.operation], spec, answer, answer=True
+            )
             value = (
                 matches[0].readings[0].value
-                if (len(matches) == 1 and len(matches[0].readings) == 1)
+                if (len(matches) == 1 and not matches[0].ambiguous)
                 else None
             )
             if (
                 spec.get("multiple")
                 and matches
-                and all(len(m.readings) == 1 for m in matches)
+                and all(not m.ambiguous for m in matches)
             ):
                 value = [m.readings[0].value for m in matches]
             if matches and value is None:
@@ -690,12 +1103,19 @@ class Retman:
                         (reading for match in matches for reading in match.readings), 1
                     )
                 ]
+                confirm_only = all(
+                    len(match.readings) == 1 and match.confirm for match in matches
+                )
                 updated.questions = [
                     replace(
                         q,
                         type="choice",
                         options=options,
-                        error=self.texts.get("dialog.ambiguous"),
+                        error=self.texts.get(
+                            "dialog.confirm_reading"
+                            if confirm_only
+                            else "dialog.ambiguous"
+                        ),
                     )
                     if q.name == name
                     else q
@@ -709,6 +1129,13 @@ class Retman:
             error = self.texts.get(
                 "dialog.invalid_choice" if question.options else "dialog.invalid"
             )
+        elif name == "category":
+            groups = category_groups(self.operations.values())
+            if value not in groups:
+                error = self.texts.get("dialog.invalid_choice")
+            else:
+                updated.questions = [q for q in updated.questions if q.name != name]
+                return self._select_operation(updated, value)
         elif name == "operation":
             if value not in self.operations:
                 error = self.texts.get("dialog.invalid_choice")
@@ -720,6 +1147,7 @@ class Retman:
             updated.operation is not None
             and (spec := self.operations[updated.operation].parameter(name)) is not None
         ):
+            operation = self.operations[updated.operation]
             if (
                 spec["type"] == "choice"
                 and value not in spec["options"]
@@ -728,20 +1156,29 @@ class Retman:
             ):
                 error = self.texts.get("dialog.invalid_choice")
             elif spec["type"] == "free":
-                error = self._validate_free(spec, value)
+                if spec.get("multiple") and not isinstance(value, list):
+                    value = [value]
+                error = self._validate_free(updated, operation, spec, value)
             if error is None:
                 if spec["type"] == "bool":
                     value = value is True or value == "yes"
-                self._set_param(
-                    updated,
-                    self.operations[updated.operation],
-                    spec,
-                    self._normalize_free(value),
-                    "user",
-                )
-                for dependent in self.operations[updated.operation].spec["params"]:
+                value = self._normalize_free(value)
+                if spec["type"] == "free":
+                    value, layer_question = self._complete_geometry(
+                        operation, spec, value
+                    )
+                    if layer_question is not None:
+                        updated.questions = [
+                            layer_question if q.name == name else q
+                            for q in updated.questions
+                        ]
+                        return updated
+                self._set_param(updated, operation, spec, value, "user")
+                updated.reopened.pop(name, None)
+                for dependent in operation.spec["params"]:
                     if name in dependent.get("depends_on", {}):
                         updated.values.pop(dependent["name"], None)
+                        updated.reopened.pop(dependent["name"], None)
                         updated.decisions = [
                             d
                             for d in updated.decisions
@@ -789,7 +1226,11 @@ class Retman:
         if plan.operation is None:
             raise PlanIncompleteError("operation has not been selected")
         operation = self.operations[plan.operation]
-        if name not in plan.values and name not in plan.inputs:
+        if (
+            name not in plan.values
+            and name not in plan.inputs
+            and name not in plan.unset
+        ):
             raise ValueError(f"not a plan value: {name}")
         if name in plan.known:
             raise ValueError(f"fixed external value: {name}")
@@ -798,11 +1239,12 @@ class Retman:
             inputs=dict(plan.inputs),
             questions=list(plan.questions),
             decisions=list(plan.decisions),
+            reopened=dict(plan.reopened),
         )
-        if name in updated.values:
+        if name in updated.values or name in plan.unset:
             spec = operation.parameter(name)
             assert spec is not None
-            updated.values.pop(name)
+            updated.values.pop(name, None)
             question = self._param_question(operation, spec)
         else:
             updated.inputs.pop(name)
@@ -916,6 +1358,94 @@ class Retman:
         if status != "approved":
             self._collect_plan(plan, status, changed=changed)
 
+    # --- availability check (a separate, consented network step) -------------
+
+    def _checkable(self, plan: Plan) -> Operation:
+        if plan.operation is None or plan.questions:
+            raise PlanIncompleteError("plan still has open questions")
+        operation = self.operations[plan.operation]
+        if "check" not in operation.spec:
+            raise PlanIncompleteError("this operation offers no availability check")
+        return operation
+
+    def check_notice(self, plan: Plan) -> str:
+        """What the availability check contacts and sends, to show before consent."""
+        operation = self._checkable(plan)
+        return self.texts.get("check.notice", operation=operation.text("check.notice"))
+
+    def check(self, plan: Plan) -> CheckReport:
+        """Ask the tool's data services what exists for a complete plan.
+
+        The only network entry point besides ``execute()``: it needs its own,
+        single-use consent (``plan.confirm_check()``), creates no result and
+        writes nothing in the workspace, and never changes the plan's values.
+        The plan's approval is withdrawn: the user must confirm after reading the
+        report. A failed check is a report with status ``unknown``;
+        ``KeyboardInterrupt`` propagates (the journal still records the attempt).
+
+        Raises
+        ------
+        CheckNotConfirmedError
+            ``plan.confirm_check()`` was not called since the last change or check.
+        """
+        if not plan.check_confirmed:
+            raise CheckNotConfirmedError("call plan.confirm_check() before check()")
+        plan.check_confirmed = False
+        operation = self._checkable(plan)
+        plan.confirmed = False
+        plan.confirmed_at = None
+        params = {name: entry.value for name, entry in plan.values.items()}
+        report: CheckReport | None = None
+        try:
+            try:
+                context = self._tool_context(
+                    operation,
+                    self._run_client(operation),
+                    inputs=self._plan_inputs(plan),
+                )
+            except (OSError, ImportError, RetmanError) as err:
+                report = failed_check(operation, self.texts, str(err))
+            else:
+                report = run_check(operation, params, context, self.texts)
+        finally:
+            self.journal.append(
+                "check",
+                status="approved",
+                result=report.status if report else None,
+                error=report.error if report else None,
+                tool=operation.tool,
+                version=operation.version,
+                lines=report.lines if report else [],
+                **self._plan_data(plan),
+            )
+        plan.checks = [*plan.checks, report]
+        return report
+
+    def record_check(self, plan: Plan, status: str) -> None:
+        """Journal a declined availability check (no network was used)."""
+        operation = self._checkable(plan)
+        self.journal.append(
+            "check",
+            status=status,
+            result=None,
+            error=None,
+            tool=operation.tool,
+            version=operation.version,
+            lines=[],
+            **self._plan_data(plan),
+        )
+
+    # --- execution -----------------------------------------------------------
+
+    def _file_record(self, operation: Operation, path: Path) -> dict[str, str]:
+        """A result file for ``result.json``: project-relative, or a tool-store file."""
+        try:
+            entry = {"path": str(path.relative_to(self.workspace.project_dir))}
+        except ValueError:
+            entry = {"path": str(path), "store": operation.tool}
+        entry["sha256"] = sha256_file(path)
+        return entry
+
     def execute(self, plan: Plan) -> Result:
         """Run only a confirmed, complete plan and preserve an audit record."""
         if not plan.confirmed:
@@ -940,6 +1470,14 @@ class Retman:
             for name, entry in plan.values.items()
         }
         try:
+            for name, entry in plan.values.items():
+                if (
+                    isinstance(entry.value, dict)
+                    and entry.value.get("type") == "geometry"
+                ):
+                    params_audit[name]["files"] = describe_geometry(
+                        Path(entry.value["path"])
+                    )
             for name, entry in plan.inputs.items():
                 value = entry.value
                 path = self.workspace.validate_input(Path(value["path"]), value["kind"])
@@ -947,6 +1485,12 @@ class Retman:
                 inputs_audit[name] = self.workspace.describe_input(
                     path, value["kind"], value["number"]
                 )
+            context = self._tool_context(
+                operation,
+                self._run_client(operation),
+                output_dir=directory,
+                inputs=inputs,
+            )
             result = execute_operation(
                 operation,
                 params,
@@ -956,8 +1500,9 @@ class Retman:
                 params_audit,
                 inputs_audit,
                 self.texts,
+                context,
             )
-        except (OSError, KindValidationError) as err:
+        except (OSError, ImportError, RetmanError) as err:
             result = Result(
                 False,
                 number,
@@ -970,18 +1515,18 @@ class Retman:
         finished_at = utc_now()
         record = result.to_dict()
         record["files"] = {
-            kind: [
-                {
-                    "path": str(path.relative_to(self.workspace.project_dir)),
-                    "sha256": sha256_file(path),
-                }
-                for path in paths
-            ]
+            kind: [self._file_record(operation, path) for path in paths]
             for kind, paths in result.files.items()
         }
         if self.config.journal_commands:
             record["command"] = {"text": plan.command, "answers": plan.answers}
         record["decisions"] = plan.decisions
+        if plan.unset:
+            record["unset"] = {name: text for name, (_, text) in plan.unset.items()}
+        if plan.preview_values:
+            record["preview"] = plan.preview_values
+        if plan.checks:
+            record["checks"] = [report.to_dict() for report in plan.checks]
         record["environment"] = {
             "retman": __version__,
             "tools": {operation.tool: operation.version},

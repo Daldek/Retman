@@ -23,6 +23,8 @@ from retman.eval.dataset import (
     validate_commands,
 )
 from retman.eval.metrics import EvalRecord, EvaluationSummary, summarize
+from retman.eval.offline import offline_clients
+from retman.eval.placeholders import create_geometry_files
 from retman.eval.report import render_report
 from retman.exceptions import (
     BackendError,
@@ -100,9 +102,16 @@ def _decision(name: str, decision: Decision) -> dict[str, Any]:
 
 
 def _portable_value(value: Any, project: Path) -> Any:
-    """Keep dataset-relative free values without leaking temporary project paths."""
+    """Keep dataset-relative free values without leaking temporary project paths.
+
+    A geometry area is recorded as the command said it: the file, not the layer
+    Retman read from the placeholder file.
+    """
     if isinstance(value, dict):
-        return {key: _portable_value(item, project) for key, item in value.items()}
+        portable = {key: _portable_value(item, project) for key, item in value.items()}
+        if portable.get("type") == "geometry":
+            portable.pop("layer", None)
+        return portable
     if isinstance(value, list):
         return [_portable_value(item, project) for item in value]
     if isinstance(value, str) and value.startswith(str(project) + "/"):
@@ -147,20 +156,39 @@ def evaluate_command(
     counting = CountingBackend(backend, config)
     with TemporaryDirectory(dir=temporary_dir) as folder:
         project = Path(folder)
+        # A command naming a geometry file needs one: the project is empty
+        create_geometry_files(command.command, project)
         # Evaluation commands are not the user's work: never collect them (ADR-010)
         retman = Retman(
             replace(config, collect_commands=False),
             counting,
             project,
             operations=operations,
+            clients=offline_clients(operations, config),
         )
         start = monotonic()
+        category_question: dict[str, Any] = {"asked": False, "offered": []}
         initial_question: dict[str, Any] = {"asked": False, "offered": []}
         operation_offered: bool | None = None
         plan = None
         outcome = "plan"
+        refused: OutOfScopeError | None = None
         try:
             plan = retman.plan(command.command)
+            question = next((q for q in plan.questions if q.name == "category"), None)
+            if question is not None:
+                offered = [option.key for option in question.options]
+                category_question = {"asked": True, "offered": offered}
+                expected_category = (
+                    operations[command.operation].category
+                    if command.operation in operations
+                    else None
+                )
+                if expected_category in offered:
+                    position = offered.index(expected_category) + 1
+                    plan = plan.answer("category", str(position))
+                else:
+                    operation_offered = False
             question = next((q for q in plan.questions if q.name == "operation"), None)
             if question is not None:
                 offered = [option.key for option in question.options]
@@ -169,15 +197,29 @@ def evaluate_command(
                 if operation_offered:
                     position = offered.index(command.operation) + 1
                     plan = plan.answer("operation", str(position))
-        except OutOfScopeError:
+        except OutOfScopeError as error:
             outcome = "out_of_scope"
+            refused = error
+            plan = None
         except BackendError:
             raise  # No partial report or raw output on a broken backend.
         except RetmanError:
             outcome = "error"
         elapsed = monotonic() - start
-        decisions = (
-            [
+        if refused is not None:
+            # The decision that refused the command is the record's operation
+            # decision, whether it came with the category or the operation question
+            decisions = [
+                {
+                    **item,
+                    "name": "operation"
+                    if index == len(refused.decisions) - 1
+                    else item["name"],
+                }
+                for index, item in enumerate(refused.decisions)
+            ]
+        elif plan is not None:
+            decisions = [
                 {
                     "name": item["name"],
                     "key": item["key"],
@@ -187,13 +229,10 @@ def evaluate_command(
                 }
                 for item in plan.decisions
             ]
-            if plan is not None
-            else (
-                [_decision("operation", counting.first_decision)]
-                if counting.first_decision is not None
-                else []
-            )
-        )
+        elif counting.first_decision is not None:
+            decisions = [_decision("operation", counting.first_decision)]
+        else:
+            decisions = []
         questions = [q for q in plan.questions if q.name != "operation"] if plan else []
         # Keep an unresolved operation question visible to both coverage and errors.
         if plan is not None and plan.operation is None:
@@ -215,6 +254,7 @@ def evaluate_command(
             },
             "outcome": outcome,
             "operation": plan.operation if plan is not None else None,
+            "category_question": category_question,
             "operation_question": initial_question,
             "operation_offered": operation_offered,
             "decisions": decisions,

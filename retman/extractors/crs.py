@@ -8,11 +8,11 @@ rest to a question (never a silent guess, ARCHITECTURE 6.1).
 """
 
 import re
-import unicodedata
 from dataclasses import dataclass
 
 from retman.extractors.areas import extract_area
 from retman.extractors.base import Match, Reading
+from retman.extractors.text import fold, starts_within_one_edit
 
 # Names of systems that commands mention; any other "EPSG:<code>" is still read
 # so Retman can say the system is not supported.
@@ -68,57 +68,6 @@ class _Mention:
     code: int
 
 
-def fold(text: str) -> str:
-    """Lowercase without diacritics, keeping every character's position.
-
-    ``ł`` is mapped explicitly: Unicode does not decompose it.
-
-    Examples
-    --------
-    >>> fold("Układ wyjściowy Křovák")
-    'uklad wyjsciowy krovak'
-    """
-    folded = []
-    for char in text:
-        lower = char.lower()
-        if lower == "ł":
-            folded.append("l")
-            continue
-        base = "".join(
-            c
-            for c in unicodedata.normalize("NFKD", lower)
-            if not unicodedata.combining(c)
-        )
-        folded.append(base[:1] or lower[:1] or char)
-    return "".join(folded)
-
-
-def _damerau(a: str, b: str) -> int:
-    rows = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
-    for i in range(len(a) + 1):
-        rows[i][0] = i
-    for j in range(len(b) + 1):
-        rows[0][j] = j
-    for i in range(1, len(a) + 1):
-        for j in range(1, len(b) + 1):
-            cost = int(a[i - 1] != b[j - 1])
-            rows[i][j] = min(
-                rows[i - 1][j] + 1, rows[i][j - 1] + 1, rows[i - 1][j - 1] + cost
-            )
-            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
-                rows[i][j] = min(rows[i][j], rows[i - 2][j - 2] + 1)
-    return rows[len(a)][len(b)]
-
-
-def _starts_within_one_edit(word: str, stem: str) -> bool:
-    if len(stem) < 5:
-        return False
-    return any(
-        _damerau(word[:length], stem) <= 1
-        for length in (len(stem) - 1, len(stem), len(stem) + 1)
-    )
-
-
 def _word_role(word: str) -> str | None:
     """Role one word suggests; exact stems win over typo tolerance.
 
@@ -129,8 +78,8 @@ def _word_role(word: str) -> str | None:
         return "output"
     if any(word.startswith(s) for s in _INPUT_STEMS):
         return "input"
-    output = any(_starts_within_one_edit(word, s) for s in _OUTPUT_STEMS)
-    source = any(_starts_within_one_edit(word, s) for s in _INPUT_STEMS)
+    output = any(starts_within_one_edit(word, s) for s in _OUTPUT_STEMS)
+    source = any(starts_within_one_edit(word, s) for s in _INPUT_STEMS)
     if output == source:
         return None
     return "output" if output else "input"

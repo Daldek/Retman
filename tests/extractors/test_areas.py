@@ -17,6 +17,9 @@ from retman.i18n.loader import load_core_texts
         ("N-34-130-D-d", "N-34-130-D-d"),
         ("N-34-130-D-d-2", "N-34-130-D-d-2"),
         ("n-34-130-d-d-2-4", "N-34-130-D-d-2-4"),
+        # The 8-part PL-1992 sheet (true orthophoto) is new in Kartograf 0.8.0
+        ("N-34-50-A-c-3-2-3", "N-34-50-A-c-3-2-3"),
+        ("n-34-050-a-c-3-2-3", "N-34-50-A-c-3-2-3"),
         ("6.179.12", "6.179.12"),
         ("6.179.12.3", "6.179.12.3"),
         ("6.179.12.15", "6.179.12.15"),
@@ -34,7 +37,15 @@ def test_extract_area_sheet_systems_and_scales(source: str, normalized: str) -> 
 
 
 @pytest.mark.parametrize(
-    "code", ["N-36-130-D", "N-34-145-D", "6.179.12.26", "N-34-130-D-d-5-4"]
+    "code",
+    [
+        "N-36-130-D",
+        "N-34-145-D",
+        "6.179.12.26",
+        "N-34-130-D-d-5-4",
+        "N-34-50-A-c-3-2-5",
+        "N-34-50-A-c-3-2-3-1",
+    ],
 )
 def test_extract_area_does_not_accept_invalid_sheet_or_valid_prefix(code: str) -> None:
     assert extract_area(f"Pobierz {code}") == []
@@ -267,3 +278,61 @@ def test_extract_area_rendered_bbox_labels_show_axis_interpretations() -> None:
     assert labels[0] != labels[1]
     assert "E 450000–460000" in labels[0]
     assert "E 550000–560000" in labels[1]
+
+
+@pytest.mark.parametrize("name", ["obszar.geojson", "obszar.GML"])
+def test_extract_area_reads_geometry_formats_kartograf_cannot_use(name: str) -> None:
+    matches = extract_area(f"Pobierz NMT dla obszaru z pliku {name}")
+
+    [value] = [reading.value for match in matches for reading in match.readings]
+    assert value == {"type": "geometry", "path": name}
+    # Recognised so the user learns why it is refused instead of being asked again
+    assert VALIDATORS["area"](value) == "extractors.errors.invalid_geometry"
+
+
+@pytest.mark.parametrize(
+    ("path", "layer"),
+    [
+        ("zlewnie.shp", None),
+        ("zlewnie.gpkg", None),
+        ("zlewnie.gpkg", "dzialki"),
+        ("C:\\mapy\\ZLEWNIE.GPKG", "zlewnie"),
+    ],
+)
+def test_validate_area_accepts_geometry_with_or_without_a_layer(
+    path: str, layer: str | None
+) -> None:
+    without_layer = {"type": "geometry", "path": path}
+
+    assert VALIDATORS["area"](without_layer) is None
+    assert VALIDATORS["area"]({**without_layer, "layer": layer}) is None
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        {"type": "geometry", "path": "zlewnie.gpkg", "layer": ""},
+        {"type": "geometry", "path": "zlewnie.gpkg", "layer": 3},
+        # A shapefile has no layers
+        {"type": "geometry", "path": "zlewnie.shp", "layer": "zlewnie"},
+    ],
+)
+def test_validate_area_rejects_a_geometry_layer_that_cannot_exist(
+    value: dict[str, object],
+) -> None:
+    assert VALIDATORS["area"](value) == "extractors.errors.invalid_geometry_layer"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        {"type": "geometry"},
+        {"type": "geometry", "path": 7},
+        {"type": "geometry", "path": "obszar.geojson"},
+        {"type": "geometry", "path": "obszar.shp.zip"},
+    ],
+)
+def test_validate_area_rejects_geometry_that_is_not_a_shapefile_or_geopackage(
+    value: dict[str, object],
+) -> None:
+    assert VALIDATORS["area"](value) == "extractors.errors.invalid_geometry"

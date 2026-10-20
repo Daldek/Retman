@@ -55,11 +55,45 @@ Linki porównań na końcu pliku, od najnowszego:
 - Plik centralny `retman.toml`: szablon z komentarzami, `retman init`, walidacja
   wszystkich ustawień naraz; progi `"auto"` odrzucane poza backendem basal
   (ARCHITECTURE 6.2, 9.1).
-- Cztery operacje Kartografa 0.7.2 (ADR-001, ADR-003): NMT dla arkusza, arkusze potomne
-  NMT/NMPT/ortofotomapy, wycinek NMT/NMPT dla prostokąta (PL-1992 albo WGS84), BDOT10k
-  dla powiatu (TERYT), arkusza albo prostokąta, w GeoPackage albo Shapefile.
-- Rodzaje danych `dem`, `dsm`, `orthophoto`, `topographic_vector` z walidacją nagłówków
-  plików (ADR-004, ARCHITECTURE 3.2.6).
+- Cztery operacje Kartografa 0.8.0 (ADR-001, ADR-012, ADR-013): NMT dla arkusza albo pliku
+  geometrii (wszystkie siatki ASC: 0,15; 0,5; 0,6; 1; 5; 10 m oraz 100 m jako ZIP
+  województwa), arkusze potomne NMT/NMPT/ortofotomapy (NMPT 0,5; 0,6; 1 m z układem
+  wysokościowym; ortofotomapa RGB, CIR albo B-W), wycinek NMT/NMPT 1 m dla prostokąta albo
+  pliku geometrii, BDOT10k dla powiatu, arkusza, prostokąta albo pliku geometrii, w
+  GeoPackage albo Shapefile.
+- Wszystkie operacje IMGWTools 3.0.0 z ČHMÚ — 26 operacji w 6 kategoriach: wyszukiwanie
+  i katalog stacji, dane bieżące i ostrzeżenia, PMAXTP, szeregi stacji, archiwa i magazyn,
+  projekty danych (ADR-017, PRD 7.2).
+- Rozpoznawanie dwustopniowe (kategoria, potem operacja), gdy operacji jest więcej niż 9
+  (ADR-017, ARCHITECTURE 3.4).
+- Ekstraktory: stacja (offline z katalogu magazynu IMGW), lata, okres, rodzaj roku
+  (kalendarzowy/hydrologiczny — zawsze pytanie, gdy niepodany), punkt (WGS84 i PL-1992),
+  komórka siatki PMAXTP, prawdopodobieństwo, czas trwania, zmienne, nazwa zadania; plik
+  geometrii SHP/GPKG jako obszar z pytaniem o warstwę GeoPackage (ADR-016, ADR-017).
+- Rodzaje danych `dem`, `dsm`, `orthophoto`, `topographic_vector`, `dem_archive`,
+  `area_geometry` i 13 rodzajów IMGWTools, z walidacją per rodzaj (ADR-004, ARCHITECTURE
+  3.2.6).
+- Podgląd planu offline: każde wywołanie sprawdza walidacja narzędzia przed potwierdzeniem,
+  a odrzucona wartość wraca jako pytanie; wiersze podglądu (np. liczba arkuszy) w planie
+  (ADR-014, PRD N-12).
+- Sprawdzenie dostępności jako osobny krok: odpowiedź `s` w planie, własna zgoda, raport
+  bez pobierania i bez numeru wyniku; `Retman.check()`, `plan.confirm_check()` (ADR-014,
+  PRD W-17, ARCHITECTURE 6.5).
+- Magazyny narzędzi w `[tools.kartograf]` i `[tools.imgwtools]`; `retman init` tworzy
+  sąsiednie foldery, sprawdza dowiązania twarde i za zgodą inicjuje magazyn IMGW; wyniki
+  wskazują pliki magazynu ścieżką i SHA-256 (ADR-015).
+- `retman doctor`: magazyny, dowiązania twarde w obu magazynach, sonda zapisu IMGW
+  (`--deep`), lekka kontrola zgodności manifestów z zainstalowanymi narzędziami.
+- `retman-scaffold list | draft | --check`: szkice manifestów z katalogów narzędzi i
+  kontrola rozjazdów przez walidację narzędzia offline, z kontrolą pokrycia opcji (ADR-019).
+- Zbiór `retman/eval/commands.jsonl`: 614 poleceń (Kartograf, IMGWTools, spoza zakresu
+  i bliskie zakresowi), z walidacją wpisów na tym samym kodzie ekstraktorów co planowanie;
+  pliki geometrii zastępcze i katalog stacji offline przy planowaniu zbioru (ARCHITECTURE 8.1).
+- Parametry nieobowiązkowe, których polecenie nie podało, mają w planie wiersz z tym, co oznacza
+  ich brak (np. „wszystkie rodzaje stacji”), można je zmienić odpowiedzią `z`, a `result.json`
+  zapisuje je w `unset` (N-11, ARCHITECTURE 6.3).
+- Wiele uwag narzędzia o tym samym kodzie w jednym wywołaniu: wynik pokazuje pierwsze trzy
+  i liczbę pozostałych; pełna lista zostaje w `tool_*.json` (ARCHITECTURE 4.2).
 - Ekstraktory obszaru (godło PL-1992/PL-2000, prostokąt z rozpoznaniem układu i kolejności
   osi, kod TERYT, plik geometrii), ścieżek i numerów wyników; zapisy niejednoznaczne
   wywołują pytanie (ARCHITECTURE 6.1).
@@ -76,9 +110,6 @@ Linki porównań na końcu pliku, od najnowszego:
   zapisuje surowe rekordy i raport Markdown z miarami (trafność, błąd przy pewności W-02,
   ciche zgadywanie, naruszenia W-03, czasy), krzywą progów i zalecanymi progami
   (`--target-error`); kod 4 przy naruszeniu W-03 (ARCHITECTURE 8).
-- Zbiór `retman/eval/commands.jsonl`: 60 poleceń dla czterech operacji Kartografa
-  i 15 spoza zakresu lub bliskich zakresowi, z walidacją wpisów na tym samym kodzie
-  ekstraktorów co planowanie (ARCHITECTURE 8.1).
 - `OutOfScopeError` dla poleceń spoza zakresu, z listą dostępnych operacji (W-03).
 - `retman doctor` (i `--json`): plik centralny, folder projektu i zapis wyników, czytelność
   `result.json`, adres modelu decyzyjnego, lista modeli serwera, pytanie testowe, metoda
@@ -89,6 +120,9 @@ Linki porównań na końcu pliku, od najnowszego:
 - Przewodnik użytkownika `docs/USAGE.md`: przygotowanie, polecenia, pytania, plan,
   wyniki i dziennik, sesja i opcje, kody wyjścia, API Pythona, `retman doctor`,
   `retman-eval`, z przykładami przebiegów.
+- Raporty badań z 2026-10-19 w `docs/research/` (wpływ wydań narzędzi, integracja,
+  sprawdzanie dostępności, plik geometrii, migracja Kartografa, operacje IMGWTools, MCP)
+  i ADR-012–019.
 
 ### Zmienione
 
@@ -113,5 +147,12 @@ Linki porównań na końcu pliku, od najnowszego:
   zamiast pytania dla użytkownika „czy X, czy Y?”; z Bielikiem 11B trafność wartości
   parametrów wzrosła z 0,55 do 0,78, a rodzaju danych z 16/33 do 32/33 (ADR-008,
   ARCHITECTURE 4.2).
+- Narzędzia są wołane przez ich warstwę komend (`validate_command`/`run_command`); handler
+  dostaje kontekst narzędzia (`handler(params, inputs, output_dir, ctx)`); komunikaty błędów
+  narzędzi mają teksty Retmana wg kodu błędu (ADR-013, ARCHITECTURE 3.2.4).
+- Wymagane sekcje `[tools.kartograf]` i `[tools.imgwtools]` w `retman.toml` — starsze pliki
+  trzeba wygenerować od nowa (`retman init`) albo uzupełnić (ADR-015).
+- CLI pokazuje ostrzeżenia wyniku („Uwaga: …”), w tym warunki licencji danych.
+- Wczytany plan (`Plan.from_dict`) nigdy nie przywraca potwierdzenia (W-05).
 
 [0.1.0]: https://github.com/Daldek/Retman/commits/develop

@@ -1,7 +1,7 @@
 # Standardy deweloperskie — Retman
 
-**Wersja:** 1.0
-**Data:** 2026-10-11
+**Wersja:** 1.1
+**Data:** 2026-10-19
 **Status:** Obowiązujący
 **Źródło:** standardy Kartografa (`Kartograf/docs/DEVELOPMENT_STANDARDS.md` v3.3), dostosowane do Retmana
 
@@ -9,6 +9,10 @@
 > i 10 opisują docelową konfigurację (`pyproject.toml`, `.editorconfig`,
 > `tests/conftest.py`) — powstaje ona razem z pierwszym kodem, zgodnie z tym
 > dokumentem. Wszystkie pliki mają końce linii LF, bez wyjątków (5.5).
+>
+> **Nota 1.1 (2026-10-19):** po Kartografie 0.8.0 i IMGWTools 3.0.0 sekcje 6.1, 10.4, 13.3, 14,
+> 16 i 17 opisują warstwę komend, bramkę „bez sieci przed potwierdzeniem” (PRD N-12), atrapy
+> klientów narzędzi i `retman-scaffold`.
 
 ---
 
@@ -305,13 +309,14 @@ i agentów AI:
 
 ```bash
 cd Retman
-uv venv --python 3.12
-uv pip install -e ".[dev]"
-
-# Narzędzia hydrologiczne — w tym samym środowisku (handlery je importują);
-# wersje do testów handlerów są w grupie "tools" w pyproject.toml (ADR-003)
-uv pip install --group tools
+# .venv: Retman (tryb edytowalny), dodatki `dev` i narzędzia z grupy `tools` — w tym samym
+# środowisku (handlery je importują); wersje do testów są w grupie "tools" w pyproject.toml
+# (ADR-003, ADR-012)
+uv sync --all-extras --group tools
 ```
+
+Grupa `tools` przypina do czasu tagów `v0.8.0` (Kartograf) i `v3.0.0` (IMGWTools) wypchnięte
+commity, potem tagi (ADR-012); IMGWTools jest z dodatkiem `store` (`pyarrow`, szeregi czasowe).
 
 Serwer modelu (basal-serve, LM Studio itd.) nie jest częścią środowiska
 Retmana — uruchamia się go osobno (PRD N-10).
@@ -346,7 +351,9 @@ z pominięciem pliku (brak ukrytych wartości domyślnych, PRD N-11).
 # Type checking (sekcja 8.3)
 .venv/bin/python -m mypy retman/ tests/
 
-# Kontrola rozjazdów opisów z API narzędzi (ARCHITECTURE 3.2.3)
+# Zgodność manifestów z zainstalowanymi narzędziami — offline, przez wykonanie
+# (ARCHITECTURE 3.2.3); pomija narzędzia, których nie ma, a w CI `--require-tools`
+# zamienia ich brak na błąd
 .venv/bin/retman-scaffold --check
 
 # Ocena jakości decyzji na zbiorze testowym — wymaga działającego serwera modelu;
@@ -453,6 +460,9 @@ w `pyproject.toml`, bez `--strict`). Błąd naprawiaj merytorycznie;
 `# type: ignore` / `cast` tylko z jednozdaniowym uzasadnieniem w komentarzu,
 gdy typowanie biblioteki zewnętrznej jest błędne lub niepełne. Narzędzie bez
 stubów trafia do `[[tool.mypy.overrides]]` z `ignore_missing_imports`.
+`[tool.mypy] namespace_packages = false`: foldery `tests/tools/<narzędzie>/` (bez
+`__init__.py`) inaczej przesłaniają zainstalowane narzędzie bez `py.typed` (np. `imgwtools`)
+i mypy zgłasza brak jego atrybutów.
 
 ---
 
@@ -600,13 +610,22 @@ def test_plan_asks_when_several_catchments(tmp_path):
   z `retman/testing.py` (ARCHITECTURE 8.3), z zadanymi decyzjami
   i pewnościami — w tym poniżej progu, żeby sprawdzić dopytywanie.
 - **Ekstraktory** testuj bez modelu, jako czysty kod; każda forma
-  z ARCHITECTURE 4.4 ma test, także zapisy niejednoznaczne.
-- **Wspólny adapter** testuj na narzędziu-atrapie (manifest + handlery
-  w `tests/`), nie na prawdziwym narzędziu.
-- **Handlery** testuj na prawdziwych narzędziach z małymi danymi testowymi
-  (ARCHITECTURE 3.2.8); test pomija się (`pytest.importorskip`), gdy narzędzie
-  nie jest zainstalowane, a CI uruchamia je na najstarszej i najnowszej
-  obsługiwanej wersji narzędzia (ARCHITECTURE 3.2.7).
+  z ARCHITECTURE 4.4 ma test, także zapisy niejednoznaczne. Ekstraktory kontekstowe (stacje,
+  zmienne) testuj na sztucznym katalogu z `tests/extractors/extractor_context.py`.
+- **Wspólny adapter** testuj na narzędziu-atrapie (`tests/fixtures/dummy_tool`: manifest,
+  buildery wywołań, handlery, podgląd, sprawdzenie i klient), nie na prawdziwym narzędziu.
+- **Narzędzia przez atrapę klienta:** buildery wywołań, podgląd, sprawdzenie i wykonanie
+  testuj z `FakeToolClient` i `tool_context` z `retman/testing.py` (ARCHITECTURE 8.3). Atrapa
+  zapisuje każde wywołanie, więc test bramki N-12 asertuje, że przed `plan.confirm()` lista
+  `network_calls` jest pusta, a przed `plan.confirm_check()` nie ma wywołań `check` ani `query`.
+- **Nagrane dokumenty narzędzi:** mappery wyników i buildery testuj na prawdziwych dokumentach
+  JSON narzędzi (np. `kartograf-download/1`, `imgw-result/1`) zapisanych z wywołań offline
+  w `tests/fixtures/<narzędzie>/`, nie z wyobrażenia o formacie.
+- **Handlery i zgodność** testuj na prawdziwych narzędziach z małymi danymi testowymi
+  (ARCHITECTURE 3.2.8); dla IMGWTools na jego pakietowym magazynie fikcyjnym
+  (`imgwtools.testing.build_fixture_store`, wymaga `imgwtools[store]`), offline. Test pomija się
+  (`pytest.importorskip`), gdy narzędzie nie jest zainstalowane, a CI uruchamia go na
+  najstarszej i najnowszej obsługiwanej wersji narzędzia (ARCHITECTURE 3.2.7).
 - **Izolacja sieci:** `tests/conftest.py` blokuje każde połączenie spoza
   loopback (autouse); sieć wymaga jawnego markera `@pytest.mark.live`.
 - **Fixtury z realnych odpowiedzi:** odpowiedzi basal-serve i serwerów
@@ -616,7 +635,13 @@ def test_plan_asks_when_several_catchments(tmp_path):
 - **Odporność na kolejność opcji:** testy rozpoznania sprawdzają stabilność
   przy przetasowaniu opcji (ARCHITECTURE 3.4, pkt 3).
 - **Komplet tłumaczeń:** test sprawdza, że każda operacja, parametr i opcja
-  ma tekst w każdym obsługiwanym języku (ARCHITECTURE 4.2).
+  ma tekst w każdym obsługiwanym języku (ARCHITECTURE 4.2), a przy rozpoznawaniu
+  dwustopniowym także każda kategoria.
+- **Układ plików testów:** żadnego `conftest.py` w podfolderach `tests/` — drugi moduł
+  o nazwie `conftest` psuje `mypy retman/ tests/` (zduplikowana nazwa modułu). Wspólne
+  fixtury są w `tests/conftest.py`, pomocniki jako zwykłe moduły z funkcjami (np.
+  `tests/extractors/extractor_context.py`) albo w `retman/testing.py`. Podobnie nazwy plików
+  testów są unikalne w całym `tests/` (podfoldery nie mają `__init__.py`).
 
 ---
 
@@ -634,9 +659,9 @@ nie powiela listy klas. Zasady:
   ARCHITECTURE 6.3); nową klasę dodawaj tylko, gdy wywołujący musi ją odróżnić.
 - Informacje dla wywołującego przekazuj atrybutami wyjątku, nie przez
   parsowanie komunikatu.
-- **Handlery zgłaszają zwykłe wyjątki narzędzia** — wspólny adapter je
-  przechwytuje i zwraca `Result(ok=False)` (ARCHITECTURE 3.2.4, pkt 4);
-  awaria jednego narzędzia nie blokuje pozostałych.
+- **Handlery zgłaszają zwykłe wyjątki, a klienty narzędzi błędy narzędzia jako `ToolError`**
+  (stabilny `code`, ARCHITECTURE 3.2.4) — wspólny adapter przechwytuje każdy wyjątek i zwraca
+  `Result(ok=False)` (ARCHITECTURE 3.2.4, pkt 4); awaria jednego narzędzia nie blokuje pozostałych.
 - Błąd docierający do bariery CLI daje komunikat z pliku tłumaczeń i kod
   wyjścia z ARCHITECTURE 6.4; brak połączenia z modelem podpowiada
   `retman doctor` (ARCHITECTURE 7.2).
@@ -721,9 +746,10 @@ Poprawność > Czytelność > Wydajność
 
 ### 13.3 Szybki start
 
-Narzędzia i handlery importuj dopiero przy wykonaniu (ARCHITECTURE 3.2.5) —
-start Retmana i planowanie nie mogą zależeć od czasu importu narzędzi.
-Czas od polecenia do planu jest mierzony (ARCHITECTURE 9.2, PRD N-07).
+Narzędzia importuj leniwie (`importlib`, ARCHITECTURE 3.2.5): start Retmana i ładowanie
+manifestów nie importują żadnego narzędzia, a planowanie importuje tylko narzędzie wybranej
+operacji (walidacja offline, wyszukiwanie w katalogu). Czas od polecenia do planu jest mierzony
+(ARCHITECTURE 9.2, PRD N-07).
 
 ---
 
@@ -743,6 +769,12 @@ eval(model_answer)  # NEVER!
 
 # NEVER execute an operation without a confirmed plan (0.x)
 retman.execute(plan)  # plan.confirm() first — otherwise PlanNotConfirmedError
+
+# NEVER give planning code (call builders, previews, extractors) a client that can use the network
+ctx.runner.run(call)  # only execute() and Retman.check() build a RunClient (PRD N-12)
+
+# NEVER call a tool function with a network effect before plan.confirm()
+# (the only exception: Retman.check() after plan.confirm_check(), ARCHITECTURE 6.5)
 ```
 
 ### 14.2 ZAWSZE
@@ -763,8 +795,10 @@ out_file = output_dir / "catchment.geojson"
 
 ### 14.3 Prywatność — specyficzne dla Retmana
 
-- Retman nie wysyła poleceń ani danych poza skonfigurowane backendy;
-  domyślna konfiguracja wskazuje wyłącznie na `localhost` (ARCHITECTURE rozdz. 10).
+- Retman nie wysyła poleceń użytkownika poza skonfigurowane backendy modeli;
+  domyślna konfiguracja modeli wskazuje wyłącznie na `localhost` (ARCHITECTURE rozdz. 10).
+  Narzędzia łączą się z publicznymi usługami danych dopiero po potwierdzeniu planu albo
+  za zgodą w sprawdzeniu dostępności, które wysyła tylko wartości z planu (PRD N-12).
 - O tym, gdzie działa model, decyduje użytkownik — kod nie ocenia adresów
   i nie ostrzega; `retman doctor` pokazuje adres każdego modelu.
 - Zbieranie poleceń do zbioru testowego jest domyślnie wyłączone
@@ -860,6 +894,12 @@ szablon na końcu pliku):
   (wyjątki: sekcja 7.2)
 - **Nie łącz się z siecią w testach** — tylko testy `live`
 - **Nie uruchamiaj CLI w repozytorium** — sekcja 6.4
+- **Nie wołaj funkcji narzędzia z efektem sieciowym przed potwierdzeniem planu** — planowanie
+  widzi tylko `PlanView` (PRD N-12, ARCHITECTURE 3.2.4)
+- **Nie używaj serwerów MCP narzędzi** — Retman woła je przez API Pythona (ADR-018)
+- **Nie wyprowadzaj opcji manifestu z zainstalowanego narzędzia** — manifest jest statyczny,
+  zgodność sprawdza `retman-scaffold --check` (ADR-019)
+- **Nie dodawaj `conftest.py` w podfolderach `tests/`** — sekcja 10.4
 
 ---
 
@@ -868,32 +908,57 @@ szablon na końcu pliku):
 ### 17.1 Nowa operacja narzędzia
 
 ```python
-# 1. Szkic z dokumentacji narzędzia: retman-scaffold <narzędzie>.<funkcja>
-#    (ARCHITECTURE 3.2.3) — wpis w manifeście, szkielet handlera, pola w pl.toml.
+# 1. Szkic z katalogu narzędzia: retman-scaffold list <narzędzie> (które komendy są
+#    wystawione) i retman-scaffold draft (szkic wpisu manifestu, budowniczego i kluczy
+#    pl.toml; ARCHITECTURE 3.2.3). Manifest zostaje statyczny — opcji nie wyprowadza się
+#    z zainstalowanego narzędzia przy ładowaniu (ADR-019).
 # 2. Manifest retman/tools/<narzędzie>/manifest.py: id (unikalne w Retmanie),
 #    category, inputs/outputs z rodzajami danych (kind), params z typami
-#    choice/free/bool, required/default/multiple/range (ARCHITECTURE 4.1, 4.3).
-# 3. Handler w handlers.py: tylko publiczne API narzędzia, wejścia jako pliki,
-#    zapis tylko do output_dir, bez input()/print() (ARCHITECTURE 3.2.4).
-# 4. pl.toml: label i description operacji, pytania (question dla użytkownika,
+#    choice/free/bool, required/default/multiple/range; klucze opcji bez kropek
+#    (`0_5m`) z `tool_values`, gdy wartość narzędzia jest inna; `option_meta`
+#    (ARCHITECTURE 4.1, 4.3).
+# 3. Wykonanie: `calls` — czysty budowniczy wywołań (bez systemu plików i sieci)
+#    z `commands`; `describe`, gdy mapowanie ogólne nie wystarcza; albo `handler`
+#    (tylko gdy wynik wymaga obróbki): tylko publiczne API narzędzia, wejścia jako
+#    pliki, zapis tylko do output_dir, bez input()/print() (ARCHITECTURE 3.2.4).
+#    Każda wartość narzędzia jest oferowana albo wpisana do `excluded` z uzasadnieniem
+#    (kontrola pokrycia).
+# 4. `preview` (offline): wiersze planu i problemy do ponownego zapytania; walidację
+#    wywołań robi adapter. Test z FakeToolClient: przed plan.confirm() żadnego
+#    run/check/query (PRD N-12, sekcja 10.4).
+# 5. `check` — tylko jeśli sensowne jest sprawdzenie w sieci (dostępność lat,
+#    rozdzielczości, opublikowanych archiwów), a samo wywołanie nie niesie tej
+#    odpowiedzi; tekst operations.<id>.check.notice i linie [check.*]
+#    (ARCHITECTURE 6.5). Operacja z komendą sieciową i zapisującą bez `check`
+#    deklaruje `no_check` z uzasadnieniem (kontrola X7).
+# 5a. Parametr nieobowiązkowy (bez required i default): tekst
+#    params.<p>.unset — co znaczy jego brak (wiersz planu, N-11).
+# 6. pl.toml: label i description operacji, pytania (question dla użytkownika,
 #    model_question — „co wymienia polecenie” — dla parametrów choice/bool, ADR-008),
-#    opcje z label (dla użytkownika) i description z synonymami i nazwami angielskimi
+#    opcje z label (dla użytkownika) i description z synonimami i nazwami angielskimi
 #    (dla modelu; ARCHITECTURE 4.2, ADR-007); parametry, których może brakować
-#    w poleceniu, mają opcję unspecified z samym description (3.4).
-# 5. Nowy kind? — sekcja 17.2.
-# 6. Testy handlera na prawdziwym narzędziu z małymi danymi (sekcja 10.4).
-# 7. Co najmniej 15 poleceń w retman/eval/commands.jsonl, w tym niepełne,
+#    w poleceniu, mają opcję unspecified z samym description (3.4). Do tego teksty
+#    [errors.<kod>] dla kodów błędów narzędzia, [warnings.*], [problems.*], [preview.*]
+#    i, dla nowej kategorii, [categories.<id>] z label i description.
+# 7. Nowy kind? — sekcja 17.2.
+# 8. Testy: buildery i mappery na nagranych dokumentach, wykonanie z FakeToolClient,
+#    zgodność z prawdziwym narzędziem offline (sekcja 10.4); retman-scaffold --check
+#    bez błędów.
+# 9. Co najmniej 15 poleceń w retman/eval/commands.jsonl, w tym niepełne,
 #    niejednoznaczne i spoza zakresu (ARCHITECTURE 8.1); retman-eval.
-# 8. Więcej niż 10 opcji w pytaniu o operację (z out_of_scope)? — rozpoznanie
-#    dwustopniowe przez category (ARCHITECTURE 3.4, pkt 1).
+# 10. Kategoria przekroczyłaby 9 operacji (albo kategorii byłoby więcej niż 9)? —
+#    podziel ją: loader to odrzuca (ARCHITECTURE 3.4, pkt 1).
 ```
 
 ### 17.2 Nowy rodzaj danych (`kind`)
 
 ```python
-# 1. Wpis w retman/kinds.py: nazwa, format pliku, walidator (ARCHITECTURE 3.2.6).
+# 1. Wpis w retman/kinds.py: nazwa, akceptowane rozszerzenia i walidator
+#    (Path → klucz błędu z [kinds.errors] albo None): tylko biblioteka standardowa,
+#    tylko początek pliku, bez sieci (ARCHITECTURE 3.2.6).
 # 2. Format dobierz tak, żeby GUI narzędzi mogły go wczytać (ARCHITECTURE 12, pkt 7).
-# 3. Testy walidatora: poprawny plik i typowe błędy.
+# 3. Testy walidatora (tests/test_kinds*.py): poprawny plik, każdy powód odrzucenia
+#    i rozszerzenie.
 # 4. Opis w ARCHITECTURE 3.2.6 w tym samym commicie.
 ```
 
@@ -910,6 +975,29 @@ szablon na końcu pliku):
 # 6. retman-eval na nowym backendzie; wynik do docs/research/.
 ```
 
+### 17.4 Nowy ekstraktor
+
+```python
+# 1. Moduł w retman/extractors/ (bez importu narzędzia i bez sieci): czytnik tekstu
+#    zwracający list[Match] z wartością znormalizowaną i serializowalną do JSON.
+#    Zapis niejednoznaczny daje kilka odczytów (Retman pyta, ARCHITECTURE 6.1) —
+#    nigdy cichy wybór; rozmyte dopasowanie ustawia Match.confirm.
+# 2. Walidator wartości (klucz błędu z [extractors.errors] albo None).
+# 3. Wpisy w rejestrach retman/extractors/__init__.py: EXTRACTORS (albo
+#    CONTEXT_EXTRACTORS, gdy czytnik potrzebuje ExtractionContext), VALIDATORS
+#    (CONTEXT_VALIDATORS), opcjonalnie ANSWER_EXTRACTORS (luźniejszy czytnik
+#    odpowiedzi na pytanie o ten parametr), CONTEXT_HINTS i DESCRIBERS (tekst
+#    wartości w planie).
+# 4. Teksty w retman/i18n/pl.toml, w [extractors.*]: etykiety odczytów, błędy, tekst
+#    w planie, podpowiedzi; tests/extractors/test_registry.py sprawdza, że każdy klucz
+#    nazwany w kodzie istnieje.
+# 5. Testy bez modelu: każda forma zapisu, formy niejednoznaczne, odpowiedź na pytanie,
+#    wartości brzegowe. Doctesty uruchamiaj przez importlib, nie ścieżką pliku
+#    (retman/extractors/numbers.py zasłania moduł standardowy `numbers`).
+# 6. Użycie w manifeście: `extractor` w parametrze free albo choice (ARCHITECTURE 4.3);
+#    wiersze retman-eval z wartościami parametru.
+```
+
 ---
 
 ## 18. Pre-merge checklist
@@ -921,7 +1009,8 @@ szablon na końcu pliku):
 - [ ] Formatowanie OK (`ruff format --check .`)
 - [ ] Linting OK (`ruff check .`)
 - [ ] Type hints OK (`mypy retman/ tests/` bez błędów, sekcja 8.3)
-- [ ] Kontrola rozjazdów OK (`retman-scaffold --check`)
+- [ ] Kontrola zgodności z narzędziami OK (`retman-scaffold --check`, z zainstalowanymi
+      narzędziami z grupy `tools`)
 - [ ] Komplet tłumaczeń (test z sekcji 10.4)
 - [ ] `retman-eval` uruchomiony, jeśli zmieniły się pytania, opisy opcji lub logika decyzji
 - [ ] Docstringi dla publicznych funkcji/klas
@@ -934,8 +1023,8 @@ szablon na końcu pliku):
 
 ---
 
-**Wersja dokumentu:** 1.0
-**Data ostatniej aktualizacji:** 2026-10-12
+**Wersja dokumentu:** 1.1
+**Data ostatniej aktualizacji:** 2026-10-19
 **Źródło:** `Kartograf/docs/DEVELOPMENT_STANDARDS.md` v3.3
 
 *Odstępstwa od tych standardów wymagają uzasadnienia — w tym dokumencie albo w ADR (`docs/DECISIONS.md`).*

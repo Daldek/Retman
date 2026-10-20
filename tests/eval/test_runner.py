@@ -430,3 +430,68 @@ def test_cli_invalid_config_and_args_exit_one_without_partial_files(
     assert main(["--config", "x", "--repeat", "0"]) == 1
     assert main(["--config", "x", "--bad-option"]) == 1
     assert "Błąd" not in capsys.readouterr().out
+
+
+@pytest.fixture
+def crowded_context(context):
+    """Twelve operations in three categories: recognition needs two questions."""
+    from dummy_tool.crowded import crowded_operations
+
+    config, operations = context
+    layout = {"a": 3, "b": 3, "c": 3, "d": 3}
+    return config, crowded_operations(operations["broken_dem"], layout)
+
+
+def test_two_stage_recognition_records_both_decisions(crowded_context, tmp_path: Path):
+    entry = command("two-stage", operation="b_2", params={})
+
+    record = run_one(crowded_context, entry, {"b": "b", "b_2": "b_2"}, tmp_path)
+
+    assert record["operation"] == "b_2"
+    assert [d["name"] for d in record["decisions"]] == ["category", "operation"]
+    assert record["model_queries"] == 2
+    assert not record["category_question"]["asked"]
+    measures = summarize([record]).overall
+    assert measures.operation.count == 1 and measures.accepted_operation.count == 0
+
+
+def test_unsure_category_is_answered_with_the_expected_operations_group(
+    crowded_context, tmp_path: Path
+):
+    unsure = Decision("c", {"c": 0.4, "b": 0.3, "a": 0.2}, 0.4, "logprobs")
+    entry = command("category-question", operation="b_2", params={})
+
+    record = run_one(crowded_context, entry, {"c": unsure, "b_2": "b_2"}, tmp_path)
+
+    assert record["category_question"] == {"asked": True, "offered": ["c", "b", "a"]}
+    assert record["operation"] == "b_2" and record["operation_offered"] is None
+    # The user was asked, so nothing was accepted without asking (W-02)
+    assert summarize([record]).overall.accepted_operation.total == 0
+
+    not_offered = Decision("c", {"c": 0.4, "a": 0.3, "d": 0.2}, 0.4, "logprobs")
+    entry = command("category-missing", operation="b_2", params={})
+    missing = run_one(crowded_context, entry, {"c": not_offered}, tmp_path)
+
+    assert missing["category_question"]["asked"]
+    assert missing["operation_offered"] is False and missing["operation"] is None
+    assert missing["questions"] == ["category"]
+
+
+def test_command_refused_after_the_category_still_counts_as_out_of_scope(
+    crowded_context, tmp_path: Path
+):
+    entry = command(
+        "refused", operation="out_of_scope", params={}, tags=["out_of_scope"]
+    )
+
+    record = run_one(
+        crowded_context, entry, {"b": "b", "out_of_scope": "out_of_scope"}, tmp_path
+    )
+
+    assert record["outcome"] == "out_of_scope"
+    assert [(d["name"], d["key"]) for d in record["decisions"]] == [
+        ("category", "b"),
+        ("operation", "out_of_scope"),
+    ]
+    measures = summarize([record]).overall
+    assert measures.operation_out_of_scope.count == 1 and measures.w03.count == 0

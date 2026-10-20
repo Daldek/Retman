@@ -1,6 +1,7 @@
 """Exception hierarchy of Retman; every error derives from ``RetmanError``."""
 
 from pathlib import Path
+from typing import Any
 
 
 class RetmanError(Exception):
@@ -55,13 +56,23 @@ class OutOfScopeError(RetmanError):
     Parameters
     ----------
     operations : list[str]
-        Labels of the available operations, shown to the user.
+        Labels of the available operations shown to the user — of their
+        categories when there are more operations than one question can offer.
     message : str
         Translated message listing what Retman can do.
+    decisions : list[dict[str, Any]], optional
+        The model decisions that led here (audit records: ``name``, ``key``,
+        ``confidence``, ``confidence_method``, ``probabilities``), in order.
     """
 
-    def __init__(self, operations: list[str], message: str) -> None:
+    def __init__(
+        self,
+        operations: list[str],
+        message: str,
+        decisions: list[dict[str, Any]] | None = None,
+    ) -> None:
         self.operations = operations
+        self.decisions = decisions or []
         super().__init__(message)
 
 
@@ -113,3 +124,11 @@ class PlanNotConfirmedError(RetmanError):
 
 class PlanIncompleteError(RetmanError):
     """``confirm()`` or ``execute()`` was called while questions are still open."""
+
+
+class CheckNotConfirmedError(RetmanError):
+    """``Retman.check()`` was called without a fresh ``plan.confirm_check()``.
+
+    A sibling of ``PlanNotConfirmedError``, not a subclass: the remedy differs
+    (the availability check needs its own consent, ARCHITECTURE 6.5).
+    """

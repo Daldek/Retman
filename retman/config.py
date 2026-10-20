@@ -1,9 +1,10 @@
 """Central config file ``retman.toml``: location, loading, ``retman init``."""
 
+import json
 import os
 import sys
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -20,6 +21,13 @@ _DECISION_BACKENDS: tuple[str, ...] = ("basal", "openai_compatible")
 _CONFIDENCE_SETTINGS: tuple[str, ...] = ("auto", "logprobs", "consistency", "none")
 _TEXT_BACKENDS: tuple[str, ...] = ("none",)
 _DIAGNOSTIC_LEVELS: tuple[str, ...] = ("debug", "info", "warning")
+# "local" keeps stored versions and asks no source; the others are Kartograf's
+# update modes of a download ("check" never downloads, so it is not a setting)
+_KARTOGRAF_UPDATE_MODES: tuple[str, ...] = ("local", "upgrade", "force")
+
+# Folder names of the two tool stores inside the folder chosen in ``retman init``
+KARTOGRAF_STORE_NAME = "kartograf"
+IMGWTOOLS_STORE_NAME = "imgwtools"
 
 
 @dataclass(frozen=True)
@@ -51,7 +59,12 @@ class DecisionConfig:
 
 @dataclass(frozen=True)
 class Config:
-    """Contents of the central config file; every value Retman uses is here."""
+    """Contents of the central config file; every value Retman uses is here.
+
+    ``tools`` holds the validated ``[tools.<tool>]`` tables, the settings a tool
+    client needs (ARCHITECTURE 9.1): paths are absolute ``str``, ``workers`` an
+    ``int``, ``update`` a ``str``. Tools without settings are absent.
+    """
 
     path: Path
     decision: DecisionConfig
@@ -63,6 +76,7 @@ class Config:
     diagnostic_level: DiagnosticLevel
     collect_commands: bool
     collect_path: Path
+    tools: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 def default_config_path() -> Path:
@@ -98,12 +112,12 @@ def default_log_dir() -> Path:
     return base / "retman"
 
 
-def default_collect_path() -> Path:
-    """Default file of the command collection for the current system (ADR-010).
+def default_data_dir() -> Path:
+    """Per-user data folder of Retman for the current system.
 
-    Linux: ``$XDG_DATA_HOME/retman/collected.jsonl`` (default ``~/.local/share``);
-    macOS: ``~/Library/Application Support/retman/collected.jsonl``;
-    Windows: ``%LOCALAPPDATA%\\retman\\collected.jsonl``.
+    Linux: ``$XDG_DATA_HOME/retman`` (default ``~/.local/share/retman``);
+    macOS: ``~/Library/Application Support/retman``;
+    Windows: ``%LOCALAPPDATA%\\retman``.
     """
     if sys.platform == "win32":
         base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
@@ -112,27 +126,119 @@ def default_collect_path() -> Path:
     else:
         xdg = os.environ.get("XDG_DATA_HOME")
         base = Path(xdg) if xdg else Path.home() / ".local" / "share"
-    return base / "retman" / "collected.jsonl"
+    return base / "retman"
 
 
-def config_template(*, collect_commands: bool = False) -> str:
-    """Text of the full config file with comments, written by ``retman init``.
+def default_collect_path() -> Path:
+    """Default file of the command collection for the current system (ADR-010)."""
+    return default_data_dir() / "collected.jsonl"
 
-    The collection path is written out for this system, so the file shows every
-    value Retman uses (no hidden defaults, N-11).
+
+def default_stores_dir() -> Path:
+    """Folder offered by ``retman init`` for the stores of all tools.
+
+    The tool stores are two folders inside it (``kartograf`` and ``imgwtools``),
+    so they share one disk; the user may choose another folder.
     """
-    return (
-        resources.files("retman")
-        .joinpath("config_template.toml")
-        .read_text(encoding="utf-8")
-        .replace("@COLLECT_COMMANDS@", "true" if collect_commands else "false")
-        .replace("@COLLECT_PATH@", str(default_collect_path()))
+    return default_data_dir() / "stores"
+
+
+def default_cache_file() -> Path:
+    """Kartograf's metadata cache; a local disk, never the (possibly shared) stores."""
+    return default_data_dir() / "kartograf_cache.db"
+
+
+def default_reference_data_dir() -> Path:
+    """Folder of IMGWTools reference files (``hydro_stations_locations.csv``)."""
+    return default_data_dir() / "imgw-reference"
+
+
+@dataclass(frozen=True)
+class ToolPaths:
+    """The absolute paths ``retman init`` writes to the ``[tools.*]`` tables."""
+
+    kartograf_store: Path
+    kartograf_cache: Path
+    imgwtools_store: Path
+    imgwtools_reference: Path
+
+
+def tool_paths(stores_dir: Path | None = None) -> ToolPaths:
+    """Paths of the tool stores for the folder chosen in ``retman init``.
+
+    Both stores are folders inside ``stores_dir`` (one disk, two folders); the
+    cache and the reference files stay in the per-user data folder, a local
+    disk. Paths are resolved: IMGWTools refuses a symbolic link in a store path.
+
+    Parameters
+    ----------
+    stores_dir : Path, optional
+        :func:`default_stores_dir` by default.
+    """
+    stores = stores_dir if stores_dir is not None else default_stores_dir()
+    stores = stores.expanduser().resolve()
+    return ToolPaths(
+        kartograf_store=stores / KARTOGRAF_STORE_NAME,
+        kartograf_cache=default_cache_file().expanduser().resolve(),
+        imgwtools_store=stores / IMGWTOOLS_STORE_NAME,
+        imgwtools_reference=default_reference_data_dir().expanduser().resolve(),
     )
 
 
-def init_config(path: Path | None = None, *, collect_commands: bool = False) -> Path:
+def _toml_string(value: str) -> str:
+    """TOML string of ``value``: a literal one (backslashes of Windows paths stay as
+    they are), a basic one only when the text holds a quote or a control character."""
+    if "'" in value or any(ord(char) < 32 for char in value):
+        return json.dumps(value, ensure_ascii=False)
+    return f"'{value}'"
+
+
+def config_template(
+    *, collect_commands: bool = False, stores_dir: Path | None = None
+) -> str:
+    """Text of the full config file with comments, written by ``retman init``.
+
+    Every path is written out for this system, so the file shows every value
+    Retman uses (no hidden defaults, N-11).
+
+    Parameters
+    ----------
+    collect_commands : bool, optional
+        The user's answer about collecting commands (ADR-010).
+    stores_dir : Path, optional
+        Folder holding both tool stores as ``kartograf`` and ``imgwtools``;
+        :func:`default_stores_dir` by default.
+    """
+    paths = tool_paths(stores_dir)
+    values = {
+        "@COLLECT_COMMANDS@": "true" if collect_commands else "false",
+        "@COLLECT_PATH@": _toml_string(str(default_collect_path())),
+        "@KARTOGRAF_STORE_DIR@": _toml_string(str(paths.kartograf_store)),
+        "@KARTOGRAF_CACHE_FILE@": _toml_string(str(paths.kartograf_cache)),
+        "@IMGWTOOLS_STORE_DIR@": _toml_string(str(paths.imgwtools_store)),
+        "@IMGWTOOLS_REFERENCE_DIR@": _toml_string(str(paths.imgwtools_reference)),
+    }
+    text = (
+        resources.files("retman")
+        .joinpath("config_template.toml")
+        .read_text(encoding="utf-8")
+    )
+    for placeholder, value in values.items():
+        text = text.replace(placeholder, value)
+    return text
+
+
+def init_config(
+    path: Path | None = None,
+    *,
+    collect_commands: bool = False,
+    stores_dir: Path | None = None,
+) -> Path:
     """
     Write the full config file from the template (``retman init``).
+
+    Only the file is written: the store folders are created by the caller
+    (``retman init``), never as a side effect of writing the settings.
 
     Parameters
     ----------
@@ -141,6 +247,9 @@ def init_config(path: Path | None = None, *, collect_commands: bool = False) -> 
     collect_commands : bool, optional
         The user's explicit answer about collecting commands (ADR-010);
         disabled unless the user agreed.
+    stores_dir : Path, optional
+        Folder for the stores of the tools (``kartograf`` and ``imgwtools`` are
+        created inside it); :func:`default_stores_dir` by default.
 
     Returns
     -------
@@ -158,7 +267,7 @@ def init_config(path: Path | None = None, *, collect_commands: bool = False) -> 
         raise ConfigError(target, ["already_exists"])
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
-        config_template(collect_commands=collect_commands),
+        config_template(collect_commands=collect_commands, stores_dir=stores_dir),
         encoding="utf-8",
         newline="\n",
     )
@@ -272,6 +381,18 @@ class _Reader:
             return None
         return value
 
+    def absolute_path(self, key: str) -> str | None:
+        """Absolute path without ``..``; a relative one would depend on the folder
+        Retman is started in. Returned normalised, as text."""
+        value = self.string(key)
+        if value is None:
+            return None
+        path = Path(value)
+        if not path.is_absolute() or ".." in path.parts:
+            self._problem("invalid_value", key)
+            return None
+        return str(path)
+
     def threshold(self, key: str) -> float | Literal["auto"] | None:
         value = self.get(key)
         if value is None:
@@ -289,6 +410,62 @@ class _Reader:
 
     def fail(self, kind: str, key: str) -> None:
         self._problem(kind, key)
+
+
+def _inside(path: Path, folder: Path) -> bool:
+    """Whether ``path`` is ``folder`` or lies below it (text comparison only)."""
+    return path == folder or folder in path.parents
+
+
+def _parse_tools(read: _Reader) -> dict[str, dict[str, Any]]:
+    """``[tools.kartograf]`` and ``[tools.imgwtools]``: stores, cache, workers.
+
+    Every value is required (no hidden defaults, N-11). Paths are checked as text
+    only; whether they exist and work is the business of ``retman doctor``.
+    """
+    kartograf_store = cache_file = imgw_store = reference_dir = None
+    workers = update = None
+    if read.get("tools.kartograf", optional=True) is None:
+        read.fail("missing_tools", "tools.kartograf")
+    else:
+        kartograf_store = read.absolute_path("tools.kartograf.store_dir")
+        cache_file = read.absolute_path("tools.kartograf.cache_file")
+        workers = read.positive_int("tools.kartograf.workers")
+        update = read.choice("tools.kartograf.update", _KARTOGRAF_UPDATE_MODES)
+    if read.get("tools.imgwtools", optional=True) is None:
+        read.fail("missing_tools", "tools.imgwtools")
+    else:
+        imgw_store = read.absolute_path("tools.imgwtools.store_dir")
+        reference_dir = read.absolute_path("tools.imgwtools.reference_data_dir")
+
+    # The stores are siblings: neither may contain the other (IMGWTools refuses a
+    # store inside or around a Kartograf store), and the cache and the reference
+    # files are not store content (a store scan reports foreign files)
+    stores = {
+        "tools.kartograf.store_dir": kartograf_store,
+        "tools.imgwtools.store_dir": imgw_store,
+    }
+    folders = {key: Path(value) for key, value in stores.items() if value is not None}
+    if len(folders) == len(stores):
+        left, right = folders.values()
+        if _inside(left, right) or _inside(right, left):
+            read.fail("paths_overlap", " / ".join(folders))
+    for key, value in (
+        ("tools.kartograf.cache_file", cache_file),
+        ("tools.imgwtools.reference_data_dir", reference_dir),
+    ):
+        for store_key, folder in folders.items():
+            if value is not None and _inside(Path(value), folder):
+                read.fail("paths_overlap", f"{key} / {store_key}")
+    return {
+        "kartograf": {
+            "store_dir": kartograf_store,
+            "cache_file": cache_file,
+            "workers": workers,
+            "update": update,
+        },
+        "imgwtools": {"store_dir": imgw_store, "reference_data_dir": reference_dir},
+    }
 
 
 def _parse(path: Path, data: dict[str, Any]) -> Config:
@@ -342,6 +519,7 @@ def _parse(path: Path, data: dict[str, Any]) -> Config:
     if collect_path is not None and not Path(collect_path).is_absolute():
         read.fail("invalid_value", "privacy.collect_path")
         collect_path = None
+    tools = _parse_tools(read)
 
     if read.problems:
         raise ConfigError(path, read.problems, read.details)
@@ -369,4 +547,5 @@ def _parse(path: Path, data: dict[str, Any]) -> Config:
         diagnostic_level=cast(DiagnosticLevel, diagnostic_level),
         collect_commands=cast(bool, collect_commands),
         collect_path=Path(cast(str, collect_path)),
+        tools=tools,
     )

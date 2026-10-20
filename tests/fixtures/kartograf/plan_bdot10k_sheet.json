@@ -1,0 +1,29 @@
+{
+ "schema": "kartograf-plan/1",
+ "store": "<store>",
+ "checked_at": "2026-10-19T20:07:22+00:00",
+ "kartograf_version": "0.8.0",
+ "items": [
+  {
+   "track": "landcover",
+   "segment": "landcover/pl_bdot10k_shp",
+   "hierarchy": "teryt",
+   "name": "2010.zip",
+   "unit": "2010",
+   "local_label": null,
+   "local_sha256": null,
+   "available_label": null,
+   "available_signal": null,
+   "status": "missing",
+   "error": null
+  }
+ ],
+ "notices": [
+  {
+   "level": "info",
+   "code": "unit_list",
+   "text": "bdot10k: powiaty obszaru wg PRG (1): 2010"
+  }
+ ],
+ "ok": true
+}

@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from retman.backends.base import DecisionBackend
-from retman.config import default_collect_path, init_config, load_config
+from retman.config import load_config
 from retman.core.dialog import Question
 from retman.core.pipeline import Retman
 from retman.core.plan import Plan
@@ -13,6 +13,7 @@ from retman.core.workspace import Workspace
 from retman.doctor import run_doctor
 from retman.exceptions import BackendConnectionError, ConfigError, RetmanError
 from retman.i18n.loader import Texts, load_core_texts
+from retman.initialize import run_init
 
 
 def _config_error(texts: Texts, error: ConfigError) -> None:
@@ -87,7 +88,11 @@ def _conversation(
         return 2
     while True:
         answer = input(
-            texts.get("cli.confirmation") + "\n" + texts.get("cli.answer_prompt")
+            texts.get(
+                "cli.confirmation_check" if plan.can_check else "cli.confirmation"
+            )
+            + "\n"
+            + texts.get("cli.answer_prompt")
         )
         if answer == "?":
             print(texts.get("cli.help"))
@@ -99,15 +104,34 @@ def _conversation(
             retman.record_plan(plan, "rejected")
             print(texts.get("cli.rejected"))
             return 3
+        elif answer.lower() == "s" and plan.can_check:
+            # A separate step with its own notice and consent: the only network
+            # use before the plan is confirmed (ARCHITECTURE 6.5)
+            print(plan.check_notice())
+            consent = input(
+                texts.get("cli.check_confirmation")
+                + "\n"
+                + texts.get("cli.answer_prompt")
+            )
+            if consent.strip().lower() != "t":
+                retman.record_check(plan, "rejected")
+                print(texts.get("cli.check_declined"))
+                continue
+            plan.confirm_check()
+            print(texts.get("cli.checking"))
+            print(retman.check(plan).summary())
         elif answer.lower() == "z":
-            names = [*plan.values, *plan.inputs]
+            names = [*plan.values, *plan.inputs, *plan.unset]
             print(texts.get("cli.change"))
             for index, name in enumerate(names, 1):
+                label, shown = plan.unset.get(
+                    name, (plan.labels.get(name, name), plan.display.get(name, ""))
+                )
                 print(
                     texts.get(
                         "cli.option",
                         number=index,
-                        label=f"{plan.labels[name]}: {plan.display[name]}",
+                        label=f"{label}: {shown}",
                     )
                 )
             choice = input(texts.get("cli.answer_prompt")).strip()
@@ -135,6 +159,8 @@ def _conversation(
             plan.confirm()
             result = retman.execute(plan)
             print(result.summary)
+            for warning in result.warnings:
+                print(texts.get("cli.warning", text=warning))
             return 0 if result.ok else 1
         else:
             print(texts.get("cli.error", error=texts.get("dialog.invalid_choice")))
@@ -152,31 +178,19 @@ def main(
     parser.add_argument("--plan-only", action="store_true")
     parser.add_argument("--explain", action="store_true")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--deep", action="store_true")
     parser.add_argument("command", nargs="?")
     args = parser.parse_args(argv)
     texts = load_core_texts("pl")
     try:
         if args.command == "init":
-            # Collecting commands needs the user's explicit answer (ADR-010);
-            # without a terminal it stays off and the file says so
-            collect = False
-            if sys.stdin.isatty():
-                print(texts.get("cli.collect_question", path=default_collect_path()))
-                answer = input(texts.get("cli.collect_prompt")).strip().lower()
-                collect = answer in ("t", "tak")
-            print(init_config(args.config, collect_commands=collect))
-            print(
-                texts.get(
-                    "cli.collect_on" if collect else "cli.collect_off",
-                    path=default_collect_path(),
-                )
-            )
-            return 0
+            return run_init(args.config, texts)
         if args.command == "doctor":
             report, report_texts = run_doctor(
                 args.config,
                 project_dir if project_dir is not None else Path.cwd(),
                 backend=backend,
+                deep=args.deep,
             )
             print(
                 report.to_json() if args.json else report.to_text(report_texts),
@@ -217,6 +231,8 @@ def main(
                     )
                     if event["event"] == "plan" and detail:
                         detail = texts.get(f"journal.{detail}")
+                    elif event["event"] == "check":
+                        detail = texts.get(f"journal.check_{event['status']}")
                     print(
                         texts.get(
                             "cli.log_line",

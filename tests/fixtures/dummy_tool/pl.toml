@@ -1,3 +1,7 @@
+[categories.test]
+label = "Operacje testowe"
+description = "Operacje narzędzia testowego: modele terenu"
+
 [operations.make_dem]
 label = "Utworzenie NMT"
 description = "Utworzenie numerycznego modelu terenu"
@@ -40,3 +44,87 @@ description = "Próba z błędem narzędzia"
 [operations.escape_dem]
 label = "Próba zapisu poza wynikiem"
 description = "Próba zapisu poza folderem wyniku"
+
+[operations.store_dem]
+label = "Zapis w magazynie narzędzia"
+description = "Zapis modelu terenu w magazynie narzędzia"
+
+[operations.noisy_dem]
+label = "Wynik z ostrzeżeniami"
+description = "Model terenu z ostrzeżeniami narzędzia"
+
+[operations.fetch_dem]
+label = "Pobranie NMT z katalogu narzędzia"
+description = "Pobranie numerycznego modelu terenu przez katalog komend narzędzia"
+summary = "Pobrano {file_count} plik(i), rozdzielczość {resolution}."
+
+[operations.fetch_dem.check]
+notice = "Zapytam usługę testową o dane dla godła z planu."
+
+[operations.fetch_dem.params.area]
+label = "Obszar"
+question = "Jakiego obszaru dotyczy pobranie?"
+example = "N-34-130-D-d-2-4"
+geometry_note = "jeden prostokąt obejmujący wszystkie obiekty warstwy"
+
+[operations.fetch_dem.params.resolution]
+label = "Rozdzielczość"
+question = "Jaka rozdzielczość?"
+model_question = "Jaką rozdzielczość wymienia polecenie?"
+options.0_5m.label = "0,5 m"
+options.0_5m.description = "Rozdzielczość pół metra, 0.5 m"
+options.1m.label = "1 m"
+options.1m.description = "Rozdzielczość jeden metr, 1 m"
+options.5m.label = "5 m"
+options.5m.description = "Rozdzielczość pięć metrów, 5 m"
+options.unspecified.description = "Nie określono rozdzielczości"
+
+[operations.fetch_dem.params.vertical_crs]
+label = "Układ wysokościowy"
+question = "Jaki układ wysokościowy?"
+model_question = "Jaki układ wysokościowy wymienia polecenie?"
+options.evrf2007.label = "EVRF2007"
+options.evrf2007.description = "Układ wysokościowy EVRF2007"
+options.kron86.label = "Kronsztad 86"
+options.kron86.description = "Układ wysokościowy Kronsztad 86, KRON86"
+options.unspecified.description = "Nie określono układu wysokościowego"
+
+[operations.cut_dem]
+label = "Wycinek NMT"
+description = "Wycinek modelu terenu z prostokąta w wybranym układzie"
+
+[operations.cut_dem.params.area]
+label = "Obszar"
+question = "Jaki prostokąt wyciąć?"
+example = "x=530000 y=382000 x=530100 y=382100"
+
+[operations.cut_dem.params.target_crs]
+label = "Układ wyniku"
+question = "W jakim układzie zapisać wynik?"
+options.epsg_2180.label = "PL-1992"
+options.epsg_5514.label = "S-JTSK"
+options.epsg_3045.label = "ETRS89 / UTM 33N"
+
+[operations.cut_dem.params.name]
+label = "Nazwa wycinka"
+question = "Jak nazwać wycinek?"
+example = "wycinek_poznan"
+unset = "bez nazwy (nazwa pliku z prostokąta)"
+
+# Teksty ze zwracanych kodów błędów narzędzia ({detail}, {option_label}, {allowed})
+[errors]
+invalid_input = "Narzędzie odrzuca wybór „{option_label}”: {detail}"
+no_coverage = "Brak danych dla tego obszaru ({detail})."
+
+[problems]
+sheet_unavailable = "Arkusz {code} nie jest dostępny w usłudze."
+
+[preview.area_kind]
+label = "Rodzaj obszaru"
+value = "{kind}"
+
+[check]
+selection = "Twój wybór: {resolution} — dostępny"
+
+[warnings]
+all_nodata = "Wszystkie piksele wyniku są bez danych."
