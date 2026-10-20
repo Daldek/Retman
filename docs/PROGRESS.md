@@ -31,12 +31,12 @@ Szablony wpisów: [Szablony](#szablony).
 ## Ostatnia sesja
 
 > **START NASTĘPNEJ SESJI (stan 2026-10-20, koniec sesji):** praca na `develop`, zmiany
-> z 2026-10-19/20 **niezacommitowane** (commit do zrobienia na początku sesji, po przejrzeniu
-> przez autora). Retman działa na Kartografie 0.8.0 i IMGWTools 3.0.0 (piny commitów w grupie
+> z 2026-10-19/20 w commicie `9523438` (lokalnie, nie wypchnięte na `origin`). Retman działa
+> na Kartografie 0.8.0 i IMGWTools 3.0.0 (piny commitów w grupie
 > `tools`; tagi `v0.8.0`/`v3.0.0` jeszcze nie wypchnięte). Bramka zielona: 2554 testy offline,
 > ruff, mypy, `retman-scaffold --check --require-tools` 0/0. Live: testy Kartografa 5/5.
 > **Do zrobienia, w kolejności:**
-> 1. Commit zmian sesji 2026-10-19/20 (Conventional Commits, opis po polsku).
+> 1. Push `develop` na `origin` (po decyzji autora).
 > 2. Po wypchnięciu tagów: przepiąć grupę `tools` na `@v0.8.0` i `@v3.0.0`, uruchomić bramkę.
 > 3. Przegląd zbioru `retman/eval/commands.jsonl` (614 poleceń, szkic agentów) i przebieg
 >    `retman-eval` z Bielikiem 11B na nowym zbiorze (dwustopniowe rozpoznawanie, `0_5m` vs `5m`);
