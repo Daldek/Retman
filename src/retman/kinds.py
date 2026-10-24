@@ -15,7 +15,7 @@ from pathlib import Path
 from retman.exceptions import KindValidationError
 
 # Validator of one file: ``None`` when valid, otherwise the failure reason, a key
-# under ``kinds.errors`` in ``retman/i18n/pl.toml``. It may raise ``OSError``.
+# under ``kinds.errors`` in ``src/retman/i18n/pl.toml``. It may raise ``OSError``.
 Check = Callable[[Path], str | None]
 
 

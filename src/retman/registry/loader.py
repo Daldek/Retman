@@ -49,7 +49,7 @@ def version_matches(version: str, specifier: str) -> bool:
 
 
 def discover_manifests() -> Iterable[tuple[ManifestSpec, Path]]:
-    """Yield descriptions in ``retman/tools/*/manifest.py``."""
+    """Yield descriptions in ``src/retman/tools/*/manifest.py``."""
     tools_dir = Path(__file__).resolve().parents[1] / "tools"
     if not tools_dir.is_dir():
         return

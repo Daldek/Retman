@@ -112,7 +112,7 @@ reference_data_dir = '~/.local/share/retman/imgw-reference'   # opcjonalny plik 
 
 (W prawdziwym pliku ścieżki są bezwzględne i rozwinięte; tu skrócono je do `~`.) Magazyny nie mogą
 leżeć jeden w drugim, a ich ścieżki nie mogą zawierać dowiązań symbolicznych. `update = "local"` oznacza:
-użyj zapisanych wersji i nie pytaj źródeł o nowsze. Szablon pliku jest w `retman/config_template.toml`.
+użyj zapisanych wersji i nie pytaj źródeł o nowsze. Szablon pliku jest w `src/retman/config_template.toml`.
 
 Szablon jest ustawiony na basal, więc dla LM Studio trzeba zmienić sekcję `[decision]`
 (wartości adresu i modelu — własne):

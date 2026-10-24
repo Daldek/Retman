@@ -72,7 +72,7 @@ def load_texts(path: Path) -> Texts:
 
 def load_core_texts(language: str) -> Texts:
     """
-    Load core texts (``retman/i18n/<language>.toml``).
+    Load core texts (``src/retman/i18n/<language>.toml``).
 
     Raises
     ------

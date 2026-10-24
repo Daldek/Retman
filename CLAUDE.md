@@ -19,7 +19,7 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 - **Narzędzia nic nie wiedzą o Retmanie** (PRD N-03, ARCHITECTURE 3.2.1): nie edytuj
   repozytoriów Hydrografa, Kartografa, IMGWTools, Hydrologa ani innych narzędzi; Retman
   korzysta wyłącznie z ich publicznego API Pythona (nie przez ich serwery MCP, ADR-018),
-  a manifesty, wywołania, klienty, handlery i tłumaczenia mieszkają w `retman/tools/<narzędzie>/`.
+  a manifesty, wywołania, klienty, handlery i tłumaczenia mieszkają w `src/retman/tools/<narzędzie>/`.
 - **Retman nie zawiera modelu** (N-10, ARCHITECTURE 3.3, 9.3): żadnych bibliotek ML, SDK
   dostawców ani pakietu `basal` w zależnościach; backendy to własne zapytania HTTP.
   Zależności podstawowe: tylko klient HTTP.

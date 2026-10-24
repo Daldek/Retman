@@ -12,7 +12,7 @@ backend_unavailable = "Backend \"{backend}\" nie jest jeszcze dostępny w tej we
 missing_tools = "W {path} brakuje sekcji z magazynami danych narzędzi: {keys}. Wzór sekcji zapisze nowy plik (retman --config wzor.toml init) — przepisz ją do tego pliku; możesz też usunąć ten plik i uruchomić: retman init"
 paths_overlap = "Ścieżki magazynów w {path} zachodzą na siebie: magazyny Kartografa i IMGWTools to osobne foldery obok siebie (żaden nie leży w drugim), a plik cache i folder danych referencyjnych leżą poza magazynami ({keys})"
 
-# Etykiety odczytów ekstraktorów (retman/extractors), używane w pytaniach o niejednoznaczne zapisy.
+# Etykiety odczytów ekstraktorów (src/retman/extractors), używane w pytaniach o niejednoznaczne zapisy.
 [extractors]
 
 [extractors.area]
@@ -69,7 +69,7 @@ invalid_grid_cell = "Komórka siatki PMAXTP wymaga dwóch nieujemnych liczb cał
 invalid_probability = "Prawdopodobieństwo musi być liczbą większą od 0 i mniejszą od 1 (np. 1% to 0,01)."
 invalid_duration = "Czas trwania musi być całkowitą liczbą minut, co najmniej 1 (np. „15 min”, „2 godziny”)."
 
-# Odczyty stacji (retman/extractors/stations.py, places.py): etykiety do pytań i teksty do planu.
+# Odczyty stacji (src/retman/extractors/stations.py, places.py): etykiety do pytań i teksty do planu.
 [extractors.station]
 hydro = "{name} — stacja hydrologiczna {provider}, kod {code}"
 hydro_river = "{name} — stacja hydrologiczna {provider} na rzece {river}, kod {code}"
@@ -87,7 +87,7 @@ name = "stacja synoptyczna o nazwie zawierającej „{name}” (z „{raw}”)"
 [extractors.identifier]
 name = "nazwa „{name}”"
 
-# Odczyty okresu i typu roku (retman/extractors/dates.py). Teksty pojedynczego roku i dnia
+# Odczyty okresu i typu roku (src/retman/extractors/dates.py). Teksty pojedynczego roku i dnia
 # dostają te same argumenty co teksty zakresów ({first}, {last} oraz {start}, {end}).
 [extractors.period]
 years = "lata {first}–{last}"
@@ -100,7 +100,7 @@ date = "dzień {start}"
 hydrological = "rok hydrologiczny (od 1 listopada do 31 października)"
 calendar = "rok kalendarzowy (od 1 stycznia do 31 grudnia)"
 
-# Odczyty punktów i komórek siatki PMAXTP (retman/extractors/coordinates.py): etykiety pokazują,
+# Odczyty punktów i komórek siatki PMAXTP (src/retman/extractors/coordinates.py): etykiety pokazują,
 # jak Retman zrozumiał zapis. Stopnie: do 6 miejsc po przecinku, metry: do 2.
 [extractors.point]
 wgs84_lat_lon = "punkt WGS84 (kolejność: szerokość, długość): {latitude}° N, {longitude}° E"
@@ -111,7 +111,7 @@ pl1992_ne = "punkt w PL-1992 (zamieniona kolejność N, E): E {easting}, N {nort
 [extractors.grid_cell]
 cell = "komórka siatki PMAXTP {ind_x}/{ind_y} (ind_x/ind_y)"
 
-# Odczyty prawdopodobieństwa i czasu trwania (retman/extractors/probability.py, numbers.py,
+# Odczyty prawdopodobieństwa i czasu trwania (src/retman/extractors/probability.py, numbers.py,
 # ARCHITECTURE 4.4). Dla listy wartości (np. „dla 1, 2 i 10”) argumenty zawierają wszystkie
 # wartości: percent = "1%, 2%, 10" (szablon dopisuje końcowe „%”), years = "50, 20",
 # value = "1, 2, 10"; etykieta czyta się wtedy „p = 1%, 2%, 10%”.
@@ -144,7 +144,7 @@ Tground = "Tground — temperatura przygruntowa"
 snow_cover = "snow_cover — pokrywa śnieżna"
 fresh_snow = "fresh_snow — świeży śnieg"
 
-# Teksty wartości ekstraktorów w planie (retman/extractors, describe_value).
+# Teksty wartości ekstraktorów w planie (src/retman/extractors, describe_value).
 [extractors.display]
 station_hydro = "{name} (hydro, {provider}, kod {code})"
 station_meteo = "{name} (meteo, {provider}, kod {code})"
@@ -175,14 +175,14 @@ period_open_end = "Podano tylko początek okresu ({date}); podaj też jego konie
 period_open_start = "Podano tylko koniec okresu ({date}); podaj też jego początek, np. „od 2010-01-01 do 2020-12-31” albo „2010–2020”."
 period_relative = "Okresu względnego („{phrase}”) nie zamieniam na konkretne lata ani daty. Podaj je wprost, np. „2010–2020” albo „od 1.01.2010 do 31.12.2020”."
 
-# Zapytania do modeli zgodnych z API OpenAI (retman/backends/openai_compatible.py).
+# Zapytania do modeli zgodnych z API OpenAI (src/retman/backends/openai_compatible.py).
 [backends]
 system = "Wybierz jedną odpowiedź pasującą do polecenia. Jeśli dostępna jest opcja braku informacji i polecenie nie określa odpowiedzi, wybierz ją. Nie wyjaśniaj wyboru; zwróć wyłącznie literę odpowiedzi."
 decision = "Polecenie: {state}\nPytanie: {question}\nDostępne odpowiedzi (litera — identyfikator: opis):\n{options}\nOdpowiedz tylko literą jednej z dostępnych odpowiedzi."
 yes = "Tak"
 no = "Nie"
 
-# Plan, dialog i zdarzenia projektu (retman/core/).
+# Plan, dialog i zdarzenia projektu (src/retman/core/).
 [plan]
 title = "Plan:"
 operation = "Operacja: {value}"
@@ -280,7 +280,7 @@ tool_error = "Narzędzie {tool} zgłosiło błąd ({code}): {detail}"
 tool_drift = "Zainstalowane narzędzie {tool} nie przyjmuje już operacji {operation} ({detail}). Sprawdź: retman doctor"
 tool_import = "Nie można załadować narzędzia {tool}: {error}. Sprawdź: retman doctor"
 
-# Ostrzeżenia operacji, które Retman składa sam (retman/adapters/catalog.py); tekst narzędzia ma pierwszeństwo.
+# Ostrzeżenia operacji, które Retman składa sam (src/retman/adapters/catalog.py); tekst narzędzia ma pierwszeństwo.
 [warnings]
 tool_notice = "Narzędzie {tool}: {text}"
 tool_notices_more = "Narzędzie {tool}: …i jeszcze {count} podobnych komunikatów ({code}); pełna lista jest w dokumencie narzędzia w folderze wyniku (tool_*.json)."
@@ -517,7 +517,7 @@ queries_median_column = "Mediana zapytań"
 queries_p90_column = "P90 zapytań"
 queries_max_column = "Maksimum zapytań"
 
-# Narzędzie deweloperskie retman-scaffold: szkice i kontrola rozjazdów (retman/devtools).
+# Narzędzie deweloperskie retman-scaffold: szkice i kontrola rozjazdów (src/retman/devtools).
 [scaffold]
 cli = "Narzędzie deweloperskie Retmana: szkice opisów narzędzi z ich katalogów komend oraz kontrola rozjazdów opisów z zainstalowanymi narzędziami (wszystko offline)."
 h_check = "Kontrola rozjazdów X1–X10: opisy w Retmanie wobec zainstalowanych narzędzi."
@@ -534,14 +534,14 @@ h_command = "Komenda katalogu, np. \"elevation download\"."
 h_fix = "Opcja o stałej wartości, która nie jest parametrem (nazwa=wartość; można powtórzyć)."
 h_only = "Opcje do wystawienia jako parametry (po przecinku); pozostałe są pomijane."
 h_id = "Identyfikator operacji (domyślnie nazwa komendy)."
-h_write = "Zapisz szkic w retman/tools/<narzędzie>/_drafts/ zamiast wypisać go na standardowe wyjście."
+h_write = "Zapisz szkic w src/retman/tools/<narzędzie>/_drafts/ zamiast wypisać go na standardowe wyjście."
 usage_error = "Błędne użycie: {error}"
 usage_nothing = "Podaj --check albo polecenie list lub draft (retman-scaffold --help)."
 usage_both = "--check nie łączy się z poleceniami list i draft."
 unknown_tool = "Nieznane narzędzie „{tool}” (są: {known})."
 unknown_operation = "Nieznana operacja „{operation}”."
 invalid_fix = "Opcja --fix wymaga postaci nazwa=wartość, a podano „{item}”."
-no_reader = "Dla narzędzia „{tool}” nie ma czytnika katalogu (retman/devtools/readers/{tool}.py)."
+no_reader = "Dla narzędzia „{tool}” nie ma czytnika katalogu (src/retman/devtools/readers/{tool}.py)."
 invalid_commands = "Nie można odczytać zbioru poleceń retman-eval: {error}"
 failure = "Nie udało się: {error}"
 interrupted = "Przerwano."
@@ -577,12 +577,12 @@ doctor_hint = "uruchom retman-scaffold --check; opisy tego narzędzia wymagają 
 doctor_failed = "{tool}: nie udało się sprawdzić zgodności opisów z katalogiem narzędzia: {error}"
 doctor_unchecked = "{tool}: nie sprawdzono zgodności operacji ({count}), bo zbiór retman-eval nie ma ich poleceń z wartościami parametrów: {operations}"
 
-# Treść ustaleń kontroli rozjazdów; klucze to Finding.key (retman/devtools/drift.py).
+# Treść ustaleń kontroli rozjazdów; klucze to Finding.key (src/retman/devtools/drift.py).
 [scaffold.finding]
 tool_missing = "Narzędzie {tool} nie jest zainstalowane (obsługiwane {supported}); kontrolę pominięto."
 tool_unsupported = "Narzędzie {tool} {version} jest poza obsługiwanym zakresem {supported}; kontrolę pominięto."
 tool_no_calls = "Narzędzie {tool}: żadna operacja nie wywołuje komend katalogu, więc nie ma z czym porównywać."
-tool_no_reader = "Narzędzie {tool}: brak czytnika katalogu (retman/devtools/readers/{tool}.py), więc kontroli nie da się wykonać."
+tool_no_reader = "Narzędzie {tool}: brak czytnika katalogu (src/retman/devtools/readers/{tool}.py), więc kontroli nie da się wykonać."
 catalog_unreadable = "Narzędzie {tool}: nie można odczytać katalogu komend: {error}"
 client_failed = "Narzędzie {tool}: nie można zbudować klienta z manifestu: {error}"
 x1_command_missing = "Operacja {operation} deklaruje komendę „{command}”, której nie ma w katalogu narzędzia {tool} {version}."

@@ -16,7 +16,7 @@ class ConfigError(RetmanError):
     path : Path
         Config file that was read (or expected).
     problems : list[str]
-        Translation keys under ``config`` in ``retman/i18n/pl.toml``,
+        Translation keys under ``config`` in ``src/retman/i18n/pl.toml``,
         e.g. ``"missing_file"``.
     details : dict[str, str]
         Per problem: the config keys concerned (or other values for the text).
@@ -86,7 +86,7 @@ class KindValidationError(RetmanError):
     path : Path
         Checked file.
     reason : str
-        Translation key under ``kinds.errors`` in ``retman/i18n/pl.toml``.
+        Translation key under ``kinds.errors`` in ``src/retman/i18n/pl.toml``.
     """
 
     def __init__(self, kind: str, path: Path, reason: str) -> None:

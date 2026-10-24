@@ -102,7 +102,7 @@ class OperationSpec(TypedDict):
 
 class ManifestSpec(TypedDict):
     """
-    The ``MANIFEST`` dictionary of ``retman/tools/<tool>/manifest.py``.
+    The ``MANIFEST`` dictionary of ``src/retman/tools/<tool>/manifest.py``.
 
     ``client`` (``"module:factory"``) names the tool's command client factory
     ``factory(settings) -> RunClient``, called with the validated

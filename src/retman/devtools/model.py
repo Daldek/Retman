@@ -1,6 +1,6 @@
 """The tool catalogs as the scaffold sees them: one neutral model, read per tool.
 
-A *reader* (``retman/devtools/readers/<tool>.py``) turns a tool's own machine
+A *reader* (``src/retman/devtools/readers/<tool>.py``) turns a tool's own machine
 catalog into a ``ToolCatalog``; everything else in ``retman.devtools`` is generic
 and knows nothing about a particular tool.
 """

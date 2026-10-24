@@ -2,7 +2,7 @@
 
 Every catalog-backed operation is a pure *call builder* (``calls(params, ctx)
 -> list[CatalogCall]``) run through one *client* per tool
-(``retman/tools/<tool>/client.py``, named by the manifest key ``client``). The
+(``src/retman/tools/<tool>/client.py``, named by the manifest key ``client``). The
 client is split by capability so that the gate of PRD W-05/N-12 is structural:
 before ``plan.confirm()`` only the offline ``PlanClient`` half exists for
 planning code; ``RunClient`` (run, check, query) is reachable only inside

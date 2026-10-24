@@ -99,7 +99,7 @@ to łańcuchy w v0.2 (p. 4.5).
 ### 3.1. Moduły
 
 ```
-retman/
+src/retman/
 ├── core/
 │   ├── pipeline.py          # steps ①–⑥, main logic; Retman.check() (p. 6.5)
 │   ├── plan.py              # Plan object (operation + parameters + confidences + sources, review state, consent)
@@ -190,7 +190,7 @@ Od narzędzi Retman oczekuje tylko dobrych praktyk, które są korzystne niezale
 #### 3.2.2. Co mieszka w Retmanie
 
 ```
-retman/tools/hydrolog/
+src/retman/tools/hydrolog/
 ├── manifest.py    # operations: params, inputs, outputs, supported versions (p. 4.1)
 ├── handlers.py    # thin wrappers around the hydrolog public API (p. 3.2.4)
 └── pl.toml        # Polish texts and synonyms (p. 4.2)
@@ -236,7 +236,7 @@ i sprawdza zgodność swoich opisów**. Nie są czytane w trakcie działania, a 
 **Narzędzie deweloperskie `retman-scaffold`** (pakiet `retman.devtools`, dla autora, nie dla
 użytkownika końcowego; skrypt pakietu podstawowego, bez własnych zależności) czyta maszynowe
 katalogi narzędzi (`get_catalog` i `list_sources` Kartografa, `command_schema` IMGWTools) przez
-małe czytniki w `retman/devtools/readers/` — bez sieci:
+małe czytniki w `src/retman/devtools/readers/` — bez sieci:
 
 ```bash
 retman-scaffold list <tool>                     # catalog commands, which operations use them, suggested use
@@ -245,7 +245,7 @@ retman-scaffold --check [--tool T] [--operation OP] [--json] [--require-tools] [
 ```
 
 Szkic (`draft`) niczego nie nadpisuje: pisze na standardowe wyjście, a z `--write` do
-`retman/tools/<narzędzie>/_drafts/` (folder poza gitem). Autor uzupełnia to, czego w katalogu nie
+`src/retman/tools/<narzędzie>/_drafts/` (folder poza gitem). Autor uzupełnia to, czego w katalogu nie
 ma (tabela niżej); teksty polskie, kategoria, rodzaje danych i ekstraktory mają w szkicu znacznik
 `TODO`, a test odrzuca każdy taki znacznik w zatwierdzonym `pl.toml`. Kody wyjścia: `0` — bez
 błędów, `1` — wykryto błędy (albo polecenie się nie powiodło), `2` — błędne użycie.
@@ -294,7 +294,7 @@ dwie formy; operacja deklaruje co najmniej jedną z nich (p. 4.3):
 
 - **`calls` — warstwa komend.** Dla narzędzi z katalogiem komend (Kartograf, IMGWTools): czysty
   *budowniczy wywołań* zamienia parametry na listę wywołań komend katalogu, a wspólny wykonawca
-  wykonuje je przez *klienta narzędzia* (`retman/adapters/catalog.py`). Powód: katalog jest
+  wykonuje je przez *klienta narzędzia* (`src/retman/adapters/catalog.py`). Powód: katalog jest
   deklarowanym źródłem prawdy tych narzędzi — ma walidację offline z tymi samymi regułami co
   uruchomienie, stabilne kody błędów i dokumenty wyniku — a typowane funkcje i klasy dostawców
   zmieniły się w Kartografie 0.8.0 tak, że zepsuły wszystkie handlery (ADR-013).
@@ -306,7 +306,7 @@ dwie formy; operacja deklaruje co najmniej jedną z nich (p. 4.3):
 dwa razy tym samym kodem — w planie (walidacja) i przy wykonaniu:
 
 ```python
-# retman/tools/<tool>/calls.py (illustrative)
+# src/retman/tools/<tool>/calls.py (illustrative)
 def fetch_dem(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
     area = params["area"]
     options = {
@@ -394,7 +394,7 @@ sformułowań prawnych; uwagi `info` zostają w śladzie audytowym.
 Przykład handlera (narzędzie bez katalogu):
 
 ```python
-# retman/tools/hydrograf/handlers.py
+# src/retman/tools/hydrograf/handlers.py
 from pathlib import Path
 
 import hydrograf  # public API only
@@ -446,7 +446,7 @@ Zasady handlerów i budowniczych:
 
 #### 3.2.5. Co robi wspólny adapter
 
-1. **Przy starcie:** dla każdego narzędzia z `retman/tools/` sprawdza — bez importowania go —
+1. **Przy starcie:** dla każdego narzędzia z `src/retman/tools/` sprawdza — bez importowania go —
    czy jest zainstalowane i czy jego wersja mieści się w obsługiwanym zakresie (p. 3.2.7).
    Wczytuje opisy i je waliduje: unikalność identyfikatorów, znane rodzaje danych, komplet
    tłumaczeń, reguły kluczy `handler`/`calls`/`client`/`excluded`, limity kategorii (p. 3.4).
@@ -468,7 +468,7 @@ Zasady handlerów i budowniczych:
 
 Rodzaj danych to nazwa + akceptowane rozszerzenia + prosty walidator offline, napisany wyłącznie
 na bibliotece standardowej (bez bibliotek geoprzestrzennych i bez sieci). Rejestr
-(`retman/kinds.py`) jest w Retmanie. Narzędzia nie znają tych nazw — zamianą ich wyników na pliki
+(`src/retman/kinds.py`) jest w Retmanie. Narzędzia nie znają tych nazw — zamianą ich wyników na pliki
 danego rodzaju zajmują się wywołania i handlery. Jeden wynik może zawierać kilka plików tego
 samego rodzaju (np. arkusze NMT), więc `files` przypisuje rodzajowi listę ścieżek. Walidator
 sprawdza rozszerzenie i nagłówek (albo kolumny, albo schemat), a niezgodność zgłasza jako
@@ -548,7 +548,7 @@ Wszystkie testy związane z narzędziami są w repo Retmana:
 
 Konkretne operacje ustala PRD (p. 7.2); opisy operacji Kartografa i IMGWTools: p. 3.2.10
 i 3.2.11. Narzędzia innych autorów obsługuje się tak samo: opis, budowniczowie lub handlery
-i klient w `retman/tools/`.
+i klient w `src/retman/tools/`.
 
 #### 3.2.10. Operacje Kartografa 0.8.0
 
@@ -839,7 +839,7 @@ generatywnych, bo upraszcza im zadanie.
 
 ### 4.1. Manifest — definicja operacji
 
-Operacje każdego narzędzia opisuje manifest w `retman/tools/<narzędzie>/manifest.py`:
+Operacje każdego narzędzia opisuje manifest w `src/retman/tools/<narzędzie>/manifest.py`:
 zwykły słownik Pythona, po angielsku. Manifest jest **statyczny i przeglądany przez człowieka**:
 opcje nigdy nie są wyprowadzane z zainstalowanego narzędzia przy ładowaniu (ADR-019) — mają
 polskie teksty i synonimy, zbiór `retman-eval` musi być powtarzalny, a start Retmana nie
@@ -854,7 +854,7 @@ Klucze narzędzia: `tool`, `distribution` (nazwa pakietu do sprawdzenia wersji),
 p. 3.2.4), wymagana, gdy któraś operacja deklaruje `calls`.
 
 ```python
-# retman/tools/hydrolog/manifest.py — a tool without a command catalog: operations with a handler
+# src/retman/tools/hydrolog/manifest.py — a tool without a command catalog: operations with a handler
 MANIFEST = {
     "tool": "hydrolog",
     "distribution": "hydrolog",              # package name for the installed-version check
@@ -898,7 +898,7 @@ Operacja narzędzia z katalogiem komend (Kartograf, IMGWTools) zamiast handlera 
 wywołań, a do tego podgląd i sprawdzenie. Fragment manifestu Kartografa:
 
 ```python
-# retman/tools/kartograf/manifest.py (fragment)
+# src/retman/tools/kartograf/manifest.py (fragment)
 MANIFEST = {
     "tool": "kartograf",
     "distribution": "kartograf",
@@ -955,11 +955,11 @@ albo oferowana, albo tu wymieniona.
 
 Pytania do basala, opisy opcji i etykiety w planie są w plikach tłumaczeń, z kluczami
 odpowiadającymi identyfikatorom z manifestu. Każde narzędzie ma w Retmanie własny plik, a rdzeń
-własny (`retman/i18n/pl.toml`: plan, dialog, CLI, wyniki, dziennik, błędy, ostrzeżenia,
+własny (`src/retman/i18n/pl.toml`: plan, dialog, CLI, wyniki, dziennik, błędy, ostrzeżenia,
 sprawdzenie dostępności, rodzaje danych, `retman init`, `retman doctor`, ekstraktory).
 
 ```toml
-# retman/tools/hydrolog/pl.toml
+# src/retman/tools/hydrolog/pl.toml
 
 [operations.peak_flow]
 label = "Obliczenie przepływu maksymalnego"
@@ -1076,7 +1076,7 @@ rodzaje danych (`kind`), `default` wśród opcji, spójność `depends_on`, `opt
 loader wymaga co najwyżej 9 kategorii, co najwyżej 9 operacji w kategorii i tekstów każdej
 kategorii (p. 3.4).
 
-**Ekstraktory** (wartości czyta kod, nigdy model; rejestr w `retman/extractors/__init__.py`).
+**Ekstraktory** (wartości czyta kod, nigdy model; rejestr w `src/retman/extractors/__init__.py`).
 Ekstraktory kontekstowe (`station`, `years`, `period`, `variables`) dostają dodatkowo
 `ExtractionContext`: ustawienia `[tools.<narzędzie>]`, folder projektu, dzisiejszą datę (stałą
 w obrębie jednego `Retman`, więc planowanie jest powtarzalne), `scope` — scalone `option_meta`
@@ -1878,7 +1878,7 @@ rozmawia z narzędziami przez ich API Pythona (p. 3.2.1), a sam staje się serwe
 zewnętrznych asystentów AI. Daje im to, czego serwery MCP narzędzi nie mają: plan pokazany ze
 źródłem każdej wartości, potwierdzenie człowieka, ślad audytowy i numerowaną przestrzeń roboczą.
 
-- **Pakiet:** moduł `retman/mcp_server.py` (SDK importowany leniwie), opcjonalny dodatek
+- **Pakiet:** moduł `src/retman/mcp_server.py` (SDK importowany leniwie), opcjonalny dodatek
   `retman[mcp]` (`mcp>=2.3,<3`), nigdy w zależnościach podstawowych (p. 9.3). Uruchomienie:
   `retman mcp --project <katalog>` (stdio; `--project` jest obowiązkowe, bez domyślnego bieżącego
   katalogu). Streamable HTTP dopiero z API HTTP (v0.4).
@@ -1934,7 +1934,7 @@ Docelowe wartości miar jakości ustala PRD. Tu: jak je mierzyć.
 
 ### 8.1. Zbiór poleceń testowych
 
-Plik `retman/eval/commands.jsonl` (dane pakietu, instalowane razem z Retmanem), jedna linia =
+Plik `src/retman/eval/commands.jsonl` (dane pakietu, instalowane razem z Retmanem), jedna linia =
 jedno polecenie z oczekiwanym wynikiem.
 Polecenia są po polsku (to dane wejściowe), identyfikatory po angielsku:
 
@@ -1983,7 +1983,7 @@ obowiązkowe dla backendów innych niż basal (p. 6.2).
 - Pipeline testowany z **atrapą backendu** (`FakeDecisionBackend`) — testy nie wymagają GPU.
 - Wspólny adapter testowany na narzędziu-atrapie (`tests/fixtures/dummy_tool`: manifest, buildery
   wywołań, handlery, podgląd, sprawdzenie i klient) z atrapą klienta `FakeToolClient`
-  (`retman/testing.py`). Atrapa zapisuje każde wywołanie (`calls`, `network_calls`), więc test
+  (`src/retman/testing.py`). Atrapa zapisuje każde wywołanie (`calls`, `network_calls`), więc test
   bramki [N-12] sprawdza, że przed `plan.confirm()` nie było żadnego wywołania `run`, `check`
   ani `query`, a przed `plan.confirm_check()` — żadnego wywołania `check` ani `query` (p. 6.5).
 - Opisy narzędzi: walidacja manifestów i tłumaczeń (także tekstów kategorii i komunikatów
@@ -2154,7 +2154,7 @@ do dokumentacji jako wskazówka doboru modelu (PRD, N-07).
   Backend `basal` to własne zapytanie HTTP, bez klienta z pakietu `basal` (p. 3.3.2).
 - **Dystrybucja przez GitHub, bez PyPI.** Retman instaluje się z repozytorium, np.
   `uv tool install git+https://github.com/Daldek/Retman` (szczegóły: p. 9.4).
-- Opisy narzędzi są wbudowane w Retmana (`retman/tools/`). **Retman nie instaluje niczego sam
+- Opisy narzędzi są wbudowane w Retmana (`src/retman/tools/`). **Retman nie instaluje niczego sam
   z siebie.** Narzędzia instaluje użytkownik razem z Retmanem, w tym samym środowisku (p. 9.4),
   a od wersji łatwej także na wyraźne polecenie `retman add-tool` (z potwierdzeniem). Retman
   sprawdza ich wersje, a `retman doctor` podpowiada, jak doinstalować brakujące. Narzędzia są
@@ -2240,7 +2240,7 @@ retman doctor
    Wykonać? [t]ak / [n]ie
    ```
 
-   Działa tylko dla narzędzi, które Retman zna (ma ich opisy w `retman/tools/`).
+   Działa tylko dla narzędzi, które Retman zna (ma ich opisy w `src/retman/tools/`).
 4. **Model** — przy serwerze jednostki użytkownik niczego nie instaluje, tylko wpisuje adres
    w kreatorze. Lokalnie dostaje instrukcję (albo osobny skrypt) dla basal-serve; Retman nie zawiera
    modelu (PRD N-10).

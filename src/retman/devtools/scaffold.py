@@ -7,7 +7,7 @@
 
 Exit codes: ``0`` clean, ``1`` errors found (or the command failed), ``2`` usage.
 Drafts go to the standard output; ``--write`` creates files below
-``retman/tools/<tool>/_drafts/`` and never touches a reviewed file
+``src/retman/tools/<tool>/_drafts/`` and never touches a reviewed file
 (ARCHITECTURE 3.2.3).
 """
 

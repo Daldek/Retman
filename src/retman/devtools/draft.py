@@ -407,7 +407,7 @@ def _render_manifest(
     notes: Sequence[str],
 ) -> str:
     """The manifest entry as Python source (a dictionary literal)."""
-    lines = [f"# manifest entry (retman/tools/{tool}/manifest.py)"]
+    lines = [f"# manifest entry (src/retman/tools/{tool}/manifest.py)"]
     lines.extend(f"# {note}" for note in notes)
     lines += [
         "{",
@@ -415,7 +415,7 @@ def _render_manifest(
         f'    "category": "{TODO}",  # TODO: category of the first recognition stage',
         f'    "description": "{TODO}",  # catalog: {info.summary}',
         '    "inputs": [],',
-        f'    "outputs": ["{TODO}"],  # TODO: data kind(s), see retman/kinds.py',
+        f'    "outputs": ["{TODO}"],  # TODO: data kind(s), see src/retman/kinds.py',
         f'    "commands": [{_literal(info.id)}],',
         f'    "calls": {_literal(f"retman.tools.{tool}.calls:{operation}")},',
         '    "params": [',
@@ -429,7 +429,9 @@ def _render_manifest(
         if param.kind == "free" and param.name == "area":
             lines.append('            "extractor": "area",')
         elif param.kind == "free":
-            lines.append(f'            "extractor": "{TODO}",  # see retman/extractors')
+            lines.append(
+                f'            "extractor": "{TODO}",  # see src/retman/extractors'
+            )
         if param.accepts:
             lines.append(f'            "accepts": {_literal(param.accepts)},')
         if param.kind == "choice":
@@ -455,7 +457,7 @@ def _render_builder(
 ) -> str:
     """The call builder as Python source: the options of one catalog call."""
     lines = [
-        "# call builder (retman/tools/<tool>/calls.py)",
+        "# call builder (src/retman/tools/<tool>/calls.py)",
         "from typing import Any",
         "",
         "from retman.adapters.catalog import CatalogCall, ToolContext",
@@ -507,7 +509,7 @@ def _render_translations(
     """The skeleton of ``pl.toml``: every key the manifest check requires, as TODO."""
     prefix = f"operations.{operation}"
     lines = [
-        f"# translation skeleton (retman/tools/<tool>/pl.toml); {info.summary}",
+        f"# translation skeleton (src/retman/tools/<tool>/pl.toml); {info.summary}",
         f"[{prefix}]",
         f'label = "{TODO}"',
         f'description = "{TODO}"  # for the model: synonyms and English names',

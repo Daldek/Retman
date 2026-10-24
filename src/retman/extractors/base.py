@@ -20,7 +20,7 @@ class Reading:
     value : Any
         Normalized, JSON-serializable value (str, int, float, list, dict).
     label_key : str
-        Translation key in ``retman/i18n/pl.toml`` (section ``extractors``)
+        Translation key in ``src/retman/i18n/pl.toml`` (section ``extractors``)
         describing this reading, used when Retman has to ask which one is meant.
     label_args : dict[str, str]
         Values used to format the label text.
@@ -77,7 +77,7 @@ class Hint:
     Parameters
     ----------
     key : str
-        Translation key under ``extractors.hints`` in ``retman/i18n/pl.toml``.
+        Translation key under ``extractors.hints`` in ``src/retman/i18n/pl.toml``.
     args : dict[str, str]
         Values used to format the text.
     """

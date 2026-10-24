@@ -78,7 +78,7 @@ _EXAMPLES = 5
 class Finding:
     """One result of the check: which check, how serious and what to say.
 
-    ``key`` names the text of ``[scaffold.finding]`` in ``retman/i18n/pl.toml``,
+    ``key`` names the text of ``[scaffold.finding]`` in ``src/retman/i18n/pl.toml``,
     ``args`` fill its placeholders; ``check`` is ``T`` for what concerns the whole
     tool (missing, no reader).
     """
