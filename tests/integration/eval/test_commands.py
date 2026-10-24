@@ -195,7 +195,7 @@ def test_dependency_does_not_require_inapplicable_params() -> None:
 def test_default_does_not_require_clarification(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1] / "fixtures"))
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "fixtures"))
     manifest = importlib.import_module("dummy_tool.manifest").MANIFEST
 
     monkeypatch.setattr(

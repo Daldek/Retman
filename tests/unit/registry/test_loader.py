@@ -16,7 +16,7 @@ from retman.registry.operation import two_stage
 
 @pytest.fixture
 def dummy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    fixture_dir = Path(__file__).resolve().parents[1] / "fixtures"
+    fixture_dir = Path(__file__).resolve().parents[2] / "fixtures"
     monkeypatch.syspath_prepend(str(fixture_dir))
     from dummy_tool.manifest import MANIFEST
 

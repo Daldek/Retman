@@ -61,6 +61,18 @@ def reader_of(tool: str) -> Reader:
     )
 
 
+@pytest.mark.parametrize("tool", CATALOG_TOOLS)
+def test_gate_environment_installs_the_tool_in_a_supported_version(tool: str) -> None:
+    # The checks below skip a tool that is missing; the gate must not skip them
+    manifest, _ = MANIFESTS[tool]
+    try:
+        version = importlib.metadata.version(manifest["distribution"])
+    except importlib.metadata.PackageNotFoundError:
+        pytest.fail(f"{manifest['distribution']} is missing from the environment")
+
+    assert version_matches(version, manifest["supported_versions"])
+
+
 @pytest.fixture(scope="module")
 def rows() -> list[EvalCommand]:
     return load_commands(DEFAULT_COMMANDS)

@@ -19,7 +19,7 @@ from retman.i18n.loader import load_core_texts
 from retman.stores import ToolOutcome
 from retman.testing import FakeDecisionBackend
 
-FIXTURES = Path(__file__).resolve().parent / "fixtures"
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 MODEL_URL = "http://model.test/v1"
 
 

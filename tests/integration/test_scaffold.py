@@ -41,7 +41,7 @@ from retman.i18n.loader import load_core_texts
 from retman.registry.manifest import ManifestSpec, OperationSpec
 from retman.testing import FakeToolClient
 
-FIXTURES = Path(__file__).resolve().parent / "fixtures"
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 TOOL = "dummy_tool"
 TEXTS = load_core_texts("pl")
 

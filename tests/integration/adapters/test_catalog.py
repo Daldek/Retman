@@ -93,7 +93,7 @@ def test_a_tool_without_a_client_fails_loudly_on_any_use():
 
 
 def test_client_factory_receives_the_tool_settings_table(monkeypatch):
-    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1] / "fixtures"))
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "fixtures"))
     from dummy_tool.client import BUILT
 
     BUILT.clear()

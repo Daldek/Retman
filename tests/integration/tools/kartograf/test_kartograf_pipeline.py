@@ -20,7 +20,7 @@ from retman.core.pipeline import Retman
 from retman.core.plan import Plan
 from retman.testing import FakeDecisionBackend
 
-AVAILABILITY = Path(__file__).resolve().parents[2] / "fixtures" / "kartograf"
+AVAILABILITY = Path(__file__).resolve().parents[3] / "fixtures" / "kartograf"
 
 
 def make_app(

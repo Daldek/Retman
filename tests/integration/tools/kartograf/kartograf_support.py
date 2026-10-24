@@ -35,7 +35,7 @@ from retman.tools.kartograf.client import (  # noqa: E402
 from retman.tools.kartograf.manifest import MANIFEST  # noqa: E402
 
 TOOL_DIR = Path(kartograf_client.__file__).parent
-FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "kartograf"
+FIXTURES = Path(__file__).resolve().parents[3] / "fixtures" / "kartograf"
 
 SHEET = {"type": "sheet", "code": "N-34-130-D-d-2-4"}
 PARENT = {"type": "sheet", "code": "N-34-130-D-d-2"}

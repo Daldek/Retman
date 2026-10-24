@@ -16,7 +16,7 @@ from retman.exceptions import (
 )
 from retman.i18n.loader import load_core_texts
 
-FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "openai_compatible"
+FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "openai_compatible"
 OPTIONS = {
     "a_sheet": "Pobierz NMT dla arkusza mapy",
     "b_cutout": "Pobierz wycinek NMT dla prostokąta",

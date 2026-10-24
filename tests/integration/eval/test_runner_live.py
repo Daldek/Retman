@@ -21,7 +21,7 @@ def test_live_evaluation_plans_multiple_commands_without_executing(
     model = pytestconfig.getoption("--live-openai-model")
     if not url or not model:
         pytest.skip("provide --live-openai-url and --live-openai-model")
-    fixtures = Path(__file__).resolve().parents[1] / "fixtures"
+    fixtures = Path(__file__).resolve().parents[2] / "fixtures"
     monkeypatch.syspath_prepend(str(fixtures))
     from dummy_tool.manifest import MANIFEST
 

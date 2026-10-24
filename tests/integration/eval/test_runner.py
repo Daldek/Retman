@@ -42,7 +42,7 @@ def command(
 
 @pytest.fixture
 def context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    fixtures = Path(__file__).resolve().parents[1] / "fixtures"
+    fixtures = Path(__file__).resolve().parents[2] / "fixtures"
     monkeypatch.syspath_prepend(str(fixtures))
     from dummy_tool.manifest import MANIFEST
 

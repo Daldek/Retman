@@ -25,7 +25,7 @@ class TerminalInput(io.StringIO):
 
 @pytest.fixture
 def command_args(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    fixture_dir = Path(__file__).resolve().parent / "fixtures"
+    fixture_dir = Path(__file__).resolve().parents[1] / "fixtures"
     monkeypatch.syspath_prepend(str(fixture_dir))
     from dummy_tool.manifest import MANIFEST
 
