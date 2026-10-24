@@ -20,7 +20,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
 | Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
 | Nogat standard 2.1, agent interfaces | done | ADR-022: catalog, `retman.operations`, the CLI generated from the catalog, `retman-result/1`, schemas in `src/retman/schemas/`, generated `AGENTS.md` and `llms.txt`; the English texts of the machine documents are Next 8 |
-| Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13); open: Next 1.3 to 1.5 |
+| Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13), the CHANGELOG in English; open: Next 1.4 and 1.5 |
 | Gate | green | `scripts/gate.sh`: 2713 offline tests, coverage 95%, ruff, mypy strict; run it with `TMPDIR` on a local disk (a network share breaks SQLite and links) |
 | CI (Linux, macOS, Windows) | written, not run | `.github/workflows/ci.yml` and `live.yml`; nothing is pushed |
 
@@ -40,14 +40,11 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
    green before each; the source of the rules is the Nogat branch `feature/data-output`,
    `git -C ~/workspace/Nogat show feature/data-output:standards/<file>`; Hydrolog's and
    Kartograf's branches `chore/nogat-2.1` are the reference implementations). Order of
-   work: 1.3 to 1.5 (1.1, the agent interfaces, is done: ADR-022; 1.2, `CLAUDE.md` in English and
-   the removal of `docs/DEVELOPMENT_STANDARDS.md`, is done). ADR numbers: 0023 structure,
-   gate, CI, test tree, mypy deviation, technical log on stderr (1.4); ADR-020 is the error
-   registry, ADR-021 the user environment and ADR-022 the agent interfaces. New ADRs are English
-   files in `docs/decisions/`; the Polish index in `docs/DECISIONS.md` gets a row each.
-   3. `docs: CHANGELOG` in English, heading `## [Unreleased]` (DOC-7.1, REL-1.1), sections
-      Added, Changed, Removed, Fixed, ADR references in parentheses. The 0.1.0 entries now mix
-      Polish text with the English entry of ADR-020.
+   work: 1.4 and 1.5 (done: 1.1, the agent interfaces, ADR-022; 1.2, `CLAUDE.md` in English and
+   the removal of `docs/DEVELOPMENT_STANDARDS.md`; 1.3, the CHANGELOG in English). ADR numbers:
+   0023 structure, gate, CI, test tree, mypy deviation, technical log on stderr (1.4); ADR-020 is
+   the error registry, ADR-021 the user environment and ADR-022 the agent interfaces. New ADRs are
+   English files in `docs/decisions/`; the Polish index in `docs/DECISIONS.md` gets a row each.
    4. `docs: DECISIONS` in English with the statuses of DOC-8.1 (`proposed`, `accepted`,
       `amended by`, `superseded by`); ADR-0023 as above.
    5. **README** in the order of DOC-2.1 within 400 lines (summary paragraph at most 400
