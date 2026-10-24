@@ -279,6 +279,7 @@ retman = "Błąd: {error}"
 tool_error = "Narzędzie {tool} zgłosiło błąd ({code}): {detail}"
 tool_drift = "Zainstalowane narzędzie {tool} nie przyjmuje już operacji {operation} ({detail}). Sprawdź: retman doctor"
 tool_import = "Nie można załadować narzędzia {tool}: {error}. Sprawdź: retman doctor"
+unexpected = "Nieoczekiwany błąd: {error}. To błąd Retmana: zgłoś go razem z poleceniem i wersją."
 
 # Ostrzeżenia operacji, które Retman składa sam (src/retman/adapters/catalog.py); tekst narzędzia ma pierwszeństwo.
 [warnings]

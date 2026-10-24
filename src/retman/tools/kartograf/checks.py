@@ -154,7 +154,7 @@ def _orthophoto(call: CatalogCall, ctx: ToolContext) -> CheckOutput:
     try:
         plan = ctx.runner.check(call)
     except ToolError as err:
-        if err.code != "no_coverage":
+        if err.tool_code != "no_coverage":
             raise
         return {
             "status": "unavailable",

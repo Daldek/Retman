@@ -514,8 +514,10 @@ def test_planning_a_download_neither_touches_the_network_nor_a_missing_store(
         clients={"imgwtools": client},
     )
 
-    with pytest.raises(RetmanError, match="Utwórz magazyn IMGW"):
+    with pytest.raises(RetmanError) as caught:
         app.plan("Pobierz dane projektu")
+
+    assert "Utwórz magazyn IMGW" in str(caught.value.text)
 
     assert client.network_calls == [] and not (tmp_path / "store").exists()
     manifest = json.loads((project / "imgw-project.json").read_text())

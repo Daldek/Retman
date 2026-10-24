@@ -5,11 +5,12 @@ import json
 from pathlib import Path
 
 import pytest
+from error_documents import last_line_document
 
 from retman import cli
 from retman.backends.base import Decision
 from retman.config import init_config
-from retman.exceptions import BackendConnectionError
+from retman.exceptions import BackendConnectionError, Terminated
 from retman.registry.loader import load_operations
 from retman.testing import FakeDecisionBackend
 
@@ -133,7 +134,7 @@ def test_main_reject_and_cancel_preserve_project_journal(
     )
     log = (project / "retman-output" / "journal.jsonl").read_text()
 
-    assert rejected == cancelled == 3
+    assert rejected == cancelled == 130
     assert '"status": "rejected"' in log
     assert '"status": "cancelled"' in log
     assert not (project / "retman-output" / "001_make_dem").exists()
@@ -170,7 +171,12 @@ def test_main_init_and_missing_config_report_clear_error(
     missing = capsys.readouterr().err
     created = cli.main(["--config", str(config), "init"], project_dir=tmp_path)
 
-    assert failure == 1 and "retman init" in missing
+    assert failure == 3 and "retman init" in missing
+    document = last_line_document(missing)
+    assert (document["code"], document["details"]["reason"]) == (
+        "not_found",
+        "missing_config",
+    )
     assert created == 0 and config.exists()
 
 
@@ -251,8 +257,12 @@ def test_main_connection_error_suggests_doctor(
         project_dir=project,
     )
 
-    assert status == 1
-    assert "retman doctor" in capsys.readouterr().err
+    assert status == 5
+    stderr = capsys.readouterr().err
+    assert "retman doctor" in stderr
+    document = last_line_document(stderr)
+    assert (document["code"], document["exit_code"]) == ("source_unavailable", 5)
+    assert document["details"]["reason"] == "backend_connection"
 
 
 @pytest.fixture
@@ -338,7 +348,7 @@ def test_main_anything_but_yes_declines_the_check_without_network(
     transcript = capsys.readouterr().out
     (client,) = dummy_client.CLIENTS
 
-    assert status == 3
+    assert status == 130
     assert "Sprawdzenie pominięte." in transcript and "Plan odrzucony." in transcript
     assert client.network_calls == []
     check = next(e for e in journal_events(project) if e["event"] == "check")
@@ -357,7 +367,7 @@ def test_main_interrupting_the_check_cancels_and_keeps_the_record(
 
     status = run_fetch(command_args, monkeypatch, "s\nt\n")
 
-    assert status == 3 and "Anulowano." in capsys.readouterr().out
+    assert status == 130 and "Anulowano." in capsys.readouterr().out
     (check,) = [e for e in journal_events(project) if e["event"] == "check"]
     assert check["status"] == "approved" and check["result"] is None
 
@@ -469,5 +479,113 @@ def test_main_rejects_an_unknown_log_level_naming_the_variable(
 
     status = cli.main([*config_args, "results"], project_dir=project)
 
-    assert status == 1
-    assert "RETMAN_LOG_LEVEL" in capsys.readouterr().err
+    assert status == 2
+    stderr = capsys.readouterr().err
+    assert "RETMAN_LOG_LEVEL" in stderr
+    document = last_line_document(stderr)
+    assert document["code"] == "validation_error"
+    assert document["details"]["option"] == "RETMAN_LOG_LEVEL"
+    assert document["details"]["allowed"] == ["debug", "info", "warning", "error"]
+
+
+def test_main_out_of_scope_is_unsupported_and_ends_with_the_error_document(
+    command_args, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+
+    status = cli.main(
+        [*config_args, "Jaka będzie jutro pogoda w Poznaniu?"],
+        backend=FakeDecisionBackend({"out_of_scope": "out_of_scope"}),
+        project_dir=project,
+    )
+
+    stderr = capsys.readouterr().err
+    document = last_line_document(stderr)
+    assert status == document["exit_code"] == 15
+    assert (document["code"], document["details"]["reason"]) == (
+        "unsupported",
+        "out_of_scope",
+    )
+    assert "Utworzenie NMT" in document["details"]["operations"]
+    assert "Utworzenie NMT" in stderr  # the text for the user comes first
+
+
+def test_main_without_a_terminal_names_the_open_questions_in_the_error_document(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", io.StringIO())
+
+    status = cli.main(
+        [*config_args, f"NMT dla {SHEET}"],
+        backend=FakeDecisionBackend({"make_dem": "make_dem"}),
+        project_dir=project,
+    )
+
+    document = last_line_document(capsys.readouterr().err)
+    assert status == 2
+    assert (document["code"], document["details"]["reason"]) == (
+        "validation_error",
+        "input_required",
+    )
+    questions = document["details"]["questions"]
+    assert questions and all(question["name"] for question in questions)
+
+
+def test_main_a_failed_operation_ends_with_the_document_of_its_error(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", TerminalInput("t\n"))
+
+    status = cli.main(
+        [*config_args, "Uruchom błędne narzędzie"],
+        backend=FakeDecisionBackend({"broken_dem": "broken_dem"}),
+        project_dir=project,
+    )
+
+    document = last_line_document(capsys.readouterr().err)
+    assert status == document["exit_code"] == 1
+    assert (document["code"], document["details"]["exception"]) == (
+        "internal_error",
+        "RuntimeError",
+    )
+
+
+def test_main_sigterm_ends_with_terminated(
+    command_args, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+
+    class Terminating(FakeDecisionBackend):
+        def choose(
+            self, state: str, question: str, options: dict[str, str]
+        ) -> Decision:
+            raise Terminated
+
+    status = cli.main(
+        [*config_args, f"NMT dla {SHEET}"],
+        backend=Terminating(),
+        project_dir=project,
+    )
+
+    document = last_line_document(capsys.readouterr().err)
+    assert status == document["exit_code"] == 143
+    assert document["code"] == "terminated"
+
+
+@pytest.mark.parametrize(
+    ("argv", "reason"),
+    [(["--bad-option"], "usage"), (["--verbose", "--quiet"], "exclusive_options")],
+)
+def test_main_a_mistake_in_the_options_is_a_validation_error(
+    argv: list[str], reason: str, capsys: pytest.CaptureFixture[str]
+):
+    status = cli.main(argv)
+
+    document = last_line_document(capsys.readouterr().err)
+    assert status == document["exit_code"] == 2
+    assert (document["code"], document["details"]["reason"]) == (
+        "validation_error",
+        reason,
+    )

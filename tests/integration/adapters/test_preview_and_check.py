@@ -70,8 +70,12 @@ def test_a_rejection_naming_no_parameter_is_drift_not_a_question(operations):
             "dummy_tool", "invalid_input", "nieznany produkt", option="product"
         )
 
-    with pytest.raises(ToolDriftError, match="retman doctor"):
+    with pytest.raises(ToolDriftError) as caught:
         preview(operations, PARAMS, {"elevation download": refuse_product})
+
+    assert caught.value.code == "internal_error"
+    assert caught.value.details["reason"] == "tool_drift"
+    assert caught.value.text is not None and "retman doctor" in caught.value.text
 
 
 def test_accepted_plan_gets_the_operations_rows_values_and_own_problems(operations):

@@ -137,10 +137,13 @@ def test_known_area_must_name_its_layer_and_it_must_exist(project, make_gpkg):
     area = {"type": "geometry", "path": str(many)}
 
     # A fixed value is never asked about: a missing layer is an error ...
-    with pytest.raises(RetmanError, match="ma kilka warstw"):
+    with pytest.raises(RetmanError) as no_layer:
         app.plan("NMT", known={"area": area})
-    with pytest.raises(RetmanError, match="nie ma warstwy „mokradla”"):
+    assert "ma kilka warstw" in str(no_layer.value.text)
+    assert no_layer.value.details["option"] == "area"
+    with pytest.raises(RetmanError) as wrong_layer:
         app.plan("NMT", known={"area": {**area, "layer": "mokradla"}})
+    assert "nie ma warstwy „mokradla”" in str(wrong_layer.value.text)
     # ... and an explicit one is used as given
     plan = app.plan("NMT", known={"area": {**area, "layer": "dzialki"}})
     assert plan.values["area"].value["layer"] == "dzialki"

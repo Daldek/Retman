@@ -6,13 +6,23 @@ from typing import TYPE_CHECKING, Any, Literal
 from retman.core.check import CheckReport
 from retman.core.dialog import Question
 from retman.core.journal import utc_now
-from retman.exceptions import PlanIncompleteError, RetmanError
+from retman.exceptions import InvalidValueError, PlanIncompleteError, RetmanError
 from retman.i18n.loader import load_core_texts
 
 if TYPE_CHECKING:
     from retman.core.pipeline import Retman
 
 Source = Literal["command", "default", "workspace", "known", "user"]
+
+
+def _detached() -> RetmanError:
+    """Build the error of a plan that has no Retman to answer it (a restored copy)."""
+    return RetmanError(
+        "The plan is not attached to a Retman",
+        code="conflict",
+        details={"reason": "plan_detached"},
+        hint="Restore it with Plan.from_dict(state, retman=retman).",
+    )
 
 
 @dataclass(frozen=True)
@@ -66,20 +76,20 @@ class Plan:
 
     def answer(self, name: str, answer: str) -> "Plan":
         """Return a new plan after interpreting an answer through the same rules."""
-        if not any(question.name == name for question in self.questions):
-            raise ValueError(f"not an open question: {name}")
-        if self._owner is None:
-            raise RetmanError(
-                "restore this plan with Plan.from_dict(state, retman=retman)"
+        names = [question.name for question in self.questions]
+        if name not in names:
+            raise InvalidValueError(
+                f"{name!r} is not an open question",
+                details={"option": "name", "value": name, "allowed": names},
             )
+        if self._owner is None:
+            raise _detached()
         return self._owner.answer_plan(self, name, answer)
 
     def change(self, name: str) -> "Plan":
         """Reopen a displayed value for correction before confirmation."""
         if self._owner is None:
-            raise RetmanError(
-                "restore this plan with Plan.from_dict(state, retman=retman)"
-            )
+            raise _detached()
         return self._owner.change_plan(self, name)
 
     def confirm(self) -> "Plan":
@@ -106,7 +116,11 @@ class Plan:
     def check_notice(self) -> str:
         """Describe what the availability check contacts and sends, before consent."""
         if not self.can_check or self._owner is None:
-            raise PlanIncompleteError("this plan offers no availability check")
+            raise PlanIncompleteError(
+                "this plan offers no availability check",
+                code="unsupported",
+                details={"reason": "no_check"},
+            )
         return self._owner.check_notice(self)
 
     def confirm_check(self) -> "Plan":
@@ -116,7 +130,11 @@ class Plan:
         of the plan withdraws it.
         """
         if not self.can_check:
-            raise PlanIncompleteError("this plan offers no availability check")
+            raise PlanIncompleteError(
+                "this plan offers no availability check",
+                code="unsupported",
+                details={"reason": "no_check"},
+            )
         self.check_confirmed = True
         return self
 

@@ -117,7 +117,7 @@ def test_a_request_without_any_delivered_file_is_an_error_with_kartografs_code(
             doc,
         )
 
-    assert caught.value.code == "no_coverage"
+    assert caught.value.tool_code == "no_coverage"
 
 
 def test_the_tools_document_is_saved_whole_and_referenced_with_its_checksum(
@@ -326,7 +326,7 @@ def test_when_every_county_fails_the_run_fails_with_one_error(tmp_path: Path) ->
     with pytest.raises(ToolError) as caught:
         _shapefile_run(tmp_path, {"0208": b"not a zip", "0261": {"readme.txt": b"x"}})
 
-    assert caught.value.code == "all_counties_failed"
+    assert caught.value.tool_code == "all_counties_failed"
 
 
 def test_a_single_failing_county_is_reported_with_its_own_cause(
@@ -352,4 +352,4 @@ def test_a_single_failing_county_is_reported_with_its_own_cause(
             ctx,
         )
 
-    assert caught.value.code == "invalid_archive"
+    assert caught.value.tool_code == "invalid_archive"

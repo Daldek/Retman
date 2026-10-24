@@ -321,8 +321,14 @@ def test_known_parameter_is_not_overwritten_by_model(create_app):
 def test_known_invalid_value_is_not_silently_replaced(create_app):
     app = create_app({"make_dem": "make_dem", "raw": "raw"})
 
-    with pytest.raises(RetmanError, match="Wybierz"):
+    with pytest.raises(RetmanError) as caught:
         app.plan(f"NMT dla {SHEET}", known={"style": "not_a_style"})
+
+    assert "Wybierz" in str(caught.value.text)
+    assert (caught.value.code, caught.value.details["option"]) == (
+        "validation_error",
+        "style",
+    )
 
 
 def test_out_of_scope_command_lists_operations_instead_of_planning(create_app):
@@ -341,7 +347,8 @@ def test_out_of_scope_command_lists_operations_instead_of_planning(create_app):
         "Wycinek NMT",
         "Wynik z ostrzeżeniami",
     ]
-    assert "Utworzenie NMT" in str(error.value)
+    assert "Utworzenie NMT" in str(error.value.text)
+    assert (error.value.code, error.value.exit_code) == ("unsupported", 15)
 
 
 @pytest.fixture

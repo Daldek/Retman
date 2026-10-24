@@ -40,6 +40,7 @@ from retman.core.workspace import Workspace, WorkspaceFile
 from retman.exceptions import (
     CheckNotConfirmedError,
     InvalidModelAnswerError,
+    InvalidValueError,
     KindValidationError,
     OutOfScopeError,
     PlanIncompleteError,
@@ -66,6 +67,21 @@ from retman.registry.operation import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _invalid_known(name: str | None, text: str) -> RetmanError:
+    """Build the error of a fixed (``known``) value that cannot be used (AGI-4.3).
+
+    ``text`` is the translated text for the user, as the dialog would show it.
+    """
+    return RetmanError(
+        f"The value given for {name!r} cannot be used"
+        if name
+        else "A value given with the command cannot be used",
+        code="validation_error",
+        details={"reason": "invalid_known_value"} | ({"option": name} if name else {}),
+        text=text,
+    )
 
 
 class Retman:
@@ -179,7 +195,14 @@ class Retman:
                 client = create_client(operation.client, self._tool_settings(operation))
             except ImportError as err:
                 raise RetmanError(
-                    self.texts.get("errors.tool_import", tool=operation.tool, error=err)
+                    f"The tool {operation.tool} cannot be imported: {err}",
+                    code="missing_dependency",
+                    details={"reason": "tool_not_installed", "tool": operation.tool},
+                    hint="Install the tool in the environment of Retman; "
+                    "`retman doctor` lists the supported versions.",
+                    text=self.texts.get(
+                        "errors.tool_import", tool=operation.tool, error=err
+                    ),
                 ) from err
             self._clients[operation.tool] = client
         return client
@@ -261,7 +284,14 @@ class Retman:
         chooses a category, then an operation of it (ARCHITECTURE 3.4).
         """
         if not self.operations:
-            raise RetmanError(self.texts.get("dialog.no_operations"))
+            raise RetmanError(
+                "No operation is available",
+                code="missing_dependency",
+                details={"reason": "no_operations"},
+                hint="Install a supported tool (`retman doctor` lists them) or check "
+                "the `adapters` setting.",
+                text=self.texts.get("dialog.no_operations"),
+            )
         self._memo = {}
         self.journal.append("command", command=command)
         plan = Plan(
@@ -879,26 +909,31 @@ class Retman:
                 if name not in plan.values:
                     value = plan.known[name]
                     if spec["type"] == "choice" and value not in spec["options"]:
-                        raise RetmanError(self.texts.get("dialog.invalid_choice"))
+                        raise _invalid_known(
+                            name, self.texts.get("dialog.invalid_choice")
+                        )
                     if spec["type"] == "bool" and not isinstance(value, bool):
-                        raise RetmanError(self.texts.get("dialog.invalid_choice"))
+                        raise _invalid_known(
+                            name, self.texts.get("dialog.invalid_choice")
+                        )
                     if spec["type"] == "free":
                         if spec.get("multiple") and not isinstance(value, list):
                             value = [value]
                         error = self._validate_free(plan, operation, spec, value)
                         if error:
-                            raise RetmanError(error)
+                            raise _invalid_known(name, error)
                         value, layer_question = self._complete_geometry(
                             operation, spec, self._normalize_free(value)
                         )
                         if layer_question is not None:
                             # A fixed value is never asked about
-                            raise RetmanError(
+                            raise _invalid_known(
+                                name,
                                 layer_question.error
                                 or self.texts.get(
                                     "dialog.geometry_layer_required",
                                     file=Path(value["path"]).name,
-                                )
+                                ),
                             )
                     self._set_param(plan, operation, spec, value, "known")
                 continue
@@ -928,12 +963,14 @@ class Retman:
                 if isinstance(known, int):
                     matches = self.workspace.resolve_result(known, kind)
                     if len(matches) != 1:
-                        raise RetmanError(self.texts.get("dialog.invalid_choice"))
+                        raise _invalid_known(
+                            name, self.texts.get("dialog.invalid_choice")
+                        )
                     error = self._set_input(plan, name, kind, matches[0].path, known)
                 else:
                     error = self._set_input(plan, name, kind, Path(known), None)
                 if error:
-                    raise RetmanError(error)
+                    raise _invalid_known(name, error)
                 plan.inputs[name] = replace(plan.inputs[name], source="known")
                 continue
             question = self._resolve_input(plan, name, kind)
@@ -982,7 +1019,9 @@ class Retman:
                 if name in plan.values and name not in plan.known:
                     reopened.setdefault(name, problem.text)
         if not reopened:
-            raise RetmanError(preview.problems[0].text)
+            raise _invalid_known(
+                next(iter(preview.problems[0].params), None), preview.problems[0].text
+            )
         for name in reopened:
             plan.values.pop(name)
         plan.reopened.update(reopened)
@@ -1243,9 +1282,15 @@ class Retman:
             and name not in plan.inputs
             and name not in plan.unset
         ):
-            raise ValueError(f"not a plan value: {name}")
+            raise InvalidValueError(
+                f"{name!r} is not a value of the plan",
+                details={"option": "name", "value": name},
+            )
         if name in plan.known:
-            raise ValueError(f"fixed external value: {name}")
+            raise InvalidValueError(
+                f"{name!r} was fixed by the caller and cannot be changed",
+                details={"reason": "fixed_value", "option": "name", "value": name},
+            )
         updated = plan._updated(
             values=dict(plan.values),
             inputs=dict(plan.inputs),
@@ -1377,7 +1422,11 @@ class Retman:
             raise PlanIncompleteError("plan still has open questions")
         operation = self.operations[plan.operation]
         if "check" not in operation.spec:
-            raise PlanIncompleteError("this operation offers no availability check")
+            raise PlanIncompleteError(
+                "this operation offers no availability check",
+                code="unsupported",
+                details={"reason": "no_check", "operation": operation.id},
+            )
         return operation
 
     def check_notice(self, plan: Plan) -> str:

@@ -20,12 +20,22 @@ _SHAPEFILE_MEMBERS = (".shp", ".shx", ".dbf", ".prj")
 
 
 class GeometryFileError(RetmanError):
-    """A geometry file cannot be read as the kind of file it claims to be."""
+    """A geometry file cannot be read as the kind of file it claims to be.
+
+    Default code: ``data_error``, reason ``invalid_geometry_file``.
+    """
+
+    default_code = "data_error"
+    default_reason = "invalid_geometry_file"
 
     def __init__(self, path: Path, reason: str) -> None:
         self.path = path
         self.reason = reason
-        super().__init__(f"{path}: {reason}")
+        super().__init__(
+            f"{path}: {reason}",
+            details={"path": str(path), "detail": reason},
+            hint="Give a GeoPackage or Shapefile that the tool can open.",
+        )
 
 
 def geometry_layers(path: Path) -> tuple[str, ...]:

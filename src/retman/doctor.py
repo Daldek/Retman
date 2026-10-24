@@ -24,6 +24,7 @@ from retman.exceptions import (
     TranslationError,
 )
 from retman.i18n.loader import Texts, load_core_texts, load_texts
+from retman.outcomes import EXIT_FAILED, EXIT_OK, EXIT_PARTIAL
 from retman.registry.loader import discover_manifests, version_matches
 from retman.registry.manifest import ManifestSpec, validate_manifest
 from retman.stores import (
@@ -47,7 +48,7 @@ REPORT_LANGUAGE = "pl"
 
 @dataclass(frozen=True)
 class Check:
-    """One line of the report; ``blocking`` problems make the exit code 1."""
+    """One line of the report; ``blocking`` problems make the exit code 10 or 11."""
 
     status: Status
     text: str
@@ -66,17 +67,22 @@ class Section:
 
 @dataclass
 class DoctorReport:
-    """Result of all checks; ``exit_code`` is 1 when something blocks work."""
+    """Result of all checks; ``exit_code`` is 10 or 11 when something blocks work."""
 
     version: str
     sections: list[Section]
 
     @property
     def exit_code(self) -> int:
-        """``1`` when any check blocks work, else ``0``."""
-        return int(
-            any(check.blocking for section in self.sections for check in section.checks)
-        )
+        """``0`` when nothing blocks work, else ``10`` (``partial``).
+
+        ``11`` (``failed``) when no check passed at all.
+        """
+        checks = [check for section in self.sections for check in section.checks]
+        if not any(check.blocking for check in checks):
+            return EXIT_OK
+        passed = any(check.status == "ok" for check in checks)
+        return EXIT_PARTIAL if passed else EXIT_FAILED
 
     def to_text(self, texts: Texts) -> str:
         """Terminal report as in ARCHITECTURE 7.2."""
@@ -128,9 +134,9 @@ def _config_problems(texts: Texts, error: ConfigError) -> list[Check]:
             texts.get(
                 f"config.{problem}",
                 path=error.path,
-                keys=error.details.get(problem, ""),
-                error=error.details.get("error", ""),
-                backend=error.details.get("backend", ""),
+                keys=error.problem_details.get(problem, ""),
+                error=error.problem_details.get("error", ""),
+                backend=error.problem_details.get("backend", ""),
             ),
             blocking=True,
         )

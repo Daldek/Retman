@@ -103,11 +103,12 @@ def test_a_problem_that_cannot_be_reopened_raises_instead_of_looping(
     app = create_app(RULES, clients={"dummy_tool": client})
 
     # Fixed values are never asked about; nothing is left to reopen
-    with pytest.raises(RetmanError, match="5 m nie ma KRON86"):
+    with pytest.raises(RetmanError) as caught:
         app.plan(
             f"Pobierz NMT dla {SHEET}",
             known={"resolution": "5m", "vertical_crs": "kron86"},
         )
+    assert "5 m nie ma KRON86" in str(caught.value.text)
 
 
 def test_the_journal_says_why_a_question_was_asked_again(rejected_plan):
@@ -224,8 +225,14 @@ def test_a_tool_that_cannot_be_loaded_is_an_error_with_advice(create_app):
     }
     app = create_app(RULES, operations_override=broken)
 
-    with pytest.raises(RetmanError, match="Nie można załadować narzędzia dummy_tool"):
+    with pytest.raises(RetmanError) as caught:
         app.plan(f"Pobierz NMT dla {SHEET} 1 m")
+
+    assert "Nie można załadować narzędzia dummy_tool" in str(caught.value.text)
+    assert (caught.value.code, caught.value.details["reason"]) == (
+        "missing_dependency",
+        "tool_not_installed",
+    )
 
 
 def test_a_problem_without_parameters_stops_planning_with_its_text(
@@ -239,5 +246,7 @@ def test_a_problem_without_parameters_stops_planning_with_its_text(
     app = create_app(RULES, clients={"dummy_tool": FakeToolClient()})
 
     # No parameter can be asked again, so the plan could never become confirmable
-    with pytest.raises(RetmanError, match="Arkusz X nie jest dostępny"):
+    with pytest.raises(RetmanError) as caught:
         app.plan(f"Pobierz NMT dla {SHEET} 1 m")
+
+    assert "Arkusz X nie jest dostępny" in str(caught.value.text)

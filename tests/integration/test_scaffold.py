@@ -1188,7 +1188,7 @@ def test_check_with_errors_exits_one_and_names_the_problem(
 ) -> None:
     code, out, _ = cli("--check", rule=accepting_2m)
 
-    assert code == 1
+    assert code == 11
     assert "✗ X4" in out and "„2m”" in out
     assert "Kontrola rozjazdów wykryła błędy: błędy 1" in out
 
@@ -1200,8 +1200,8 @@ def test_check_json_is_a_document_with_findings_and_the_exit_code(
 
     document = json.loads(out)
     assert (code, document["exit_code"], document["schema"]) == (
-        1,
-        1,
+        11,
+        11,
         "retman-scaffold-check/1",
     )
     (tool,) = document["tools"]
@@ -1218,7 +1218,7 @@ def test_missing_tool_is_skipped_unless_ci_requires_it(
     required = cli("--check", "--require-tools", version="2.0.0")
 
     assert skipped[0] == 0 and "poza obsługiwanym zakresem" in skipped[1]
-    assert required[0] == 1 and "✗ T" in required[1]
+    assert required[0] == 11 and "✗ T" in required[1]
 
 
 def test_check_can_be_limited_to_one_tool_and_operation(
@@ -1274,7 +1274,7 @@ def test_check_says_so_when_the_commands_file_is_malformed(
     )
 
     captured = capsys.readouterr()
-    assert (code, captured.out) == (1, "")
+    assert (code, captured.out) == (7, "")
     assert "Nie można odczytać zbioru poleceń retman-eval" in captured.err
 
 
@@ -1315,7 +1315,7 @@ def test_list_of_a_tool_without_a_reader_fails_with_a_message(
 ) -> None:
     code = main(["list", TOOL], manifests=[dummy], readers={})
 
-    assert code == 1
+    assert code == 15
     assert "nie ma czytnika katalogu" in capsys.readouterr().err
 
 
@@ -1557,7 +1557,7 @@ def test_draft_on_the_command_line_prints_or_writes_and_never_overwrites(
     assert b"\r" not in (folder / "download_dem_sheet.py").read_bytes()
     capsys.readouterr()
 
-    assert main([*argv, "--write"], **options) == 1
+    assert main([*argv, "--write"], **options) == 4
     assert "Plik szkicu już istnieje" in capsys.readouterr().err
 
 

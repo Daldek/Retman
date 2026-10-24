@@ -54,6 +54,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.6",
     "mypy>=1.11",
+    "jsonschema>=4.18",
 ]
 # Tools used by handler tests and manual smoke runs (ARCHITECTURE 3.2.7, ADR-003).
 # Not a runtime dependency of Retman (ARCHITECTURE 9.3). Pushed release commits
@@ -106,7 +107,16 @@ files = ["src", "tests"]
 namespace_packages = false
 
 [[tool.mypy.overrides]]
-module = ["kartograf", "kartograf.*", "imgwtools", "imgwtools.*"]
+# The tools Retman adapts and jsonschema (contract tests) ship no usable type
+# information; their imports are not checked
+module = [
+    "kartograf",
+    "kartograf.*",
+    "imgwtools",
+    "imgwtools.*",
+    "jsonschema",
+    "jsonschema.*",
+]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

@@ -107,7 +107,7 @@ def test_validate_names_the_parameters_of_a_pair_kartograf_rejects(
     with pytest.raises(ToolError) as caught:
         KartografClient(settings(tmp_path)).validate(call)
 
-    assert caught.value.code == "invalid_input"
+    assert caught.value.tool_code == "invalid_input"
     assert {"resolution", "vertical_crs"} <= set(caught.value.options)
     assert caught.value.call is call
 
@@ -249,7 +249,7 @@ def test_lookup_refuses_a_command_that_needs_the_network(
     with pytest.raises(ToolError) as caught:
         client.lookup(call)
 
-    assert caught.value.code == "not_offline"
+    assert caught.value.tool_code == "not_offline"
     assert caught.value.call is call
 
 
@@ -257,7 +257,7 @@ def test_lookup_without_its_required_option_is_invalid_input(tmp_path: Path) -> 
     with pytest.raises(ToolError) as caught:
         KartografClient(settings(tmp_path)).lookup(CatalogCall("parse", {}))
 
-    assert caught.value.code == "invalid_input"
+    assert caught.value.tool_code == "invalid_input"
 
 
 # --- run ----------------------------------------------------------------------
@@ -367,7 +367,7 @@ def test_run_turns_every_failure_into_a_tool_error_with_the_original_as_cause(
     with pytest.raises(ToolError) as caught:
         run_with(monkeypatch, raised, KartografClient(settings(tmp_path)))
 
-    assert caught.value.code == code
+    assert caught.value.tool_code == code
     assert caught.value.__cause__ is raised
     assert caught.value.call is DOWNLOAD
 
@@ -380,7 +380,7 @@ def test_run_keeps_the_hints_of_a_sheet_without_coverage(
     with pytest.raises(ToolError) as caught:
         run_with(monkeypatch, raised, KartografClient(settings(tmp_path)))
 
-    assert list(caught.value.details["hints"]) == ["h"]
+    assert list(caught.value.details["tool_details"]["hints"]) == ["h"]
 
 
 def test_run_lets_a_keyboard_interrupt_through(
@@ -443,7 +443,7 @@ def test_query_of_a_rectangle_without_its_crs_is_invalid_input(
             CatalogCall("elevation availability", options)
         )
 
-    assert caught.value.code == "invalid_input"
+    assert caught.value.tool_code == "invalid_input"
     assert recorder.uses == []
 
 

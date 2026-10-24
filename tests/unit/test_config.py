@@ -62,7 +62,7 @@ def test_from_config_rejects_results_folder_outside_project(
             config_path, backend=FakeDecisionBackend(), project_dir=tmp_path
         )
 
-    assert error.value.details["invalid_value"] == "output.results_dir"
+    assert error.value.problem_details["invalid_value"] == "output.results_dir"
 
 
 def test_init_writes_the_users_collection_answer_and_full_path(tmp_path: Path):
@@ -86,7 +86,7 @@ def test_collection_path_must_be_absolute(tmp_path: Path):
     with pytest.raises(ConfigError) as error:
         load_config(config_path)
 
-    assert error.value.details["invalid_value"] == "privacy.collect_path"
+    assert error.value.problem_details["invalid_value"] == "privacy.collect_path"
 
 
 def _set(text: str, table: str, key: str, value: str | None) -> str:
@@ -147,12 +147,14 @@ def test_config_without_tool_stores_is_rejected_asking_to_regenerate_it(tmp_path
         _load(tmp_path, old)
 
     assert error.value.problems == ["missing_tools"]
-    assert error.value.details["missing_tools"] == "tools.kartograf, tools.imgwtools"
+    assert error.value.problem_details["missing_tools"] == (
+        "tools.kartograf, tools.imgwtools"
+    )
     texts = load_core_texts("pl")
     message = texts.get(
         "config.missing_tools",
         path=error.value.path,
-        keys=error.value.details["missing_tools"],
+        keys=error.value.problem_details["missing_tools"],
     )
     assert "retman init" in message
 
@@ -166,7 +168,7 @@ def test_missing_tool_setting_is_reported_with_its_key(tmp_path: Path):
         _load(tmp_path, text)
 
     assert error.value.problems == ["missing_key"]
-    assert error.value.details["missing_key"] == "tools.kartograf.workers"
+    assert error.value.problem_details["missing_key"] == "tools.kartograf.workers"
 
 
 @pytest.mark.parametrize(
@@ -195,7 +197,7 @@ def test_invalid_tool_setting_is_reported_with_its_key(
         _load(tmp_path, text)
 
     assert error.value.problems == ["invalid_value"]
-    assert error.value.details["invalid_value"] == f"{table}.{key}"
+    assert error.value.problem_details["invalid_value"] == f"{table}.{key}"
 
 
 @pytest.mark.parametrize("update", ["local", "upgrade", "force"])
@@ -233,11 +235,11 @@ def test_stores_must_be_siblings_and_hold_nothing_but_their_data(
         _load(tmp_path, text)
 
     assert error.value.problems == ["paths_overlap"]
-    assert f"{table}.{key}" in error.value.details["paths_overlap"]
+    assert f"{table}.{key}" in error.value.problem_details["paths_overlap"]
     message = load_core_texts("pl").get(
         "config.paths_overlap",
         path=error.value.path,
-        keys=error.value.details["paths_overlap"],
+        keys=error.value.problem_details["paths_overlap"],
     )
     assert str(error.value.path) in message
 

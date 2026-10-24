@@ -126,7 +126,7 @@ def test_unreachable_model_blocks_work_and_says_how_to_fix(tmp_path: Path, dummy
         )
     text = report.to_text(texts)
 
-    assert report.exit_code == 1
+    assert report.exit_code == 10
     assert (
         f"✗ serwer modelu nie odpowiada ({MODEL_URL}) → uruchom serwer modelu" in text
     )
@@ -162,7 +162,7 @@ def test_missing_config_points_to_init_and_still_checks_tools(tmp_path: Path, du
     )
     text = report.to_text(texts)
 
-    assert report.exit_code == 1
+    assert report.exit_code == 10
     assert "retman init" in text
     assert "dummy_tool 1.2.0" in text
 
@@ -198,7 +198,7 @@ def test_unusable_tool_shows_install_hint_and_blocks_without_operations(
 
     assert expected in text
     assert "✗ brak dostępnych operacji" in text
-    assert report.exit_code == 1
+    assert report.exit_code == 10
 
 
 def test_unreadable_result_is_reported_but_does_not_block(tmp_path: Path, dummy):
@@ -247,7 +247,7 @@ def test_cli_doctor_json_reports_the_same_checks_and_exit_code(
     )
     report = json.loads(capsys.readouterr().out)
 
-    assert code == report["exit_code"] == 1
+    assert code == report["exit_code"] == 10
     configuration = report["sections"][0]
     assert configuration["key"] == "configuration"
     assert configuration["checks"][0]["blocking"] is True
@@ -405,7 +405,7 @@ def test_imgw_folder_that_is_not_a_usable_store_blocks_work(
     report, _ = _run_stores(tmp_path, store_tools)
     problems = [text for status, text in _stores(report) if status == "error"]
 
-    assert report.exit_code == 1
+    assert report.exit_code == 10
     assert len(problems) == 1 and expected in problems[0]
 
 
@@ -415,7 +415,7 @@ def test_store_path_that_is_a_file_blocks_work(tmp_path: Path, store_tools, pyar
 
     report, _ = _run_stores(tmp_path, store_tools)
 
-    assert report.exit_code == 1
+    assert report.exit_code == 10
     assert any(
         status == "error" and "nie jest folderem" in text
         for status, text in _stores(report)
@@ -442,7 +442,7 @@ def test_symlink_in_a_store_path_is_refused_by_imgwtools_but_tolerated_by_kartog
 
     assert [status for status, _ in kartograf] == ["warning"]
     assert [status for status, _ in imgwtools] == ["error"]
-    assert report.exit_code == 1
+    assert report.exit_code == 10
     # The hint names the real path to write into the config
     assert f"wpisz ścieżkę rzeczywistą {real}/imgwtools" in report.to_text(texts)
 
@@ -458,7 +458,7 @@ def test_a_file_system_without_hard_links_blocks_both_stores(
     stores = _stores(report)
     refused = [line for status, line in stores if status == "error"]
 
-    assert report.exit_code == 1
+    assert report.exit_code == 10
     assert len(refused) == 2
     assert all(
         "nie obsługuje dowiązań twardych (Operation not permitted)" in r
@@ -541,7 +541,7 @@ def test_failed_write_probe_blocks_work_and_quotes_the_tool(
     )
     text = report.to_text(texts)
 
-    assert report.exit_code == 1
+    assert report.exit_code == 10
     assert (
         "✗ imgwtools 1.2.0: zapis do magazynu nie działa na tym systemie: System plików"
         in text

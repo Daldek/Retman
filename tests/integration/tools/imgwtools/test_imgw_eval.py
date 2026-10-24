@@ -34,7 +34,7 @@ def test_the_synthetic_catalog_serves_only_the_store_search_and_filters_it():
     assert {item["river"] for item in river["result"]["items"]} == {"Wisła"}
     with pytest.raises(ToolError) as caught:
         catalog_lookup(CatalogCall("store info", {}))
-    assert caught.value.code == "not_found"
+    assert caught.value.tool_code == "not_found"
 
 
 def test_the_stand_in_has_a_complete_store_and_never_runs_anything(client):
@@ -53,7 +53,7 @@ def test_the_stand_in_has_a_complete_store_and_never_runs_anything(client):
     for method in (client.run, client.check, client.query):
         with pytest.raises(ToolError) as caught:
             method(CatalogCall("store sync", {}))
-        assert caught.value.code == "not_offline"
+        assert caught.value.tool_code == "not_offline"
 
 
 def test_an_evaluation_gets_the_stand_in_only_for_the_tool_that_needs_one(

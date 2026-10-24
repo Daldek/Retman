@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal, Protocol, cast
 
-from retman.exceptions import RetmanError
+from retman.exceptions import ERROR_CODES, ErrorCode, RetmanError
 from retman.i18n.loader import Texts
 from retman.registry.manifest import (
     HandlerOutput,
@@ -107,23 +107,72 @@ class ToolRun:
     schema: str = ""
 
 
+# Registry code and ``details.reason`` of the codes a tool reports (ERR §4). A code of
+# the registry passes through; the others are the codes of the pinned Kartograf (before
+# its adoption of the registry) and of Retman's own clients. Delete the Kartograf rows
+# when a Kartograf that uses the registry is pinned (docs/PROGRESS.md, Next 2).
+_TOOL_CODES: Mapping[str, tuple[ErrorCode, str | None]] = {
+    "invalid_input": ("validation_error", "invalid_input"),
+    "usage_error": ("validation_error", "usage"),
+    "invalid_sheet_code": ("validation_error", "invalid_sheet_code"),
+    "no_coverage": ("no_data", "no_coverage"),
+    "year_out_of_range": ("no_data", "year_out_of_range"),
+    "download_failed": ("source_unavailable", "download_failed"),
+    "cache_error": ("store_unavailable", "cache"),
+    "invalid_sidecar": ("data_error", "invalid_sidecar"),
+    "transform_failed": ("calculation_error", "transform_failed"),
+    "transform_unavailable": ("unsupported", "transform_unavailable"),
+    "interrupted": ("cancelled", None),
+    "store_write_unsupported": ("store_unavailable", "store_write_unsupported"),
+    "not_offline": ("internal_error", "not_offline"),
+    "not_read_only": ("internal_error", "not_read_only"),
+}
+
+
+def registry_code(
+    tool_code: str, reason: object = None
+) -> tuple[ErrorCode, str | None]:
+    """Return the registry code and ``details.reason`` of a tool's error code.
+
+    Parameters
+    ----------
+    tool_code : str
+        The code the tool (or Retman's client) reported.
+    reason : object, optional
+        The ``reason`` of the tool's own details, kept for a code that the registry
+        already has.
+
+    Returns
+    -------
+    tuple
+        The registry code and the reason; a code that is neither known nor in the
+        registry is ``internal_error`` with the tool's code as the reason.
+    """
+    if tool_code in _TOOL_CODES:
+        return _TOOL_CODES[tool_code]
+    if tool_code in ERROR_CODES:
+        return cast(ErrorCode, tool_code), reason if isinstance(reason, str) else None
+    return "internal_error", tool_code
+
+
 class ToolError(RetmanError):
     """A tool refused or failed; raised by clients instead of the tool's exceptions.
 
-    ``code`` is the tool's stable error code (``invalid_input``, ``no_coverage``,
-    ``io_error``…); ``option``/``options`` name the tool options at fault and
-    ``allowed`` what the tool would accept there. An option inside the options a
-    command takes of another command is named by its path (``options.years``), so
-    that ``CatalogCall.params`` can route it like any other. ``detail`` and
-    ``hint`` are the tool's own wording: the user sees Retman's text chosen by
-    ``code`` (see ``tool_error_text``). ``call`` is the command that raised (set by
-    the generic runners when the client did not).
+    ``tool_code`` is the tool's stable error code (``invalid_input``, ``no_coverage``,
+    ``io_error``…); ``code`` is the registry code it maps to (:func:`registry_code`)
+    and ``details.reason`` keeps the tool's precision. ``option``/``options`` name the
+    tool options at fault and ``allowed`` what the tool would accept there. An option
+    inside the options a command takes of another command is named by its path
+    (``options.years``), so that ``CatalogCall.params`` can route it like any other.
+    ``detail`` and ``hint`` are the tool's own wording: the user sees Retman's text
+    chosen by ``tool_code`` (see ``tool_error_text``). ``call`` is the command that
+    raised (set by the generic runners when the client did not).
     """
 
     def __init__(
         self,
         tool: str,
-        code: str,
+        tool_code: str,
         detail: str,
         *,
         hint: str | None = None,
@@ -134,15 +183,39 @@ class ToolError(RetmanError):
         call: CatalogCall | None = None,
     ) -> None:
         self.tool = tool
-        self.code = code
+        self.tool_code = tool_code
         self.detail = detail
-        self.hint = hint
         self.option = option
         self.options = tuple(options)
         self.allowed = tuple(allowed) if allowed is not None else None
-        self.details: Mapping[str, Any] = details or {}
+        code, reason = registry_code(tool_code, (details or {}).get("reason"))
+        context: dict[str, object] = {"tool": tool, "tool_code": tool_code}
+        if reason is not None:
+            context = {"reason": reason, **context}
+        if option is not None:
+            context["option"] = option
+        if self.options:
+            context["options"] = list(self.options)
+        if self.allowed is not None:
+            context["allowed"] = list(self.allowed)
+        if details:
+            context["tool_details"] = dict(details)
+        super().__init__(
+            f"{tool} [{tool_code}]: {detail}", code=code, details=context, hint=hint
+        )
+        self._call: CatalogCall | None = None
         self.call = call
-        super().__init__(f"{tool} [{code}]: {detail}")
+
+    @property
+    def call(self) -> CatalogCall | None:
+        """The catalog command that raised (``details.tool_command``)."""
+        return self._call
+
+    @call.setter
+    def call(self, value: CatalogCall | None) -> None:
+        self._call = value
+        if value is not None:
+            self.details["tool_command"] = value.command
 
 
 class ToolDriftError(RetmanError):
@@ -150,8 +223,20 @@ class ToolDriftError(RetmanError):
 
     A programmer-level error (run ``retman doctor`` / ``retman-scaffold
     --check``): no Retman parameter can be named, so asking the user again
-    would loop on the same rejection.
+    would loop on the same rejection. Default code: ``internal_error``, reason
+    ``tool_drift``; ``text`` is the translated text for the user.
     """
+
+    default_reason = "tool_drift"
+
+    def __init__(self, tool: str, operation: str, detail: str, text: str) -> None:
+        super().__init__(
+            f"The installed {tool} no longer accepts {operation}: {detail}",
+            details={"tool": tool, "operation": operation},
+            hint="Run `retman-scaffold --check` to see where the manifest differs "
+            "from the installed tool.",
+            text=text,
+        )
 
 
 class PlanClient(Protocol):
@@ -360,7 +445,7 @@ def tool_error_text(
     )
     args = {
         "tool": err.tool,
-        "code": err.code,
+        "code": err.tool_code,
         "detail": err.detail,
         "hint": err.hint or "",
         "option": err.option or "",
@@ -369,7 +454,7 @@ def tool_error_text(
         ),
         "allowed": ", ".join(err.allowed or ()),
     }
-    key = f"errors.{err.code}"
+    key = f"errors.{err.tool_code}"
     if operation.texts.has(key):
         return operation.texts.get(key, **args)
     return texts.get(fallback, **args)

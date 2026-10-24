@@ -15,7 +15,13 @@ from retman.exceptions import RetmanError
 
 
 class ScaffoldError(RetmanError):
-    """A scaffold command cannot be carried out (unknown tool or command...)."""
+    """A scaffold command cannot be carried out (unknown tool or command...).
+
+    Default code: ``validation_error``, reason ``invalid_request``.
+    """
+
+    default_code = "validation_error"
+    default_reason = "invalid_request"
 
 
 @dataclass(frozen=True)

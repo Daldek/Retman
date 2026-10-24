@@ -17,7 +17,7 @@ from retman.adapters.catalog import (
 from retman.core.check import CheckReport, CheckStatus
 from retman.core.journal import utc_now
 from retman.core.result import Result
-from retman.exceptions import ManifestError
+from retman.exceptions import ManifestError, error_document
 from retman.i18n.loader import Texts
 from retman.kinds import validate_file
 from retman.registry.manifest import (
@@ -148,9 +148,11 @@ def execute_operation(
         )
     except ToolError as err:
         _fail(result, texts, number, tool_error_text(operation, texts, err))
-        result.error_code = err.code
+        result.error_code = err.tool_code
+        result.failure = error_document(err)
     except Exception as err:
         _fail(result, texts, number, str(err))
+        result.failure = error_document(err)
     return result
 
 
@@ -204,12 +206,15 @@ def preview_operation(
                 routed = route_error(call, err, names)
                 if not routed:
                     raise ToolDriftError(
+                        operation.tool,
+                        operation.id,
+                        err.detail,
                         texts.get(
                             "errors.tool_drift",
                             tool=operation.tool,
                             operation=operation.id,
                             detail=err.detail,
-                        )
+                        ),
                     ) from err
                 problems.append(
                     ResolvedProblem(

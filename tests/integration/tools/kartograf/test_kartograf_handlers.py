@@ -277,7 +277,7 @@ def test_when_no_sheet_is_delivered_the_error_says_whether_the_data_are_missing(
     with pytest.raises(ToolError) as caught:
         run(tmp_path, {**ORTHOPHOTO, "area": PARENT_1992})
 
-    assert caught.value.code == code
+    assert caught.value.tool_code == code
     assert "Brak ortofotomapy CIR dla s1" in caught.value.detail
 
 
@@ -292,7 +292,7 @@ def test_a_single_sheet_without_the_variant_raises_kartografs_own_error_as_a_too
             {**ORTHOPHOTO, "area": {"type": "sheet", "code": "N-34-130-D-d-2-4"}},
         )
 
-    assert caught.value.code == "no_coverage"
+    assert caught.value.tool_code == "no_coverage"
 
 
 def test_an_orthophoto_is_not_made_of_a_geometry_file(
@@ -303,5 +303,5 @@ def test_an_orthophoto_is_not_made_of_a_geometry_file(
     with pytest.raises(ToolError) as caught:
         run(tmp_path, {**ORTHOPHOTO, "area": geometry(tmp_path / "geo")})
 
-    assert caught.value.code == "orthophoto_needs_sheet"
+    assert caught.value.tool_code == "orthophoto_needs_sheet"
     assert recorder.requests == []

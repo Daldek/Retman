@@ -144,7 +144,7 @@ def test_a_refusal_of_the_tool_fails_the_command_but_keeps_the_config(
     status, config = _init(tmp_path, monkeypatch, f"n\n{tmp_path / 'disk'}\nt\n")
     error = capsys.readouterr().err
 
-    assert status == 1
+    assert status == 8
     assert config.exists()
     assert "Katalog nie jest pustym magazynem IMGW: /x" in error
 
@@ -162,7 +162,7 @@ def test_a_folder_that_cannot_be_created_leaves_no_config_behind(
     status, config = _init(tmp_path, monkeypatch, f"n\n{blocker / 'stores'}\nt\n")
     error = capsys.readouterr().err
 
-    assert status == 1
+    assert status == 9
     assert not config.exists()
     assert str(blocker) in error and "wskaż inny folder" in error
     assert imgw_calls == []
@@ -182,7 +182,7 @@ def test_an_existing_config_is_reported_before_any_question(
     status = cli.main(["--config", str(config), "init"], project_dir=tmp_path)
     captured = capsys.readouterr()
 
-    assert status == 1
+    assert status == 4
     assert captured.out == ""
     assert "już istnieje" in captured.err
     assert terminal.tell() == 0
@@ -236,7 +236,7 @@ def test_a_disk_without_hard_links_is_refused_before_the_config_is_written(
     status, config = _init(tmp_path, monkeypatch, f"n\n{tmp_path / 'fat'}\nt\n")
     error = capsys.readouterr().err
 
-    assert status == 1
+    assert status == 8
     assert not config.exists()
     assert "nie obsługuje dowiązań twardych (Operation not supported)" in error
     assert "wskaż folder na innym dysku" in error
@@ -258,7 +258,7 @@ def test_the_tools_no_hard_link_refusal_gets_its_own_advice(
     status, config = _init(tmp_path, monkeypatch, f"n\n{tmp_path / 'disk'}\nt\n")
     error = capsys.readouterr().err
 
-    assert status == 1
+    assert status == 8
     assert config.exists()
     assert "System plików nie obsługuje dowiązań" in error
     assert "[tools.kartograf] store_dir" in error

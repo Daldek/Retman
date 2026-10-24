@@ -41,6 +41,7 @@ każda relacja jest zapisana po obu stronach.
 | [ADR-017](#adr-017-całe-imgwtools-w-v01-i-rozpoznawanie-dwustopniowe) | Całe IMGWTools w v0.1 i rozpoznawanie dwustopniowe | 2026-10-19 | Przyjęta; uzupełnia ADR-001 |
 | [ADR-018](#adr-018-mcp-narzędzia-przez-api-pythona-serwer-retmana-w-v03) | MCP: narzędzia przez API Pythona, serwer Retmana w v0.3 | 2026-10-19 | Przyjęta |
 | [ADR-019](#adr-019-statyczne-manifesty-i-retman-scaffold-z-katalogów-narzędzi) | Statyczne manifesty i `retman-scaffold` z katalogów narzędzi | 2026-10-19 | Przyjęta |
+| [ADR-020](decisions/0020-error-registry.md) | Adopt the shared error registry (new ADRs are files in `decisions/`, DOC-8.2) | 2026-10-24 | Przyjęta |
 
 ---
 

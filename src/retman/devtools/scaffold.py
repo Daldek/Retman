@@ -5,7 +5,10 @@
         [--write]
     retman-scaffold --check [--tool T] [--operation OP] [--json] [--require-tools]
 
-Exit codes: ``0`` clean, ``1`` errors found (or the command failed), ``2`` usage.
+Exit codes are those of the Nogat registry: ``0`` clean, ``10`` (``partial``) when
+the check found errors in some tools and ``11`` (``failed``) when in every one,
+``2`` usage, ``130`` interrupted and the code of the error that ended the call
+(whose ``retman-error/1`` document is the last line of stderr).
 Drafts go to the standard output; ``--write`` creates files below
 ``src/retman/tools/<tool>/_drafts/`` and never touches a reviewed file
 (ARCHITECTURE 3.2.3).
@@ -27,8 +30,9 @@ from retman.devtools.drift import check_tools
 from retman.devtools.model import Reader, ScaffoldError, load_reader
 from retman.devtools.report import check_json, exit_code, render_check
 from retman.eval.dataset import DEFAULT_COMMANDS, EvalCommand, load_commands
-from retman.exceptions import EvalDatasetError, RetmanError
+from retman.exceptions import EvalDatasetError, RetmanError, Terminated, UsageError
 from retman.i18n.loader import Texts, load_core_texts
+from retman.outcomes import EXIT_CANCELLED, report_error, sigterm_as_exception
 from retman.registry.loader import discover_manifests
 from retman.registry.manifest import ManifestSpec
 
@@ -38,13 +42,9 @@ TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
 Manifests = Iterable[tuple[ManifestSpec, Path]]
 
 
-class _Usage(Exception):
-    """A mistake in the command line (exit code 2)."""
-
-
 class _Parser(argparse.ArgumentParser):
     def error(self, message: str) -> NoReturn:
-        raise _Usage(message)
+        raise UsageError(message, hint="Run `retman-scaffold --help` for the options.")
 
 
 def _parser(texts: Texts) -> _Parser:
@@ -111,7 +111,11 @@ def _fixed(items: Sequence[str], texts: Texts) -> dict[str, object]:
     for item in items:
         name, separator, value = item.partition("=")
         if not separator or not name:
-            raise _Usage(texts.get("scaffold.invalid_fix", item=item))
+            raise UsageError(
+                f"--fix needs name=value, got {item!r}",
+                details={"option": "fix", "value": item},
+                text=texts.get("scaffold.invalid_fix", item=item),
+            )
         fixed[name] = _value(value)
     return fixed
 
@@ -121,7 +125,12 @@ def _reader(tool: str, readers: Mapping[str, Reader] | None, texts: Texts) -> Re
         readers[tool] if readers is not None and tool in readers else load_reader(tool)
     )
     if reader is None:
-        raise ScaffoldError(texts.get("scaffold.no_reader", tool=tool))
+        raise ScaffoldError(
+            f"No catalog reader exists for the tool {tool!r}",
+            code="unsupported",
+            details={"reason": "no_reader", "tool": tool},
+            text=texts.get("scaffold.no_reader", tool=tool),
+        )
     return reader
 
 
@@ -137,8 +146,12 @@ def _check(
     known = sorted(manifest["tool"] for manifest, _ in manifests)
     for tool in args.tool or ():
         if tool not in known:
-            raise _Usage(
-                texts.get("scaffold.unknown_tool", tool=tool, known=", ".join(known))
+            raise UsageError(
+                f"Unknown tool {tool!r}; known: {', '.join(known)}",
+                details={"option": "tool", "value": tool, "allowed": known},
+                text=texts.get(
+                    "scaffold.unknown_tool", tool=tool, known=", ".join(known)
+                ),
             )
     selected = [
         spec["id"]
@@ -148,7 +161,15 @@ def _check(
     ]
     for operation in args.operation or ():
         if operation not in selected:
-            raise _Usage(texts.get("scaffold.unknown_operation", operation=operation))
+            raise UsageError(
+                f"Unknown operation {operation!r}",
+                details={
+                    "option": "operation",
+                    "value": operation,
+                    "allowed": selected,
+                },
+                text=texts.get("scaffold.unknown_operation", operation=operation),
+            )
     rows = (
         commands
         if commands is not None
@@ -254,9 +275,15 @@ def _draft(
     folder = tools_dir / args.tool / "_drafts"
     python = folder / f"{draft.operation_id}.py"
     toml = folder / f"{draft.operation_id}.toml"
-    for path in (python, toml):
-        if path.exists():
-            raise ScaffoldError(texts.get("scaffold.draft_exists", path=path))
+    existing = [path for path in (python, toml) if path.exists()]
+    if existing:
+        raise ScaffoldError(
+            "A draft file exists and is never overwritten",
+            code="conflict",
+            details={"reason": "output_exists", "paths": [str(p) for p in existing]},
+            hint="Delete or rename the draft, or give another --id.",
+            text=texts.get("scaffold.draft_exists", path=existing[0]),
+        )
     folder.mkdir(parents=True, exist_ok=True)
     python.write_text(draft.python() + "\n", encoding="utf-8", newline="\n")
     toml.write_text(draft.translations + "\n", encoding="utf-8", newline="\n")
@@ -279,16 +306,43 @@ def main(
     Returns
     -------
     int
-        ``0`` clean, ``1`` errors found or the command failed, ``2`` usage.
+        ``0`` clean; ``10`` or ``11`` when the check found errors (see
+        :func:`retman.devtools.report.exit_code`); ``130`` interrupted; else the
+        exit code of the error's registry code (``2`` for a usage mistake).
     """
+    with sigterm_as_exception():
+        return _scaffold(
+            argv,
+            manifests=manifests,
+            version_lookup=version_lookup,
+            readers=readers,
+            clients=clients,
+            commands=commands,
+            tools_dir=tools_dir,
+        )
+
+
+def _scaffold(
+    argv: Sequence[str] | None,
+    *,
+    manifests: Manifests | None,
+    version_lookup: Callable[[str], str],
+    readers: Mapping[str, Reader] | None,
+    clients: Mapping[str, PlanClient] | None,
+    commands: Sequence[EvalCommand] | None,
+    tools_dir: Path | None,
+) -> int:
+    """Parse the arguments and run the command; see :func:`main`."""
     texts = load_core_texts("pl")
     try:
         args = _parser(texts).parse_args(argv)
         if args.check == (args.action is not None):
-            raise _Usage(
-                texts.get(
+            raise UsageError(
+                "Give --check, or the command list or draft, not both",
+                details={"option": "check"},
+                text=texts.get(
                     "scaffold.usage_both" if args.check else "scaffold.usage_nothing"
-                )
+                ),
             )
         available = list(manifests if manifests is not None else discover_manifests())
         if args.check:
@@ -298,22 +352,28 @@ def main(
         if args.action == "list":
             return _list(args.tool, texts, available, readers)
         return _draft(args, texts, readers, tools_dir or TOOLS_DIR)
-    except _Usage as error:
-        print(texts.get("scaffold.usage_error", error=error), file=sys.stderr)
-        return 2
+    except UsageError as error:
+        return report_error(
+            error, text=texts.get("scaffold.usage_error", error=error.text or error)
+        )
     except KeyboardInterrupt:
         print(texts.get("scaffold.interrupted"), file=sys.stderr)
-        return 3
-    except BrokenPipeError:
+        return EXIT_CANCELLED
+    except Terminated as error:
+        return report_error(error)
+    except BrokenPipeError as error:
         # The reader of the pipe left (``| head``): point stdout at the null device
-        # so that the flush at exit stays quiet, and say nothing more
+        # so that the flush at exit stays quiet
         with contextlib.suppress(OSError, ValueError, AttributeError):
             os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        return report_error(error)
     except EvalDatasetError as error:
-        print(texts.get("scaffold.invalid_commands", error=error), file=sys.stderr)
+        return report_error(
+            error, text=texts.get("scaffold.invalid_commands", error=error)
+        )
     except (RetmanError, OSError) as error:
-        print(texts.get("scaffold.failure", error=error), file=sys.stderr)
-    return 1
+        shown = getattr(error, "text", None) or error
+        return report_error(error, text=texts.get("scaffold.failure", error=shown))
 
 
 if __name__ == "__main__":

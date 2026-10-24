@@ -38,4 +38,4 @@ def test_build_decision_backend_rejects_unavailable_basal_service():
 
     assert caught.value.path == config.path
     assert caught.value.problems == ["backend_unavailable"]
-    assert caught.value.details == {"backend": "basal"}
+    assert caught.value.problem_details == {"backend": "basal"}

@@ -15,6 +15,8 @@ class Result:
     the tool's data-quality and licence notices); callers must show them.
     ``error_code`` is the tool's stable error code when a tool error failed the
     operation; ``tool`` is the audit block of the catalog commands that ran.
+    ``failure`` is the ``retman-error/1`` document (English, registry code and exit
+    code) of the failure when ``ok`` is false.
     """
 
     ok: bool
@@ -30,11 +32,13 @@ class Result:
     summary: str = ""
     error_code: str | None = None
     tool: ToolAudit | None = None
+    failure: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Represent the public result with JSON-compatible values.
 
-        ``error_code`` and ``tool`` appear only when they carry information.
+        ``error_code``, ``tool`` and ``failure`` appear only when they carry
+        information.
         """
         record: dict[str, Any] = {
             "ok": self.ok,
@@ -56,4 +60,6 @@ class Result:
             record["error_code"] = self.error_code
         if self.tool is not None:
             record["tool"] = self.tool
+        if self.failure is not None:
+            record["failure"] = self.failure
         return record

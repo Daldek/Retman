@@ -624,14 +624,34 @@ operacji (PRD W-03).
 
 ## 8. Kody wyjścia
 
-| Kod | Znaczenie |
-| --- | --- |
-| 0 | operacja wykonana, plan pokazany przy `--plan-only`, sesja zakończona `koniec` |
-| 1 | błąd: konfiguracja, brak połączenia z modelem, błąd narzędzia, polecenie spoza zakresu; `retman init` — nieutworzony folder albo dysk bez dowiązań twardych |
-| 2 | potrzebne odpowiedzi lub potwierdzenie, a wejście nie jest terminalem |
-| 3 | przerwane przez użytkownika (`anuluj`, `n`, Ctrl+C — także w trakcie sprawdzenia dostępności) |
+Kody wyjścia są kodami wspólnego rejestru Nogat ([ERROR_REGISTRY](https://github.com/Daldek/Nogat/blob/main/standards/ERROR_REGISTRY.md)):
+ten sam kod znaczy to samo w każdym narzędziu. Przy błędzie ostatnia linia stderr to dokument
+`retman-error/1` (jeden wiersz JSON: `code`, `title`, `message`, `hint`, `details`, `exit_code`);
+`details.reason` zawęża kod (np. `out_of_scope`, `input_required`, `missing_config`).
+Przerwanie przez użytkownika nie jest błędem i nie drukuje dokumentu.
 
-`retman doctor`: 0 — da się pracować, 1 — coś blokuje pracę. `retman-eval`: p. 12.
+| Kod | Nazwa | Znaczenie w Retmanie |
+| --- | --- | --- |
+| 0 | `ok` | operacja wykonana, plan pokazany przy `--plan-only`, sesja zakończona `koniec` |
+| 1 | `internal_error` | błąd Retmana albo nieoczekiwany wyjątek; błąd w operacji, którego narzędzie nie opisało |
+| 2 | `validation_error` | błędna opcja lub zmienna (`usage`), błędna konfiguracja (`invalid_config`), potrzebne odpowiedzi lub potwierdzenie, a wejście nie jest terminalem (`input_required`) |
+| 3 | `not_found` | brak pliku konfiguracji (`missing_config`), pliku wejściowego albo wyniku |
+| 4 | `conflict` | plik konfiguracji już istnieje (`output_exists`), plan niepotwierdzony lub zmieniony |
+| 5 | `source_unavailable` | model nie odpowiada (`backend_connection`) albo źródło danych narzędzia zawiodło |
+| 6 | `missing_dependency` | narzędzie nie jest zainstalowane (`tool_not_installed`) albo brak operacji (`no_operations`) |
+| 7 | `data_error` | plik niezgodny ze swoim rodzajem, zły zbiór poleceń `retman-eval` |
+| 8 | `store_unavailable` | magazyn narzędzia nie działa (np. dysk bez dowiązań twardych) |
+| 9 | `io_error` | zapis lub odczyt pliku nie powiódł się |
+| 10 | `partial` | `retman doctor`: coś blokuje pracę, a część kontroli przeszła; `retman-eval`: naruszenie W-03; `retman-scaffold --check`: błędy w części narzędzi |
+| 11 | `failed` | to samo, gdy żadna kontrola ani narzędzie nie przeszło |
+| 13 | `calculation_error` | narzędzie nie potrafi policzyć wyniku z poprawnych danych |
+| 14 | `no_data` | źródło nie ma danych dla obszaru lub okresu (np. `no_coverage` Kartografa) |
+| 15 | `unsupported` | polecenie spoza zakresu (`out_of_scope`) albo brak sprawdzenia dostępności (`no_check`) |
+| 130 | `cancelled` | przerwane przez użytkownika (`anuluj`, `n`, Ctrl+C — także w trakcie sprawdzenia dostępności) |
+| 143 | `terminated` | proces dostał SIGTERM |
+
+Kody 10 i 11 nie oznaczają błędu: wynik został wydrukowany, a kod mówi, czy każda jednostka przeszła.
+`retman-eval` i `retman-scaffold` mają te same kody; opcje i miary eval: p. 12.
 
 ---
 
@@ -847,8 +867,9 @@ trafność operacji i parametrów, błędy przyjęte bez pytania (W-02), ciche z
 naruszenia W-03, czasy oraz **zalecane progi** dla zadanego odsetka błędów. Przy rozpoznawaniu
 dwustopniowym pytanie o grupę operacji liczy się jako dopytanie użytkownika. Zalecanych progów
 nie zapisuje sam — wpisuje się je do `[decision.thresholds]`. Kody wyjścia: 0 — przebieg
-zakończony, 1 — błąd konfiguracji, zbioru albo modelu, 3 — przerwany, 4 — wystąpiło
-naruszenie W-03. Opcje i miary: `docs/specs/2026-10-11-retman-eval.md`.
+zakończony, 10 — wystąpiło naruszenie W-03 (przebieg zakończony), 2 — błędne argumenty,
+3 — brak pliku konfiguracji, 5 — model nie odpowiada, 130 — przerwany; pełna lista w p. 8.
+Opcje i miary: `docs/specs/2026-10-11-retman-eval.md`.
 
 ---
 

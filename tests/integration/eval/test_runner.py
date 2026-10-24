@@ -5,6 +5,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from error_documents import last_line_document
 
 from retman.backends.base import Decision
 from retman.config import Thresholds, init_config, load_config
@@ -418,18 +419,24 @@ def test_isolation_report_privacy_and_no_handler_calls(
     assert "2/2" in report
 
 
-def test_cli_invalid_config_and_args_exit_one_without_partial_files(
+def test_cli_invalid_config_and_args_exit_with_registry_codes_and_no_partial_files(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     output = tmp_path / "raw.jsonl"
     assert (
-        main(["--config", str(tmp_path / "absent.toml"), "--output", str(output)]) == 1
+        main(["--config", str(tmp_path / "absent.toml"), "--output", str(output)]) == 3
     )
     assert not output.exists()
-    assert main([]) == 1
-    assert main(["--config", "x", "--repeat", "0"]) == 1
-    assert main(["--config", "x", "--bad-option"]) == 1
-    assert "Błąd" not in capsys.readouterr().out
+    assert main([]) == 2
+    assert main(["--config", "x", "--repeat", "0"]) == 2
+    assert main(["--config", "x", "--bad-option"]) == 2
+    captured = capsys.readouterr()
+    assert "Błąd" not in captured.out
+    document = last_line_document(captured.err)
+    assert (document["code"], document["details"]["reason"]) == (
+        "validation_error",
+        "usage",
+    )
 
 
 @pytest.fixture

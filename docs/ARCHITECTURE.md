@@ -1515,9 +1515,13 @@ potwierdzenia (p. 6.3) i reguły „bez sieci przed potwierdzeniem” (N-12).
 | Kod wyjścia | Znaczenie |
 | --- | --- |
 | 0 | operacja wykonana (albo pokazany plan przy `--plan-only`) |
-| 1 | błąd (np. brak połączenia z modelem, błąd narzędzia) |
-| 2 | potrzebne odpowiedzi lub potwierdzenie, a wejście nie jest terminalem |
-| 3 | przerwane przez użytkownika |
+| 2 | `validation_error`: błędna opcja lub konfiguracja, albo potrzebne odpowiedzi lub potwierdzenie, a wejście nie jest terminalem (`details.reason` `input_required`) |
+| 15 | `unsupported`: polecenie spoza zakresu (W-03, `details.reason` `out_of_scope`) |
+| 130 | `cancelled`: przerwane przez użytkownika (`anuluj`, `n`, Ctrl+C) |
+| inne | kod rejestru Nogat błędu, który zakończył wywołanie (ERR §2): np. 5 — model nie odpowiada, 14 — źródło nie ma danych, 1 — błąd w Retmanie |
+
+Ostatnia linia stderr przy błędzie to dokument `retman-error/1` (AGI-3.3); pełna tabela kodów
+jest w USAGE p. 8. Mapowanie klas wyjątków na kody opisuje ADR-020.
 
 **Jedna logika, wiele interfejsów.** Rozmowa w terminalu to tylko warstwa wyświetlania. Pytania
 tworzy i odpowiedzi sprawdza `core/dialog.py`, dostępny też z Pythona (`plan.questions`,
@@ -2043,7 +2047,7 @@ konfiguracji systemu:
   (foldery `kartograf` i `imgwtools`), cache i dane referencyjne obok, w `<katalog danych>`
   (Linux `~/.local/share/retman/`, macOS `~/Library/Application Support/retman/`, Windows
   `%LOCALAPPDATA%\retman\`). Dysk bez dowiązań twardych kończy `retman init` błędem przed
-  zapisem pliku (kod wyjścia 1), a odmowa `store init` przez IMGWTools z tego powodu zostawia
+  zapisem pliku (kod wyjścia 4 albo 8), a odmowa `store init` przez IMGWTools z tego powodu zostawia
   plik i podpowiada zmianę obu `store_dir`.
 - W pliku nie ma opisów narzędzi (manifestów) ani tekstów (tłumaczeń) — to część kodu Retmana,
   testowana w CI (p. 3.2, 4.2). Nie ma w nim też kluczy API, tylko nazwy zmiennych

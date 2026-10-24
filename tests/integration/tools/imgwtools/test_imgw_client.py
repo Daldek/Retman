@@ -78,7 +78,7 @@ def test_validation_is_the_tools_and_names_the_option_at_fault(client):
         client.validate(call)
 
     assert caught.value.tool == "imgwtools"
-    assert caught.value.code == "validation_error"
+    assert caught.value.tool_code == "validation_error"
     assert caught.value.option == "latitude"
     assert "poza zakresem" in caught.value.detail
 
@@ -122,7 +122,7 @@ def test_a_rejected_task_option_is_named_by_its_path_inside_options(client, tmp_
     with pytest.raises(ToolError) as caught:
         client.validate(add_task(tmp_path, {**TASK, "variables": ["Q"]}))
 
-    assert caught.value.code == "validation_error"
+    assert caught.value.tool_code == "validation_error"
     assert caught.value.option == "options.variables"
     assert caught.value.allowed is not None and "Q_mean" in caught.value.allowed
 
@@ -160,7 +160,7 @@ def test_lookup_refuses_every_command_that_uses_the_network_or_writes(client):
     for command in refused:
         with pytest.raises(ToolError) as caught:
             client.lookup(CatalogCall(command.name, {}))
-        assert caught.value.code == "not_offline", command.name
+        assert caught.value.tool_code == "not_offline", command.name
 
 
 def test_lookup_serves_the_store_and_the_registry_as_the_tools_envelope(client):
@@ -181,7 +181,7 @@ def test_lookup_of_the_store_search_refuses_the_live_source(client):
     with pytest.raises(ToolError) as caught:
         client.lookup(CatalogCall("stations find", {"source": "live"}))
 
-    assert caught.value.code == "not_offline"
+    assert caught.value.tool_code == "not_offline"
 
 
 def test_errors_of_a_lookup_keep_the_tools_code(client):
@@ -194,8 +194,8 @@ def test_errors_of_a_lookup_keep_the_tools_code(client):
             CatalogCall("series select", {"dataset": PRECIP, "stations": ["999999999"]})
         )
 
-    assert no_series.value.code == "not_found"
-    assert no_station.value.code == "validation_error"
+    assert no_series.value.tool_code == "not_found"
+    assert no_station.value.tool_code == "validation_error"
     assert no_station.value.option == "stations"
 
 
@@ -207,7 +207,7 @@ def test_a_missing_store_is_an_answer_of_store_info_but_an_error_elsewhere(tmp_p
         client.lookup(CatalogCall("stations find", {"source": "store"}))
 
     assert info["result"]["exists"] is False
-    assert caught.value.code == "store_unavailable"
+    assert caught.value.tool_code == "store_unavailable"
 
 
 def test_run_of_an_export_returns_the_file_the_licence_and_the_command(
@@ -233,7 +233,7 @@ def test_a_stream_command_without_a_target_file_is_refused_before_it_runs(client
     with pytest.raises(ToolError) as caught:
         client.run(EXPORT)
 
-    assert caught.value.code == "validation_error"
+    assert caught.value.tool_code == "validation_error"
     assert caught.value.option == "path"
 
 
@@ -267,7 +267,7 @@ def test_a_source_that_cannot_be_reached_is_a_tool_error(client):
         client.run(call)
 
     assert requested  # it tried the endpoint and found no answer
-    assert caught.value.code == "source_unavailable"
+    assert caught.value.tool_code == "source_unavailable"
     assert caught.value.call == call
 
 
@@ -287,7 +287,7 @@ def test_query_runs_read_only_commands_and_refuses_the_rest(client):
     for command in ("store init", "store sync", "series export"):
         with pytest.raises(ToolError) as caught:
             client.query(CatalogCall(command, {}))
-        assert caught.value.code == "not_read_only"
+        assert caught.value.tool_code == "not_read_only"
 
 
 class _Failing:
@@ -326,7 +326,7 @@ def test_the_tools_exceptions_become_tool_errors_with_a_code(client, error, code
     with pytest.raises(ToolError) as caught:
         client.run(call)
 
-    assert caught.value.code == code
+    assert caught.value.tool_code == code
     assert caught.value.__cause__ is error
 
 

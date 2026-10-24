@@ -65,7 +65,7 @@ def test_cli_validates_packaged_dataset_filters_and_writes_private_results(
         "spatial_data": "spatial_data",
         "download_dem_sheet": "download_dem_sheet",
     }
-    assert main(args, backend=FakeDecisionBackend(rules)) == 4
+    assert main(args, backend=FakeDecisionBackend(rules)) == 10
     assert "Naruszenia W-03" in report.read_text(encoding="utf-8")
     assert any(
         record["outcome"] == "plan"
@@ -121,7 +121,7 @@ def test_cli_backend_error_does_not_create_partial_report(tmp_path: Path):
             ],
             backend=FailingBackend(),
         )
-        == 1
+        == 5
     )
     assert not raw.exists()
     assert not report.exists()

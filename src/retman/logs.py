@@ -55,7 +55,14 @@ def level_from_environment(environ: Mapping[str, str]) -> str | None:
             continue
         if value not in LOG_LEVELS:
             raise UsageError(
-                f"{name}={value!r} is not a log level; allowed: {', '.join(LOG_LEVELS)}"
+                f"{name}={value!r} is not a log level; "
+                f"allowed: {', '.join(LOG_LEVELS)}",
+                details={
+                    "option": name,
+                    "value": value,
+                    "allowed": list(LOG_LEVELS),
+                },
+                hint=f"Set {name} to one of: {', '.join(LOG_LEVELS)}.",
             )
         return value
     return None
@@ -91,7 +98,11 @@ def resolve_level(
         Both options are given, or the environment holds an invalid level.
     """
     if verbose and quiet:
-        raise UsageError("--verbose and --quiet exclude each other")
+        raise UsageError(
+            "--verbose and --quiet exclude each other",
+            details={"reason": "exclusive_options", "options": ["verbose", "quiet"]},
+            hint="Give --verbose or --quiet, not both.",
+        )
     if verbose:
         return VERBOSE_LEVEL
     if quiet:

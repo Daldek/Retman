@@ -92,7 +92,7 @@ def store_problems(ctx: ToolContext, *, write: bool) -> list[PreviewProblem]:
 
 def _unknown_station(err: ToolError) -> bool:
     """Tell whether the tool says a station is not in the series of the dataset."""
-    return err.code == "validation_error" and err.option in ("station", "stations")
+    return err.tool_code == "validation_error" and err.option in ("station", "stations")
 
 
 # --- operations 1-3: catalog -----------------------------------------------------
@@ -111,7 +111,7 @@ def preview_find_imgw_stations(
     try:
         matches = len(document_items(ctx.client.lookup(call)))
     except ToolError as err:
-        if err.code in ("not_found", "store_unavailable"):
+        if err.tool_code in ("not_found", "store_unavailable"):
             return _output(
                 problems=[_problem("station_catalog_missing", ["data_source"])]
             )
@@ -217,7 +217,7 @@ def preview_read_stored_pmaxtp(
             )
         )
     except ToolError as err:
-        if err.code == "not_found":
+        if err.tool_code == "not_found":
             return _output(
                 problems=[
                     _problem(
@@ -274,9 +274,9 @@ def _coverage(
         document = ctx.client.lookup(CatalogCall("series summary", options))
     except ToolError as err:
         if (
-            err.code == "not_found"
+            err.tool_code == "not_found"
             or _unknown_station(err)
-            or (err.code == "validation_error" and err.option == "variables")
+            or (err.tool_code == "validation_error" and err.option == "variables")
         ):
             return err
         raise
@@ -302,7 +302,7 @@ def _archives_row(
         document = ctx.client.lookup(CatalogCall("datasets files", options))
     except ToolError as err:
         routes = {"years": "period", "stations": "station"}
-        if err.code == "validation_error" and err.option in routes:
+        if err.tool_code == "validation_error" and err.option in routes:
             return None, _problem(
                 "archives_rejected", [routes[err.option]], detail=err.detail
             )
@@ -335,7 +335,7 @@ def preview_export_station_series(
             )
             return _output(problems=[problem])
         if not server:
-            if coverage.code == "not_found":
+            if coverage.tool_code == "not_found":
                 problem = _problem("series_missing", ["data_source"], dataset=dataset)
             else:
                 problem = _problem(
@@ -349,7 +349,7 @@ def preview_export_station_series(
         rows.append(
             _row(
                 "store_no_series"
-                if coverage.code == "not_found"
+                if coverage.tool_code == "not_found"
                 else "store_no_station"
             )
         )
@@ -399,7 +399,7 @@ def preview_show_station_coverage(
     codes = [station["code"] for station in params.get("station", [])]
     coverage = _coverage(ctx, dataset, codes, None)
     if isinstance(coverage, ToolError):
-        if coverage.code == "not_found":
+        if coverage.tool_code == "not_found":
             return _output(
                 problems=[_problem("series_missing", ["dataset"], dataset=dataset)]
             )

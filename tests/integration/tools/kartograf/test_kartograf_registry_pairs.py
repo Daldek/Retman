@@ -75,7 +75,7 @@ def manifest_pairs(product: str) -> tuple[set[Pair], set[str], set[str]]:
             try:
                 CLIENT.validate(call)
             except ToolError as err:
-                assert err.code == "invalid_input"
+                assert err.tool_code == "invalid_input"
                 continue
             used_resolutions.add(resolution)
             if system is not None:

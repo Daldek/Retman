@@ -16,8 +16,9 @@ from retman.config import (
     init_config,
     tool_paths,
 )
-from retman.exceptions import ConfigError
+from retman.exceptions import ConfigError, RetmanError
 from retman.i18n.loader import Texts
+from retman.outcomes import report_error
 from retman.stores import hardlink_error, init_imgw_store, tool_installed
 
 _YES = ("t", "tak")
@@ -39,11 +40,13 @@ def _ask_stores_dir(texts: Texts) -> Path:
         print(texts.get("cli.error", error=texts.get("init.stores_not_absolute")))
 
 
-def _create_folders(paths: ToolPaths, texts: Texts) -> bool:
+def _create_folders(paths: ToolPaths, texts: Texts) -> int | None:
     """Create the folders the config will name and check the disk for hard links.
 
     Both stores need hard links; the IMGWTools store itself is left to the tool,
-    which creates it only in an empty folder. Returns whether all is usable.
+    which creates it only in an empty folder. Returns ``None`` when all is usable,
+    else the exit code of the error that was reported (``io_error`` for a folder
+    that cannot be made, ``store_unavailable`` for a disk without hard links).
     """
     folders = (
         paths.kartograf_store,
@@ -54,23 +57,24 @@ def _create_folders(paths: ToolPaths, texts: Texts) -> bool:
         try:
             folder.mkdir(parents=True, exist_ok=True)
         except OSError as error:
-            print(
-                texts.get("init.folder_failed", path=folder, error=error),
-                file=sys.stderr,
-            )
-            return False
+            text = texts.get("init.folder_failed", path=folder, error=error)
+            return report_error(error, text=text)
     try:
         failure = hardlink_error(paths.kartograf_store)
     except OSError as error:
         text = texts.get("init.folder_failed", path=paths.kartograf_store, error=error)
-        print(text, file=sys.stderr)
-        return False
+        return report_error(error, text=text)
     if failure is not None:
         reason = failure.strerror or str(failure)
         text = texts.get("init.no_hardlinks", path=paths.kartograf_store, reason=reason)
-        print(text, file=sys.stderr)
-        return False
-    return True
+        refused = RetmanError(
+            f"The disk of {paths.kartograf_store} does not support hard links",
+            code="store_unavailable",
+            details={"reason": "no_hardlinks", "path": str(paths.kartograf_store)},
+            hint="Choose a folder on a disk with hard links (not FAT or exFAT).",
+        )
+        return report_error(refused, text=text)
+    return None
 
 
 def _offer_imgw_store(store: Path, texts: Texts) -> int:
@@ -90,8 +94,15 @@ def _offer_imgw_store(store: Path, texts: Texts) -> int:
         print(texts.get("init.imgw_not_installed", path=store))
         return 0
     key = "imgw_not_atomic" if outcome.reason == "not_atomic" else "imgw_refused"
-    print(texts.get(f"init.{key}", path=store, detail=outcome.detail), file=sys.stderr)
-    return 1
+    text = texts.get(f"init.{key}", path=store, detail=outcome.detail)
+    refused = RetmanError(
+        f"IMGWTools refused the store {store}: {outcome.detail}",
+        code="store_unavailable",
+        details={"reason": outcome.reason or "refused", "path": str(store)},
+        hint="Choose a folder on a disk with hard links; both store_dir settings "
+        "follow it.",
+    )
+    return report_error(refused, text=text)
 
 
 def run_init(config_path: Path | None, texts: Texts) -> int:
@@ -133,8 +144,8 @@ def run_init(config_path: Path | None, texts: Texts) -> int:
         collect = input(texts.get("cli.collect_prompt")).strip().lower() in _YES
         stores_dir = _ask_stores_dir(texts)
     paths = tool_paths(stores_dir)
-    if interactive and not _create_folders(paths, texts):
-        return 1
+    if interactive and (failed := _create_folders(paths, texts)) is not None:
+        return failed
     print(init_config(target, collect_commands=collect, stores_dir=stores_dir))
     print(
         texts.get(

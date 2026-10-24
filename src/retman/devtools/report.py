@@ -7,6 +7,7 @@ from retman import __version__
 from retman.devtools.drift import Finding, ToolReport, count_problems
 from retman.exceptions import TranslationError
 from retman.i18n.loader import Texts
+from retman.outcomes import EXIT_FAILED, EXIT_OK, EXIT_PARTIAL
 
 # Document schema of ``retman-scaffold --check --json``
 JSON_SCHEMA = "retman-scaffold-check/1"
@@ -42,8 +43,19 @@ def _order(finding: Finding) -> tuple[int, str, str, str]:
 
 
 def exit_code(reports: Sequence[ToolReport]) -> int:
-    """``0`` when no finding is an error, else ``1`` (usage errors are ``2``)."""
-    return int(count_problems(reports)["error"] > 0)
+    """``0`` when no finding is an error, else ``10`` (``partial``).
+
+    ``11`` (``failed``) when every tool report holds an error (usage errors are
+    ``2``, as the registry says).
+    """
+    failing = [
+        report
+        for report in reports
+        if any(finding.severity == "error" for finding in report.findings)
+    ]
+    if not failing:
+        return EXIT_OK
+    return EXIT_FAILED if len(failing) == len(reports) else EXIT_PARTIAL
 
 
 def render_check(

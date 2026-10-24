@@ -130,6 +130,22 @@ Linki porównań na końcu pliku, od najnowszego:
 
 ### Zmienione
 
+- **Breaking: exit codes and errors follow the shared Nogat error registry** (ERR-3, ERR-4,
+  ADR-020). Exit codes: 2 is `validation_error` (wrong option, invalid settings, an answer or
+  a confirmation is needed and stdin is not a terminal), 3 is `not_found` (it was "cancelled"),
+  4 is `conflict` (it was the W-03 verdict of `retman-eval`), 15 is `unsupported` (a command
+  outside the scope; it was 1), 130 is `cancelled` (it was 3), 10 and 11 are the outcomes
+  `partial` and `failed` of `retman doctor`, `retman-eval` (W-03) and
+  `retman-scaffold --check`, 143 is SIGTERM; other failures take the code of their registry
+  code (5 model server, 14 no data, 8 store, 9 files, 1 a defect). On an error the last line
+  of stderr is the `retman-error/1` document (`code`, `title`, `message`, `hint`, `details`
+  with `reason`, `exit_code`); a cancelled call prints none. `RetmanError` carries `code`,
+  `message`, `details` and `hint`; `ToolError.code` is now the registry code and the tool's
+  own code is `ToolError.tool_code`; `ConfigError.details` is `problem_details`;
+  `OutOfScopeError.text` is the translated text (`str()` is English); a failed `Result` has
+  `failure`, the error document. `schemas/nogat/` holds the vendored registry and agent
+  schemas, `scripts/generate_errors.py` generates `src/retman/_errors.py`, and a contract test
+  compares them. Migration: scripts that test the exit status read the table in USAGE 8.
 - Operacje Kartografa nie mają wartości domyślnych: Retman dopytuje o rozdzielczość,
   układ wysokościowy i format, jeśli polecenie ich nie podaje (ADR-006).
 - `[log] diagnostic_level` dotyczy stderr, domyślnie `warning`, dopuszcza też `error`; plik
