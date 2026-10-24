@@ -24,7 +24,7 @@ _YES = ("t", "tak")
 
 
 def _ask_stores_dir(texts: Texts) -> Path:
-    """The folder that will hold both tool stores; Enter keeps the default."""
+    """Ask for the folder that will hold both tool stores; Enter keeps the default."""
     default = default_stores_dir().expanduser().resolve()
     paths = tool_paths(default)
     print(texts.get("init.stores_question", cache=paths.kartograf_cache))
@@ -40,9 +40,11 @@ def _ask_stores_dir(texts: Texts) -> Path:
 
 
 def _create_folders(paths: ToolPaths, texts: Texts) -> bool:
-    """Create the folders the config will name and check that the chosen disk has
-    hard links, which both stores need; the IMGWTools store itself is left to the
-    tool, which creates it only in an empty folder. Returns whether all is usable."""
+    """Create the folders the config will name and check the disk for hard links.
+
+    Both stores need hard links; the IMGWTools store itself is left to the tool,
+    which creates it only in an empty folder. Returns whether all is usable.
+    """
     folders = (
         paths.kartograf_store,
         paths.kartograf_cache.parent,

@@ -179,7 +179,7 @@ def tool_context(
     output_dir: Path | None = None,
     inputs: Mapping[str, Path] | None = None,
 ) -> ToolContext:
-    """A ``ToolContext`` for testing call builders, previews and checks.
+    """Build a ``ToolContext`` for testing call builders, previews and checks.
 
     Defaults to a ``FakeToolClient``, empty settings and no output folder (the
     state while planning).

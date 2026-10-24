@@ -154,7 +154,7 @@ class Retman:
         return self.config.tools.get(operation.tool, {})
 
     def _run_client(self, operation: Operation) -> RunClient:
-        """The tool's full client, built on first use from the manifest.
+        """Build the tool's full client on first use from the manifest.
 
         Only ``execute()`` and ``check()`` may hand it to tool code; planning code
         gets ``PlanView`` (see ``_plan_client``).
@@ -173,7 +173,7 @@ class Retman:
         return client
 
     def _plan_client(self, operation: Operation) -> PlanView:
-        """The offline half of the tool's client: what planning code may use (N-12)."""
+        """Return the offline half of the tool's client, usable by planning (N-12)."""
         return PlanView(self._run_client(operation))
 
     def _tool_context(
@@ -480,7 +480,7 @@ class Retman:
         *,
         answer: bool = False,
     ) -> list[Match]:
-        """Readings of the parameter's extractor, narrowed by ``accepts``."""
+        """Return the readings of the parameter's extractor, narrowed by ``accepts``."""
         context = self._extraction_context(plan, operation)
         read = read_answer if answer else read_command
         matches = read(spec["extractor"], text, context)
@@ -689,7 +689,7 @@ class Retman:
     def _extracted_choice(
         self, plan: Plan, operation: Operation, spec: ParamSpec
     ) -> Question | None:
-        """A choice read by code, never by the model (ADR-009)."""
+        """Read a choice by code, never by the model (ADR-009)."""
         values = self._extracted_values(
             read_command(
                 spec["extractor"],
@@ -936,7 +936,7 @@ class Retman:
     # --- offline review of a complete plan ----------------------------------
 
     def _review(self, plan: Plan, operation: Operation) -> Plan:
-        """The tool validates the complete plan and previews it, offline (N-12).
+        """Let the tool validate the complete plan and preview it, offline (N-12).
 
         A rejection reopens the parameters it names as questions; the plan is
         complete, and so confirmable, only when the tool accepts it.
@@ -1284,7 +1284,7 @@ class Retman:
         return value
 
     def _plan_data(self, plan: Plan) -> dict[str, Any]:
-        """What Retman understood: values with sources, open questions, decisions."""
+        """Collect what Retman understood: values with sources, questions, decisions."""
         return {
             "operation": plan.operation,
             "values": {
@@ -1369,7 +1369,7 @@ class Retman:
         return operation
 
     def check_notice(self, plan: Plan) -> str:
-        """What the availability check contacts and sends, to show before consent."""
+        """Describe what the availability check contacts and sends, before consent."""
         operation = self._checkable(plan)
         return self.texts.get("check.notice", operation=operation.text("check.notice"))
 
@@ -1438,7 +1438,7 @@ class Retman:
     # --- execution -----------------------------------------------------------
 
     def _file_record(self, operation: Operation, path: Path) -> dict[str, str]:
-        """A result file for ``result.json``: project-relative, or a tool-store file."""
+        """Describe a result file for ``result.json``: project-relative or stored."""
         try:
             entry = {"path": str(path.relative_to(self.workspace.project_dir))}
         except ValueError:

@@ -112,7 +112,7 @@ _CHMI: tuple[tuple[str, str, str, str | None], ...] = (
 
 
 def synthetic_station_items() -> list[dict[str, Any]]:
-    """The catalog's stations, as the items of a ``stations find`` document."""
+    """Return the catalog's stations as the items of a ``stations find`` document."""
     items: list[dict[str, Any]] = []
     for provider, stations in (("IMGW-PIB", _IMGW), ("CHMI", _CHMI)):
         for index, (kind, code, name, river) in enumerate(stations):
@@ -139,7 +139,7 @@ def _fold(text: str) -> str:
 
 
 def synthetic_station_document(options: Mapping[str, object]) -> ToolDocument:
-    """The ``stations find`` envelope of the catalog, narrowed like the tool does.
+    """Return the ``stations find`` envelope of the catalog, narrowed as the tool does.
 
     ``provider`` and ``kind`` filter by equality, ``query`` is a case- and
     diacritics-insensitive fragment of the name or the river.

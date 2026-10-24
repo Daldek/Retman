@@ -193,7 +193,7 @@ def read_place_query_answer(text: str) -> list[Match]:
 
 
 def validate_place_query(value: Any) -> str | None:
-    """Translation key of the problem with a place query, or None."""
+    """Return the translation key of the problem with a place query, or None."""
     if (
         not isinstance(value, dict)
         or value.get("type") != "query"
@@ -297,7 +297,7 @@ def read_synop_station_answer(text: str) -> list[Match]:
 
 
 def validate_synop_station(value: Any) -> str | None:
-    """Translation key of the problem with a synoptic station value, or None."""
+    """Return the translation key of the problem with a synoptic station, or None."""
     if not isinstance(value, dict) or value.get("type") != "synop_station":
         return "extractors.errors.invalid_synop_station"
     code, name = value.get("code"), value.get("name")

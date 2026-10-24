@@ -50,7 +50,7 @@ def _output(
 
 
 def store_rows(ctx: ToolContext) -> list[PreviewRow]:
-    """The plan row naming the store folder the operation reads or writes."""
+    """Return the plan row naming the store folder the operation reads or writes."""
     return [_row("store", path=ctx.store_dir)]
 
 
@@ -91,7 +91,7 @@ def store_problems(ctx: ToolContext, *, write: bool) -> list[PreviewProblem]:
 
 
 def _unknown_station(err: ToolError) -> bool:
-    """The tool says a station is not in the series of the dataset."""
+    """Tell whether the tool says a station is not in the series of the dataset."""
     return err.code == "validation_error" and err.option in ("station", "stations")
 
 
@@ -260,7 +260,7 @@ class _Coverage:
 def _coverage(
     ctx: ToolContext, dataset: str, codes: list[str], variables: list[str] | None
 ) -> _Coverage | ToolError:
-    """The store's coverage of stations, or the ``ToolError`` that says why not.
+    """Return the store's coverage of stations, or the ``ToolError`` that says why not.
 
     A missing series (``not_found``), a station outside it or a variable it does
     not have are answers, not failures; anything else is raised.

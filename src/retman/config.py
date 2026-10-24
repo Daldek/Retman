@@ -80,7 +80,7 @@ class Config:
 
 
 def default_config_path() -> Path:
-    """
+    r"""
     Location of the central config file for the current system.
 
     Returns
@@ -88,7 +88,7 @@ def default_config_path() -> Path:
     Path
         Linux: ``$XDG_CONFIG_HOME/retman/retman.toml`` (default ``~/.config``);
         macOS: ``~/Library/Application Support/retman/retman.toml``;
-        Windows: ``%APPDATA%\\retman\\retman.toml``.
+        Windows: ``%APPDATA%\retman\retman.toml``.
     """
     if sys.platform == "win32":
         base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
@@ -113,11 +113,11 @@ def default_log_dir() -> Path:
 
 
 def default_data_dir() -> Path:
-    """Per-user data folder of Retman for the current system.
+    r"""Per-user data folder of Retman for the current system.
 
     Linux: ``$XDG_DATA_HOME/retman`` (default ``~/.local/share/retman``);
     macOS: ``~/Library/Application Support/retman``;
-    Windows: ``%LOCALAPPDATA%\\retman``.
+    Windows: ``%LOCALAPPDATA%\retman``.
     """
     if sys.platform == "win32":
         base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
@@ -186,8 +186,11 @@ def tool_paths(stores_dir: Path | None = None) -> ToolPaths:
 
 
 def _toml_string(value: str) -> str:
-    """TOML string of ``value``: a literal one (backslashes of Windows paths stay as
-    they are), a basic one only when the text holds a quote or a control character."""
+    """Return the TOML string of ``value``.
+
+    A literal one (backslashes of Windows paths stay as they are), a basic one only
+    when the text holds a quote or a control character.
+    """
     if "'" in value or any(ord(char) < 32 for char in value):
         return json.dumps(value, ensure_ascii=False)
     return f"'{value}'"
@@ -382,8 +385,10 @@ class _Reader:
         return value
 
     def absolute_path(self, key: str) -> str | None:
-        """Absolute path without ``..``; a relative one would depend on the folder
-        Retman is started in. Returned normalised, as text."""
+        """Return an absolute path without ``..`` as normalised text.
+
+        A relative one would depend on the folder Retman is started in.
+        """
         value = self.string(key)
         if value is None:
             return None

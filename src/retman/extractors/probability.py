@@ -115,7 +115,7 @@ def _from_period(years: Decimal) -> float:
 
 
 def _q_candidates(number: Decimal) -> list[_Candidate]:
-    """Readings of ``Q<number>`` without a percent sign (ARCHITECTURE 4.4).
+    """Return the readings of ``Q<number>`` without a percent sign (ARCHITECTURE 4.4).
 
     ``Q50`` is 50 % or a 50-year period, so both are returned, percent first. Only
     one is possible for ``Q1`` (a one-year period gives p = 1, impossible: 1 %)
@@ -136,7 +136,7 @@ def _q_candidates(number: Decimal) -> list[_Candidate]:
 
 
 def _bare_candidates(number: Decimal, cue: str | None) -> list[_Candidate]:
-    """Readings of a number with no marker: always asked, even if one is impossible.
+    """Return the readings of a bare number: always asked, even if one is impossible.
 
     After ``prawdopodobieństwo`` or ``p =`` a number strictly between 0 and 1 is a
     fraction and needs no question.
@@ -150,14 +150,14 @@ def _bare_candidates(number: Decimal, cue: str | None) -> list[_Candidate]:
 
 
 def _convert(number: Decimal, marker: str) -> _Candidate:
-    """Reading of a bare number whose list ends with ``%`` or ``lat``."""
+    """Return the reading of a bare number whose list ends with ``%`` or ``lat``."""
     if marker == _PERCENT:
         return _Candidate(_from_percent(number), _PERCENT)
     return _Candidate(_from_period(number), _PERIOD)
 
 
 def _format_number(value: float) -> str:
-    """Number without exponent or trailing zeros: ``0.5``, ``1``, ``12.5``."""
+    """Format a number without exponent or trailing zeros: ``0.5``, ``1``, ``12.5``."""
     return f"{value:.9f}".rstrip("0").rstrip(".") or "0"
 
 
@@ -219,7 +219,7 @@ def _is_glue(token: Token) -> bool:
 
 
 def _coordinate_numbers(tokens: list[Token]) -> set[int]:
-    """Indices of decimal numbers that form a point in Poland (``52.23, 21.01``)."""
+    """Return the indices of decimals that form a point in Poland (``52.23, 21.01``)."""
     found: set[int] = set()
     for index, token in enumerate(tokens):
         if token.kind != "num" or not _has_fraction(token):
@@ -369,7 +369,7 @@ class _Reader:
         return None
 
     def _bare(self, first: int, index: int, cue: str | None) -> _Item | None:
-        """A number with no marker (``dla 5``), if it can be a probability at all."""
+        """Read a number with no marker (``dla 5``), if it can be a probability."""
         number = self.tokens[index].number
         if (
             not 0 < number <= 100
@@ -406,7 +406,7 @@ class _Reader:
     def _period_after(
         self, first: int, position: int, *, loose: bool, temperature: bool = False
     ) -> _Item | None:
-        """The number of years after a cue.
+        """Read the number of years after a cue.
 
         A loose cue (``raz na``, ``co``, ``dla``) needs the unit ``lat`` and a whole
         number of years above one: ``dla 1 roku`` is not a probability.
@@ -497,7 +497,7 @@ class _Reader:
         return None
 
     def _number_after_cue(self, first: int, position: int, cue: str) -> _Item | None:
-        """A percent after a cue is read at once; a bare number keeps the cue."""
+        """Read a number after a cue: a percent at once, a bare number keeps the cue."""
         if not self._is(position, "num"):
             return None
         end = self._percent_marker(position + 1)
@@ -574,7 +574,7 @@ class _Reader:
         return self._bare(index, index + 1, "dla")
 
     def _plain_number(self, index: int) -> _Item | None:
-        """A number with no cue: read as the continuation of a list or an answer."""
+        """Read a number with no cue as the continuation of a list or an answer."""
         if not self._is(index, "num"):
             return None
         return self._bare(index, index, None)
@@ -595,7 +595,7 @@ def _good_follower(tokens: list[Token], index: int) -> bool:
 
 
 def _groups(tokens: list[Token], items: list[_Item]) -> Iterator[list[_Item]]:
-    """Lists of items; a ``Q`` item in a list of bare numbers opens its own list."""
+    """Group the items into lists; a ``Q`` among bare numbers opens its own list."""
     for group in split_lists(tokens, items):
         current = [group[0]]
         for item in group[1:]:
@@ -640,7 +640,7 @@ def _licensed(group: list[_Item], index: int) -> bool:
 def _group_matches(
     tokens: list[Token], group: list[_Item], *, answer: bool
 ) -> list[Match]:
-    """Matches of one list: separate ones, or one with whole-list readings if unsure."""
+    """Return the matches of one list: separate, or whole-list readings if unsure."""
     if not answer:
         while group and not _licensed(group, 0):
             group = group[1:]
@@ -800,7 +800,7 @@ def read_probability_answer(text: str) -> list[Match]:
 
 
 def validate_probability(value: Any) -> str | None:
-    """Translation key of the problem, or ``None`` for a float with ``0 < p < 1``."""
+    """Return the translation key of the problem, or None for a float ``0 < p < 1``."""
     if isinstance(value, float) and math.isfinite(value) and 0 < value < 1:
         return None
     return "extractors.errors.invalid_probability"

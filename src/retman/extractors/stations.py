@@ -130,6 +130,7 @@ class StationIndex:
                 self._by_first_word.setdefault(entry.name_words[0], []).append(entry)
 
     def __len__(self) -> int:
+        """Return the number of stations in the catalog."""
         return len(self.entries)
 
     def by_code(self, code: str) -> StationEntry | None:
@@ -505,7 +506,7 @@ def extract_station(text: str, ctx: ExtractionContext) -> list[Match]:
 
 
 def validate_station(value: Any, ctx: ExtractionContext) -> str | None:
-    """Translation key of the problem with a station value, or None."""
+    """Return the translation key of the problem with a station value, or None."""
     if not isinstance(value, dict) or value.get("type") != "station":
         return "extractors.errors.invalid_station"
     code = value.get("code")

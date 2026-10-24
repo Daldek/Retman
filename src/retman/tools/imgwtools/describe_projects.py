@@ -37,7 +37,7 @@ def _result(run: ToolRun) -> Mapping[str, Any]:
 
 
 def _file_results(result: Mapping[str, Any]) -> dict[str, int]:
-    """The per-file outcomes of a project report, counted by status."""
+    """Count the per-file outcomes of a project report by status."""
     files = result.get("files") or ()
     return dict(
         Counter(str(item.get("status")) for item in files if isinstance(item, Mapping))
@@ -47,7 +47,7 @@ def _file_results(result: Mapping[str, Any]) -> dict[str, int]:
 def describe_project_manifest(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """The project after init, add, remove or set-store: its tasks and their pins."""
+    """Describe the project after init, add, remove or set-store: its tasks and pins."""
     output = base_output(operation, params, runs, ctx)
     project = _result(runs[0][1])
     tasks = [task for task in project.get("tasks") or () if isinstance(task, Mapping)]
@@ -67,7 +67,7 @@ def describe_project_manifest(
 def describe_download_project(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """The state of each task after the download and the outcome of each pinned file."""
+    """Describe the state of each task after the download and each pinned file."""
     output = base_output(operation, params, runs, ctx)
     result = _result(runs[0][1])
     tasks = result.get("tasks")
@@ -88,7 +88,7 @@ def describe_download_project(
 def describe_check_project(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """The plan file the tool wrote, its counts and the state of each task."""
+    """Describe the plan file the tool wrote, its counts and the state of each task."""
     output = base_output(operation, params, runs, ctx)
     call, run = runs[0]
     plan = _result(run)
@@ -114,7 +114,7 @@ def describe_check_project(
 def describe_verify_project(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """The report of ``project status`` or ``project verify`` and the state per task."""
+    """Describe the report of ``project status`` or ``project verify`` and each task."""
     output = base_output(operation, params, runs, ctx)
     call, run = runs[0]
     name = f"{call.command.replace(' ', '_')}.json"

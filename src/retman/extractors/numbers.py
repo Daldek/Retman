@@ -126,7 +126,7 @@ class Spanned(Protocol):
 
 
 def _conjunction(tokens: Sequence[Token], start: int, stop: int) -> str | None:
-    """What joins two items: the conjunction in ``tokens[start:stop]``.
+    """Return what joins two items: the conjunction in ``tokens[start:stop]``.
 
     Returns ``""`` when only commas or semicolons join them and ``None`` when
     anything else lies between (so the items are not one list).
@@ -159,11 +159,12 @@ def split_lists[S: Spanned](
     tokens: Sequence[Token], items: Iterable[S]
 ) -> Iterator[list[S]]:
     """
-    Group items into lists: items joined only by commas, semicolons and the words
-    ``i``, ``oraz``, ``lub``, ``albo`` and ``a także``.
+    Group items into lists of items joined only by commas and conjunctions.
 
-    A list has one kind of conjunction (``1, 2 i 5``, ``1 i 2 i 3``); a different one
-    starts a new list, so ``dla 1, 2 i 5 oraz 15 min`` is two lists.
+    The joiners are commas, semicolons and the words ``i``, ``oraz``, ``lub``,
+    ``albo`` and ``a także``. A list has one kind of conjunction (``1, 2 i 5``,
+    ``1 i 2 i 3``); a different one starts a new list, so
+    ``dla 1, 2 i 5 oraz 15 min`` is two lists.
     """
     group: list[S] = []
     conjunction = ""
@@ -505,7 +506,7 @@ def _exact_compound(word: str, endings: tuple[str, ...]) -> int | None:
 @lru_cache(maxsize=4096)
 def compound_adjective(word: str, endings: tuple[str, ...]) -> int | None:
     """
-    Number named by a compound adjective such as ``pięćdziesięcioletnia``.
+    Return the number named by a compound adjective, e.g. ``pięćdziesięcioletnia``.
 
     The word is the numeral's combining form and one of ``endings``; one typo is
     tolerated. A bare ending without a numeral (``letni`` = summer) never counts.
@@ -714,7 +715,7 @@ def _number_with_unit(tokens: Sequence[Token], index: int) -> _Item | None:
 
 
 def _word_duration(tokens: Sequence[Token], index: int) -> _Item | None:
-    """Durations that need no number: ``godzinny``, ``półgodzinny``, ``kwadrans`` …"""
+    """Read durations that need no number (``godzinny``, ``kwadrans``, ...)."""
     word = tokens[index].text
     fused = _fused_minutes(word)
     if fused is not None:
@@ -837,7 +838,7 @@ def read_duration_answer(text: str) -> list[Match]:
 
 
 def validate_duration(value: Any) -> str | None:
-    """Translation key of the problem, or ``None`` for a whole number of minutes ≥ 1."""
+    """Return the translation key of the problem, or ``None`` for whole minutes ≥ 1."""
     if type(value) is int and value >= 1:
         return None
     return "extractors.errors.invalid_duration"

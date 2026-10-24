@@ -19,11 +19,14 @@ class Ratio:
 
     @property
     def fraction(self) -> float | None:
+        """Count over total, or ``None`` when there is nothing to count."""
         return self.count / self.total if self.total else None
 
 
 @dataclass(frozen=True)
 class Timing:
+    """Median, 90th percentile and maximum of a series of measurements."""
+
     median: float
     p90: float
     maximum: float
@@ -31,6 +34,8 @@ class Timing:
 
 @dataclass(frozen=True)
 class ErrorCase:
+    """One wrong decision of a run: the command, the field, expected and actual."""
+
     id: str
     repeat: int
     command: str
@@ -41,6 +46,8 @@ class ErrorCase:
 
 @dataclass(frozen=True)
 class ThresholdPoint:
+    """One point of the threshold curve: error and coverage at a threshold."""
+
     threshold: float
     error: Ratio
     coverage: Ratio
@@ -48,6 +55,8 @@ class ThresholdPoint:
 
 @dataclass(frozen=True)
 class Recommendation:
+    """The recommended threshold, or why the sample is too small for one."""
+
     point: ThresholdPoint | None
     insufficient: bool
     minimum_sample: int
@@ -82,6 +91,8 @@ class Measures:
 
 @dataclass
 class EvaluationSummary:
+    """All measures of an evaluation: overall, per operation, per tag, curves."""
+
     overall: Measures
     by_operation: dict[str, Measures]
     by_tag: dict[str, Measures]
@@ -108,8 +119,8 @@ def _timing(values: list[float]) -> Timing | None:
 def _correct_key(decision: dict[str, Any], expected: Any) -> bool:
     key = decision["key"]
     if isinstance(expected, bool):
-        return key == ("yes" if expected else "no")
-    return key == expected
+        return bool(key == ("yes" if expected else "no"))
+    return bool(key == expected)
 
 
 def _issue(record: EvalRecord, field: str, expected: Any, actual: Any) -> ErrorCase:

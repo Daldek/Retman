@@ -83,7 +83,7 @@ class IMGWToolsClient:
             raise RetmanError(f"[tools.{TOOL}] has no store_dir") from None
 
     def _options(self, call: CatalogCall) -> dict[str, object]:
-        """The call's options plus ``root`` where the command reads a store.
+        """Return the call's options plus ``root`` where the command reads a store.
 
         ``stations find`` takes a root only for ``source="store"`` and refuses it
         for the live source; the catalog names such conditions in ``env_root_when``.
@@ -102,7 +102,7 @@ class IMGWToolsClient:
         return options
 
     def _task_option(self, err: Exception) -> str | None:
-        """The path ``options.<name>`` of the task option a rejection concerns.
+        """Return the path ``options.<name>`` of the task option a rejection concerns.
 
         ``project add`` carries the options of another command in ``options``. The
         tool re-raises a rejection of that command with ``option`` replaced by
@@ -121,7 +121,7 @@ class IMGWToolsClient:
         return None
 
     def _error(self, err: Exception, call: CatalogCall) -> ToolError:
-        """A ``ToolError`` for an exception of the tool, with the tool's own code."""
+        """Build a ``ToolError`` for an exception of the tool, with the tool's code."""
         if isinstance(err, OSError):
             detail, details = self._exceptions.describe_os_error(err)
             return ToolError(TOOL, "io_error", detail, details=details, call=call)
@@ -148,7 +148,7 @@ class IMGWToolsClient:
         )
 
     def _normalize(self, call: CatalogCall) -> dict[str, object]:
-        """The tool's validation of the call; its options in the tool's own form."""
+        """Validate the call with the tool; return its options in the tool's form."""
         try:
             return cast(
                 dict[str, object],
@@ -167,11 +167,11 @@ class IMGWToolsClient:
     # --- offline half (PlanClient) ------------------------------------------
 
     def validate(self, call: CatalogCall) -> None:
-        """The tool's own offline validation of the call; raises ``ToolError``."""
+        """Validate the call with the tool's own offline check; raise ``ToolError``."""
         self._normalize(call)
 
     def command_line(self, call: CatalogCall) -> str:
-        """The call as the tool's command line, ``--root`` included."""
+        """Return the call as the tool's command line, ``--root`` included."""
         try:
             return cast(
                 str,
@@ -181,7 +181,7 @@ class IMGWToolsClient:
             raise self._error(err, call) from err
 
     def lookup(self, call: CatalogCall) -> ToolDocument:
-        """The document of a command that neither uses the network nor writes.
+        """Return the document of a command that neither uses the network nor writes.
 
         Besides the catalog commands marked so, ``stations find`` is offline when
         it reads the store (``source="store"``). Anything else raises
@@ -212,7 +212,7 @@ class IMGWToolsClient:
         return self._execute(call)
 
     def check(self, call: CatalogCall) -> ToolDocument:
-        """The tool's freshness plan of the call (``check_command``); a network step."""
+        """Return the tool's freshness plan of the call (``check_command``); network."""
         options = self._normalize(call)
         try:
             result = self._imgw.check_command(call.command, options=options)
@@ -221,7 +221,7 @@ class IMGWToolsClient:
         return self._document(result, options)
 
     def query(self, call: CatalogCall) -> ToolDocument:
-        """A read-only command outside ``run``; commands that write are refused."""
+        """Run a read-only command outside ``run``; commands that write are refused."""
         spec = self._commands.get(call.command)
         if spec is None or spec.writes != "none" or spec.result == "stream":
             raise ToolError(TOOL, "not_read_only", f"{call.command} may write")
@@ -266,7 +266,7 @@ class IMGWToolsClient:
     def _files(
         command: str, options: Mapping[str, object], document: ToolDocument
     ) -> tuple[ToolFile, ...]:
-        """The files the tool itself wrote: an export, a plan, downloaded archives."""
+        """Return the files the tool itself wrote: an export, a plan, archives."""
         result = document.get("result")
         if command in _FILE_COMMANDS:
             target = result if isinstance(result, str) else options.get("path")
@@ -323,5 +323,5 @@ class IMGWToolsClient:
 
 
 def create_client(settings: Mapping[str, Any]) -> IMGWToolsClient:
-    """The manifest's ``client`` factory: once per Retman, no network, no writes."""
+    """Create the manifest's ``client``: once per Retman, no network, no writes."""
     return IMGWToolsClient(settings)

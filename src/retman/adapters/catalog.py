@@ -158,15 +158,15 @@ class PlanClient(Protocol):
     """
 
     def validate(self, call: CatalogCall) -> None:
-        """The tool's own offline validation; raises ``ToolError``."""
+        """Validate ``call`` with the tool's own offline check; raise ``ToolError``."""
         ...
 
     def command_line(self, call: CatalogCall) -> str:
-        """The exact command line of ``call`` (offline), for the audit."""
+        """Return the exact command line of ``call`` (offline), for the audit."""
         ...
 
     def lookup(self, call: CatalogCall) -> ToolDocument:
-        """An effects-free catalog command (no network, no writes).
+        """Run an effects-free catalog command (no network, no writes).
 
         Raises ``ToolError("not_offline")`` for any other command.
         """
@@ -181,11 +181,11 @@ class RunClient(PlanClient, Protocol):
         ...
 
     def check(self, call: CatalogCall) -> ToolDocument:
-        """The tool's freshness plan for ``call``; a network step."""
+        """Return the tool's freshness plan for ``call``; a network step."""
         ...
 
     def query(self, call: CatalogCall) -> ToolDocument:
-        """A read-only network query outside run/check/validate."""
+        """Run a read-only network query outside run/check/validate."""
         ...
 
 
@@ -227,27 +227,27 @@ class NoClient:
         )
 
     def validate(self, call: CatalogCall) -> None:
-        """Always fails."""
+        """Fail with ``RetmanError``: the tool declares no command client."""
         self._fail(call)
 
     def command_line(self, call: CatalogCall) -> str:
-        """Always fails."""
+        """Fail with ``RetmanError``: the tool declares no command client."""
         return cast(str, self._fail(call))
 
     def lookup(self, call: CatalogCall) -> ToolDocument:
-        """Always fails."""
+        """Fail with ``RetmanError``: the tool declares no command client."""
         return cast(ToolDocument, self._fail(call))
 
     def run(self, call: CatalogCall) -> ToolRun:
-        """Always fails."""
+        """Fail with ``RetmanError``: the tool declares no command client."""
         return cast(ToolRun, self._fail(call))
 
     def check(self, call: CatalogCall) -> ToolDocument:
-        """Always fails."""
+        """Fail with ``RetmanError``: the tool declares no command client."""
         return cast(ToolDocument, self._fail(call))
 
     def query(self, call: CatalogCall) -> ToolDocument:
-        """Always fails."""
+        """Fail with ``RetmanError``: the tool declares no command client."""
         return cast(ToolDocument, self._fail(call))
 
 
@@ -292,11 +292,11 @@ class ToolContext:
         return cast(RunClient, client)
 
     def tool_value(self, param: str, key: str) -> str:
-        """The tool's own value of an option key (manifest ``tool_values``)."""
+        """Return the tool's own value of an option key (manifest ``tool_values``)."""
         return self.specs[param].get("tool_values", {}).get(key, key)
 
     def option_meta(self, param: str, key: str) -> Mapping[str, Any]:
-        """The opaque per-option data of the manifest (``{}`` if none)."""
+        """Return the opaque per-option data of the manifest (``{}`` if none)."""
         return self.specs[param].get("option_meta", {}).get(key, {})
 
 
@@ -442,7 +442,7 @@ def default_describe(
     runs: Sequence[tuple[CatalogCall, ToolRun]],
     ctx: ToolContext,
 ) -> HandlerOutput:
-    """The generic mapping of runs to a result: files by ``call.kind``, warnings.
+    """Map the runs to a result: files by ``call.kind``, warnings.
 
     A tool's ``describe`` function usually starts from this and adds ``values``.
     """

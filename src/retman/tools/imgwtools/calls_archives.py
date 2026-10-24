@@ -27,14 +27,14 @@ _STORE_ROUTES = {"datasets": "dataset"}
 
 
 def selected_years(value: Mapping[str, Any]) -> list[int]:
-    """The archive years a ``years`` or ``year_list`` value names, ascending."""
+    """Return the archive years a ``years`` or ``year_list`` value names, ascending."""
     if value["type"] == "years":
         return list(range(value["first"], value["last"] + 1))
     return [int(year) for year in value["years"]]
 
 
 def years_text(value: Mapping[str, Any]) -> str:
-    """The years of a ``years`` or ``year_list`` value for a plan row: ``2000–2020``."""
+    """Render ``years``/``year_list`` values for a plan row: ``2000–2020``."""
     if value["type"] == "years":
         first, last = value["first"], value["last"]
         return str(first) if first == last else f"{first}–{last}"
@@ -58,7 +58,7 @@ def _selection(params: Mapping[str, Any], ctx: ToolContext) -> dict[str, object]
 
 
 def _store_selection(params: Mapping[str, Any], ctx: ToolContext) -> dict[str, object]:
-    """The selection of ``store check`` and ``store sync``: ``datasets`` is a list."""
+    """Return the selection of ``store check`` and ``store sync``."""
     options = _selection(params, ctx)
     dataset = options.pop("dataset")
     return {"datasets": [dataset], **options}
@@ -76,7 +76,7 @@ def _download_selection(
 
 
 def archive_files_call(params: Mapping[str, Any], ctx: ToolContext) -> CatalogCall:
-    """The offline listing of the archive files a download or sync selection names."""
+    """Build the offline listing of the archive files a selection names."""
     return CatalogCall(
         "datasets files", _download_selection(params, ctx), params=_DOWNLOAD_ROUTES
     )
@@ -183,7 +183,7 @@ def _signal_time(meta: Mapping[str, Any]) -> datetime:
 def current_archive_versions(
     items: Iterable[Mapping[str, Any]], dataset: str, years: Collection[int] | None
 ) -> list[StoredArchive]:
-    """The current version of every stored archive of ``dataset`` and ``years``.
+    """Return the current version of every stored archive of ``dataset`` and ``years``.
 
     ``items`` are the entries of ``store scan``. The tool's own order decides which
     version of a slot is current (``current_version``): newest ``Last-Modified``,
@@ -216,7 +216,7 @@ def current_archive_versions(
 
 
 def stored_archives(params: Mapping[str, Any], ctx: ToolContext) -> list[StoredArchive]:
-    """The archives of the selection that the store holds (offline ``store scan``)."""
+    """Return the archives of the selection that the store holds (``store scan``)."""
     provider = ctx.option_meta("dataset", params["dataset"])["provider"]
     years = set(selected_years(params["years"])) if "years" in params else None
     document = ctx.client.lookup(

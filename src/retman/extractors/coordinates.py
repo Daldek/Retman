@@ -540,9 +540,11 @@ def _orders(
     *,
     projected: bool,
 ) -> tuple[list[tuple[_Number, _Number, bool]], bool]:
-    """Candidates ``(north, east, north_first)`` of a pair and whether labels
-    decided the order; none when the labels contradict each other or a pair
-    without a marker is not made of decimals."""
+    """Return the candidates ``(north, east, north_first)`` of a pair.
+
+    The second item says whether labels decided the order; there are none when the
+    labels contradict each other or a pair without a marker is not made of decimals.
+    """
     group_first, ok_first = _group(tags[0], projected=projected)
     group_second, ok_second = _group(tags[1], projected=projected)
     if not (ok_first and ok_second) or (group_first and group_first == group_second):
@@ -611,7 +613,7 @@ def _projected(
 def _pair(
     ctx: _Context, numbers: list[_Number], index: int, used: set[int]
 ) -> Match | None:
-    """The point two neighbouring numbers make, with the letters and labels."""
+    """Build the point two neighbouring numbers make, with the letters and labels."""
     first, second = numbers[index], numbers[index + 1]
     lead_first = _lead(ctx, first, numbers[index - 1].end if index else 0)
     lead_second = _lead(ctx, second, first.end)
@@ -749,7 +751,7 @@ def _is_number(value: Any) -> TypeGuard[float]:
 
 
 def validate_point(value: Any) -> str | None:
-    """Translation key of the problem with a point value, or None if it is usable.
+    """Return the translation key of the problem with a point value, or None.
 
     Structure and consistency first (``extractors.errors.invalid_point``: type,
     finite numbers, WGS84 or PL-1992 with matching easting/northing), the PMAXTP
@@ -967,7 +969,7 @@ def read_grid_cell_answer(text: str) -> list[Match]:
 
 
 def validate_grid_cell(value: Any) -> str | None:
-    """Translation key of the problem with a grid cell value, or None if usable."""
+    """Return the translation key of the problem with a grid cell value, or None."""
     if (
         isinstance(value, dict)
         and value.get("type") == "grid_cell"

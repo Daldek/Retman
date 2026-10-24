@@ -99,7 +99,7 @@ def _parser(texts: Texts) -> _Parser:
 
 
 def _value(text: str) -> object:
-    """``true``, ``4`` and ``"x"`` as JSON, anything else as the text it is."""
+    """Parse ``true``, ``4`` and ``"x"`` as JSON, anything else as the text it is."""
     try:
         return json.loads(text)
     except ValueError:

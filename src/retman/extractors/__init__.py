@@ -82,7 +82,7 @@ ContextReader = Callable[[str, ExtractionContext], list[Match]]
 
 
 def _ignoring_context(reader: Reader) -> ContextReader:
-    """A text-only reader as a context-aware one (its validator needs ``today``)."""
+    """Wrap a text-only reader as a context-aware one (its validator needs today)."""
 
     def read(text: str, ctx: ExtractionContext) -> list[Match]:
         return reader(text)
@@ -198,7 +198,7 @@ def read_answer(name: str, text: str, ctx: ExtractionContext) -> list[Match]:
 
 
 def validate_value(name: str, value: Any, ctx: ExtractionContext) -> str | None:
-    """Translation key of the problem with ``value``, or None if it is valid."""
+    """Return the translation key of the problem with ``value``, or None if valid."""
     if name in CONTEXT_VALIDATORS:
         return CONTEXT_VALIDATORS[name](value, ctx)
     return VALIDATORS[name](value)

@@ -142,7 +142,7 @@ def download_elevation_cutout(
 
 
 def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
-    """The current BDOT10k package of every county an area touches."""
+    """Build the call for the current BDOT10k package of each county in an area."""
     area_options, routing = _area(params["area"])
     options: dict[str, object] = {
         "product": "bdot10k",

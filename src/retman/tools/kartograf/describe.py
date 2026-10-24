@@ -46,7 +46,7 @@ def _bytes(paths: Iterable[Path]) -> int:
 
 
 def data_dates(labels: Iterable[str | None]) -> list[str]:
-    """The dates the data of the files with these version labels are from."""
+    """Return the dates the data of the files with these version labels are from."""
     return sorted(
         {
             found.group(1)
@@ -115,7 +115,7 @@ def download_sheet_hierarchy(
 
 
 def _sidecar_extra(path: Path, ctx: ToolContext) -> dict[str, Any]:
-    """What Kartograf wrote next to a store file (``extra`` of ``kartograf-meta/1``).
+    """Read what Kartograf wrote beside a store file (``extra`` of the sidecar).
 
     The facts are a bonus, not the result: an unreadable sidecar gives none.
     """
@@ -129,7 +129,7 @@ def _sidecar_extra(path: Path, ctx: ToolContext) -> dict[str, Any]:
 def download_elevation_cutout(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """The cutout file and what its sidecar says about the land mask.
+    """Describe the cutout file and what its sidecar says about the land mask.
 
     ``kartograf-download/1`` has no ``masked_pixels``; the mask facts are in the
     sidecar of the file, which is read through the client.

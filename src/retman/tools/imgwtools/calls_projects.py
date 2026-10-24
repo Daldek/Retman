@@ -40,12 +40,12 @@ def _project(ctx: ToolContext) -> dict[str, object]:
 
 
 def _tasks(params: Mapping[str, Any]) -> dict[str, object]:
-    """The ``tasks`` option when the user named tasks; unset means every task."""
+    """Return the ``tasks`` option when the user named tasks; unset means every task."""
     return {"tasks": list(params["tasks"])} if "tasks" in params else {}
 
 
 def project_relative(value: str, project_dir: Path) -> str:
-    """A path inside the project folder as the tool wants it: relative, POSIX.
+    """Return a path inside the project folder as the tool wants it: relative, POSIX.
 
     A path outside the folder is returned as typed: the preview refuses it and the
     tool would too, so it is never run.
@@ -70,7 +70,7 @@ def init_imgw_project(params: dict[str, Any], ctx: ToolContext) -> list[CatalogC
 
 
 def _series_task(params: Mapping[str, Any], ctx: ToolContext) -> dict[str, object]:
-    """The options of a ``series select`` task: whole years in a year type.
+    """Return the options of a ``series select`` task: whole years in a year type.
 
     A semi-annual series exists only in hydrological years, which the manifest does
     not ask for; the dataset's own numbering is then the year type.

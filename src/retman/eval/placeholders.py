@@ -44,7 +44,7 @@ _LAYER = "obszar"
 
 
 def _shape_header(length_bytes: int) -> bytes:
-    """The 100-byte header of a ``.shp`` or ``.shx`` file with one polygon."""
+    """Build the 100-byte header of a ``.shp`` or ``.shx`` file with one polygon."""
     # file code, five unused words, length in 16-bit words (big endian) ...
     first = struct.pack(">7i", 9994, 0, 0, 0, 0, 0, length_bytes // 2)
     # ... version, shape type, the box and the unused Z and M ranges (little endian)

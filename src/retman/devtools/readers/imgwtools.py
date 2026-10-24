@@ -19,7 +19,7 @@ KNOWN_SCHEMAS = ("imgw-result/1", "imgw-plan/1")
 
 
 def _enum(prop: Mapping[str, Any]) -> tuple[str, ...] | None:
-    """The enumerated values of a JSON-Schema property (or of its array items)."""
+    """Return the enumerated values of a JSON-Schema property or its array items."""
     values = prop.get("enum")
     if values is None and isinstance(prop.get("items"), dict):
         values = prop["items"].get("enum")
@@ -27,7 +27,7 @@ def _enum(prop: Mapping[str, Any]) -> tuple[str, ...] | None:
 
 
 def _kind(prop: Mapping[str, Any]) -> str:
-    """The tool's type label: ``path`` for ``x-imgw-type``, else the schema type."""
+    """Return the tool's type label: ``path`` for ``x-imgw-type``, else the type."""
     if "x-imgw-type" in prop:
         return str(prop["x-imgw-type"])
     if prop.get("format") == "date":

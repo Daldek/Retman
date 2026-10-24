@@ -128,17 +128,17 @@ _MEASUREMENT: Final = re.compile(r"^\S+ \[[^\]]+\]$")
 
 
 def utc_now() -> datetime:
-    """The current time in UTC (replaced by tests)."""
+    """Return the current time in UTC (replaced by tests)."""
     return datetime.now(UTC)
 
 
 def utc_stamp() -> str:
-    """The current UTC time as a file-name part, e.g. ``20261019T120000Z``."""
+    """Return the current UTC time as a file-name part, e.g. ``20261019T120000Z``."""
     return utc_now().strftime("%Y%m%dT%H%M%SZ")
 
 
 def slug(text: str) -> str:
-    """An ASCII file-name part: ``"Poznań-Ławica"`` becomes ``"poznan_lawica"``."""
+    """Turn text into an ASCII file-name part, e.g. ``poznan_lawica``."""
     folded = unicodedata.normalize(
         "NFKD", text.casefold().replace("ł", "l").replace("ø", "o")
     )
@@ -147,7 +147,7 @@ def slug(text: str) -> str:
 
 
 def output_dir(ctx: ToolContext) -> Path:
-    """The result folder of the running operation (``None`` only while planning)."""
+    """Return the result folder of the running operation (``None`` when planning)."""
     if ctx.output_dir is None:
         raise RetmanError("a result is described only while the operation runs")
     return ctx.output_dir
@@ -185,24 +185,24 @@ def csv_write(
 
 
 def result_of(run: ToolRun) -> Any:
-    """The ``result`` of a run's ``imgw-result/1`` document."""
+    """Return the ``result`` of a run's ``imgw-result/1`` document."""
     return run.document.get("result")
 
 
 def document_items(document: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """The items of a list command's document (a ``Page``); empty if there are none."""
+    """Return the items of a list command's document (a ``Page``); empty if none."""
     result = document.get("result")
     items = result.get("items") if isinstance(result, dict) else None
     return [item for item in items if isinstance(item, dict)] if items else []
 
 
 def items_of(run: ToolRun) -> list[dict[str, Any]]:
-    """The items of a list command's result (``Page``); empty if there are none."""
+    """Return the items of a list command's result (``Page``); empty if none."""
     return document_items(run.document)
 
 
 def run_of(runs: Runs, command: str) -> ToolRun:
-    """The first run of ``command``; the builders always include the ones they need."""
+    """Return the first run of ``command``; builders always include the ones needed."""
     for call, run in runs:
         if call.command == command:
             return run
@@ -217,7 +217,7 @@ def table_rows(
 
 
 def license_notice(provider: Mapping[str, Any]) -> str:
-    """The provider's licence text as the tool words it in its own notices.
+    """Return the provider's licence text as the tool words it in its own notices.
 
     ``provider`` is an item of ``datasets providers``: the attribution, the
     note on processing and the terms of use, joined as in ``license_terms``.
@@ -286,7 +286,7 @@ def base_output(
     *,
     licenses: Sequence[str] = (),
 ) -> HandlerOutput:
-    """The generic mapping of runs to a result, with the licence terms.
+    """Map the runs to a result generically, with the licence terms.
 
     Files are the runs' files by the call's ``kind``. Warnings: the tool's
     warning notices, a partial run (how many units failed of how many, the first
@@ -483,13 +483,13 @@ def describe_fetch_hydro_states(
 
 
 def _number(text: str) -> int | float:
-    """A key of the PMAXTP table (``"15"``, ``"0.5"``) as a number."""
+    """Read a key of the PMAXTP table (``"15"``, ``"0.5"``) as a number."""
     value = float(text)
     return int(value) if value.is_integer() else value
 
 
 def pmaxtp_rows(data: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """The rows of a PMAXTP table: duration × probability, with ks, sg and rb.
+    """Return the rows of a PMAXTP table: duration × probability, with ks, sg and rb.
 
     ``data`` is the ``data`` part of the tool's result: ``ks``, ``sg`` and ``rb``
     are ``{duration: {probability: value}}`` with plain numbers as text keys.
@@ -555,7 +555,7 @@ def _describe_pmaxtp(
     ctx: ToolContext,
     command: str,
 ) -> HandlerOutput:
-    """The PMAXTP table of ``command`` as CSV, narrowed by probability and duration."""
+    """Render the PMAXTP table of ``command`` as CSV, by probability and duration."""
     result = result_of(run_of(runs, command))
     stored = command == "pmaxtp sync"
     data = result["result"] if stored else result

@@ -63,6 +63,7 @@ class OfflineGuard:
         raise OSError(f"network access is refused during an offline check: {text}")
 
     def __enter__(self) -> "OfflineGuard":
+        """Refuse network access and enter the scratch folder, if one is given."""
         if self._cwd is not None:
             self._previous_cwd = os.getcwd()
             os.chdir(self._cwd)
@@ -101,6 +102,7 @@ class OfflineGuard:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        """Restore network access and the folder; list what appeared below ``watch``."""
         self._stack.close()
         if self._watch is not None:
             self.created = sorted(

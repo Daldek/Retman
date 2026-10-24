@@ -35,8 +35,11 @@ Outcome = Literal["ok", "existing", "tool_missing", "refused"]
 
 @dataclass(frozen=True)
 class ImgwStore:
-    """What a configured IMGWTools store folder holds; ``detail`` is the schema
-    named by the marker (``ready`` and ``unsupported``) and empty otherwise."""
+    """What a configured IMGWTools store folder holds.
+
+    ``detail`` is the schema named by the marker (``ready`` and ``unsupported``) and
+    empty otherwise.
+    """
 
     state: ImgwStoreState
     detail: str = ""
@@ -71,14 +74,14 @@ def tool_installed(package: str) -> bool:
 
 
 def nearest_existing(path: Path) -> Path:
-    """The path itself or its closest ancestor that exists."""
+    """Return the path itself or its closest ancestor that exists."""
     while not path.exists() and path != path.parent:
         path = path.parent
     return path
 
 
 def symlink_component(path: Path) -> Path | None:
-    """The path itself or the closest ancestor that is a symbolic link, if any."""
+    """Return the path or its closest ancestor that is a symbolic link, if any."""
     absolute = path.absolute()
     for part in (absolute, *absolute.parents):
         if part.is_symlink():

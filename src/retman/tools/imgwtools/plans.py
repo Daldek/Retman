@@ -23,7 +23,7 @@ _UNITS: Final = ("B", "kB", "MB", "GB", "TB")
 
 
 def format_bytes(size: int) -> str:
-    """A size with a decimal unit and one decimal place: ``320.5 MB``."""
+    """Format a size with a decimal unit and one decimal place: ``320.5 MB``."""
     value = float(size)
     unit = 0
     while value >= 1000 and unit < len(_UNITS) - 1:
@@ -33,13 +33,13 @@ def format_bytes(size: int) -> str:
 
 
 def plan_items(plan: Mapping[str, Any]) -> list[Mapping[str, Any]]:
-    """The items of an ``imgw-plan/1`` document (objects only)."""
+    """Return the items of an ``imgw-plan/1`` document (objects only)."""
     items = plan.get("items")
     return [item for item in items if isinstance(item, Mapping)] if items else []
 
 
 def plan_summary(plan: Mapping[str, Any]) -> dict[str, Any]:
-    """Counts of a plan: items by status, what a sync would download and its size.
+    """Count a plan: items by status, what a sync would download and its size.
 
     ``bytes_to_download`` adds up the sizes the server reports for the ``newer`` and
     ``missing`` items; ``size_unknown`` counts those that report none. An item the
@@ -76,7 +76,7 @@ def plan_summary(plan: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def plan_check_output(plan: Mapping[str, Any]) -> CheckOutput:
-    """The availability report of a freshness plan of an archive selection.
+    """Build the availability report of a freshness plan of an archive selection.
 
     ``available``: every file is on the server and can be served; ``partial``: some
     are not published, cannot be compared or could not be checked; ``unavailable``:

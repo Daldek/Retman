@@ -73,7 +73,7 @@ class DecisionBackend(Protocol):
         ...
 
     def yes_no(self, state: str, question: str) -> Decision:
-        """A yes/no question; ``Decision.key`` is ``"yes"`` or ``"no"``."""
+        """Ask a yes/no question; ``Decision.key`` is ``"yes"`` or ``"no"``."""
         ...
 
 

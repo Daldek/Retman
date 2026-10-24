@@ -14,7 +14,7 @@ _SEVERITY_ORDER = {"error": 0, "warning": 1, "info": 2}
 
 
 def finding_text(finding: Finding, texts: Texts) -> str:
-    """The Polish text of a finding from ``[scaffold.finding]``.
+    """Return the Polish text of a finding from ``[scaffold.finding]``.
 
     A finding whose text is missing or does not fit its arguments is shown by its
     key and arguments, so that nothing is hidden; the tests keep every key
@@ -49,7 +49,7 @@ def exit_code(reports: Sequence[ToolReport]) -> int:
 def render_check(
     reports: Sequence[ToolReport], texts: Texts, *, verbose: bool = False
 ) -> str:
-    """The report for the terminal: one block per tool, then the summary.
+    """Render the report for the terminal: one block per tool, then the summary.
 
     Information lines are counted and shown only with ``verbose``.
     """
@@ -95,7 +95,7 @@ def render_check(
 
 
 def check_json(reports: Sequence[ToolReport], texts: Texts) -> str:
-    """The same report as a JSON document (``retman-scaffold-check/1``)."""
+    """Render the same report as a JSON document (``retman-scaffold-check/1``)."""
     document = {
         "schema": JSON_SCHEMA,
         "retman": __version__,

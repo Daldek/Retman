@@ -86,3 +86,10 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 | Komponenty w wersjach, otwarte kwestie techniczne | ARCHITECTURE 11–12 |
 | Decyzje i ich erraty (indeks na początku pliku) | `docs/DECISIONS.md` |
 | Historia zmian per wydanie | `docs/CHANGELOG.md` |
+
+## Odstępstwa od standardu Nogat 2.1 (Deviations)
+
+- **DEV-7.3** — mypy działa w trybie `strict` na `src/` i `tests/`; 36 modułów testowych
+  (lista w `[[tool.mypy.overrides]]` w `pyproject.toml`) nie ma adnotacji pomocników i fixtur
+  (`disallow_untyped_defs` i pokrewne wyłączone). Nowy moduł testowy jest ścisły; moduł
+  schodzi z listy, gdy dostanie adnotacje.

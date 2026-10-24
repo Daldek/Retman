@@ -52,15 +52,15 @@ class OfflineImgwClient:
         self._real = real
 
     def validate(self, call: CatalogCall) -> None:
-        """The real tool's validation (offline)."""
+        """Validate ``call`` with the real tool (offline)."""
         self._real.validate(call)
 
     def command_line(self, call: CatalogCall) -> str:
-        """The real tool's command line (offline)."""
+        """Return the real tool's command line (offline)."""
         return self._real.command_line(call)
 
     def lookup(self, call: CatalogCall) -> ToolDocument:
-        """A fixed answer for the store, the real tool's for pure commands."""
+        """Answer with a fixed document for the store, the tool's for pure commands."""
         options = call.options
         if call.command == "stations find" and options.get("source") == "store":
             return synthetic_station_document(options)

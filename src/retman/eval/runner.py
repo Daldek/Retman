@@ -49,10 +49,12 @@ class CountingBackend:
 
     @property
     def url(self) -> str:
+        """Address of the server of the wrapped backend."""
         return self.backend.url
 
     @property
     def model(self) -> str:
+        """Name of the model of the wrapped backend."""
         return self.backend.model
 
     def _count(self, result: Decision) -> None:
@@ -65,6 +67,7 @@ class CountingBackend:
             self.queries += 1
 
     def choose(self, state: str, question: str, options: dict[str, str]) -> Decision:
+        """Delegate the choice to the backend and count the query."""
         result = self.backend.choose(state, question, options)
         self._count(result)
         if self.first_decision is None:
@@ -72,6 +75,7 @@ class CountingBackend:
         return result
 
     def yes_no(self, state: str, question: str) -> Decision:
+        """Delegate the yes/no question to the backend and count the query."""
         result = self.backend.yes_no(state, question)
         self._count(result)
         return result

@@ -30,7 +30,7 @@ def _task_name() -> ParamSpec:
 
 
 def _tasks() -> ParamSpec:
-    """The tasks an operation works on; omitted, every task of the project."""
+    """Build the ``tasks`` parameter: the tasks to work on; omitted, every task."""
     return {
         "name": "tasks",
         "type": "free",

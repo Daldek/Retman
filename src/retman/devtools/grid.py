@@ -43,7 +43,7 @@ def _enumerable(spec: ParamSpec) -> bool:
 
 
 def _domain(spec: ParamSpec) -> list[Any]:
-    """The values a choice or yes/no parameter takes; ``_ABSENT`` if it may stay unset.
+    """Return the values a choice or yes/no parameter takes; ``_ABSENT`` if optional.
 
     A parameter that is neither required nor has a default is left unset when the
     command does not state it (optional parameters are never asked).
@@ -188,7 +188,7 @@ def _has_geometry(value: Any) -> bool:
 
 
 def _shape(value: Any) -> Any:
-    """What kind of value this is, not its particulars: ``7.171.21`` is ``9.9.9``."""
+    """Reduce a value to its kind, not its particulars: ``7.171.21`` is ``9.9.9``."""
     if isinstance(value, bool):
         return "bool"
     if isinstance(value, int | float):
@@ -267,7 +267,7 @@ def points(
     *,
     reduced: bool = False,
 ) -> tuple[list[dict[str, Any]], bool]:
-    """The complete parameter sets of the operation: choices times free samples.
+    """Return the complete parameter sets of the operation: choices times free samples.
 
     Returns
     -------
@@ -296,7 +296,7 @@ def points(
 
 
 def _describe_free(value: Any) -> str:
-    """A free value in a line: its type and, if it has one, its code or path."""
+    """Describe a free value in a line: its type and its code or path, if any."""
     if isinstance(value, dict):
         detail = value.get("code") or value.get("path")
         return f"{value.get('type')}:{detail}" if detail else str(value.get("type"))
@@ -304,7 +304,7 @@ def _describe_free(value: Any) -> str:
 
 
 def describe_point(spec: OperationSpec, values: Mapping[str, Any]) -> str:
-    """A point in a line: ``name=value``, a free value by its type and code."""
+    """Describe a point in a line: ``name=value``, a free value by type and code."""
     parts: list[str] = []
     for param in spec["params"]:
         name = param["name"]

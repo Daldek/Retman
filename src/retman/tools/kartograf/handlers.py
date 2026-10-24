@@ -64,7 +64,7 @@ def download_sheet_hierarchy(
 def _download_orthophoto(
     params: dict[str, Any], output_dir: Path, ctx: ToolContext
 ) -> HandlerOutput:
-    """The orthophoto sheets of a sheet code in the colour the user chose.
+    """Download the orthophoto sheets of a sheet code in the colour the user chose.
 
     The call the preview validated gives the sheet and the target scale (PL-1992
     codes take none: a coarser code expands into its 1:10000 sheets by itself);

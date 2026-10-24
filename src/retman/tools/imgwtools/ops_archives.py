@@ -70,7 +70,7 @@ def stations_param(datasets: Sequence[str]) -> ParamSpec:
 
 
 def _excluded(offered: Sequence[str], reason: str) -> dict[str, dict[str, str]]:
-    """The IMGW-PIB download datasets the other operation serves (command coverage).
+    """Return the IMGW-PIB download datasets the other operation serves (coverage).
 
     A ČHMÚ dataset of the other kind is not listed: it needs a combination of
     ``stations`` and ``years`` that no call of this operation makes, so the tool
@@ -81,7 +81,7 @@ def _excluded(offered: Sequence[str], reason: str) -> dict[str, dict[str, str]]:
         for key in (*HYDRO_DOWNLOAD_DATASETS, *METEO_DOWNLOAD_DATASETS)
         if key not in offered and DATASETS[key]["provider"] != "CHMI"
     ]
-    return {"dataset": {value: reason for value in others}}
+    return {"dataset": dict.fromkeys(others, reason)}
 
 
 _HYDRO_PARAMS: ParamSpec = {

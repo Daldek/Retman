@@ -57,7 +57,7 @@ def _required(settings: Mapping[str, Any], key: str) -> Any:
 
 
 def update_mode(settings: Mapping[str, Any]) -> UpdateMode | None:
-    """The ``update`` argument of Kartograf's download functions for the settings."""
+    """Return the ``update`` argument of Kartograf's download functions."""
     return _UPDATE_MODES[_required(settings, "update")]
 
 
@@ -133,7 +133,7 @@ def _arguments(options: Mapping[str, object]) -> dict[str, Any]:
 def run_from_document(
     call: CatalogCall, document: ToolDocument, command_line: str = ""
 ) -> ToolRun:
-    """A ``kartograf-download/1`` document as a ``ToolRun``.
+    """Build a ``ToolRun`` from a ``kartograf-download/1`` document.
 
     ``ok`` is Kartograf's verdict on the whole request: ``false`` with files is a
     ``partial`` run (the user gets what exists), ``false`` without any file a
@@ -189,7 +189,7 @@ class KartografClient:
             )
 
     def command_line(self, call: CatalogCall) -> str:
-        """The canonical ``kartograf`` command line of the call with its environment."""
+        """Return the canonical ``kartograf`` command line of the call."""
         flags: dict[str, object] = {}
         if "store_dir" in self.settings:
             flags["output_dir"] = str(self.settings["store_dir"])
@@ -202,7 +202,7 @@ class KartografClient:
             return kartograf.format_command(call.command, call.options, run=flags)
 
     def lookup(self, call: CatalogCall) -> ToolDocument:
-        """An offline lookup: sheet codes, sheet lists, sources, sidecars, envelopes.
+        """Answer an offline lookup: sheet codes, lists, sources, sidecars, envelopes.
 
         Raises
         ------
@@ -275,7 +275,7 @@ class KartografClient:
         return plan.to_dict()
 
     def query(self, call: CatalogCall) -> ToolDocument:
-        """A read-only network query: ``elevation availability`` only."""
+        """Run a read-only network query: ``elevation availability`` only."""
         if call.command != "elevation availability":
             raise ToolError(
                 TOOL, "not_supported", f"{call.command!r} is not a query", call=call
@@ -293,5 +293,5 @@ def _text(options: Mapping[str, object], name: str) -> str | None:
 
 
 def create(settings: Mapping[str, Any]) -> KartografClient:
-    """The manifest's ``client`` factory: no network and no writes at construction."""
+    """Create the manifest's ``client``: no network and no writes at construction."""
     return KartografClient(settings)

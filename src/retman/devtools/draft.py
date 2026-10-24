@@ -87,12 +87,12 @@ class Draft:
     translations: str
 
     def python(self) -> str:
-        """The manifest entry and the builder, as one file to read and cut up."""
+        """Return the manifest entry and the builder as one file to read and cut up."""
         return f"{self.manifest}\n\n{self.builder}"
 
 
 def _slug(value: str) -> str:
-    """An option key: lower case words joined by ``_`` (dots break text lookup)."""
+    """Build an option key: lower case words joined by ``_`` (dots break lookup)."""
     return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_") or "value"
 
 
@@ -112,7 +112,7 @@ def _keys(values: Sequence[str]) -> tuple[list[str], dict[str, str]]:
 
 
 def _literal(value: object) -> str:
-    """A Python literal for the simple values of a manifest."""
+    """Render a Python literal for the simple values of a manifest."""
     if isinstance(value, dict):
         inner = ", ".join(f"{_literal(k)}: {_literal(v)}" for k, v in value.items())
         return "{" + inner + "}"
@@ -126,7 +126,7 @@ def _literal(value: object) -> str:
 def _example_base(
     info: CommandInfo, fix: Mapping[str, object], kept: set[str]
 ) -> dict[str, object]:
-    """A valid starting call: the documented example nearest to the fixed options.
+    """Pick a valid starting call: the documented example nearest to the fixed options.
 
     Only options the draft exposes or fixes stay (the call must look like what the
     operation will send); the fixed ones always win.
@@ -146,7 +146,7 @@ def _example_base(
 
 
 def _domain(option: OptionInfo) -> list[str | None]:
-    """What a probe tries for an option: its values, and leaving it out if optional."""
+    """List what a probe tries for an option: its values, and none if optional."""
     values: list[str | None] = list(option.allowed or ())
     if not option.required:
         values.append(None)
@@ -159,7 +159,7 @@ def _probe(
     base: Mapping[str, object],
     choices: Sequence[OptionInfo],
 ) -> tuple[list[dict[str, str | None]], str]:
-    """The combinations of the choice options that the tool accepts.
+    """Find the combinations of the choice options that the tool accepts.
 
     Returns the accepted combinations (an option left out is ``None``) and, when
     none was accepted, the tool's reason for the first rejection.
@@ -242,7 +242,7 @@ def _pair_table(
     second: _Param,
     accepted: Sequence[Mapping[str, str | None]],
 ) -> str:
-    """The accepted values of the second choice under each value of the first."""
+    """Tabulate the accepted values of the second choice per value of the first."""
     pairs: dict[str, list[str]] = {}
     for combo in accepted:
         head = combo.get(first.name)
@@ -406,7 +406,7 @@ def _render_manifest(
     params: Sequence[_Param],
     notes: Sequence[str],
 ) -> str:
-    """The manifest entry as Python source (a dictionary literal)."""
+    """Render the manifest entry as Python source (a dictionary literal)."""
     lines = [f"# manifest entry (src/retman/tools/{tool}/manifest.py)"]
     lines.extend(f"# {note}" for note in notes)
     lines += [
@@ -455,7 +455,7 @@ def _render_builder(
     fixed: Mapping[str, object],
     params: Sequence[_Param],
 ) -> str:
-    """The call builder as Python source: the options of one catalog call."""
+    """Render the call builder as Python source: the options of one catalog call."""
     lines = [
         "# call builder (src/retman/tools/<tool>/calls.py)",
         "from typing import Any",
@@ -482,7 +482,7 @@ def _render_builder(
                 keyword = "if" if index == 0 else "elif"
                 lines.append(f'{indent}{keyword} area["type"] == "{accept}":')
                 lines.extend(f"{indent}    {line}" for line in _AREA_LINES[accept])
-                routing.update({name: "area" for name in _AREA_OPTIONS[accept]})
+                routing.update(dict.fromkeys(_AREA_OPTIONS[accept], "area"))
         elif param.kind == "choice":
             lines.append(
                 f'{indent}options["{param.name}"] = '
@@ -506,7 +506,7 @@ def _render_builder(
 def _render_translations(
     operation: str, info: CommandInfo, params: Sequence[_Param]
 ) -> str:
-    """The skeleton of ``pl.toml``: every key the manifest check requires, as TODO."""
+    """Render the skeleton of ``pl.toml``: every key the manifest check requires."""
     prefix = f"operations.{operation}"
     lines = [
         f"# translation skeleton (src/retman/tools/<tool>/pl.toml); {info.summary}",
@@ -533,7 +533,7 @@ def _render_translations(
 
 
 def classify(info: CommandInfo) -> str:
-    """A suggested use of a catalog command, by what a run does (a text key).
+    """Suggest a use of a catalog command, by what a run does (a text key).
 
     A command that ``validate_command`` and ``run_command`` do not take can only
     be a helper of the library (``helper``), or a network query (``query``).

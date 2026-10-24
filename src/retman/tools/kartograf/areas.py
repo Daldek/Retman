@@ -35,7 +35,7 @@ def _denominator(scale: str) -> int:
 
 
 def sheet_count(call: CatalogCall, client: PlanClient) -> SheetCount | None:
-    """The sheets ``call`` requests; ``None`` for NMT 100 m (province files).
+    """Return the sheets ``call`` requests; ``None`` for NMT 100 m (province files).
 
     Raises
     ------
@@ -71,7 +71,7 @@ def sheet_count(call: CatalogCall, client: PlanClient) -> SheetCount | None:
 
 
 def envelope(area: dict[str, Any], client: PlanClient) -> tuple[float, ...]:
-    """The rectangle of all features of a geometry area: min x, min y, max x, max y.
+    """Return the rectangle of a geometry area: min x, min y, max x, max y.
 
     In EPSG:2180, whatever the system of the file.
     """

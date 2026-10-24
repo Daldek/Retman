@@ -53,7 +53,7 @@ class Preview:
 
 
 def _warning_text(operation: Operation, texts: Texts, warning: HandlerWarning) -> str:
-    """The tool's own text of a warning, else the core's (e.g. ``tool_notice``)."""
+    """Return the tool's own text of a warning, else the core's (``tool_notice``)."""
     key = f"warnings.{warning['key']}"
     source = operation.texts if operation.texts.has(key) else texts
     return source.get(key, **warning["args"])
@@ -68,7 +68,7 @@ def _summary(
     in_store: bool,
     ctx: ToolContext,
 ) -> str:
-    """The result line: the operation's own template, else a core text."""
+    """Build the result line: the operation's own template, else a core text."""
     label = operation.text("label")
     key = f"operations.{operation.id}.summary"
     if operation.texts.has(key):
@@ -273,7 +273,7 @@ def _report(
 
 
 def failed_check(operation: Operation, texts: Texts, error: str) -> CheckReport:
-    """The report of a check that could not run or complete: status ``unknown``."""
+    """Report a check that could not run or complete: status ``unknown``."""
     return _report(
         operation,
         texts,

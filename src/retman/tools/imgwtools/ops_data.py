@@ -22,7 +22,7 @@ _CHECK: Final = "retman.tools.imgwtools.check"
 
 
 def _kind_param() -> ParamSpec:
-    """Optional filter: hydrological or meteorological stations and warnings."""
+    """Build the optional filter: hydrological or meteorological stations, warnings."""
     return {"name": "kind", "type": "choice", "options": ["hydro", "meteo"]}
 
 

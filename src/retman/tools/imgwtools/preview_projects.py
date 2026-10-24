@@ -46,7 +46,7 @@ _STATE_KEYS = {
 
 
 def _problem(key: str, *names: str, **args: str) -> PreviewProblem:
-    """A problem of the plan; without ``names`` it is blocking (nothing to answer)."""
+    """Build a problem of the plan; without ``names`` it blocks (nothing to answer)."""
     return {"params": list(names), "key": key, "args": args}
 
 
@@ -55,7 +55,7 @@ def _outcome(
     rows: list[PreviewRow],
     values: dict[str, Any],
 ) -> PreviewOutput:
-    """The preview, or only the problems when there are any.
+    """Return the preview, or only the problems when there are any.
 
     Blocking problems (no parameter to ask again) come first: asking a parameter
     again would be pointless while the plan cannot be confirmed anyway.
@@ -81,7 +81,7 @@ def _manifest_problems(manifest: Manifest) -> list[PreviewProblem]:
 def _tasks_problems(
     params: Mapping[str, Any], manifest: Manifest
 ) -> list[PreviewProblem]:
-    """An empty project has nothing to run; named tasks must exist (asked again)."""
+    """Return the task problems: an empty project, or a named task that is missing."""
     if not manifest.tasks:
         return [_problem("proj_no_tasks", path=str(manifest.path))]
     unknown = [name for name in params.get("tasks", ()) if name not in manifest.names]
@@ -98,12 +98,12 @@ def _tasks_problems(
 
 
 def _manifest_row(kind: str, manifest: Manifest) -> PreviewRow:
-    """``new``, ``exists``, ``write`` (changed by the operation) or ``read``."""
+    """Return ``new``, ``exists``, ``write`` (changed by the operation) or ``read``."""
     return {"key": f"proj_manifest_{kind}", "args": {"path": str(manifest.path)}}
 
 
 def _tasks_row(manifest: Manifest) -> PreviewRow:
-    """The tasks the project holds (the ``tasks`` parameter row says which apply)."""
+    """Return the row of the tasks the project holds (``tasks`` says which apply)."""
     return {
         "key": "proj_tasks",
         "args": {"count": str(len(manifest.tasks)), "names": ", ".join(manifest.names)},
@@ -111,7 +111,7 @@ def _tasks_row(manifest: Manifest) -> PreviewRow:
 
 
 def _project_store_row(ctx: ToolContext, manifest: Manifest) -> PreviewRow:
-    """The store the manifest points at; read-only operations work on that one."""
+    """Return the row of the store the manifest points at; read-only runs use it."""
     store = str(manifest.store)
     if manifest.store is not None and same_folder(manifest.store, ctx.store_dir):
         return {"key": "proj_store", "args": {"path": store}}
@@ -122,7 +122,7 @@ def _project_store_row(ctx: ToolContext, manifest: Manifest) -> PreviewRow:
 
 
 def _other_store(ctx: ToolContext, manifest: Manifest) -> list[PreviewProblem]:
-    """The operation writes the configured store, so the project must use that one."""
+    """Return a problem when the project does not use the store the operation writes."""
     if manifest.store is not None and not same_folder(manifest.store, ctx.store_dir):
         return [
             _problem(
@@ -135,7 +135,7 @@ def _other_store(ctx: ToolContext, manifest: Manifest) -> list[PreviewProblem]:
 
 
 def _refused_store(ctx: ToolContext) -> list[PreviewProblem]:
-    """A folder the tool will not use as a project's store (other files, schema)."""
+    """Return a problem when the folder is one the tool will not use as a store."""
     folder = str(ctx.store_dir)
     state = imgw_store_state(ctx.store_dir)
     if state.state in ("foreign", "not_a_directory", "unreadable"):
@@ -151,7 +151,7 @@ def _refused_store(ctx: ToolContext) -> list[PreviewProblem]:
 def preview_init_imgw_project(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The manifest to create, the store it will point at and what already exists."""
+    """Preview the manifest to create, the store it will point at and what exists."""
     manifest = load_manifest(ctx.project_dir)
     problems = _refused_store(ctx)
     if inside(ctx.store_dir, ctx.project_dir):
@@ -195,7 +195,7 @@ def _symlink_below(folder: Path, path: Path) -> bool:
 def _area_problems(
     params: Mapping[str, Any], ctx: ToolContext, manifest: Manifest
 ) -> list[PreviewProblem]:
-    """The GeoJSON file that selects stations, and the catalog the tool will read."""
+    """Check the GeoJSON file that selects stations and the catalog to be read."""
     given = str(params["area_file"])
     path = Path(given)
     absolute = path if path.is_absolute() else ctx.project_dir / path
@@ -236,7 +236,7 @@ def _area_problems(
 def preview_add_imgw_project_task(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The manifest that gets the task and what the omitted parameters mean."""
+    """Preview the manifest that gets the task and what the omitted parameters mean."""
     manifest = load_manifest(ctx.project_dir)
     problems = _manifest_problems(manifest)
     if problems:
@@ -277,7 +277,7 @@ def preview_add_imgw_project_task(
 def preview_download_imgw_project(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The tasks, the pins that will be restored or changed, the store that is written.
+    """Preview the tasks, the pins restored or changed and the store that is written.
 
     The tool initialises a missing store by itself when downloading, so a store that
     is not initialised blocks the plan: that is ``init_imgw_store``'s decision.
@@ -396,14 +396,14 @@ def _read_only(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
 def preview_check_imgw_project(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The manifest and store that are read and the tasks that are checked."""
+    """Preview the manifest and store that are read and the tasks that are checked."""
     return _read_only(params, ctx)
 
 
 def preview_verify_imgw_project(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The manifest and store that are read and the tasks that are verified."""
+    """Preview the manifest and store that are read and the tasks that are verified."""
     return _read_only(params, ctx)
 
 
@@ -413,7 +413,7 @@ def preview_verify_imgw_project(
 def preview_remove_imgw_project_task(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The manifest that loses the task; a task the project lacks is asked again."""
+    """Preview the manifest that loses the task; a missing task is asked again."""
     manifest = load_manifest(ctx.project_dir)
     problems = _manifest_problems(manifest)
     name = params["task_name"]
@@ -443,7 +443,7 @@ def preview_remove_imgw_project_task(
 def preview_set_imgw_project_store(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The manifest that is changed and the configured store it will point at."""
+    """Preview the manifest that is changed and the configured store it points at."""
     manifest = load_manifest(ctx.project_dir)
     problems = _manifest_problems(manifest) or _refused_store(ctx)
     rows = [*store_rows(ctx), _manifest_row("write", manifest)]

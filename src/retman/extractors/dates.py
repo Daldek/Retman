@@ -497,7 +497,7 @@ class _Reader:
         return Match(start, stop, (reading,), confirm)
 
     def _is_year(self, k: int) -> bool:
-        """A four-digit number that stands alone (not in ``q2010`` or ``2015mm``)."""
+        """Tell whether a four-digit number stands alone (not in ``q2010``)."""
         token = self.tok(k)
         if token is None or token.kind != "num" or len(token.text) != 4:
             return False
@@ -774,7 +774,7 @@ class _Reader:
         return noun.end if adjective is None else adjective.end
 
     def _atom(self, j: int | None, *, allow_preposition: bool) -> _Atom | None:
-        """A year with the words that mark it: ``w latach hydrologicznych 2015 r.``"""
+        """Read a year with the words that mark it (``w latach 2015 r.``)."""
         if j is None:
             return None
         k = j
@@ -965,7 +965,7 @@ def read_years_answer(text: str) -> list[Match]:
 
 def extract_period(text: str) -> list[Match]:
     """
-    A period in a command: years (as in :func:`extract_years`) or dates.
+    Read a period in a command: years (as in :func:`extract_years`) or dates.
 
     Dates: ``2000-01-01``, ``1.01.2000``, ``15 maja 2010``, ``1 XI 2019``
     (capital Roman numerals), whole months (``w maju 2010``, ``styczeń 2000``)
@@ -1002,7 +1002,7 @@ def extract_period(text: str) -> list[Match]:
 
 
 def read_period_answer(text: str) -> list[Match]:
-    """A period in an answer: like :func:`extract_period`, a bare year is enough."""
+    """Read a period in an answer: like :func:`extract_period`, a bare year suffices."""
     reader = _Reader(text, lax=True)
     return _by_position(reader.dates, reader.years)
 
@@ -1075,7 +1075,7 @@ def _years_error(value: Mapping[str, Any], ctx: ExtractionContext) -> str | None
 
 def validate_years(value: Any, ctx: ExtractionContext) -> str | None:
     """
-    Translation key of the problem with a years value, or None if it is valid.
+    Return the translation key of the problem with a years value, or None if valid.
 
     A range needs integer years from 1887 to the current year with
     ``first <= last``; a year list needs at least two such years in strictly
@@ -1099,7 +1099,7 @@ def _parse_iso(value: object) -> date | None:
 
 def validate_period(value: Any, ctx: ExtractionContext) -> str | None:
     """
-    Translation key of the problem with a period value, or None if it is valid.
+    Return the translation key of the problem with a period value, or None if valid.
 
     Years are checked as in :func:`validate_years` (a list of years is not a
     continuous period). Dates must be ISO strings of real days with
@@ -1377,7 +1377,7 @@ def read_year_type_answer(text: str) -> list[Match]:
 
 
 def validate_year_type(value: Any) -> str | None:
-    """Translation key of the problem with a year type, or None."""
+    """Return the translation key of the problem with a year type, or None."""
     if isinstance(value, str) and value in _NUMBERINGS:
         return None
     return "extractors.errors.invalid_year_type"

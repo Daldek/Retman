@@ -91,7 +91,7 @@ def _listing(
 def preview_download_archives(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The files that would be downloaded to the result folder (no store involved)."""
+    """Preview the files that would be downloaded to the result folder (no store)."""
     rows, values = _listing(params, ctx)
     return {"values": values, "rows": rows, "problems": []}
 
@@ -113,12 +113,12 @@ def _store_listing(
 def preview_check_imgw_archives(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The store that is compared and the files of the selection."""
+    """Preview the store that is compared and the files of the selection."""
     return _store_listing(params, ctx, write=False)
 
 
 def preview_sync_imgw_store(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
-    """The store that is written (series need ``pyarrow``) and the files selected."""
+    """Preview the store that is written (series need ``pyarrow``) and the files."""
     return _store_listing(params, ctx, write=True)
 
 
@@ -138,7 +138,7 @@ def check_sync_imgw_store(params: dict[str, Any], ctx: ToolContext) -> CheckOutp
 def preview_sync_imgw_store_by_plan(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The plan file: its store, what it lists and how old it is (read, never changed).
+    """Preview the plan file: its store, what it lists and its age (read only).
 
     A plan of another store is refused here: the tool would refuse it after the
     confirmation.
@@ -186,7 +186,7 @@ def preview_sync_imgw_store_by_plan(
 def preview_export_imgw_archive(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The archives of the selection the store holds; none is a problem to answer."""
+    """Preview the archives of the selection the store holds; none is a problem."""
     problems = store_problems(ctx, write=False)
     if problems:
         return _blocked(problems)
@@ -234,7 +234,7 @@ def preview_export_imgw_archive(
 
 
 def preview_init_imgw_store(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
-    """What initialising would do to the configured folder; a foreign one is refused.
+    """Preview what initialising would do to the folder; a foreign one is refused.
 
     The tool creates a store only in a missing or empty folder (or finds its own):
     it never takes over a folder with other files.
@@ -265,7 +265,7 @@ def preview_init_imgw_store(params: dict[str, Any], ctx: ToolContext) -> Preview
 def preview_inspect_imgw_store(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The store that is read (an omitted filter is shown by the plan itself)."""
+    """Preview the store that is read (an omitted filter is shown by the plan)."""
     problems = store_problems(ctx, write=False)
     if problems:
         return _blocked(problems)

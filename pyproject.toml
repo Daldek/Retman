@@ -64,25 +64,79 @@ line-length = 88
 extend-exclude = [".claude", "*.md"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
 
 [tool.ruff.format]
 quote-style = "double"
 
 [tool.mypy]
 python_version = "3.12"
-warn_unused_ignores = true
-warn_redundant_casts = true
-check_untyped_defs = true
-# Folders without __init__.py are no packages: tests/tools/<tool>/ carries the
-# tool's name, and as a PEP 420 namespace package it would shadow an installed
-# tool that ships no py.typed (imgwtools), so `import imgwtools` in a test would
-# resolve to the test folder and every attribute of the tool would be "missing"
+strict = true
+files = ["src", "tests"]
+# Folders without __init__.py are no packages: tests/integration/tools/<tool>/
+# carries the tool's name, and as a PEP 420 namespace package it would shadow an
+# installed tool that ships no py.typed (imgwtools), so `import imgwtools` in a test
+# would resolve to the test folder and every attribute of the tool would be "missing"
 namespace_packages = false
 
 [[tool.mypy.overrides]]
 module = ["kartograf", "kartograf.*", "imgwtools", "imgwtools.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Shortfall of these test modules (DEV-7.3; a deviation listed in CLAUDE.md): helpers and
+# fixtures are not annotated. Modules are named by file name because the test folders
+# are not packages (namespace_packages = false); a new test module is strict, and a
+# module leaves the list when it is annotated.
+module = [
+    "conftest",
+    "dummy_tool.crowded",
+    "test_catalog",
+    "test_check",
+    "test_cli",
+    "test_config",
+    "test_coordinates",
+    "test_crs",
+    "test_doctor",
+    "test_factory",
+    "test_fake_decision",
+    "test_geometry",
+    "test_imgw_archives_runs",
+    "test_imgw_calls",
+    "test_imgw_check",
+    "test_imgw_client",
+    "test_imgw_coverage",
+    "test_imgw_describe",
+    "test_imgw_eval",
+    "test_imgw_manifest",
+    "test_imgw_pipeline",
+    "test_imgw_preview",
+    "test_initialize",
+    "test_kartograf_calls",
+    "test_loader",
+    "test_manifest_adapter",
+    "test_openai_compatible",
+    "test_openai_compatible_live",
+    "test_pipeline",
+    "test_plan_review",
+    "test_preview_and_check",
+    "test_recognition",
+    "test_runner",
+    "test_runner_cli",
+    "test_runner_live",
+    "test_stores",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+disallow_any_generics = false
+warn_return_any = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

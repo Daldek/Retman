@@ -40,7 +40,7 @@ def _size(path: Path) -> int:
 def describe_download_archives(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """The downloaded files (as published), their size and what the server lacks."""
+    """Describe the downloaded files (as published), their size and what is missing."""
     output = base_output(operation, params, runs, ctx)
     (_, run) = runs[0]
     items = items_of(run)
@@ -76,7 +76,7 @@ def describe_download_archives(
 def describe_check_archives(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """The ``imgw-plan/1`` file the tool wrote and the counts of its items."""
+    """Describe the ``imgw-plan/1`` file the tool wrote and the counts of its items."""
     output = base_output(operation, params, runs, ctx)
     (call, run) = runs[0]
     output["files"] = {"imgw_plan": [Path(str(call.options["plan"]))]}
@@ -90,7 +90,7 @@ def describe_check_archives(
 def describe_sync_store(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """What the synchronisation did in the store: items, series and new versions.
+    """Describe what the synchronisation did in the store: items, series, new versions.
 
     The store is not a result file (the audit keeps the paths); ``store_versions``
     lists the versions the run created, relative to the store.
@@ -131,7 +131,7 @@ def describe_sync_store(
 
 
 def _records(path: Path) -> int:
-    """Records of an export: the data rows of a CSV, the lines of JSON Lines."""
+    """Return the records of an export: CSV data rows or JSON Lines."""
     with path.open("rb") as stream:
         lines = sum(1 for line in stream if line.strip())
     return max(lines - 1, 0) if path.suffix == ".csv" else lines
@@ -140,7 +140,7 @@ def _records(path: Path) -> int:
 def describe_export_archive(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """The exported record files; a selection the store holds only in part is said.
+    """Describe the exported record files; a selection held only in part is said.
 
     No calls means the store holds nothing of the selection (the preview blocks
     that plan, so it can only be a store that changed since): a failure.
@@ -172,7 +172,7 @@ def describe_export_archive(
 def describe_init_store(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """The store folder the tool initialised (it is idempotent)."""
+    """Describe the store folder the tool initialised (it is idempotent)."""
     output = base_output(operation, params, runs, ctx)
     result = _result(runs[0][1])
     output["values"].update(
@@ -184,7 +184,7 @@ def describe_init_store(
 def describe_inspect_store(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """The two documents as reports; the state and the entries by kind as values."""
+    """Describe the two documents as reports: the state and the entries by kind."""
     output = base_output(operation, params, runs, ctx)
     info, scan = run_of(runs, "store info"), run_of(runs, "store scan")
     folder = output_dir(ctx)

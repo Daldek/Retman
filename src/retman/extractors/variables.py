@@ -227,7 +227,7 @@ def extract_variables(text: str, ctx: ExtractionContext) -> list[Match]:
 
 
 def validate_variables(value: Any, ctx: ExtractionContext) -> str | None:
-    """Translation key of the problem with a variable code, or None."""
+    """Return the translation key of the problem with a variable code, or None."""
     if not isinstance(value, str) or not value:
         return "extractors.errors.invalid_variable"
     scoped = _scoped(ctx)

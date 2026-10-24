@@ -105,7 +105,7 @@ class ToolReport:
     findings: list[Finding] = field(default_factory=list)
 
     def count(self, severity: Severity) -> int:
-        """Number of findings of that severity."""
+        """Count the findings of that severity."""
         return sum(1 for finding in self.findings if finding.severity == severity)
 
 
@@ -138,7 +138,7 @@ class _Binding:
 
 
 def _brief(error: object) -> str:
-    """The first line of a message, short enough for one report line."""
+    """Shorten a message to its first line, short enough for one report line."""
     line = str(error).strip().splitlines()[0] if str(error).strip() else ""
     return line if len(line) <= _DETAIL_LENGTH else line[: _DETAIL_LENGTH - 1] + "…"
 
@@ -148,7 +148,7 @@ def _call_key(call: CatalogCall) -> str:
 
 
 def _texts_of(value: object) -> list[str]:
-    """The values of an option as the tool's text (a list gives one per item)."""
+    """Return the values of an option as the tool's text (a list gives one per item)."""
     items = value if isinstance(value, list | tuple) else [value]
     return [str(item) for item in items]
 
@@ -167,7 +167,7 @@ def _carries(options: Mapping[str, object], path: str) -> bool:
 
 
 def _outermost(path: str, options: Mapping[str, object]) -> str:
-    """The option of the command itself a path begins with (``a`` of ``a.b``)."""
+    """Return the option of the command itself a path begins with (``a`` of ``a.b``)."""
     return path if path in options else path.partition(".")[0]
 
 
@@ -796,7 +796,7 @@ class _Engine:
 
 
 def _skip(tool: str, status: ToolStatus, key: str, **args: object) -> ToolReport:
-    """A tool that is not checked, with the finding that says why."""
+    """Report a tool that is not checked, with the finding that says why."""
     return ToolReport(tool, status, findings=[_tool_finding(tool, "info", key, **args)])
 
 
@@ -937,7 +937,7 @@ def check_tool(
 
 
 def _scratch_cwd(scratch: Path) -> Path:
-    """The scratch working folder, created."""
+    """Create and return the scratch working folder."""
     folder = scratch / "cwd"
     folder.mkdir()
     return folder
@@ -1065,7 +1065,7 @@ def light_findings(
     reader: Reader | None = None,
     client: PlanClient | None = None,
 ) -> list[Finding] | None:
-    """The findings of the light check shown by ``retman doctor`` (X1 and X4).
+    """Return the findings of the light check shown by ``retman doctor`` (X1, X4).
 
     Returns
     -------

@@ -73,6 +73,7 @@ class DoctorReport:
 
     @property
     def exit_code(self) -> int:
+        """``1`` when any check blocks work, else ``0``."""
         return int(
             any(check.blocking for section in self.sections for check in section.checks)
         )
@@ -94,7 +95,7 @@ class DoctorReport:
         return "\n".join(lines) + "\n"
 
     def to_json(self) -> str:
-        """The same report for bug reports (``retman doctor --json``)."""
+        """Render the same report for bug reports (``retman doctor --json``)."""
         return (
             json.dumps(
                 {
@@ -420,8 +421,7 @@ def _tool_checks(
 def _store_folder(
     tool: str, store: Path, texts: Texts, config_path: Path, *, symlinks_refused: bool
 ) -> tuple[list[Check], Literal["ok", "missing", "broken"]]:
-    """What every tool store needs: a path without symbolic links and a folder that
-    exists (or can be created) and takes writes.
+    """Check a store folder: no symbolic links, it exists or can be created, writable.
 
     Returns the problems found and the state of the folder: ``missing`` is a folder
     that does not exist yet but can be created, ``broken`` one that cannot be used.
@@ -483,9 +483,12 @@ def _cache_checks(cache_file: Path, texts: Texts, config_path: Path) -> list[Che
 def _hardlink_checks(
     tool: str, folder: Path, texts: Texts, config_path: Path
 ) -> list[Check]:
-    """Both tool stores publish every version with hard links; FAT/exFAT and some
+    """Check that the store folder takes hard links.
+
+    Both tool stores publish every version with hard links; FAT/exFAT and some
     network shares have none. Tried in the store, or in the closest existing folder
-    when the store is not created yet (the same file system)."""
+    when the store is not created yet (the same file system).
+    """
     try:
         failure = hardlink_error(folder)
     except OSError:
@@ -566,7 +569,7 @@ def _imgw_store_checks(store: Path, texts: Texts, config_path: Path) -> list[Che
 
 
 def _pyarrow_check(texts: Texts, source: str) -> Check:
-    """The series of IMGWTools are Parquet files (``imgwtools[store]``)."""
+    """Check ``pyarrow``: IMGWTools series are Parquet files (``imgwtools[store]``)."""
     try:
         pyarrow = importlib.import_module("pyarrow")
     except ImportError:
@@ -624,7 +627,7 @@ def _store_checks(
     deep: bool,
     probe: Callable[[], ToolOutcome],
 ) -> list[Check]:
-    """Stores of the tools that are in use (installed, supported, not disabled)."""
+    """Check the stores of the tools that are in use (installed, supported, enabled)."""
     checks: list[Check] = []
     if "kartograf" in active and "kartograf" in config.tools:
         checks.extend(_kartograf_checks(config.tools["kartograf"], texts, config.path))
@@ -654,7 +657,7 @@ def _conformance_checks(
     texts: Texts,
     conformance: "LightCheck | None",
 ) -> list[Check]:
-    """The light drift check of the tools in use (X1, X4; ARCHITECTURE 3.2.3).
+    """Run the light drift check of the tools in use (X1, X4; ARCHITECTURE 3.2.3).
 
     Whether the installed catalog still has the commands the manifest names and
     offers no value the manifest neither offers nor excludes. A tool the scaffold

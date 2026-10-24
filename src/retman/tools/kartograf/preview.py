@@ -97,7 +97,7 @@ def _scale_choices(code: str, ctx: ToolContext) -> list[str]:
 
 
 def _sheets(call: CatalogCall, ctx: ToolContext, output: PreviewOutput) -> None:
-    """The sheet count row of a sheet request, or why the request has no sheets."""
+    """Return the sheet count row of a sheet request, or why it has no sheets."""
     try:
         counted = sheet_count(call, ctx.client)
     except ToolError as err:
@@ -139,7 +139,7 @@ def _sheets(call: CatalogCall, ctx: ToolContext, output: PreviewOutput) -> None:
 
 
 def download_dem_sheet(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
-    """The extent of a geometry file and how many NMT sheets the area stands for."""
+    """Preview the extent of a geometry file and how many NMT sheets the area needs."""
     output = _empty()
     _envelope(params, ctx, output)
     (call,) = calls.download_dem_sheet(params, ctx)
@@ -166,14 +166,14 @@ def download_sheet_hierarchy(params: dict[str, Any], ctx: ToolContext) -> Previe
 def download_elevation_cutout(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """The extent of a geometry file: the cutout is one rectangle around all of it."""
+    """Preview the extent of a geometry file: the cutout is one rectangle around it."""
     output = _empty()
     _envelope(params, ctx, output)
     return output
 
 
 def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
-    """The extent of a geometry file, which must lie in Poland.
+    """Preview the extent of a geometry file, which must lie in Poland.
 
     Kartograf's offline validation does not refuse a file far outside Poland; the
     run would fail only after the county service (network) found no county.

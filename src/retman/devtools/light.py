@@ -36,7 +36,7 @@ class Line:
 def packaged_check(
     manifest: ManifestSpec, directory: Path, version: str
 ) -> list[Finding] | None:
-    """The light check against the ``retman-eval`` dataset shipped with Retman."""
+    """Run the light check against the ``retman-eval`` dataset shipped with Retman."""
     return light_findings(
         manifest, directory, version, commands=load_commands(DEFAULT_COMMANDS)
     )
@@ -49,7 +49,7 @@ def light_lines(
     texts: Texts,
     check: LightCheck | None = None,
 ) -> list[Line]:
-    """The doctor lines of one tool in use: ``ok``, or one line per finding.
+    """Return the doctor lines of one tool in use: ``ok``, or one line per finding.
 
     The operations that could not be checked (X10) are one line, and the hint on
     how to go further stands on the first problem only. A tool the scaffold has

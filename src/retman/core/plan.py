@@ -104,7 +104,7 @@ class Plan:
         )
 
     def check_notice(self) -> str:
-        """What the availability check contacts and sends, to show before consent."""
+        """Describe what the availability check contacts and sends, before consent."""
         if not self.can_check or self._owner is None:
             raise PlanIncompleteError("this plan offers no availability check")
         return self._owner.check_notice(self)
@@ -247,7 +247,7 @@ class Plan:
         )
 
     def _updated(self, **changes: Any) -> "Plan":
-        """A changed copy: approvals, preview and checks belonged to the old state."""
+        """Return a changed copy: approvals, preview and checks belonged to the old."""
         return replace(
             self,
             confirmed=False,

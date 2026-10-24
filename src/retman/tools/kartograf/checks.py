@@ -31,7 +31,7 @@ Combination = dict[str, Any]
 
 
 def _system(call: CatalogCall) -> str | None:
-    """The sheet system a sheet request is in (``None`` for a cutout)."""
+    """Return the sheet system a sheet request is in (``None`` for a cutout)."""
     if "sheet_system" in call.options:
         return _SYSTEM[str(call.options["sheet_system"])]
     if "sheet" in call.options:
@@ -44,7 +44,7 @@ def _grid_order(item: Combination) -> tuple[float, str]:
 
 
 def _newest_complete(found: list[Combination]) -> dict[tuple[str, str], Combination]:
-    """The newest complete combination of each (resolution, height system)."""
+    """Return the newest complete combination of each (resolution, height system)."""
     newest: dict[tuple[str, str], Combination] = {}
     for item in found:
         key = (str(item["resolution"]), str(item["vertical_crs"]))
@@ -56,7 +56,7 @@ def _newest_complete(found: list[Combination]) -> dict[tuple[str, str], Combinat
 def _selection(
     chosen: list[Combination], args: dict[str, str]
 ) -> tuple[CheckStatus, CheckItem]:
-    """The verdict on the plan's own grid and the line that says it."""
+    """Return the verdict on the plan's own grid and the line that says it."""
     complete = [item for item in chosen if item["complete"]]
     if complete:
         year = max(item["year"] for item in complete)
@@ -79,7 +79,7 @@ def _selection(
 
 
 def _elevation(call: CatalogCall, ctx: ToolContext) -> CheckOutput:
-    """Is the chosen NMT/NMPT grid published for the area, and what else is?"""
+    """Report whether the chosen NMT/NMPT grid is published, and what else is."""
     options = call.options
     resolution = str(options.get("resolution", _CUTOUT_RESOLUTION))
     if resolution == "100m":
@@ -150,7 +150,7 @@ def download_dem_sheet(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
 
 
 def _orthophoto(call: CatalogCall, ctx: ToolContext) -> CheckOutput:
-    """The newest RGB flight GUGiK's sheet index lists for each sheet of the request."""
+    """Check the newest RGB flight GUGiK's index lists for each requested sheet."""
     try:
         plan = ctx.runner.check(call)
     except ToolError as err:
@@ -208,13 +208,13 @@ def download_sheet_hierarchy(params: dict[str, Any], ctx: ToolContext) -> CheckO
 
 
 def download_elevation_cutout(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
-    """The cutout: the index of sheets is a proxy for what the WCS composes."""
+    """Check the cutout: the index of sheets is a proxy for what the WCS composes."""
     (call,) = calls.download_elevation_cutout(params, ctx)
     return _elevation(call, ctx)
 
 
 def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
-    """The counties an area touches and whether their packages are in the store."""
+    """Check the counties an area touches and whether their packages are stored."""
     (call,) = calls.download_bdot10k(params, ctx)
     items = ctx.runner.check(call)["items"]
     if not items:

@@ -60,7 +60,7 @@ class CommandInfo:
     examples: tuple[Mapping[str, object], ...] = ()
 
     def option(self, name: str) -> OptionInfo | None:
-        """The option of that name, or ``None``."""
+        """Return the option of that name, or ``None``."""
         return next((item for item in self.options if item.name == name), None)
 
     @property
@@ -122,7 +122,7 @@ class Reader:
 
 
 def load_reader(tool: str) -> Reader | None:
-    """The reader of a tool (``retman.devtools.readers.<tool>``), if there is one.
+    """Return the reader of a tool (``retman.devtools.readers.<tool>``), if any.
 
     Nothing is imported from the tool itself here: the reader module imports it
     only when ``read_catalog`` or ``validate`` is called.

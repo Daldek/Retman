@@ -243,7 +243,7 @@ class CheckOutput(TypedDict):
 
 
 def _reference_ok(reference: Any) -> bool:
-    """A ``"module:attribute"`` string with both parts present."""
+    """Tell whether a reference is a ``"module:attribute"`` string with both parts."""
     if not isinstance(reference, str):
         return False
     module, separator, attribute = reference.partition(":")

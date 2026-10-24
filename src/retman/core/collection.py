@@ -28,6 +28,7 @@ class Collection:
 
     @property
     def enabled(self) -> bool:
+        """Whether collection is switched on (a path is configured)."""
         return self.path is not None
 
     def append(self, record: dict[str, Any]) -> None:

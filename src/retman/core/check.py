@@ -35,11 +35,11 @@ class CheckReport:
         return self.checked_at[:16].replace("T", " ")
 
     def summary(self) -> str:
-        """The report as shown to the user: heading and lines."""
+        """Render the report as shown to the user: heading and lines."""
         return "\n".join([self.header, *self.lines])
 
     def to_dict(self) -> dict[str, Any]:
-        """The report as JSON-compatible data."""
+        """Return the report as JSON-compatible data."""
         return {
             "operation": self.operation,
             "tool": self.tool,

@@ -92,7 +92,7 @@ def _match(start: int, end: int, name: str) -> Match:
 
 
 def validate_identifier(value: Any) -> str | None:
-    """Translation key of the problem with a task name, or None."""
+    """Return the translation key of the problem with a task name, or None."""
     if isinstance(value, str) and _IDENTIFIER_RE.fullmatch(value):
         return None
     return "extractors.errors.invalid_identifier"

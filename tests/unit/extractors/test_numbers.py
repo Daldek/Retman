@@ -121,7 +121,7 @@ def test_read_spoken_number_takes_the_whole_number(
 
 def test_read_number_reads_digits_with_decimal_comma_or_words() -> None:
     assert read_number(tokenize("1,5 h"), 0) == (Decimal("1.5"), 1)
-    assert read_number(tokenize("piec min"), 0) == (5, 1)
+    assert read_number(tokenize("piec min"), 0) == (Decimal(5), 1)
     assert read_number(tokenize("min"), 0) is None
 
 

@@ -221,7 +221,7 @@ def read_crs_answer(text: str) -> list[Match]:
 
 
 def validate_crs(value: object) -> str | None:
-    """Translation key of the problem, or None for an ``EPSG:<code>`` value."""
+    """Return the translation key of the problem, or None for ``EPSG:<code>``."""
     if isinstance(value, str) and re.fullmatch(r"EPSG:[0-9]{4,5}", value):
         return None
     return "extractors.errors.invalid_crs"

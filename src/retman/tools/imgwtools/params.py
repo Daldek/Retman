@@ -178,7 +178,7 @@ PROVIDER_VALUES: Final[dict[str, str]] = {"imgw_pib": "IMGW-PIB", "chmi": "CHMI"
 def dataset_param(
     keys: Sequence[str], *, name: str = "dataset", required: bool = True
 ) -> ParamSpec:
-    """A ``choice`` parameter offering the datasets ``keys`` (option keys).
+    """Build a ``choice`` parameter offering the datasets ``keys`` (option keys).
 
     ``tool_values`` map the keys to the tool's dataset keys and ``option_meta``
     gives each option its provider, kind, archive numbering, variables and slug
@@ -206,7 +206,7 @@ def dataset_param(
 
 
 def provider_param(*, name: str = "provider", required: bool = True) -> ParamSpec:
-    """A ``choice`` parameter of the two data providers (IMGW-PIB, ČHMÚ)."""
+    """Build a ``choice`` parameter of the two data providers (IMGW-PIB, ČHMÚ)."""
     spec: ParamSpec = {
         "name": name,
         "type": "choice",
