@@ -18,7 +18,7 @@ def test_package_marks_itself_as_typed() -> None:
 def test_config_template_is_package_data() -> None:
     text = resources.files("retman").joinpath("config_template.toml").read_text("utf-8")
 
-    assert "[decision]" in text
+    assert "[retman.decision]" in text
 
 
 def test_core_translations_are_package_data() -> None:

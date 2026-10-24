@@ -89,7 +89,7 @@ def validate(command: str, options: Mapping[str, object]) -> Verdict:
 
 
 def scratch_settings(root: Path) -> dict[str, Any]:
-    """``[tools.kartograf]`` below a scratch folder: nothing outside it is touched."""
+    """``[retman.tools.kartograf]`` in a scratch folder: nothing outside it is used."""
     return {
         "store_dir": str(root / "kartograf"),
         "cache_file": str(root / "kartograf-cache.db"),

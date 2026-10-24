@@ -32,15 +32,13 @@ def dummy(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.fixture(autouse=True)
-def local_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Per-user data (cache, reference files) below tmp_path: nothing real is read."""
-    data = tmp_path / "data"
-    monkeypatch.setattr("retman.config.default_data_dir", lambda: data)
-    return data
+def local_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The cache and reference folders below tmp_path: nothing real is read."""
+    monkeypatch.setenv("NOGAT_CACHE_DIR", str(tmp_path / "cache"))
 
 
 def _openai_config(tmp_path: Path, *, confidence: str = "logprobs") -> Path:
-    path = init_config(tmp_path / "retman.toml", stores_dir=tmp_path / "stores")
+    path = init_config(tmp_path / "nogat.toml", stores_dir=tmp_path / "stores")
     text = (
         path.read_text(encoding="utf-8")
         .replace('backend = "basal"', 'backend = "openai_compatible"', 1)
@@ -281,9 +279,9 @@ def _make_stores(tmp_path: Path, **skip: bool) -> dict[str, Path]:
     """Create the folders a healthy installation has; ``skip`` leaves one out."""
     paths = {
         "kartograf": tmp_path / "stores" / "kartograf",
-        "cache": tmp_path / "data" / "kartograf_cache.db",
-        "imgwtools": tmp_path / "stores" / "imgwtools",
-        "reference": tmp_path / "data" / "imgw-reference",
+        "cache": tmp_path / "cache" / "kartograf" / "metadata.db",
+        "imgwtools": tmp_path / "stores" / "imgw",
+        "reference": tmp_path / "cache" / "imgw" / "reference",
     }
     for name, path in paths.items():
         if skip.get(name):
@@ -379,7 +377,7 @@ def test_stores_not_created_yet_warn_with_a_hint_and_do_not_block(
     )
     # Nothing was created while looking
     assert not (tmp_path / "stores").exists()
-    assert not (tmp_path / "data").exists()
+    assert not (tmp_path / "cache").exists()
 
 
 @pytest.mark.parametrize(
@@ -444,7 +442,7 @@ def test_symlink_in_a_store_path_is_refused_by_imgwtools_but_tolerated_by_kartog
     assert [status for status, _ in imgwtools] == ["error"]
     assert report.exit_code == 10
     # The hint names the real path to write into the config
-    assert f"wpisz ścieżkę rzeczywistą {real}/imgwtools" in report.to_text(texts)
+    assert f"wpisz ścieżkę rzeczywistą {real}/imgw" in report.to_text(texts)
 
 
 def test_a_file_system_without_hard_links_blocks_both_stores(
@@ -467,7 +465,8 @@ def test_a_file_system_without_hard_links_blocks_both_stores(
     assert {line.split(":")[0] for line in refused} == {"kartograf", "imgwtools"}
     text = report.to_text(texts)
     assert (
-        "[tools.kartograf] store_dir" in text and "[tools.imgwtools] store_dir" in text
+        "[retman.tools.kartograf] store_dir" in text
+        and "[retman.tools.imgwtools] store_dir" in text
     )
     # No "all is well" line next to the problem
     assert not any("zapis możliwy" in line for _, line in stores)
@@ -546,7 +545,7 @@ def test_failed_write_probe_blocks_work_and_quotes_the_tool(
         "✗ imgwtools 1.2.0: zapis do magazynu nie działa na tym systemie: System plików"
         in text
     )
-    assert "wyłącz narzędzie w [adapters] enabled" in text
+    assert "wyłącz narzędzie w [retman.adapters] enabled" in text
 
 
 def test_stores_of_tools_that_are_not_in_use_are_not_checked(
@@ -579,3 +578,55 @@ def test_without_a_readable_config_there_are_no_store_checks(
     )
 
     assert "stores" not in [section.key for section in report.sections]
+
+
+def test_without_a_settings_file_the_defaults_apply_and_only_the_model_is_missing(
+    tmp_path: Path, store_tools
+):
+    report, texts = run_doctor(
+        None,
+        tmp_path,
+        manifests=store_tools,
+        version_lookup=_installed("1.2.0"),
+    )
+    configuration = [
+        check
+        for found in report.sections
+        for check in found.checks
+        if found.key == ("configuration")
+    ]
+
+    blocking = [check.text for check in configuration if check.blocking]
+    assert report.exit_code == 10
+    assert len(blocking) == 1 and "decision.url" in blocking[0]
+    # The stores follow the defaults and are still checked
+    assert "stores" in [section.key for section in report.sections]
+    assert "decision" not in [section.key for section in report.sections]
+
+
+def test_the_model_server_can_come_from_variables_alone(
+    tmp_path: Path, dummy, monkeypatch: pytest.MonkeyPatch
+):
+    for key, value in {
+        "BACKEND": "openai_compatible",
+        "URL": MODEL_URL,
+        "MODEL": "bielik-11b",
+        "TIMEOUT_S": "30",
+        "CONFIDENCE": "logprobs",
+        "CONSISTENCY_RUNS": "3",
+        "THRESHOLDS_OPERATION": "0.9",
+        "THRESHOLDS_PARAMETER": "0.85",
+    }.items():
+        monkeypatch.setenv(f"RETMAN_DECISION_{key}", value)
+
+    with _server(["bielik-11b"]) as client:
+        report, _ = run_doctor(
+            None,
+            tmp_path,
+            backend=_fake("terrain"),
+            client=client,
+            manifests=dummy,
+            version_lookup=_installed("1.2.0"),
+        )
+
+    assert report.exit_code == 0

@@ -118,7 +118,7 @@ class Reader:
 
     ``read_catalog`` imports the tool and returns its catalog; ``validate`` is the
     tool's own offline validation (used by ``draft`` before any manifest exists);
-    ``scratch_settings`` builds a ``[tools.<tool>]`` table below a scratch folder
+    ``scratch_settings`` builds a ``[retman.tools.<tool>]`` table below a scratch folder
     for the tool's client factory.
     """
 

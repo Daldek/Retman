@@ -1,57 +1,44 @@
-"""Log level precedence and the handler of the command line (DEV-12.2, DEV-18.1)."""
+"""Log level of the command line and its handler (DEV-12.2, DEV-18.1)."""
 
 import io
 import logging
-from collections.abc import Mapping
+from pathlib import Path
 
 import pytest
 
+from retman.environment import environment
 from retman.exceptions import UsageError
 from retman.logs import configure_logging, resolve_level
 
 
-def level(
-    *,
-    verbose: bool = False,
-    quiet: bool = False,
-    environ: Mapping[str, str] | None = None,
-    configured: str | None = None,
-) -> str:
-    return resolve_level(
-        verbose=verbose, quiet=quiet, environ=environ or {}, configured=configured
-    )
-
-
 def test_resolve_level_without_a_source_is_warning() -> None:
-    assert level() == "warning"
+    assert resolve_level(verbose=False, quiet=False) == "warning"
 
 
-def test_resolve_level_takes_the_first_source_that_sets_it() -> None:
-    both = {"RETMAN_LOG_LEVEL": "info", "NOGAT_LOG_LEVEL": "error"}
-
-    assert level(verbose=True, environ=both, configured="warning") == "debug"
-    assert level(quiet=True, environ=both, configured="debug") == "error"
-    assert level(environ=both, configured="debug") == "info"
-    assert level(environ={"NOGAT_LOG_LEVEL": "error"}, configured="debug") == "error"
-    assert level(configured="debug") == "debug"
-
-
-def test_resolve_level_reads_the_environment_in_any_case() -> None:
-    assert level(environ={"RETMAN_LOG_LEVEL": " DeBug "}) == "debug"
+def test_the_options_win_over_the_configured_level() -> None:
+    assert resolve_level(verbose=True, quiet=False, configured="warning") == "debug"
+    assert resolve_level(verbose=False, quiet=True, configured="debug") == "error"
+    assert resolve_level(verbose=False, quiet=False, configured="info") == "info"
 
 
 def test_resolve_level_rejects_both_options() -> None:
     with pytest.raises(UsageError, match="--verbose"):
-        level(verbose=True, quiet=True)
+        resolve_level(verbose=True, quiet=True)
 
 
-def test_resolve_level_names_the_variable_and_the_allowed_levels() -> None:
-    with pytest.raises(UsageError) as raised:
-        level(environ={"RETMAN_LOG_LEVEL": "loud"})
+def test_the_configured_level_is_the_setting_of_the_environment(tmp_path: Path) -> None:
+    file = tmp_path / "nogat.toml"
+    file.write_text('[nogat]\nlog_level = "error"\n', encoding="utf-8")
 
-    message = str(raised.value)
-    assert "RETMAN_LOG_LEVEL" in message
-    assert all(name in message for name in ("debug", "info", "warning", "error"))
+    def configured(environ: dict[str, str]) -> str:
+        return str(environment(file, environ).setting("log_level").value)
+
+    # The variable of Retman, then the one the Nogat tools share, then the file
+    assert configured({"RETMAN_LOG_LEVEL": "info", "NOGAT_LOG_LEVEL": "debug"}) == (
+        "info"
+    )
+    assert configured({"NOGAT_LOG_LEVEL": " DeBug "}) == "debug"
+    assert configured({}) == "error"
 
 
 def test_configure_logging_sends_library_records_to_the_stream_at_the_level() -> None:

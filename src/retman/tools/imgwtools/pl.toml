@@ -845,7 +845,7 @@ arch_export_partial = "Magazyn ma tylko {found} z {total} plików archiwów wybr
 # Problemy planu wykryte offline: z parametrami — pytanie zadane ponownie, bez — plan się nie uda.
 [problems]
 store_missing = "Magazyn IMGW ({path}) nie jest jeszcze utworzony. Utwórz go poleceniem „Utwórz magazyn IMGW” albo przez „retman init”."
-store_not_imgw = "Folder {path} zawiera inne pliki i nie jest magazynem IMGW. Wskaż pusty folder w ustawieniu store_dir sekcji [tools.imgwtools] pliku retman.toml."
+store_not_imgw = "Folder {path} zawiera inne pliki i nie jest magazynem IMGW. Wskaż pusty folder w ustawieniu store_dir tabeli [retman.tools.imgwtools] pliku nogat.toml."
 store_unsupported = "Magazyn IMGW w {path} ma nieobsługiwany schemat ({schema}). Zaktualizuj IMGWTools."
 pyarrow_missing = "Do szeregów w magazynie IMGW potrzebny jest pakiet pyarrow. Zainstaluj IMGWTools z dodatkiem store (imgwtools[store])."
 station_catalog_missing = "Magazyn IMGW nie ma katalogu stacji. Wybierz źródło „serwer” albo najpierw zbuduj katalog („Zbuduj katalog stacji IMGW”)."
@@ -863,7 +863,7 @@ arch_nothing_to_export_all = "W magazynie nie ma archiwów zbioru {dataset}. Wyb
 proj_manifest_missing = "W folderze projektu nie ma pliku {path}. Najpierw utwórz projekt danych IMGW („Utwórz projekt danych IMGW”)."
 proj_manifest_invalid = "Nie można odczytać manifestu projektu {path} ({detail})."
 proj_inside_store = "Folder projektu ({project}) leży w magazynie IMGW ({store}); projekt musi być poza magazynem."
-proj_other_store = "Projekt wskazuje magazyn {manifest_store}, a w konfiguracji ([tools.imgwtools] store_dir) jest {store}. Wskaż projektowi bieżący magazyn („Wskaż projektowi bieżący magazyn IMGW”) albo zmień konfigurację."
+proj_other_store = "Projekt wskazuje magazyn {manifest_store}, a w ustawieniach ([retman.tools.imgwtools] store_dir) jest {store}. Wskaż projektowi bieżący magazyn („Wskaż projektowi bieżący magazyn IMGW”) albo zmień ustawienia."
 proj_task_exists = "W projekcie jest już zadanie „{name}” (zadania: {tasks}). Podaj inną nazwę."
 proj_task_missing = "W projekcie nie ma zadania „{name}” (zadania: {tasks})."
 proj_tasks_unknown = "W projekcie nie ma zadań: {names} (zadania projektu: {known})."

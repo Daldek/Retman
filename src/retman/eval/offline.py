@@ -163,7 +163,7 @@ def offline_clients(
         ):
             settings = config.tools.get("imgwtools")
             if settings is None:
-                raise RetmanError("[tools.imgwtools] is missing in the config")
+                raise RetmanError("[retman.tools.imgwtools] is missing in the config")
             clients["imgwtools"] = OfflineImgwClient(
                 create_client(operation.client, settings)
             )

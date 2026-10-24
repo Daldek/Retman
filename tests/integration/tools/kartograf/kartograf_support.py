@@ -73,7 +73,7 @@ def operations() -> dict[str, Operation]:
 
 
 def settings(root: Path) -> dict[str, Any]:
-    """``[tools.kartograf]`` as the config validates it, inside ``root``."""
+    """``[retman.tools.kartograf]`` as the settings validate it, inside ``root``."""
     return {
         "store_dir": str(root / "store"),
         "cache_file": str(root / "data" / "kartograf_cache.db"),

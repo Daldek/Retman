@@ -5,7 +5,7 @@ Kartograf's command layer (``validate_command``, ``run_command``,
 ``check_command``, ``format_command``) and its offline lookups, and turns
 Kartograf's exceptions and JSON documents into ``ToolError`` and ``ToolRun``.
 
-The environment of every call comes from ``[tools.kartograf]`` and nowhere else
+The environment of every call comes from ``[retman.tools.kartograf]`` and nowhere else
 (PRD N-11): the store (``output_dir``), the number of workers, the update mode and
 an explicit metadata cache. Kartograf's own defaults are never used: ``cache=True``
 would create ``.kartograf_cache.db`` in the current directory, i.e. in the user's
@@ -35,8 +35,8 @@ TOOL = "kartograf"
 
 UpdateMode = Literal["upgrade", "force"]
 
-# ``[tools.kartograf] update`` to the update mode of ``run_command``: "local" keeps
-# the stored versions and downloads only what is missing
+# ``[retman.tools.kartograf] update`` to the update mode of ``run_command``:
+# "local" keeps the stored versions and downloads only what is missing
 _UPDATE_MODES: dict[str, UpdateMode | None] = {
     "local": None,
     "upgrade": "upgrade",
@@ -53,7 +53,7 @@ def _required(settings: Mapping[str, Any], key: str) -> Any:
     try:
         return settings[key]
     except KeyError:
-        raise RetmanError(f"[tools.{TOOL}] has no {key}") from None
+        raise RetmanError(f"[retman.tools.{TOOL}] has no {key}") from None
 
 
 def update_mode(settings: Mapping[str, Any]) -> UpdateMode | None:
@@ -62,7 +62,7 @@ def update_mode(settings: Mapping[str, Any]) -> UpdateMode | None:
 
 
 def metadata_cache(settings: Mapping[str, Any]) -> kartograf.MetadataCache:
-    """Kartograf's metadata cache at ``[tools.kartograf] cache_file``.
+    """Kartograf's metadata cache at ``[retman.tools.kartograf] cache_file``.
 
     Creates nothing by itself: the file appears with the first write.
     """
@@ -174,7 +174,7 @@ def run_from_document(
 
 
 class KartografClient:
-    """The ``RunClient`` of Kartograf, built from the ``[tools.kartograf]`` table."""
+    """The ``RunClient`` of Kartograf, built from ``[retman.tools.kartograf]``."""
 
     def __init__(self, settings: Mapping[str, Any]) -> None:
         self.settings = settings

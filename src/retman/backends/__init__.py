@@ -8,7 +8,7 @@ from retman.i18n.loader import Texts
 
 
 def build_decision_backend(config: Config, texts: Texts) -> DecisionBackend:
-    """Build the decision backend selected in ``retman.toml``.
+    """Build the decision backend selected in ``[retman.decision]``.
 
     Parameters
     ----------

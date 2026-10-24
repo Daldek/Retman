@@ -99,7 +99,7 @@ class ExtractionContext:
     tool : str
         Tool of the operation being planned (manifest ``tool``).
     settings : Mapping[str, Any]
-        The validated ``[tools.<tool>]`` table of ``retman.toml``.
+        The validated ``[retman.tools.<tool>]`` table of ``nogat.toml``.
     project_dir : Path
         Project folder.
     scope : Mapping[str, Any]

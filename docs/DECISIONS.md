@@ -31,17 +31,18 @@ każda relacja jest zapisana po obu stronach.
 | [ADR-007](#adr-007-opcje-z-etykietą-dla-użytkownika-i-opisem-dla-modelu) | Opcje z etykietą dla użytkownika i opisem dla modelu | 2026-10-12 | Przyjęta |
 | [ADR-008](#adr-008-osobne-pytanie-dla-modelu-model_question) | Osobne pytanie dla modelu (`model_question`) | 2026-10-12 | Przyjęta |
 | [ADR-009](#adr-009-układ-wyniku-wycinka-rozpoznawany-w-kodzie) | Układ wyniku wycinka rozpoznawany w kodzie | 2026-10-12 | Przyjęta |
-| [ADR-010](#adr-010-zbiór-poleceń-ze-wszystkich-projektów) | Zbiór poleceń ze wszystkich projektów | 2026-10-12 | Przyjęta — uzupełniona przez ADR-011 |
+| [ADR-010](#adr-010-zbiór-poleceń-ze-wszystkich-projektów) | Zbiór poleceń ze wszystkich projektów | 2026-10-12 | Przyjęta — uzupełniona przez ADR-011; częściowo zastąpiona przez ADR-021 (tabela `[retman.privacy]`, plik pod `data_dir`) |
 | [ADR-011](#adr-011-eksport-zbioru-poleceń-i-szkic-wpisów-retman-eval) | Eksport zbioru poleceń i szkic wpisów `retman-eval` | 2026-10-12 | Przyjęta (wdrożenie odłożone) |
 | [ADR-012](#adr-012-kartograf-080-i-imgwtools-300) | Kartograf 0.8.0 i IMGWTools 3.0.0 | 2026-10-19 | Przyjęta; zastępuje część ADR-003, uzupełnia ADR-006 |
 | [ADR-013](#adr-013-narzędzia-wołane-przez-warstwę-komend) | Narzędzia wołane przez warstwę komend | 2026-10-19 | Przyjęta |
 | [ADR-014](#adr-014-bez-sieci-przed-potwierdzeniem-podgląd-i-sprawdzenie) | Bez sieci przed potwierdzeniem: podgląd i sprawdzenie | 2026-10-19 | Przyjęta |
-| [ADR-015](#adr-015-magazyny-narzędzi-poza-folderami-wyników) | Magazyny narzędzi poza folderami wyników | 2026-10-19 | Przyjęta |
+| [ADR-015](#adr-015-magazyny-narzędzi-poza-folderami-wyników) | Magazyny narzędzi poza folderami wyników | 2026-10-19 | Przyjęta — częściowo zastąpiona przez ADR-021 (plik ustawień, domyślne ścieżki magazynów i cache) |
 | [ADR-016](#adr-016-plik-geometrii-jako-obszar) | Plik geometrii jako obszar | 2026-10-19 | Przyjęta; uzupełnia ADR-001 |
 | [ADR-017](#adr-017-całe-imgwtools-w-v01-i-rozpoznawanie-dwustopniowe) | Całe IMGWTools w v0.1 i rozpoznawanie dwustopniowe | 2026-10-19 | Przyjęta; uzupełnia ADR-001 |
 | [ADR-018](#adr-018-mcp-narzędzia-przez-api-pythona-serwer-retmana-w-v03) | MCP: narzędzia przez API Pythona, serwer Retmana w v0.3 | 2026-10-19 | Przyjęta |
 | [ADR-019](#adr-019-statyczne-manifesty-i-retman-scaffold-z-katalogów-narzędzi) | Statyczne manifesty i `retman-scaffold` z katalogów narzędzi | 2026-10-19 | Przyjęta |
 | [ADR-020](decisions/0020-error-registry.md) | Adopt the shared error registry (new ADRs are files in `decisions/`, DOC-8.2) | 2026-10-24 | Przyjęta |
+| [ADR-021](decisions/0021-user-environment.md) | User environment: `[retman]` in `nogat.toml`, variables and user directories | 2026-10-24 | Przyjęta; zastępuje część ADR-010 i ADR-015 |
 
 ---
 
@@ -291,7 +292,7 @@ liter; jedna literówka tolerowana w słowach od 5 liter, krótkie słowa i kody
 ## ADR-010: Zbiór poleceń ze wszystkich projektów
 
 **Data:** 2026-10-12
-**Status:** Przyjęta — uzupełniona przez ADR-011 (przekazanie zbioru i szkic wpisów `retman-eval`)
+**Status:** Przyjęta — uzupełniona przez ADR-011 (przekazanie zbioru i szkic wpisów `retman-eval`); częściowo zastąpiona przez ADR-021 (tabela `[retman.privacy]`, plik pod `data_dir`)
 
 **Kontekst:** `[privacy] collect_commands` istniało w konfiguracji bez określonego działania
 (miejsce zapisu „—” w ARCHITECTURE 5.4). Autor chce oceniać rozpoznanie poleceń na podstawie
@@ -448,7 +449,7 @@ zajmuje numeru wyniku; zdarzenie `check` w dzienniku.
 ## ADR-015: Magazyny narzędzi poza folderami wyników
 
 **Data:** 2026-10-19
-**Status:** Przyjęta
+**Status:** Przyjęta — częściowo zastąpiona przez ADR-021 (plik ustawień `nogat.toml`, domyślne ścieżki magazynów i cache)
 
 **Kontekst:** Kartograf 0.8.0 zapisuje do magazynu wersji (niezmienne wersje, sidecary,
 dowiązania twarde), IMGWTools 3.0.0 do własnego magazynu. Autor: magazyn IMGW obok magazynu

@@ -47,7 +47,7 @@ class CatalogCall:
     ``run_command`` take them (a bbox is four numbers plus a required
     ``bbox_crs``, a path is a string, a list is a list). Environment arguments
     (store directory, workers, cache, update) are never put here: the client
-    adds them from ``[tools.<tool>]``.
+    adds them from ``[retman.tools.<tool>]``.
 
     ``kind`` is the data kind of the files the call yields (the key of
     ``HandlerOutput.files``). ``params`` maps a tool option to the Retman
@@ -365,11 +365,11 @@ class ToolContext:
 
     @property
     def store_dir(self) -> Path:
-        """The tool's store folder, ``[tools.<tool>] store_dir``."""
+        """The tool's store folder, ``[retman.tools.<tool>] store_dir``."""
         try:
             return Path(self.settings["store_dir"])
         except KeyError:
-            raise RetmanError(f"[tools.{self.tool}] has no store_dir") from None
+            raise RetmanError(f"[retman.tools.{self.tool}] has no store_dir") from None
 
     @property
     def runner(self) -> RunClient:
@@ -404,7 +404,7 @@ def load_reference(reference: str) -> Any:
 def create_client(reference: str, settings: Mapping[str, Any]) -> RunClient:
     """Build a tool's client from the manifest key ``client``.
 
-    The factory takes the validated ``[tools.<tool>]`` table and must not touch
+    The factory takes the validated ``[retman.tools.<tool>]`` table and must not touch
     the network or write anything (the pipeline builds the client while
     planning, and gives planning code only its ``PlanView``).
     """

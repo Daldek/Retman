@@ -15,7 +15,8 @@ from retman import __version__
 from retman.backends import build_decision_backend
 from retman.backends.base import DecisionBackend
 from retman.backends.openai_compatible import OpenAICompatibleBackend
-from retman.config import Config, default_config_path, load_config
+from retman.config import Config, Settings, load_config, load_settings
+from retman.environment import environment
 from retman.exceptions import (
     BackendConnectionError,
     BackendError,
@@ -144,7 +145,7 @@ def _config_problems(texts: Texts, error: ConfigError) -> list[Check]:
     ]
 
 
-def _project_checks(config: Config, project_dir: Path, texts: Texts) -> list[Check]:
+def _project_checks(config: Settings, project_dir: Path, texts: Texts) -> list[Check]:
     project = project_dir.resolve()
     root = project / config.results_dir
     checks: list[Check] = []
@@ -341,7 +342,7 @@ def _decision_checks(
 
 
 def _tool_checks(
-    config: Config | None,
+    config: Settings | None,
     texts: Texts,
     manifests: list[tuple[ManifestSpec, Path]],
     version_lookup: Callable[[str], str],
@@ -626,7 +627,7 @@ def _probe_check(
 
 
 def _store_checks(
-    config: Config,
+    config: Settings,
     texts: Texts,
     active: dict[str, tuple[ManifestSpec, str]],
     *,
@@ -756,20 +757,32 @@ def run_doctor(
     """
     texts = load_core_texts(REPORT_LANGUAGE)
     tool_manifests = list(manifests if manifests is not None else discover_manifests())
-    path = config_path or default_config_path()
+    file = environment(config_path).file
     sections: list[Section] = []
     configuration = Section("configuration", texts.get("doctor.section_configuration"))
     sections.append(configuration)
     try:
-        config: Config | None = load_config(config_path)
+        settings: Settings | None = load_settings(config_path)
     except ConfigError as err:
-        config = None
+        settings = None
         configuration.checks.extend(_config_problems(texts, err))
-    if config is not None:
-        texts = load_core_texts(config.language)
+    config: Config | None = None
+    if settings is not None:
+        texts = load_core_texts(settings.language)
         configuration.title = texts.get("doctor.section_configuration")
-        configuration.checks.append(Check("ok", texts.get("doctor.config", path=path)))
-        configuration.checks.extend(_project_checks(config, project_dir, texts))
+        state = texts.get(
+            "doctor.config_exists" if file.exists else "doctor.config_missing"
+        )
+        configuration.checks.append(
+            Check("ok", texts.get("doctor.config", path=file.path, state=state))
+        )
+        configuration.checks.extend(_project_checks(settings, project_dir, texts))
+        # The model server has no default: without it only planning is blocked
+        try:
+            config = load_config(config_path)
+        except ConfigError as err:
+            configuration.checks.extend(_config_problems(texts, err))
+    if config is not None:
         owns_client = client is None
         http = client if client is not None else httpx.Client()
         try:
@@ -783,10 +796,10 @@ def run_doctor(
         finally:
             if owns_client:
                 http.close()
-    tool_checks, active = _tool_checks(config, texts, tool_manifests, version_lookup)
+    tool_checks, active = _tool_checks(settings, texts, tool_manifests, version_lookup)
     sections.append(Section("tools", texts.get("doctor.section_tools"), tool_checks))
-    if config is not None:
-        store_checks = _store_checks(config, texts, active, deep=deep, probe=probe)
+    if settings is not None:
+        store_checks = _store_checks(settings, texts, active, deep=deep, probe=probe)
         if store_checks:
             sections.append(
                 Section("stores", texts.get("doctor.section_stores"), store_checks)
@@ -803,7 +816,7 @@ def run_doctor(
                     conformance_checks,
                 )
             )
-    language = config.language if config is not None else REPORT_LANGUAGE
+    language = settings.language if settings is not None else REPORT_LANGUAGE
     sections.append(
         Section(
             "translations",
@@ -811,14 +824,15 @@ def run_doctor(
             _translation_checks(language, texts, tool_manifests),
         )
     )
-    if config is not None:
+    if settings is not None:
         sections.append(
             Section(
                 "text",
                 texts.get("doctor.section_text"),
                 [
                     Check(
-                        "off", texts.get("doctor.text_off", backend=config.text_backend)
+                        "off",
+                        texts.get("doctor.text_off", backend=settings.text_backend),
                     )
                 ],
             )

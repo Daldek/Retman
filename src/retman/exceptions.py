@@ -198,8 +198,9 @@ class ConfigError(RetmanError):
     """The settings cannot be used (DEV-18.1).
 
     Default code: ``validation_error``, reason ``invalid_config``; a settings file
-    that does not exist is ``not_found`` (reason ``missing_config``) and one that
-    ``retman config init`` would overwrite is ``conflict`` (reason ``output_exists``).
+    named by ``--config`` or ``NOGAT_CONFIG`` that does not exist is ``not_found``
+    (reason ``missing_config``) and one that ``retman init`` would overwrite is
+    ``conflict`` (reason ``output_exists``).
 
     Parameters
     ----------
@@ -219,19 +220,20 @@ class ConfigError(RetmanError):
         "missing_file": (
             "not_found",
             "missing_config",
-            "Create the settings file with `retman init`, or name an existing one "
-            "with `--config`.",
+            "Name an existing settings file with `--config` or NOGAT_CONFIG, or "
+            "create one with `retman init`.",
         ),
         "already_exists": (
             "conflict",
             "output_exists",
-            "Edit the existing settings file instead; `retman init` never "
+            "Edit the existing [retman] table instead; `retman init` never "
             "overwrites it.",
         ),
     }
     _HINT: ClassVar[str] = (
-        "Fix the settings named in details.keys (see `retman config show`), or write "
-        "a complete table with `retman init`."
+        "Fix the settings named in details.keys (`retman config show` lists every "
+        "setting with its value and source); `retman init` writes a complete "
+        "[retman] table into a settings file that has none."
     )
 
     def __init__(

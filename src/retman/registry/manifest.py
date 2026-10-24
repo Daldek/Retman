@@ -106,7 +106,7 @@ class ManifestSpec(TypedDict):
 
     ``client`` (``"module:factory"``) names the tool's command client factory
     ``factory(settings) -> RunClient``, called with the validated
-    ``[tools.<tool>]`` table of ``retman.toml``; it is required when an
+    ``[retman.tools.<tool>]`` table of ``nogat.toml``; it is required when an
     operation declares ``calls``.
     """
 
@@ -169,7 +169,7 @@ class HandlerOutput(TypedDict):
 
     ``files`` maps a data kind (``kind``) to the files of that kind; a result
     may have several files of one kind. They are written into ``output_dir``
-    or are files of the tool's own store (``[tools.<tool>] store_dir``),
+    or are files of the tool's own store (``[retman.tools.<tool>] store_dir``),
     which the result references without copying.
     ``values`` holds short JSON-serializable results (counts, areas).
     ``tool`` is the audit block of the catalog commands that were run; the

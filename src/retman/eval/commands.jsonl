@@ -504,7 +504,7 @@
 {"id": "imgw-proj-setstore-003", "command": "Zmień magazyn projektu IMGW na skonfigurowany, po zweryfikowaniu przypiętych plików", "operation": "set_imgw_project_store", "params": {}, "expect_clarify": [], "tags": ["formal", "complete"]}
 {"id": "imgw-proj-setstore-004", "command": "Przenieś projekt danych IMGW do bieżącego magazynu", "operation": "set_imgw_project_store", "params": {}, "expect_clarify": [], "tags": ["formal", "complete"]}
 {"id": "imgw-proj-setstore-005", "command": "Wskaż projektowi magazyn z konfiguracji", "operation": "set_imgw_project_store", "params": {}, "expect_clarify": [], "tags": ["formal", "complete"]}
-{"id": "imgw-proj-setstore-006", "command": "Przepnij projekt IMGW na nowy magazyn z retman.toml", "operation": "set_imgw_project_store", "params": {}, "expect_clarify": [], "tags": ["formal", "complete"]}
+{"id": "imgw-proj-setstore-006", "command": "Przepnij projekt IMGW na nowy magazyn z nogat.toml", "operation": "set_imgw_project_store", "params": {}, "expect_clarify": [], "tags": ["formal", "complete"]}
 {"id": "imgw-proj-setstore-007", "command": "przestaw projekt na obecny magazyn", "operation": "set_imgw_project_store", "params": {}, "expect_clarify": [], "tags": ["colloquial", "complete"]}
 {"id": "imgw-proj-setstore-008", "command": "ustaw projektowi nowy magazyn imgw", "operation": "set_imgw_project_store", "params": {}, "expect_clarify": [], "tags": ["colloquial", "complete"]}
 {"id": "imgw-proj-setstore-009", "command": "niech projekt używa magazynu z konfiguracji", "operation": "set_imgw_project_store", "params": {}, "expect_clarify": [], "tags": ["colloquial", "complete"]}

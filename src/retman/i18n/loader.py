@@ -83,3 +83,25 @@ def load_core_texts(language: str) -> Texts:
     if not resource.is_file():
         raise TranslationError(f"no core translations for language {language!r}")
     return Texts(tomllib.loads(resource.read_text(encoding="utf-8")), resource.name)
+
+
+def text_language(lang: str) -> str:
+    """
+    Return the language the texts are shown in for the setting ``lang``.
+
+    The texts of Retman exist in the languages that have a core translation file
+    (Polish so far); the other languages of the setting are shown in Polish until
+    their texts are written (DEV-2.2).
+
+    Parameters
+    ----------
+    lang : str
+        The value of the ``lang`` setting.
+
+    Returns
+    -------
+    str
+        ``lang`` when ``src/retman/i18n/<lang>.toml`` exists, else ``"pl"``.
+    """
+    resource = resources.files("retman.i18n").joinpath(f"{lang}.toml")
+    return lang if resource.is_file() else "pl"

@@ -127,9 +127,31 @@ Linki porównań na końcu pliku, od najnowszego:
   `--verbose` i `--quiet`, zmiennymi `RETMAN_LOG_LEVEL` i `NOGAT_LOG_LEVEL` oraz `[log]
   diagnostic_level`; log nie zawiera poleceń ani odpowiedzi (DEV-12, ARCHITECTURE 5.4).
   `.env.example` wymienia zmienne środowiskowe.
+- `retman config show [--json]`: the file, every setting with its value and source (default,
+  variable or file), the credential variable of an external model provider as present or missing,
+  and the tool stores with their size; document `retman-config/1`; it also works with a settings
+  file that cannot be used (DEV-18.6, ADR-021). `get_config()` is its library function.
 
 ### Zmienione
 
+- **Breaking: the settings are the `[retman]` tables of `nogat.toml`, read with the `RETMAN_*`
+  variables** (DEV-18, ECO-028, ADR-021). `retman.toml` is no longer read: write the tables as
+  `[retman.decision]`, `[retman.tools.kartograf]` and so on (`retman init` writes them into
+  `nogat.toml` in the user configuration folder of `nogat`, or at `NOGAT_CONFIG` or `--config`,
+  and appends to a file that has no `[retman]` table). Order of sources: variable `RETMAN_<KEY>`
+  (`decision.url` is `RETMAN_DECISION_URL`), shared variable `NOGAT_<KEY>` (`lang`, `log_level`,
+  `data_dir`, `cache_dir`), `[retman]`, `[nogat]`, default. `[ui] language` is `lang` and
+  `[log] diagnostic_level` is `log_level` (an invalid `RETMAN_LOG_LEVEL` is now `invalid_config`).
+  Every setting has a default except the model server (`[retman.decision]`): without it only
+  planning fails (`validation_error`, reason `invalid_config`, the keys in `details.keys`), while
+  `results`, `log`, `config show`, `init` and `doctor` work. The default stores are
+  `<data_dir>/kartograf` and `<data_dir>/imgw` (they were `…/stores/kartograf` and `…/imgwtools`
+  below the data folder of Retman), the Kartograf cache is `<cache_dir>/kartograf/metadata.db`,
+  the IMGWTools reference files are `<cache_dir>/imgw/reference`, the command collection is
+  `<data_dir>/retman/collected.jsonl`; `data_dir` and `cache_dir` default to the user folders of
+  `nogat` (`platformdirs`, a new dependency). `retman-eval --config` is optional. The variables
+  are listed in the README and `.env.example`. Migration: move the tables into `nogat.toml` under
+  `[retman…]` and check the store paths with `retman config show`.
 - **Breaking: exit codes and errors follow the shared Nogat error registry** (ERR-3, ERR-4,
   ADR-020). Exit codes: 2 is `validation_error` (wrong option, invalid settings, an answer or
   a confirmation is needed and stdin is not a terminal), 3 is `not_found` (it was "cancelled"),

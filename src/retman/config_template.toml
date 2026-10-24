@@ -1,7 +1,18 @@
-# Retman central config file (ARCHITECTURE 9.1).
-# Every value Retman uses is in this file; there are no hidden defaults.
+# Retman settings: the [retman] tables of nogat.toml (ARCHITECTURE 9.1, DEV-18.1).
+# Every value Retman uses is written out here, so nothing is hidden (N-11);
+# `retman config show` lists each value with the place it comes from.
+# A variable overrides the file: RETMAN_<KEY>, the dotted key in capitals with
+# underscores (RETMAN_DECISION_URL), then NOGAT_<KEY> for the shared keys.
 
-[decision]
+[retman]
+# Shared keys: the same names work in [nogat], which every Nogat tool reads; a value
+# here overrides it for Retman only.
+# lang = "pl"            # language of questions, options and messages: "pl" | "en" (the texts exist in Polish only)
+# log_level = "warning"  # technical log on stderr: "debug" | "info" | "warning" | "error"
+# data_dir = "..."       # parent of the data stores and of the command collection; default: the user data folder of nogat
+# cache_dir = "..."      # parent of the caches; default: the user cache folder of nogat
+
+[retman.decision]
 backend = "basal"                   # "basal" (default) | "openai_compatible"
 url = "http://127.0.0.1:8000"       # basal-serve running locally (started separately)
 model = "basal-1.5-mini"
@@ -13,28 +24,25 @@ timeout_s = 30                      # how long to wait for the model server
 # api_key_env = "PROVIDER_API_KEY"  # external providers: NAME of the environment variable holding the key
 # confidence = "auto"               # "auto" | "logprobs" | "consistency" | "none" (ARCHITECTURE 3.3.3)
 # consistency_runs = 3              # queries per decision for the consistency check
-# With this backend [decision.thresholds] must be numbers tuned for the model
+# With this backend [retman.decision.thresholds] must be numbers tuned for the model
 # (ARCHITECTURE 6.2); with confidence = "none" the thresholds are ignored.
 
-[decision.thresholds]
+[retman.decision.thresholds]
 operation = "auto"      # "auto" = basal calibration, allowed only with backend = "basal"; after tuning set a number, e.g. 0.90
 parameter = "auto"
 
-[text]
+[retman.text]
 backend = "none"        # from v0.2: "openai_compatible" (e.g. Bielik in LM Studio)
 
-[ui]
-language = "pl"         # language of questions, options and messages
-
-[output]
+[retman.output]
 results_dir = "retman-output"  # results folder created inside the project folder, i.e. where Retman runs
 
-[adapters]
+[retman.adapters]
 # By default Retman enables every supported tool that is installed in a supported version.
 # The optional "enabled" list only NARROWS that set.
 # enabled = ["kartograf"]
 
-[tools.kartograf]
+[retman.tools.kartograf]
 # The store: every downloaded file is kept here as an immutable version and shared by all
 # projects. Absolute path without symbolic links, on a disk with hard links (not FAT/exFAT).
 # Keep it on the same disk as the IMGWTools store, in a separate folder.
@@ -44,20 +52,19 @@ cache_file = @KARTOGRAF_CACHE_FILE@
 workers = 4         # parallel transfers
 update = "local"    # "local" = use stored versions, ask no source | "upgrade" = also download newer versions | "force" = download again
 
-[tools.imgwtools]
+[retman.tools.imgwtools]
 # The IMGWTools store (archives, series, station catalog): a separate folder next to the
 # Kartograf store; neither store may contain the other. Absolute path without symbolic links.
 store_dir = @IMGWTOOLS_STORE_DIR@
 # Optional reference files for the station catalog (hydro_stations_locations.csv); may stay empty.
 reference_data_dir = @IMGWTOOLS_REFERENCE_DIR@
 
-[log]
+[retman.log]
 journal_commands = true    # store command texts and answers in the project journal
-diagnostic_level = "warning"  # technical log on stderr: "debug" | "info" | "warning" | "error"
 
-[privacy]
+[retman.privacy]
 # Collect planning outcomes (command, plan, answers, model decisions) from ALL projects
-# in one file, to build and tune the test set (ARCHITECTURE 5.4, rozdz. 10). Separate from
+# in one file, to build and tune the test set (ARCHITECTURE 5.4, chapter 10). Separate from
 # the project journal; stays on this computer, nothing is sent anywhere. retman init asks.
 collect_commands = @COLLECT_COMMANDS@
 collect_path = @COLLECT_PATH@

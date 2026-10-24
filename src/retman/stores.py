@@ -89,6 +89,35 @@ def symlink_component(path: Path) -> Path | None:
     return None
 
 
+def tree_size(root: Path) -> int:
+    """Return the bytes of the files below ``root``; a hard-linked file counts once.
+
+    The stores of the tools keep every version as a hard link, so their size is
+    the size of the distinct files. A folder that vanishes or cannot be listed
+    during the walk is skipped.
+    """
+    total = 0
+    seen: set[tuple[int, int]] = set()
+    pending = [root]
+    while pending:
+        try:
+            with os.scandir(pending.pop()) as entries:
+                for entry in entries:
+                    if entry.is_dir(follow_symlinks=False):
+                        pending.append(Path(entry.path))
+                    elif entry.is_file(follow_symlinks=False):
+                        info = entry.stat(follow_symlinks=False)
+                        if info.st_nlink > 1:
+                            identity = (info.st_dev, info.st_ino)
+                            if identity in seen:
+                                continue
+                            seen.add(identity)
+                        total += info.st_size
+        except OSError:
+            continue
+    return total
+
+
 def hardlink_error(folder: Path) -> OSError | None:
     """Create a hard link in ``folder`` and remove it again.
 

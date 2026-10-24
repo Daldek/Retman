@@ -90,7 +90,7 @@ class Retman:
     ``operations`` replaces the discovered operations (tests). ``clients``
     injects the command client of a tool by tool name (tests, e.g. a
     ``FakeToolClient``); otherwise it is built lazily from the manifest key
-    ``client`` and the ``[tools.<tool>]`` table. ``today`` fixes the date that
+    ``client`` and the ``[retman.tools.<tool>]`` table. ``today`` fixes the date that
     extractors resolve relative expressions against.
     """
 

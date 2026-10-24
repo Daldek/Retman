@@ -102,7 +102,7 @@ def validate(command: str, options: Mapping[str, object]) -> Verdict:
 
 
 def scratch_settings(root: Path) -> dict[str, Any]:
-    """``[tools.imgwtools]`` below a scratch folder: nothing outside it is touched."""
+    """``[retman.tools.imgwtools]`` in a scratch folder: nothing outside it is used."""
     return {
         "store_dir": str(root / "imgwtools"),
         "reference_data_dir": str(root / "imgwtools-reference"),

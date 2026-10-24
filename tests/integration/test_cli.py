@@ -480,12 +480,12 @@ def test_main_rejects_an_unknown_log_level_naming_the_variable(
     status = cli.main([*config_args, "results"], project_dir=project)
 
     assert status == 2
-    stderr = capsys.readouterr().err
-    assert "RETMAN_LOG_LEVEL" in stderr
-    document = last_line_document(stderr)
+    document = last_line_document(capsys.readouterr().err)
     assert document["code"] == "validation_error"
-    assert document["details"]["option"] == "RETMAN_LOG_LEVEL"
-    assert document["details"]["allowed"] == ["debug", "info", "warning", "error"]
+    assert document["details"]["reason"] == "invalid_config"
+    assert document["details"]["keys"]["invalid_value"] == (
+        "log_level (RETMAN_LOG_LEVEL)"
+    )
 
 
 def test_main_out_of_scope_is_unsupported_and_ends_with_the_error_document(
@@ -589,3 +589,60 @@ def test_main_a_mistake_in_the_options_is_a_validation_error(
         "validation_error",
         reason,
     )
+
+
+def test_config_show_json_prints_the_document_alone(
+    command_args, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+
+    status = cli.main([*config_args, "--json", "config", "show"], project_dir=project)
+
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    assert status == 0
+    assert captured.err == ""
+    assert document["schema"] == "retman-config/1"
+    assert document["config_file"]["source"] == "option"
+    assert document["keys"]["decision.backend"]["source"] == "file"
+
+
+def test_config_show_still_works_when_the_file_cannot_be_used(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    broken = tmp_path / "nogat.toml"
+    broken.write_text("[retman\n", encoding="utf-8")
+
+    status = cli.main(["--config", str(broken), "--json", "config", "show"])
+
+    document = json.loads(capsys.readouterr().out)
+    assert status == 0
+    assert document["config_file"]["error"]
+
+
+def test_config_show_needs_its_subcommand(capsys: pytest.CaptureFixture[str]):
+    status = cli.main(["config"])
+
+    document = last_line_document(capsys.readouterr().err)
+    assert status == document["exit_code"] == 2
+    assert document["details"]["reason"] == "usage"
+
+
+def test_a_command_without_the_model_server_names_the_missing_settings(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    status = cli.main([f"NMT dla {SHEET}"], project_dir=tmp_path)
+
+    document = last_line_document(capsys.readouterr().err)
+    assert status == document["exit_code"] == 2
+    assert document["details"]["reason"] == "invalid_config"
+    assert "decision.url" in document["details"]["keys"]["missing_key"]
+
+
+def test_results_need_no_settings_file_and_no_model(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    status = cli.main(["results"], project_dir=tmp_path)
+
+    assert status == 0
+    assert "Brak wyników" in capsys.readouterr().out

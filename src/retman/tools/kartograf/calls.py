@@ -3,7 +3,7 @@
 A builder never imports Kartograf and never touches the file system; the same
 builder serves plan-time validation, the preview, the check and the run. The
 environment of a call (store, cache, workers, update mode) is added by the
-client from ``[tools.kartograf]``, never here.
+client from ``[retman.tools.kartograf]``, never here.
 """
 
 from typing import Any

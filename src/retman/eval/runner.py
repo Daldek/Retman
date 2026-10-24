@@ -402,9 +402,7 @@ def _evaluate(
     """Parse the arguments, evaluate and report; see :func:`main`."""
     texts = load_core_texts("pl")
     parser = _Parser(prog="retman-eval", description=texts.get("eval.cli_description"))
-    parser.add_argument(
-        "--config", required=True, type=Path, help=texts.get("eval.help_config")
-    )
+    parser.add_argument("--config", type=Path, help=texts.get("eval.help_config"))
     parser.add_argument("--commands", type=Path, help=texts.get("eval.help_commands"))
     parser.add_argument("--operations", help=texts.get("eval.help_operations"))
     parser.add_argument("--tags", help=texts.get("eval.help_tags"))

@@ -60,7 +60,7 @@ def store_problems(ctx: ToolContext, *, write: bool) -> list[PreviewProblem]:
     The state comes from the tool's own ``store info`` (an offline lookup that
     never fails on a missing folder). Every problem is blocking and has no
     parameter the user could answer again: it is a matter of the configuration
-    (``retman init``, ``[tools.imgwtools] store_dir``). ``write`` operations
+    (``retman init``, ``[retman.tools.imgwtools] store_dir``). ``write`` operations
     also need ``pyarrow`` (Parquet series), which the tool imports on demand.
     """
     folder = str(ctx.store_dir)

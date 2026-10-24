@@ -12,7 +12,7 @@ from retman.i18n.loader import load_core_texts
 
 def test_build_decision_backend_rejects_unavailable_basal_service():
     config = Config(
-        path=Path("/tmp/retman-test.toml"),
+        path=Path("nogat.toml"),
         decision=DecisionConfig(
             backend="basal",
             url="http://127.0.0.1:8000",
@@ -28,9 +28,10 @@ def test_build_decision_backend_rejects_unavailable_basal_service():
         results_dir="retman-output",
         enabled_tools=None,
         journal_commands=False,
-        diagnostic_level="info",
+        log_level="info",
         collect_commands=False,
-        collect_path=Path("/tmp/retman-collected.jsonl"),
+        collect_path=Path("collected.jsonl"),
+        tools={},
     )
 
     with pytest.raises(ConfigError) as caught:

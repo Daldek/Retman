@@ -129,7 +129,7 @@ def isolate_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def settings_for(tmp_path: Path, store: Path | None = None) -> dict[str, Any]:
-    """The ``[tools.imgwtools]`` table of a test: a store and an empty reference dir."""
+    """The ``[retman.tools.imgwtools]`` table of a test: a store and a reference dir."""
     reference = tmp_path / "reference"
     reference.mkdir(exist_ok=True)
     return {

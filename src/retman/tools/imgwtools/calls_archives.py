@@ -2,7 +2,7 @@
 
 A builder is ``calls(params, ctx) -> list[CatalogCall]``: pure, with the options
 taken from the parameters and the manifest's ``tool_values``. ``root`` is never
-given here, the client adds it from ``[tools.imgwtools] store_dir``. Files the
+given here, the client adds it from ``[retman.tools.imgwtools] store_dir``. Files the
 tool writes (downloads, plans, exports) get a target in the result folder only
 once it exists, i.e. when the operation runs; while planning the commands are
 validated without them. The offline lookups feed the previews and, for the

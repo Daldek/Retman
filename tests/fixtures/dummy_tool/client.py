@@ -13,7 +13,7 @@ PROGRAM: dict[str, Any] = {}
 
 
 def create_client(settings: Mapping[str, Any]) -> FakeToolClient:
-    """Build the tool's client from its ``[tools.dummy_tool]`` table."""
+    """Build the tool's client from its ``[retman.tools.dummy_tool]`` table."""
     BUILT.append(settings)
     client = FakeToolClient(**PROGRAM)
     CLIENTS.append(client)

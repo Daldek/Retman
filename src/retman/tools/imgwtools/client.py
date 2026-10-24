@@ -2,7 +2,7 @@
 
 The tool is driven through its public command layer (``validate_command``,
 ``format_command``, ``run_command``, ``check_command``); the client adds the
-environment Retman owns (``root`` from ``[tools.imgwtools] store_dir``), turns
+environment Retman owns (``root`` from ``[retman.tools.imgwtools] store_dir``), turns
 the tool's ``imgw-result/1`` envelope into a ``ToolRun`` and its exceptions into
 ``ToolError``. What each method may do is split by capability (PRD N-12):
 ``validate``, ``command_line`` and ``lookup`` are offline and effects-free
@@ -57,7 +57,7 @@ def _tool_file(path: Path, status: str | None = None) -> ToolFile:
 class IMGWToolsClient:
     """A ``RunClient`` over the command catalog of IMGWTools 3.x.
 
-    ``settings`` is the ``[tools.imgwtools]`` table: ``store_dir`` is added as
+    ``settings`` is the ``[retman.tools.imgwtools]`` table: ``store_dir`` is added as
     ``root`` to every command that has that option and the call omits it;
     ``reference_data_dir`` is exported as ``IMGW_DATA_DIR`` once, before the tool
     is imported, so that ``store catalog`` reads its static station locations
@@ -67,7 +67,7 @@ class IMGWToolsClient:
     def __init__(self, settings: Mapping[str, Any]) -> None:
         reference = settings.get("reference_data_dir")
         if not reference:
-            raise RetmanError(f"[tools.{TOOL}] has no reference_data_dir")
+            raise RetmanError(f"[retman.tools.{TOOL}] has no reference_data_dir")
         os.environ["IMGW_DATA_DIR"] = str(reference)
         self._settings = settings
         self._imgw: Any = importlib.import_module("imgwtools")
@@ -80,7 +80,7 @@ class IMGWToolsClient:
         try:
             return Path(self._settings["store_dir"])
         except KeyError:
-            raise RetmanError(f"[tools.{TOOL}] has no store_dir") from None
+            raise RetmanError(f"[retman.tools.{TOOL}] has no store_dir") from None
 
     def _options(self, call: CatalogCall) -> dict[str, object]:
         """Return the call's options plus ``root`` where the command reads a store.

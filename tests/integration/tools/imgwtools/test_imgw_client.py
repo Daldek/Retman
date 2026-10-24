@@ -4,7 +4,7 @@ The store is the tool's own fixture store, the network is a replayed answer or
 nothing: what these tests pin is the contract the rest of Retman relies on —
 what ``lookup`` may do, how the tool's errors become ``ToolError``, what a
 ``ToolRun`` holds, and that ``root`` and ``IMGW_DATA_DIR`` come from the
-``[tools.imgwtools]`` settings.
+``[retman.tools.imgwtools]`` settings.
 """
 
 import hashlib

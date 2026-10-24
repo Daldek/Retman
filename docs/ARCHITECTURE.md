@@ -319,7 +319,7 @@ def fetch_dem(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
 
 `CatalogCall` niesie: `command` (komenda katalogu), `options` (w formie JSON, dokładnie tak, jak
 przyjmują je `validate_command` i `run_command`; **bez** argumentów środowiskowych — magazynu,
-liczby wątków, cache, trybu aktualizacji — bo dodaje je klient z `[tools.<narzędzie>]`, p. 9.1),
+liczby wątków, cache, trybu aktualizacji — bo dodaje je klient z `[retman.tools.<narzędzie>]`, p. 9.1),
 `kind` (rodzaj plików, które wywołanie daje: klucz w `files`) i `params` (opcja narzędzia →
 parametr Retmana, gdy nazwy się różnią; kieruje odrzucenie przez narzędzie do parametru, o który
 trzeba zapytać ponownie). Operacja złożona to kilka wywołań; wykonawca zatrzymuje się na
@@ -334,7 +334,7 @@ Klient jest **podzielony według możliwości**, więc bramka [W-05], [N-12] wyn
 
 `PlanView` nie ma atrybutów `run`, `check` ani `query`: krok sieciowy przed potwierdzeniem jest
 niemożliwy z konstrukcji, a nie tylko z konwencji. Klient powstaje z fabryki z manifestu (klucz
-`client`): `factory(settings) -> RunClient` dostaje zwalidowaną tabelę `[tools.<narzędzie>]`,
+`client`): `factory(settings) -> RunClient` dostaje zwalidowaną tabelę `[retman.tools.<narzędzie>]`,
 nie może użyć sieci ani nic zapisać przy tworzeniu, jest budowana leniwie, raz na `Retman`
 i narzędzie, a `ImportError` kończy się błędem `RetmanError` z podpowiedzią `retman doctor`.
 Błędy narzędzia klient zgłasza jako `ToolError` (stabilny `code`, opcja lub opcje, których dotyczy,
@@ -343,7 +343,7 @@ dozwolone wartości, tekst i wskazówka narzędzia), wyniki jako `ToolRun` (`sta
 `error`; pełny dokument JSON; dokładna linia komendy; schemat dokumentu).
 
 Wszystko, co budowniczy, podgląd, sprawdzenie i handler wolno wiedzieć o otoczeniu, niesie
-`ToolContext`: `tool`, `settings` (tabela `[tools.<narzędzie>]`), `project_dir`, `output_dir`
+`ToolContext`: `tool`, `settings` (tabela `[retman.tools.<narzędzie>]`), `project_dir`, `output_dir`
 (`None` w planowaniu — folder wyniku jeszcze nie istnieje), `inputs` (zwalidowane wejścia),
 `client`, `specs` (parametry operacji z manifestu), `operation` (planowana albo wykonywana
 operacja — po to, żeby handler mógł oddać zwykłe wywołania katalogu wykonawcy `run_calls`)
@@ -382,7 +382,7 @@ jako krok sieciowy — także wtedy, gdy narzędzie w niektórych przypadkach ni
 linia komendy, status, pliki z sumami, nazwa i suma dokumentu; p. 5.4). Funkcja `describe` operacji
 (albo mapowanie ogólne) zamienia wywołania i ich wyniki na `HandlerOutput` = `{values, files,
 warnings[, tool]}`. Klucze w `files` to rodzaje danych (`kind`, p. 3.2.6); plik musi leżeć
-w `output_dir` **albo w magazynie narzędzia** (`[tools.<narzędzie>] store_dir`) — gdzie indziej
+w `output_dir` **albo w magazynie narzędzia** (`[retman.tools.<narzędzie>] store_dir`) — gdzie indziej
 to błąd. Pliki z magazynu wynik wskazuje ścieżką bezwzględną i sumą SHA-256, niczego nie kopiując.
 
 **Komunikaty.** Użytkownik widzi własny tekst Retmana wybrany po stabilnym kodzie błędu
@@ -412,7 +412,7 @@ def delineate_catchment(
     params     – validated parameter values, e.g. {"point": {"latitude": 52.41, "longitude": 16.93, ...}}
     inputs     – input files by input name (none for this operation)
     output_dir – the only directory the handler may write to
-    ctx        – [tools.hydrograf] settings and the tool's client (p. 3.2.4)
+    ctx        – [retman.tools.hydrograf] settings and the tool's client (p. 3.2.4)
     """
     point = params["point"]
     catchment = hydrograf.delineate(lat=point["latitude"], lon=point["longitude"])  # illustrative name of a public function
@@ -583,7 +583,7 @@ obwiednię (EPSG:2180) oraz — dla arkuszy — liczbę arkuszy. Co plik oznacza
 | BDOT10k | pełne pakiety wszystkich powiatów przecinających obwiednię | obszar poza Polską odrzuca podgląd; listę powiatów zna dopiero usługa PRG (sieć, po potwierdzeniu albo w sprawdzeniu) |
 | ortofotomapa (arkusze potomne) | plik nie jest przyjmowany — klasa dostawcy bierze tylko godła | problem podglądu: Retman pyta ponownie o produkt i obszar |
 
-**Wynik i magazyn.** Kartograf zapisuje pobrane pliki w swoim magazynie (`[tools.kartograf]
+**Wynik i magazyn.** Kartograf zapisuje pobrane pliki w swoim magazynie (`[retman.tools.kartograf]
 store_dir`) jako niezmienne wersje; wynik wskazuje je ścieżką bezwzględną i sumą SHA-256 (p. 5.4)
 i zawiera dokument narzędzia (`tool_<n>_<komenda>.json`). Wyjątek: BDOT10k w Shapefile Kartograf
 zwraca w magazynie archiwa ZIP, a mapper rozpakowuje wszystkie `.shp` wraz z plikami towarzyszącymi
@@ -641,13 +641,13 @@ dokument bez pliku (listy, tabele), zapisują go jako CSV (tabele) albo JSON.
 
 **Zasady wspólne dla operacji IMGWTools:**
 
-- **Magazyn** (`[tools.imgwtools] store_dir`, p. 9.1) jest opcją `root` każdej komendy, którą
+- **Magazyn** (`[retman.tools.imgwtools] store_dir`, p. 9.1) jest opcją `root` każdej komendy, którą
   dodaje klient. Brak magazynu, folder obcy albo magazyn o nieobsługiwanym schemacie to
   **problem podglądu** z poleceniem naprawy („Utwórz magazyn IMGW”, `retman init`); żadna
   operacja nie tworzy magazynu po cichu. `reference_data_dir` klient eksportuje raz jako zmienną
   `IMGW_DATA_DIR` przed pierwszym importem narzędzia — jedyny wyjątek od zasady „bez zmiennych
   środowiskowych”, bo narzędzie nie ma opcji dla pliku statycznych położeń stacji; wartość
-  pochodzi z pliku centralnego, a nie z otoczenia.
+  pochodzi z ustawień, a nie z otoczenia.
 - **Stacje** czyta ekstraktor `station` **offline z katalogu w magazynie** (kody: 9 cyfr
   IMGW-PIB, identyfikator WIGOS ČHMÚ; nazwy z odmianą polską, odmieniona nazwa wymaga
   potwierdzenia, p. 6.1). Bez katalogu Retman czyta tylko kody i wskazuje operację
@@ -1078,7 +1078,7 @@ kategorii (p. 3.4).
 
 **Ekstraktory** (wartości czyta kod, nigdy model; rejestr w `src/retman/extractors/__init__.py`).
 Ekstraktory kontekstowe (`station`, `years`, `period`, `variables`) dostają dodatkowo
-`ExtractionContext`: ustawienia `[tools.<narzędzie>]`, folder projektu, dzisiejszą datę (stałą
+`ExtractionContext`: ustawienia `[retman.tools.<narzędzie>]`, folder projektu, dzisiejszą datę (stałą
 w obrębie jednego `Retman`, więc planowanie jest powtarzalne), `scope` — scalone `option_meta`
 opcji już wybranych w parametrach `choice` (np. dostawca, rodzaj i zmienne zbioru danych;
 parametr zbioru musi więc stać w manifeście przed stacją i zmiennymi) oraz `lookup` — offline
@@ -1198,7 +1198,7 @@ w v0.1 nie dałoby się wykonać operacji, które potrzebują złożonych danych
 ### 5.1. Projekt = folder
 
 Przestrzeń robocza należy do **projektu**, a projekt to folder, w którym uruchamia się Retmana.
-Wyniki trafiają do podfolderu wyników w tym folderze; jego nazwę określa plik centralny
+Wyniki trafiają do podfolderu wyników w tym folderze; jego nazwę określa ustawienie `output.results_dir`
 (domyślnie `retman-output`, p. 9.1). Wyniki z różnych projektów nigdy się nie mieszają.
 
 ```
@@ -1331,7 +1331,7 @@ albo „pominięte”.
 **3. Log techniczny** — osobny, do diagnozowania problemów Retmana (połączenia, czasy odpowiedzi,
 błędy); biblioteka loguje przez `logging`, a CLI wypisuje log na stderr (DEV-12). **Bez treści
 poleceń i odpowiedzi.** Poziom: `--verbose` (debug) albo `--quiet` (tylko błędy), potem
-`RETMAN_LOG_LEVEL`, `NOGAT_LOG_LEVEL` i plik centralny (`diagnostic_level`, p. 9.1); domyślnie
+`RETMAN_LOG_LEVEL`, `NOGAT_LOG_LEVEL` i ustawienie `log_level` w `[retman]` i `[nogat]` (p. 9.1); domyślnie
 `warning`.
 
 **4. Zbiór poleceń** (opcjonalny, ADR-010) — jeden plik ze **wszystkich** projektów, do budowy
@@ -1340,10 +1340,10 @@ i strojenia zbioru testowego (`retman-eval`). Każdy wiersz to wynik planowania:
 polecenie, odpowiedzi, wartości ze źródłami, pytania, decyzje modelu, wersje Retmana
 i narzędzia, backend i nazwa modelu — **bez adresu serwera** i bez ścieżek lokalnych (z pliku
 geometrii zostaje nazwa). Włącza go tylko wyraźna zgoda: `retman init` pyta o to w terminalu,
-bez terminala zapisuje `false`; ścieżka pliku jest wpisana w `retman.toml` (`collect_path`,
-domyślnie Linux `~/.local/share/retman/collected.jsonl`, macOS
-`~/Library/Application Support/retman/collected.jsonl`, Windows
-`%LOCALAPPDATA%\retman\collected.jsonl`). Zbiór jest niezależny od `journal_commands`;
+bez terminala zapisuje `false`; ścieżka pliku jest wpisana w `[retman.privacy]` (`collect_path`,
+domyślnie `<data_dir>/retman/collected.jsonl`: w Linuksie `~/.local/share/nogat/retman/collected.jsonl`,
+w macOS `~/Library/Application Support/nogat/retman/collected.jsonl`, w Windows
+`%LOCALAPPDATA%\nogat\retman\collected.jsonl`). Zbiór jest niezależny od `journal_commands`;
 `retman-eval` nigdy do niego nie pisze. Plik zostaje na komputerze użytkownika.
 
 **Cztery rzeczy, których nie należy mylić:**
@@ -1595,7 +1595,7 @@ każdej linii pochodzi z tabeli `[check]` w `pl.toml` narzędzia.
 **Co sprawdzenie wysyła:** wyłącznie wartości z planu (obszar, produkt, lata…) do tych samych
 usług danych, które zapytałoby wykonanie; nigdy treści polecenia, odpowiedzi, danych modelu ani
 zawartości plików. Uwaga przed zgodą (`operations.<id>.check.notice`) mówi, które usługi zostaną
-zapytane. W `retman.toml` nie ma przełącznika wyłączającego sprawdzenia: każde wymaga zgody
+zapytane. W ustawieniach nie ma przełącznika wyłączającego sprawdzenia: każde wymaga zgody
 na ekranie.
 
 **CLI:** każda odpowiedź inna niż `t` w pytaniu o zgodę jest **odmową** (zamknięcie awaryjne):
@@ -1677,7 +1677,7 @@ if input("Execute? [y/n] ") == "y":
         print("Warning:", warning)
 ```
 
-`Retman.from_config()` bez argumentu wczytuje plik centralny (p. 9.1) — ten sam, z którego
+`Retman.from_config()` bez argumentu wczytuje ustawienia (p. 9.1) — te same, z których
 korzysta CLI; jawną ścieżkę (`path`), atrapę modelu (`backend`) i folder projektu (`project_dir`)
 można podać opcjonalnie, np. w testach. Konstruktor `Retman(config, backend, project_dir)`
 przyjmuje dodatkowo `clients={narzędzie: klient}` (wstrzyknięcie klientów narzędzi, np.
@@ -1735,13 +1735,13 @@ się bez człowieka [W-05].
 
 | Obszar | Sprawdzenia |
 | --- | --- |
-| Konfiguracja | ścieżka i poprawność pliku centralnego (wszystkie problemy naraz, także brak `[tools.*]`); folder bieżącego projektu i czy folder wyników jest zapisywalny |
+| Konfiguracja | ścieżka i poprawność pliku ustawień `nogat.toml` (wszystkie problemy naraz; brak pliku to nie błąd, obowiązują wartości domyślne) i ustawienia modelu (ich brak blokuje planowanie); folder bieżącego projektu i czy folder wyników jest zapisywalny |
 | Model decyzyjny | **adres serwera**; czy odpowiada; jaki model jest załadowany; **pytanie testowe** z oczywistą odpowiedzią (czy model odpowiada sensownie); skąd pochodzi pewność (`basal`, `logprobs`, zgodność, niedostępna) i progi (`"auto"` z backendem innym niż `basal` to błąd konfiguracji, p. 6.2) |
 | Model tekstowy | czy jest włączony; **adres serwera**; czy odpowiada |
 | Narzędzia | które są zainstalowane; czy ich wersje mieszczą się w obsługiwanym zakresie; liczba dostępnych operacji |
 | Magazyny danych narzędzi | dla narzędzi w użyciu (zainstalowanych, w obsługiwanej wersji, niewyłączonych): ścieżka magazynu bez dowiązań symbolicznych (IMGWTools takiej nie przyjmuje: błąd; Kartograf: ostrzeżenie), folder istnieje albo da się go utworzyć i można w nim zapisywać, **dowiązania twarde działają w obu magazynach** (próba w magazynie albo w najbliższym istniejącym folderze tego samego dysku); Kartograf: cache metadanych (brak to ostrzeżenie — Kartograf działa wolniej); IMGWTools: znacznik `imgw-store.json` i jego schemat (brak magazynu to ostrzeżenie z podpowiedzią, folder obcy albo uszkodzony znacznik to błąd), `pyarrow` (szeregi czasowe), folder danych referencyjnych; z `--deep` także próbny zapis do magazynu IMGWTools |
 | Zgodność opisów z narzędziami | lekka wersja `retman-scaffold --check` (p. 3.2.3) dla narzędzi w użyciu: komendy z manifestu są w katalogu zainstalowanego narzędzia, a narzędzie nie oferuje wartości, której manifest ani nie oferuje, ani nie wyłącza (np. „kartograf 0.8.1 przyjmuje rozdzielczość 0,3 m”); operacje bez wiersza w zbiorze `retman-eval` są zgłoszone jako niesprawdzone. Linie ostrzegają, ale nie blokują pracy (kod wyjścia bez zmian) |
-| Tłumaczenia | komplet tekstów dla języka z `[ui] language` |
+| Tłumaczenia | komplet tekstów dla języka z ustawienia `lang` |
 | Przestrzeń robocza | folder wyników bieżącego projektu; liczba wyników; czy `result.json` dają się odczytać |
 
 **Przykładowy wynik:**
@@ -1751,7 +1751,7 @@ $ retman doctor
 Retman 0.1.0
 
 Konfiguracja
-  ✓ plik centralny: ~/.config/retman/retman.toml
+  ✓ plik ustawień: ~/.config/nogat/nogat.toml (istnieje)
   ✓ projekt: ~/projekty/zlewnia-a → wyniki w retman-output/ (5 wyników, zapis możliwy)
 
 Model decyzyjny
@@ -1779,20 +1779,20 @@ Tłumaczenia (pl)
   ✓ komplet
 
 Model tekstowy
-  – wyłączony ([text] backend = "none")
+  – wyłączony ([retman.text] backend = "none")
 ```
 
 Adres każdego modelu jest pokazany bez oceniania go — o tym, gdzie działa model, decyduje
-użytkownik w pliku centralnym (rozdz. 10).
+użytkownik w ustawieniach (rozdz. 10).
 
 Gdy serwer modelu nie działa albo magazyn nie nadaje się do zapisu, raport podpowiada, co zrobić, np.:
 
 ```
 Model decyzyjny
-  ✗ serwer modelu nie odpowiada (http://127.0.0.1:8000) → uruchom serwer modelu (np. LM Studio albo basal-serve, instrukcja w README) i sprawdź [decision] url w ~/.config/retman/retman.toml
+  ✗ serwer modelu nie odpowiada (http://127.0.0.1:8000) → uruchom serwer modelu (np. LM Studio albo basal-serve, instrukcja w README) i sprawdź [retman.decision] url w ~/.config/nogat/nogat.toml albo zmienną RETMAN_DECISION_URL
 
 Magazyny danych narzędzi
-  ✗ imgwtools: system plików magazynu (/mnt/usb/imgwtools) nie obsługuje dowiązań twardych (Operation not permitted) → oba magazyny narzędzi wymagają dowiązań twardych (nie ma ich FAT/exFAT ani część udziałów sieciowych); wskaż magazyn na innym dysku w [tools.imgwtools] store_dir (~/.config/retman/retman.toml)
+  ✗ imgwtools: system plików magazynu (/mnt/usb/imgw) nie obsługuje dowiązań twardych (Operation not permitted) → oba magazyny narzędzi wymagają dowiązań twardych (nie ma ich FAT/exFAT ani część udziałów sieciowych); wskaż magazyn na innym dysku w [retman.tools.imgwtools] store_dir (~/.config/nogat/nogat.toml)
 ```
 
 Zasady:
@@ -1918,8 +1918,8 @@ rozstrzygnięcia na starcie v0.3: rozdz. 12, pkt 16).
 a dla `mcp` także `client` (nazwa i wersja z `initialize`), `confirmation` (metoda i czas)
 oraz `command.origin = "agent"` (tekst polecenia to parafraza agenta, nie słowa użytkownika).
 
-**Prywatność** (N-04): klient-agent jest usługą spoza `retman.toml`, zwykle modelem w chmurze.
-Sekcja `[mcp]` pojawi się w szablonie konfiguracji dopiero w v0.3: `transport = "stdio"`,
+**Prywatność** (N-04): klient-agent jest usługą spoza ustawień Retmana, zwykle modelem w chmurze.
+Tabela `[retman.mcp]` pojawi się w szablonie ustawień dopiero w v0.3: `transport = "stdio"`,
 `confirmation = "elicitation"`, `plan_ttl_seconds`, `max_open_plans` i `expose_command_text = false`
 (treść poleceń jest ukryta przed agentem nawet przy `journal_commands = true`). Zasoby
 `retman://results` zwracają `result.json` bez `command` i bez ścieżek bezwzględnych;
@@ -2009,55 +2009,77 @@ obowiązkowe dla backendów innych niż basal (p. 6.2).
 
 ## 9. Konfiguracja i wymagania techniczne
 
-### 9.1. Plik centralny `retman.toml` [N-11]
+### 9.1. Ustawienia: tabele `[retman]` pliku `nogat.toml` [N-11, ADR-021]
 
 Ustawienia **niezależne od projektu** — m.in. modele, progi pewności, język, prywatność
-i magazyny danych narzędzi — są w **jednym pliku na komputerze**, w standardowym katalogu
-konfiguracji systemu:
+i magazyny danych narzędzi — czyta Retman z **jednego pliku na komputerze, wspólnego dla narzędzi
+Nogat** (DEV-18.1): `nogat.toml` w folderze ustawień użytkownika (`platformdirs.user_config_path("nogat")`),
+z pliku wskazanego przez `NOGAT_CONFIG` albo przez opcję `--config PATH`. Plik czyta się
+`tomllib`; Retman nie wymaga ani pakietu `nogat`, ani pliku `.env`. Tabela `[nogat]` ma klucze wspólne
+(`lang`, `log_level`, `data_dir`, `cache_dir`), tabela `[retman]` i jej podtabele — ustawienia Retmana.
 
-| System | Ścieżka |
-| --- | --- |
-| Linux | `~/.config/retman/retman.toml` (albo `$XDG_CONFIG_HOME/retman/`) |
-| macOS | `~/Library/Application Support/retman/retman.toml` |
-| Windows | `%APPDATA%\retman\retman.toml` |
+**Kolejność źródeł** każdego ustawienia: opcja polecenia (na razie żadne ustawienie jej nie ma;
+`--config` wskazuje plik), zmienna `RETMAN_<KLUCZ>`, zmienna `NOGAT_<KLUCZ>` (tylko klucze wspólne),
+tabela `[retman]`, tabela `[nogat]` (tylko klucze wspólne), wartość domyślna. `<KLUCZ>` to klucz
+z kropkami zamienionymi na `_` wielkimi literami (`decision.url` — `RETMAN_DECISION_URL`); pusta
+zmienna znaczy „nie ustawiono”. Moduł `retman.environment` znajduje wartość (tabela kluczy `KEYS`,
+`Environment.setting`), moduł `retman.config` sprawdza ją i buduje `Settings` (bez serwera modelu)
+i `Config` (z nim). Wartość nieużyteczna jest odrzucana z opisem, a `load_settings` i `load_config`
+zgłaszają wszystkie takie problemy naraz jako `ConfigError` (`validation_error`, powód `invalid_config`);
+plik nieczytelny, z błędem TOML albo wskazany, a nieistniejący, kończy każde polecenie tym samym błędem.
 
-- `retman init` tworzy pełny plik ze wszystkimi ustawieniami i komentarzami. **Retman nie ma
-  ukrytych wartości domyślnych** — każda wartość, której używa, jest widoczna w pliku.
-  Bez pliku Retman nie startuje i podpowiada `retman init`. W terminalu `retman init` pyta
-  o zbieranie poleceń (p. 5.4) i o folder na magazyny narzędzi, tworzy foldery (magazyn
-  Kartografa, folder cache i danych referencyjnych), sprawdza, że dysk ma dowiązania twarde,
-  i dopiero potem zapisuje plik; na końcu, za zgodą, inicjuje magazyn IMGWTools (`store init`,
-  bez sieci). Bez terminala zapisuje plik z widocznymi ścieżkami domyślnymi i niczego nie
-  tworzy. Od wersji łatwej (0.5+) `retman init` działa jako kreator: pyta też, gdzie działa
-  model, sprawdza połączenie i zapisuje plik (p. 9.4).
-- `retman doctor` pokazuje ścieżkę używanego pliku.
-- **Rzeczy zależne od projektu nie są w pliku centralnym.** Wyniki trafiają do folderu projektu
-  (rozdz. 5); w pliku jest tylko nazwa podfolderu wyników.
-- **Magazyny narzędzi** [ADR-015]: Kartograf i IMGWTools trzymają pobrane dane w magazynie
+- **Brak ukrytych wartości domyślnych** [N-11]: `retman config show` (`retman-config/1`, DEV-18.6)
+  pokazuje każde ustawienie z wartością i źródłem (`default`, `env`, `file`), plik (także nieużyteczny),
+  zmienną z kluczem dostawcy modelu (`present` albo `missing`), magazyny narzędzi z rozmiarem
+  (dowiązanie twarde liczone raz); `retman init` zapisuje wszystkie tabele z widocznymi wartościami.
+  Tabelę `[retman]` dopisuje na końcu istniejącego pliku, nie ruszając innych tabel; istniejąca tabela
+  `[retman]` to `conflict` (powód `output_exists`).
+- **Serwer modelu nie ma wartości domyślnych**: `[retman.decision]` (adres, model, progi) nie ma sensownej
+  wartości domyślnej, więc `load_config` zgłasza brakujące klucze (`missing_key`), a polecenia bez modelu
+  (`retman results`, `retman log`, `retman config show`, `retman init`, `retman doctor`) działają z samych
+  wartości domyślnych (`load_settings`). Klucz API nie jest ustawieniem: czyta go się ze zmiennej, którą
+  nazywa `decision.api_key_env` (rozdz. 10, DEV-18.4).
+- **Rzeczy zależne od projektu nie są w ustawieniach.** Wyniki i dziennik trafiają do folderu projektu
+  (rozdz. 5, odstępstwo od DEV-18.2: w ustawieniach jest tylko nazwa podfolderu wyników `output.results_dir`).
+- **Magazyny narzędzi** [ADR-015, ADR-021]: Kartograf i IMGWTools trzymają pobrane dane w magazynie
   poza folderami wyników, wspólnym dla wszystkich projektów. Argumenty środowiskowe narzędzi
   (magazyn, liczba wątków, cache, tryb aktualizacji) klient bierze wyłącznie z tabel
-  `[tools.<narzędzie>]` (p. 3.2.4). Obie tabele są wymagane — plik bez nich jest odrzucany
-  (`retman init` od nowa albo dopisanie sekcji). Ścieżki są bezwzględne, bez `..`; magazyny
+  `[retman.tools.<narzędzie>]` (p. 3.2.4); mają wartości domyślne: magazyn Kartografa
+  `<data_dir>/kartograf`, magazyn IMGWTools `<data_dir>/imgw`, cache Kartografa
+  `<cache_dir>/kartograf/metadata.db`, dane referencyjne IMGWTools `<cache_dir>/imgw/reference`,
+  zbiór poleceń `<data_dir>/retman/collected.jsonl`. `data_dir` i `cache_dir` to foldery danych
+  i cache użytkownika nogat (`platformdirs.user_data_path("nogat")`, `user_cache_path("nogat")`;
+  w Linuksie `~/.local/share/nogat` i `~/.cache/nogat`). Ścieżki są bezwzględne, bez `..`; magazyny
   Kartografa i IMGWTools to dwa osobne foldery obok siebie na jednym dysku, a żaden nie zawiera
   drugiego (cache Kartografa i dane referencyjne IMGWTools też nie leżą w magazynie). Dysk musi
   mieć dowiązania twarde (nie mają ich FAT/exFAT ani część udziałów sieciowych); cache metadanych
   Kartografa musi leżeć na dysku lokalnym. `update` Kartografa: `local` — użyj zapisanych wersji
   i nie pytaj źródeł o nowsze, `upgrade` — pobierz także nowsze, `force` — pobierz ponownie.
-  Ścieżki domyślne `retman init` wpisuje do pliku w całości: magazyny w `<katalog danych>/stores/`
-  (foldery `kartograf` i `imgwtools`), cache i dane referencyjne obok, w `<katalog danych>`
-  (Linux `~/.local/share/retman/`, macOS `~/Library/Application Support/retman/`, Windows
-  `%LOCALAPPDATA%\retman\`). Dysk bez dowiązań twardych kończy `retman init` błędem przed
-  zapisem pliku (kod wyjścia 4 albo 8), a odmowa `store init` przez IMGWTools z tego powodu zostawia
-  plik i podpowiada zmianę obu `store_dir`.
+  W terminalu `retman init` pyta o zbieranie poleceń (p. 5.4) i o folder na magazyny narzędzi
+  (domyślnie `data_dir`), tworzy foldery (magazyn Kartografa, folder cache i danych referencyjnych),
+  sprawdza, że dysk ma dowiązania twarde, i dopiero potem zapisuje tabele; na końcu, za zgodą, inicjuje
+  magazyn IMGWTools (`store init`, bez sieci). Bez terminala zapisuje tabele z widocznymi ścieżkami
+  domyślnymi i niczego nie tworzy. Dysk bez dowiązań twardych kończy `retman init` błędem przed zapisem
+  (kod wyjścia 8 albo 9), a odmowa `store init` przez IMGWTools z tego powodu zostawia plik i podpowiada
+  zmianę obu `store_dir`. Od wersji łatwej (0.5+) `retman init` działa jako kreator: pyta też, gdzie
+  działa model, sprawdza połączenie i zapisuje plik (p. 9.4).
+- **Język** (`lang`, `pl` albo `en`): teksty Retmana istnieją tylko po polsku, więc `en` jest przyjmowany
+  i pokazywany przez `retman config show`, a komunikaty zostają polskie, aż powstaną teksty angielskie
+  (odstępstwo od DEV-2.2 w `CLAUDE.md`). Dane maszynowe są zawsze po angielsku.
 - W pliku nie ma opisów narzędzi (manifestów) ani tekstów (tłumaczeń) — to część kodu Retmana,
   testowana w CI (p. 3.2, 4.2). Nie ma w nim też kluczy API, tylko nazwy zmiennych
-  środowiskowych (rozdz. 10). Sekcja `[mcp]` pojawi się dopiero w v0.3 (bez nieużywanych kluczy).
+  środowiskowych (rozdz. 10). Sekcja `[retman.mcp]` pojawi się dopiero w v0.3 (bez nieużywanych kluczy).
+
+Wszystkie zmienne wymienia README i `.env.example`; szablon tabel (`src/retman/config_template.toml`):
 
 ```toml
-# Retman central config file (ARCHITECTURE 9.1).
-# Every value Retman uses is in this file; there are no hidden defaults.
+[retman]
+# lang = "pl"            # language of questions, options and messages: "pl" | "en"
+# log_level = "warning"  # technical log on stderr: "debug" | "info" | "warning" | "error"
+# data_dir = "..."       # parent of the data stores and of the command collection
+# cache_dir = "..."      # parent of the caches
 
-[decision]
+[retman.decision]
 backend = "basal"                   # "basal" (default) | "openai_compatible"
 url = "http://127.0.0.1:8000"       # basal-serve running locally (started separately)
 model = "basal-1.5-mini"
@@ -2069,54 +2091,50 @@ timeout_s = 30                      # how long to wait for the model server
 # api_key_env = "PROVIDER_API_KEY"  # external providers: NAME of the environment variable holding the key
 # confidence = "auto"               # "auto" | "logprobs" | "consistency" | "none" (ARCHITECTURE 3.3.3)
 # consistency_runs = 3              # queries per decision for the consistency check
-# With this backend [decision.thresholds] must be numbers tuned for the model
+# With this backend [retman.decision.thresholds] must be numbers tuned for the model
 # (ARCHITECTURE 6.2); with confidence = "none" the thresholds are ignored.
 
-[decision.thresholds]
+[retman.decision.thresholds]
 operation = "auto"      # "auto" = basal calibration, allowed only with backend = "basal"; after tuning set a number, e.g. 0.90
 parameter = "auto"
 
-[text]
+[retman.text]
 backend = "none"        # from v0.2: "openai_compatible" (e.g. Bielik in LM Studio)
 
-[ui]
-language = "pl"         # language of questions, options and messages
-
-[output]
+[retman.output]
 results_dir = "retman-output"  # results folder created inside the project folder, i.e. where Retman runs
 
-[adapters]
+[retman.adapters]
 # By default Retman enables every supported tool that is installed in a supported version.
 # The optional "enabled" list only NARROWS that set.
 # enabled = ["kartograf"]
 
-[tools.kartograf]
+[retman.tools.kartograf]
 # The store: every downloaded file is kept here as an immutable version and shared by all
 # projects. Absolute path without symbolic links, on a disk with hard links (not FAT/exFAT).
 # Keep it on the same disk as the IMGWTools store, in a separate folder.
-store_dir = '/home/<user>/.local/share/retman/stores/kartograf'
+store_dir = '/home/<user>/.local/share/nogat/kartograf'
 # Metadata cache (SQLite). Keep it on a LOCAL disk, never on a network share.
-cache_file = '/home/<user>/.local/share/retman/kartograf_cache.db'
+cache_file = '/home/<user>/.cache/nogat/kartograf/metadata.db'
 workers = 4         # parallel transfers
 update = "local"    # "local" = use stored versions, ask no source | "upgrade" = also download newer versions | "force" = download again
 
-[tools.imgwtools]
+[retman.tools.imgwtools]
 # The IMGWTools store (archives, series, station catalog): a separate folder next to the
 # Kartograf store; neither store may contain the other. Absolute path without symbolic links.
-store_dir = '/home/<user>/.local/share/retman/stores/imgwtools'
+store_dir = '/home/<user>/.local/share/nogat/imgw'
 # Optional reference files for the station catalog (hydro_stations_locations.csv); may stay empty.
-reference_data_dir = '/home/<user>/.local/share/retman/imgw-reference'
+reference_data_dir = '/home/<user>/.cache/nogat/imgw/reference'
 
-[log]
+[retman.log]
 journal_commands = true    # store command texts and answers in the project journal
-diagnostic_level = "warning"  # technical log on stderr: "debug" | "info" | "warning" | "error"
 
-[privacy]
+[retman.privacy]
 # Collect planning outcomes (command, plan, answers, model decisions) from ALL projects
 # in one file, to build and tune the test set (ARCHITECTURE 5.4, rozdz. 10). Separate from
 # the project journal; stays on this computer, nothing is sent anywhere. retman init asks.
 collect_commands = false
-collect_path = '/home/<user>/.local/share/retman/collected.jsonl'
+collect_path = '/home/<user>/.local/share/nogat/retman/collected.jsonl'
 ```
 
 ### 9.2. Systemy i sprzęt [N-06], [N-09]
@@ -2235,7 +2253,7 @@ retman doctor
    Retmana. Instaluje `uv`, Retmana i narzędzia wybrane z listy, czyli wykonuje kroki 1–2
    wersji trudnej.
 2. **Kreator `retman init`** — pyta, gdzie działa model (na tym komputerze / na serwerze jednostki
-   pod podanym adresem / u dostawcy), od razu sprawdza połączenie i zapisuje plik centralny (p. 9.1).
+   pod podanym adresem / u dostawcy), od razu sprawdza połączenie i zapisuje ustawienia (p. 9.1).
 3. **`retman add-tool <narzędzie>`** — doinstalowuje znane Retmanowi narzędzie do jego środowiska,
    w wersji z obsługiwanego zakresu, przez `uv`. Jak każda operacja wymaga potwierdzenia:
 
@@ -2275,7 +2293,7 @@ retman doctor
   modelu ani zawartości plików. Zgoda jest jednorazowa, nie jest częścią zapisanego planu,
   a każda zmiana planu ją cofa (p. 6.5).
 - Handlery zapisują wyłącznie do przydzielonego katalogu wyników (p. 3.2.4). Magazyn narzędzia
-  zapisuje tylko samo narzędzie, przez swój klient, w folderze z `[tools.<narzędzie>] store_dir`;
+  zapisuje tylko samo narzędzie, przez swój klient, w folderze z `[retman.tools.<narzędzie>] store_dir`;
   Retman niczego w nim nie zmienia ani nie usuwa.
 - **Magazyny narzędzi** (p. 9.1): ścieżki są bezwzględne, bez `..` i bez składnika będącego
   dowiązaniem symbolicznym (IMGWTools takiej ścieżki nie przyjmuje; `retman doctor` zgłasza ją
@@ -2290,7 +2308,7 @@ retman doctor
   Narzędzia łączą się z publicznymi usługami danych (GUGiK, IMGW, ČHMÚ) po potwierdzeniu planu
   albo, na życzenie, w sprawdzeniu dostępności; do usług trafiają parametry żądania.
 - Domyślna konfiguracja modeli wskazuje wyłącznie na `localhost`.
-- **Gdzie działa model, decyduje użytkownik** w pliku centralnym. Retman nie ocenia adresów
+- **Gdzie działa model, decyduje użytkownik** w ustawieniach. Retman nie ocenia adresów
   i nie ostrzega; `retman doctor` pokazuje adres każdego modelu (p. 7.2).
 - basal-serve nie ma własnej kontroli dostępu. Na serwerze jednostki zabezpieczenie dostępu
   należy do wdrażającego (wzmianka w README).
@@ -2302,13 +2320,13 @@ retman doctor
   mogą cytować słowa lub ścieżki użytkownika: pokazanego planu, powodu ponownego zadania pytania
   i linii raportu dostępności.
 - **Log techniczny** jest zapisywany lokalnie, bez treści poleceń (p. 5.4).
-- Zbieranie poleceń ze wszystkich projektów w jednym pliku (`[privacy] collect_commands`,
+- Zbieranie poleceń ze wszystkich projektów w jednym pliku (`[retman.privacy] collect_commands`,
   p. 5.4) jest **opcjonalne, domyślnie wyłączone i wymaga wyraźnej zgody** — `retman init`
   pyta o nią. Plik zostaje na komputerze użytkownika. Przekazywanie poleceń autorowi wymaga
   osobnej, wyraźnej zgody użytkownika i nigdy nie dzieje się automatycznie.
 - **Serwer MCP (od v0.3, p. 7.5.1):** wykonanie przez MCP tylko po potwierdzeniu człowieka
   w kliencie; klient, który go nie potrafi uzyskać, dostaje tylko plan (zamknięcie awaryjne).
-  Asystent AI podłączony przez MCP jest usługą spoza `retman.toml` (N-04): treść poleceń
+  Asystent AI podłączony przez MCP jest usługą spoza ustawień Retmana (N-04): treść poleceń
   i ścieżki bezwzględne są dla niego domyślnie ukryte.
 
 ---

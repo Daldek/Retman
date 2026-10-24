@@ -22,7 +22,7 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
   a manifesty, wywołania, klienty, handlery i tłumaczenia mieszkają w `src/retman/tools/<narzędzie>/`.
 - **Retman nie zawiera modelu** (N-10, ARCHITECTURE 3.3, 9.3): żadnych bibliotek ML, SDK
   dostawców ani pakietu `basal` w zależnościach; backendy to własne zapytania HTTP.
-  Zależności podstawowe: tylko klient HTTP.
+  Zależności podstawowe: klient HTTP i `platformdirs` (foldery użytkownika).
 - **Zawsze potwierdzenie przed wykonaniem** w wersjach 0.x (W-05, ARCHITECTURE 6.3) —
   nie dodawaj ścieżki wykonania bez `plan.confirm()`; `Plan.from_dict` nigdy nie odtwarza
   potwierdzenia.
@@ -32,14 +32,14 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
   `plan.confirm_check()`.
 - **Nie zgadywać po cichu** (W-02, ARCHITECTURE 1.1, 5.3, 6.1): liczby wyciąga kod
   (ekstraktory), model wybiera tylko z list; przy niejednoznaczności Retman pyta.
-- **Brak ukrytych wartości domyślnych** (N-11, ARCHITECTURE 9.1): każda używana wartość
-  jest w `retman.toml`.
+- **Brak ukrytych wartości domyślnych** (N-11, ARCHITECTURE 9.1): `retman config show` pokazuje
+  każde ustawienie z wartością i źródłem; model decyzyjny nie ma wartości domyślnych.
 - Język (ARCHITECTURE 1.3): kod, identyfikatory, komentarze i docstringi po angielsku;
   teksty dla użytkownika i modelu wyłącznie w plikach tłumaczeń (`pl.toml`);
   dokumentacja po polsku.
 - Środowisko przez `uv` (`uv sync --locked --all-extras` instaluje też grupę `tools` z narzędziami
   do testów handlerów), Python ≥ 3.12 (ADR-002), wyłącznie z `.venv` (STANDARDS 6.1); ręczne
-  uruchomienia CLI poza repo, testy nie dotykają prawdziwego `retman.toml` (STANDARDS 6.4).
+  uruchomienia CLI poza repo, testy nie dotykają prawdziwego `nogat.toml` (fixture `user_environment`).
 - Testy offline bez GPU i bez serwera modelu: `FakeDecisionBackend`, `FakeToolClient`,
   `-m "not live"` (STANDARDS 6.3, 10.4); bez `conftest.py` w podfolderach `tests/`.
 - Bramka przed każdym commitem: `scripts/gate.sh` (uv sync --locked, `ruff format --check`,
@@ -81,7 +81,7 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 | Dopytywanie, progi pewności, plan, rozmowa w terminalu, kody wyjścia, sprawdzenie dostępności | ARCHITECTURE 6 |
 | CLI, API Pythona, `retman doctor`, `Result`, GUI | ARCHITECTURE 7 |
 | Zbiór testowy, miary jakości, `retman-eval`, testy | ARCHITECTURE 8 |
-| `retman.toml`, sprzęt, pakiet, instalacja | ARCHITECTURE 9 |
+| `nogat.toml` (`[retman]`), zmienne `RETMAN_*`, sprzęt, pakiet, instalacja | ARCHITECTURE 9, ADR-021 |
 | Bezpieczeństwo i prywatność | ARCHITECTURE 10 |
 | Komponenty w wersjach, otwarte kwestie techniczne | ARCHITECTURE 11–12 |
 | Decyzje i ich erraty (indeks na początku pliku) | `docs/DECISIONS.md` |

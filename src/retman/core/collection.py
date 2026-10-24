@@ -3,7 +3,7 @@
 Unlike the project journal (the user's record of work, kept in the project),
 the collection gathers planning outcomes from every project in one place, to
 build and tune the test set. It is written only when the user explicitly
-enabled ``[privacy] collect_commands``; nothing is ever sent anywhere
+enabled ``[retman.privacy] collect_commands``; nothing is ever sent anywhere
 (ARCHITECTURE rozdz. 10).
 """
 

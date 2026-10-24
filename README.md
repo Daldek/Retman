@@ -58,9 +58,49 @@ uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169" \
     --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@0d98f3babeeeee49b2146a977b62bfa92114beea"
 
-retman init     # tworzy plik konfiguracyjny i foldery magazynów danych narzędzi
+retman init     # dopisuje tabele [retman] do nogat.toml i tworzy foldery magazynów narzędzi
 retman doctor   # sprawdza środowisko i podpowiada, co naprawić
 ```
+
+## Ustawienia
+
+Ustawienia Retmana to tabele `[retman]` pliku `nogat.toml`, wspólnego dla narzędzi Nogat (folder
+ustawień użytkownika: w Linuksie `~/.config/nogat/nogat.toml`; inny plik wskazuje `NOGAT_CONFIG` albo
+opcja `--config PATH`). Plik jest opcjonalny, a zmienna środowiska przesłania wartość z pliku.
+Wartość pochodzi z pierwszego z miejsc: opcja polecenia, `RETMAN_<KLUCZ>` (klucz z kropkami zamienionymi
+na `_`, np. `decision.url` to `RETMAN_DECISION_URL`), `NOGAT_<KLUCZ>` (tylko klucze wspólne), tabela
+`[retman]`, tabela `[nogat]` (tylko klucze wspólne), wartość domyślna. `retman config show` pokazuje każde
+ustawienie z wartością i źródłem. Bez wartości domyślnych jest tylko serwer modelu (`[retman.decision]`).
+Klucz zewnętrznego dostawcy modelu nie trafia do pliku: Retman czyta go ze zmiennej, którą nazywa
+`decision.api_key_env`.
+
+| Zmienna | Znaczenie |
+|---|---|
+| `NOGAT_CONFIG` | plik `nogat.toml` (domyślnie w folderze ustawień użytkownika) |
+| `RETMAN_LANG`, `NOGAT_LANG` | język pytań i komunikatów: `pl` albo `en` (teksty są tylko po polsku) |
+| `RETMAN_LOG_LEVEL`, `NOGAT_LOG_LEVEL` | poziom logu na stderr: `debug`, `info`, `warning` (domyślnie), `error` |
+| `RETMAN_DATA_DIR`, `NOGAT_DATA_DIR` | folder magazynów i zbioru poleceń (domyślnie folder danych użytkownika nogat) |
+| `RETMAN_CACHE_DIR`, `NOGAT_CACHE_DIR` | folder cache (domyślnie folder cache użytkownika nogat) |
+| `RETMAN_DECISION_BACKEND` | `basal` albo `openai_compatible` |
+| `RETMAN_DECISION_URL`, `RETMAN_DECISION_MODEL` | adres serwera modelu i nazwa modelu |
+| `RETMAN_DECISION_TIMEOUT_S` | ile sekund czekać na serwer modelu |
+| `RETMAN_DECISION_API_KEY_ENV` | NAZWA zmiennej z kluczem zewnętrznego dostawcy modelu |
+| `RETMAN_DECISION_CONFIDENCE`, `RETMAN_DECISION_CONSISTENCY_RUNS` | metoda pewności i liczba zapytań (backend `openai_compatible`) |
+| `RETMAN_DECISION_THRESHOLDS_OPERATION`, `RETMAN_DECISION_THRESHOLDS_PARAMETER` | progi pewności: liczba z (0, 1] albo `auto` (tylko basal) |
+| `RETMAN_TEXT_BACKEND` | model tekstowy (na razie `none`) |
+| `RETMAN_OUTPUT_RESULTS_DIR` | folder wyników w folderze projektu (domyślnie `retman-output`) |
+| `RETMAN_ADAPTERS_ENABLED` | narzędzia do włączenia, po przecinku (domyślnie wszystkie zainstalowane) |
+| `RETMAN_TOOLS_KARTOGRAF_STORE_DIR` | magazyn Kartografa (domyślnie `<data_dir>/kartograf`) |
+| `RETMAN_TOOLS_KARTOGRAF_CACHE_FILE` | cache metadanych Kartografa (domyślnie `<cache_dir>/kartograf/metadata.db`) |
+| `RETMAN_TOOLS_KARTOGRAF_WORKERS`, `RETMAN_TOOLS_KARTOGRAF_UPDATE` | równoległe transfery; tryb aktualizacji `local`, `upgrade` albo `force` |
+| `RETMAN_TOOLS_IMGWTOOLS_STORE_DIR` | magazyn IMGWTools (domyślnie `<data_dir>/imgw`) |
+| `RETMAN_TOOLS_IMGWTOOLS_REFERENCE_DATA_DIR` | dane referencyjne IMGWTools (domyślnie `<cache_dir>/imgw/reference`) |
+| `RETMAN_LOG_JOURNAL_COMMANDS` | czy dziennik projektu zapisuje treść poleceń i odpowiedzi (domyślnie `true`) |
+| `RETMAN_PRIVACY_COLLECT_COMMANDS`, `RETMAN_PRIVACY_COLLECT_PATH` | zbiór poleceń ze wszystkich projektów, tylko za zgodą (domyślnie wyłączony), i jego plik |
+
+Magazyny Kartografa i IMGWTools są wersjonowane na dowiązaniach twardych: kopię robi się z ich
+zachowaniem (`rsync -aH`), a nie zwykłym kopiowaniem plików; dane usunięte u źródła nie pobiorą się
+ponownie (szczegóły w README narzędzia).
 
 ## Dokumentacja
 

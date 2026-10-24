@@ -8,7 +8,6 @@ technical log goes to stderr, never holds the text of a command or an answer
 
 import logging
 import sys
-from collections.abc import Mapping
 from typing import TextIO
 
 from retman.exceptions import UsageError
@@ -22,59 +21,12 @@ LOG_LEVELS: dict[str, int] = {
 DEFAULT_LEVEL = "warning"
 VERBOSE_LEVEL = "debug"
 QUIET_LEVEL = "error"
-# The variable of the tool comes before the one shared by the Nogat tools (DEV-18.1)
-ENVIRONMENT_VARIABLES: tuple[str, ...] = ("RETMAN_LOG_LEVEL", "NOGAT_LOG_LEVEL")
 
 _LOGGER_NAME = "retman"
 _FORMAT = "%(levelname)s %(name)s: %(message)s"
 
 
-def level_from_environment(environ: Mapping[str, str]) -> str | None:
-    """Return the log level named by the environment, or ``None``.
-
-    Parameters
-    ----------
-    environ : Mapping[str, str]
-        The process environment.
-
-    Returns
-    -------
-    str | None
-        The value of ``RETMAN_LOG_LEVEL`` or else ``NOGAT_LOG_LEVEL``, in lower case;
-        ``None`` when neither is set (or both are empty).
-
-    Raises
-    ------
-    UsageError
-        The variable holds something other than ``debug``, ``info``, ``warning`` or
-        ``error``.
-    """
-    for name in ENVIRONMENT_VARIABLES:
-        value = environ.get(name, "").strip().lower()
-        if not value:
-            continue
-        if value not in LOG_LEVELS:
-            raise UsageError(
-                f"{name}={value!r} is not a log level; "
-                f"allowed: {', '.join(LOG_LEVELS)}",
-                details={
-                    "option": name,
-                    "value": value,
-                    "allowed": list(LOG_LEVELS),
-                },
-                hint=f"Set {name} to one of: {', '.join(LOG_LEVELS)}.",
-            )
-        return value
-    return None
-
-
-def resolve_level(
-    *,
-    verbose: bool,
-    quiet: bool,
-    environ: Mapping[str, str],
-    configured: str | None = None,
-) -> str:
+def resolve_level(*, verbose: bool, quiet: bool, configured: str | None = None) -> str:
     """Return the log level by the precedence of DEV-18.1.
 
     Parameters
@@ -82,10 +34,9 @@ def resolve_level(
     verbose, quiet : bool
         The command-line options ``--verbose`` (``debug``) and ``--quiet``
         (``error``); they exclude each other.
-    environ : Mapping[str, str]
-        The process environment (``RETMAN_LOG_LEVEL``, then ``NOGAT_LOG_LEVEL``).
     configured : str | None, optional
-        The level of the config file (``[log] diagnostic_level``), if it is known.
+        The setting ``log_level``: ``RETMAN_LOG_LEVEL``, ``NOGAT_LOG_LEVEL``, the
+        settings file or the default (see :mod:`retman.environment`).
 
     Returns
     -------
@@ -95,7 +46,7 @@ def resolve_level(
     Raises
     ------
     UsageError
-        Both options are given, or the environment holds an invalid level.
+        Both options are given.
     """
     if verbose and quiet:
         raise UsageError(
@@ -107,7 +58,7 @@ def resolve_level(
         return VERBOSE_LEVEL
     if quiet:
         return QUIET_LEVEL
-    return level_from_environment(environ) or configured or DEFAULT_LEVEL
+    return configured or DEFAULT_LEVEL
 
 
 def configure_logging(level: str, stream: TextIO | None = None) -> None:

@@ -1,10 +1,11 @@
-"""``retman init``: the config, the tool store folders and the IMGWTools consent."""
+"""``retman init``: the settings tables, the tool store folders and the consent."""
 
 import errno
 import io
 from pathlib import Path
 
 import pytest
+from error_documents import last_line_document
 
 from retman import cli
 from retman.config import load_config
@@ -19,11 +20,9 @@ class Terminal(io.StringIO):
 
 
 @pytest.fixture
-def data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Per-user data folder below tmp_path: init never touches the real one."""
-    folder = tmp_path / "data"
-    monkeypatch.setattr("retman.config.default_data_dir", lambda: folder)
-    return folder
+def data(user_environment: Path) -> Path:
+    """Per-user data folder: init never touches the real one."""
+    return user_environment / "data"
 
 
 @pytest.fixture
@@ -43,7 +42,7 @@ def imgw_calls(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
 def _init(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, answers: str | None
 ) -> tuple[int, Path]:
-    config = tmp_path / "retman.toml"
+    config = tmp_path / "nogat.toml"
     if answers is not None:
         monkeypatch.setattr("sys.stdin", Terminal(answers))
     return cli.main(["--config", str(config), "init"], project_dir=tmp_path), config
@@ -60,10 +59,10 @@ def test_init_without_a_terminal_writes_the_config_and_creates_nothing_else(
     tools = load_config(config).tools
 
     assert status == 0
-    assert tools["kartograf"]["store_dir"] == str(data / "stores" / "kartograf")
-    assert tools["imgwtools"]["store_dir"] == str(data / "stores" / "imgwtools")
+    assert tools["kartograf"]["store_dir"] == str(data / "kartograf")
+    assert tools["imgwtools"]["store_dir"] == str(data / "imgw")
     # The default paths are shown and written; no question was possible
-    assert str(data / "stores" / "kartograf") in output
+    assert str(data / "kartograf") in output
     assert "nie zostały utworzone" in output
     assert not data.exists()
 
@@ -83,16 +82,18 @@ def test_init_in_a_terminal_creates_the_folders_and_the_store_after_consent(
 
     assert status == 0
     assert tools["kartograf"]["store_dir"] == str(stores / "kartograf")
-    assert tools["imgwtools"]["store_dir"] == str(stores / "imgwtools")
+    assert tools["imgwtools"]["store_dir"] == str(stores / "imgw")
     # Both stores sit side by side on the chosen disk; cache and reference files
     # stay on the local per-user disk
     assert (stores / "kartograf").is_dir()
-    assert Path(tools["kartograf"]["cache_file"]).parent == data
+    assert Path(tools["kartograf"]["cache_file"]).parent == (
+        data.parent / "cache" / "kartograf"
+    )
     assert Path(tools["imgwtools"]["reference_data_dir"]).is_dir()
     # The IMGWTools folder is left to the tool, which wants an empty one
-    assert not (stores / "imgwtools").exists()
-    assert imgw_calls == [stores / "imgwtools"]
-    assert f"Magazyn IMGWTools gotowy: {stores / 'imgwtools'}" in output
+    assert not (stores / "imgw").exists()
+    assert imgw_calls == [stores / "imgw"]
+    assert f"Magazyn IMGWTools gotowy: {stores / 'imgw'}" in output
 
 
 def test_enter_keeps_the_default_folder_and_no_consent_means_no_store(
@@ -107,7 +108,7 @@ def test_enter_keeps_the_default_folder_and_no_consent_means_no_store(
 
     assert status == 0
     kartograf = load_config(config).tools["kartograf"]["store_dir"]
-    assert kartograf == str(data / "stores" / "kartograf")
+    assert kartograf == str(data / "kartograf")
     assert imgw_calls == []
     assert "Utwórz magazyn IMGW" in output
 
@@ -168,14 +169,14 @@ def test_a_folder_that_cannot_be_created_leaves_no_config_behind(
     assert imgw_calls == []
 
 
-def test_an_existing_config_is_reported_before_any_question(
+def test_an_existing_retman_table_is_reported_before_any_question(
     tmp_path: Path,
     data: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ):
-    config = tmp_path / "retman.toml"
-    config.write_text("# mine", encoding="utf-8")
+    config = tmp_path / "nogat.toml"
+    config.write_text('[nogat]\nlang = "pl"\n\n[retman]\n# mine\n', encoding="utf-8")
     terminal = Terminal("n\n")
     monkeypatch.setattr("sys.stdin", terminal)
 
@@ -184,9 +185,30 @@ def test_an_existing_config_is_reported_before_any_question(
 
     assert status == 4
     assert captured.out == ""
-    assert "już istnieje" in captured.err
+    assert last_line_document(captured.err)["details"]["reason"] == "output_exists"
     assert terminal.tell() == 0
-    assert config.read_text(encoding="utf-8") == "# mine"
+    assert config.read_text(encoding="utf-8") == (
+        '[nogat]\nlang = "pl"\n\n[retman]\n# mine\n'
+    )
+
+
+def test_the_tables_are_added_to_a_file_that_has_none(
+    tmp_path: Path,
+    data: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+):
+    config = tmp_path / "nogat.toml"
+    config.write_text('[nogat]\nlang = "pl"\n', encoding="utf-8")
+    monkeypatch.setattr("sys.stdin", io.StringIO(""))
+
+    status = cli.main(["--config", str(config), "init"], project_dir=tmp_path)
+
+    assert status == 0
+    assert config.read_text(encoding="utf-8").startswith('[nogat]\nlang = "pl"\n\n')
+    assert load_config(config).tools["kartograf"]["store_dir"] == str(
+        data / "kartograf"
+    )
 
 
 def test_without_imgwtools_the_consent_question_is_not_asked(
@@ -217,10 +239,8 @@ def test_init_creates_a_real_imgwtools_store(
     status, config = _init(tmp_path, monkeypatch, f"n\n{stores}\nt\n")
 
     assert status == 0
-    assert (stores / "imgwtools" / IMGW_MARKER).is_file()
-    assert load_config(config).tools["imgwtools"]["store_dir"] == str(
-        stores / "imgwtools"
-    )
+    assert (stores / "imgw" / IMGW_MARKER).is_file()
+    assert load_config(config).tools["imgwtools"]["store_dir"] == str(stores / "imgw")
 
 
 def test_a_disk_without_hard_links_is_refused_before_the_config_is_written(
@@ -261,4 +281,4 @@ def test_the_tools_no_hard_link_refusal_gets_its_own_advice(
     assert status == 8
     assert config.exists()
     assert "System plików nie obsługuje dowiązań" in error
-    assert "[tools.kartograf] store_dir" in error
+    assert "[retman.tools.kartograf] store_dir" in error

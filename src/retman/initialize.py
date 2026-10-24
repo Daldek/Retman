@@ -1,6 +1,6 @@
-"""``retman init``: the config file, the tool store folders and the IMGWTools store.
+"""``retman init``: the ``[retman]`` tables, the store folders and the IMGWTools store.
 
-Questions are asked only in a terminal; without one the file is written with the
+Questions are asked only in a terminal; without one the tables are written with the
 visible default paths and nothing else is created (ADR-010 for the command
 collection, the same rule here for the folders and the IMGWTools store).
 """
@@ -11,12 +11,13 @@ from pathlib import Path
 from retman.config import (
     ToolPaths,
     default_collect_path,
-    default_config_path,
     default_stores_dir,
     init_config,
+    init_target,
     tool_paths,
 )
-from retman.exceptions import ConfigError, RetmanError
+from retman.environment import Environment, environment
+from retman.exceptions import RetmanError
 from retman.i18n.loader import Texts
 from retman.outcomes import report_error
 from retman.stores import hardlink_error, init_imgw_store, tool_installed
@@ -24,10 +25,10 @@ from retman.stores import hardlink_error, init_imgw_store, tool_installed
 _YES = ("t", "tak")
 
 
-def _ask_stores_dir(texts: Texts) -> Path:
+def _ask_stores_dir(texts: Texts, env: Environment) -> Path:
     """Ask for the folder that will hold both tool stores; Enter keeps the default."""
-    default = default_stores_dir().expanduser().resolve()
-    paths = tool_paths(default)
+    default = default_stores_dir(env).expanduser().resolve()
+    paths = tool_paths(env, default)
     print(texts.get("init.stores_question", cache=paths.kartograf_cache))
     while True:
         answer = input(texts.get("init.stores_prompt", path=default)).strip()
@@ -41,7 +42,7 @@ def _ask_stores_dir(texts: Texts) -> Path:
 
 
 def _create_folders(paths: ToolPaths, texts: Texts) -> int | None:
-    """Create the folders the config will name and check the disk for hard links.
+    """Create the folders the settings will name and check the disk for hard links.
 
     Both stores need hard links; the IMGWTools store itself is left to the tool,
     which creates it only in an empty folder. Returns ``None`` when all is usable,
@@ -106,51 +107,51 @@ def _offer_imgw_store(store: Path, texts: Texts) -> int:
 
 
 def run_init(config_path: Path | None, texts: Texts) -> int:
-    """Write the central config file; in a terminal also set the tool stores up.
+    """Write the ``[retman]`` tables; in a terminal also set the tool stores up.
 
     In a terminal the user is asked whether to collect commands (ADR-010), which
     folder should hold the stores of the tools (Kartograf's and IMGWTools',
     side by side on one disk) and whether to initialise the IMGWTools store now.
     The folders are created before the file is written, so an unusable folder
-    leaves no config behind.
+    leaves no settings behind.
 
     Parameters
     ----------
     config_path : Path, optional
-        Target file; the system location by default.
+        The file named by ``--config``; else ``NOGAT_CONFIG``, else the user
+        configuration folder of ``nogat``.
     texts : Texts
         Core texts.
 
     Returns
     -------
     int
-        Exit code: ``0``, or ``1`` when a folder or the IMGWTools store could not
-        be created.
+        Exit code: ``0``, or the code of the error that was reported when a folder
+        or the IMGWTools store could not be created.
 
     Raises
     ------
     ConfigError
-        The file already exists; it is never overwritten.
+        The file already has a ``[retman]`` table, or cannot be read; it is never
+        overwritten.
     """
-    target = config_path or default_config_path()
-    if target.exists():
-        # Before any question: the answers would be thrown away
-        raise ConfigError(target, ["already_exists"])
+    env = environment(config_path)
+    target = init_target(env)  # before any question: the answers would be lost
     interactive = sys.stdin.isatty()
     collect = False
     stores_dir: Path | None = None
     if interactive:
-        print(texts.get("cli.collect_question", path=default_collect_path()))
+        print(texts.get("cli.collect_question", path=default_collect_path(env)))
         collect = input(texts.get("cli.collect_prompt")).strip().lower() in _YES
-        stores_dir = _ask_stores_dir(texts)
-    paths = tool_paths(stores_dir)
+        stores_dir = _ask_stores_dir(texts, env)
+    paths = tool_paths(env, stores_dir)
     if interactive and (failed := _create_folders(paths, texts)) is not None:
         return failed
     print(init_config(target, collect_commands=collect, stores_dir=stores_dir))
     print(
         texts.get(
             "cli.collect_on" if collect else "cli.collect_off",
-            path=default_collect_path(),
+            path=default_collect_path(env),
         )
     )
     print(

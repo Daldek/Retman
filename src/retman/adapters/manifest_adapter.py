@@ -114,7 +114,7 @@ def execute_operation(
 
     ``ctx`` carries the network-capable client; it exists only here. A file is
     accepted inside ``output_dir`` or inside the tool's own store
-    (``[tools.<tool>] store_dir``); a tool error becomes the result's error text.
+    (``[retman.tools.<tool>] store_dir``); a tool error becomes the result's error text.
     """
     result = Result(True, number, operation.id, params_audit, inputs_audit)
     try:

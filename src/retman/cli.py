@@ -2,19 +2,20 @@
 
 import argparse
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import NoReturn
 
 from retman.backends.base import DecisionBackend
-from retman.config import load_config
+from retman.config import load_settings
+from retman.config_show import get_config, render_config
 from retman.core.dialog import Question
 from retman.core.pipeline import Retman
 from retman.core.plan import Plan
 from retman.core.result import Result
 from retman.core.workspace import Workspace
 from retman.doctor import run_doctor
+from retman.environment import environment
 from retman.exceptions import (
     BackendConnectionError,
     ConfigError,
@@ -24,7 +25,7 @@ from retman.exceptions import (
     UsageError,
     error_document,
 )
-from retman.i18n.loader import Texts, load_core_texts
+from retman.i18n.loader import Texts, load_core_texts, text_language
 from retman.initialize import run_init
 from retman.logs import configure_logging, resolve_level
 from retman.outcomes import (
@@ -231,6 +232,19 @@ def _conversation(
             print(texts.get("cli.error", error=texts.get("dialog.invalid_choice")))
 
 
+def _config(args: argparse.Namespace, texts: Texts) -> int:
+    """``retman config show``: the settings in force and where each comes from."""
+    if args.subcommand != "show":
+        raise UsageError(
+            "`retman config` needs the subcommand show",
+            details={"option": "subcommand", "value": args.subcommand},
+            hint="Run `retman config show`.",
+        )
+    report = get_config(args.config)
+    print(report.to_json() if args.json else render_config(report, texts), end="")
+    return EXIT_OK
+
+
 def _parser() -> _Parser:
     parser = _Parser(prog="retman")
     parser.add_argument("--config", type=Path)
@@ -241,6 +255,7 @@ def _parser() -> _Parser:
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("command", nargs="?")
+    parser.add_argument("subcommand", nargs="?")
     return parser
 
 
@@ -263,13 +278,25 @@ def main(
     with sigterm_as_exception():
         try:
             args = _parser().parse_args(argv)
+            env = environment(args.config)
             configure_logging(
                 resolve_level(
-                    verbose=args.verbose, quiet=args.quiet, environ=os.environ
+                    verbose=args.verbose,
+                    quiet=args.quiet,
+                    configured=env.setting("log_level").value,
                 )
             )
+            texts = load_core_texts(text_language(env.setting("lang").value))
+            if args.subcommand is not None and args.command != "config":
+                raise UsageError(
+                    f"Unexpected argument {args.subcommand!r}",
+                    details={"option": "subcommand", "value": args.subcommand},
+                    hint="Quote the command text: retman '<command>'.",
+                )
             if args.command == "init":
                 return run_init(args.config, texts)
+            if args.command == "config":
+                return _config(args, texts)
             if args.command == "doctor":
                 report, report_texts = run_doctor(
                     args.config,
@@ -282,15 +309,7 @@ def main(
                     end="",
                 )
                 return report.exit_code
-            config = load_config(args.config)
-            configure_logging(
-                resolve_level(
-                    verbose=args.verbose,
-                    quiet=args.quiet,
-                    environ=os.environ,
-                    configured=config.diagnostic_level,
-                )
-            )
+            config = load_settings(args.config)
             texts = load_core_texts(config.language)
             folder = project_dir if project_dir is not None else Path.cwd()
             if args.command in ("results", "log"):
