@@ -20,7 +20,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
 | Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
 | Nogat standard 2.1, agent interfaces | done | ADR-022: catalog, `retman.operations`, the CLI generated from the catalog, `retman-result/1`, schemas in `src/retman/schemas/`, generated `AGENTS.md` and `llms.txt`; the English texts of the machine documents are Next 8 |
-| Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file; open: Next 1.2 to 1.5 |
+| Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13); open: Next 1.3 to 1.5 |
 | Gate | green | `scripts/gate.sh`: 2713 offline tests, coverage 95%, ruff, mypy strict; run it with `TMPDIR` on a local disk (a network share breaks SQLite and links) |
 | CI (Linux, macOS, Windows) | written, not run | `.github/workflows/ci.yml` and `live.yml`; nothing is pushed |
 
@@ -40,22 +40,11 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
    green before each; the source of the rules is the Nogat branch `feature/data-output`,
    `git -C ~/workspace/Nogat show feature/data-output:standards/<file>`; Hydrolog's and
    Kartograf's branches `chore/nogat-2.1` are the reference implementations). Order of
-   work: 1.2 to 1.5 (1.1, the agent interfaces, is done: ADR-022). ADR numbers: 0023 structure,
+   work: 1.3 to 1.5 (1.1, the agent interfaces, is done: ADR-022; 1.2, `CLAUDE.md` in English and
+   the removal of `docs/DEVELOPMENT_STANDARDS.md`, is done). ADR numbers: 0023 structure,
    gate, CI, test tree, mypy deviation, technical log on stderr (1.4); ADR-020 is the error
    registry, ADR-021 the user environment and ADR-022 the agent interfaces. New ADRs are English
    files in `docs/decisions/`; the Polish index in `docs/DECISIONS.md` gets a row each.
-   2. `docs: CLAUDE.md` in English within 200 lines (DOC-3.1): profile `tool` (DEV-1.1),
-      critical rules, environment and commands (`scripts/gate.sh`), code map, documentation
-      map, session workflow, link to the Retman entry of Nogat `ecosystem.yaml`, and a
-      **Deviations** section (DEV-1.2) that keeps the DEV-7.3 line now in the Polish
-      `CLAUDE.md` and adds DEV-18.2 (journal and results in the project folder, ADR-021); the
-      Polish-only texts are no deviation (Main's decision; see item 8). Then
-      `git rm docs/DEVELOPMENT_STANDARDS.md` (DEV-1.3). What is project-specific there must
-      move: the checklists of section 17 (new operation, kind, backend, extractor) to a new
-      last chapter of `docs/ARCHITECTURE.md`; the rules of sections 6.4 (run the CLI outside
-      the repository, results go to `retman-output/`), 10.4 (no `conftest.py` in test
-      subfolders, offline tests, the dummy tool), 14 and 16 (privacy, "never" list) to
-      `CLAUDE.md`.
    3. `docs: CHANGELOG` in English, heading `## [Unreleased]` (DOC-7.1, REL-1.1), sections
       Added, Changed, Removed, Fixed, ADR references in parentheses. The 0.1.0 entries now mix
       Polish text with the English entry of ADR-020.

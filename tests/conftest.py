@@ -1,4 +1,4 @@
-"""Shared fixtures: network isolation for offline tests (STANDARDS 10.4)."""
+"""Shared fixtures: network isolation for offline tests (DEV-10.2)."""
 
 import ipaddress
 import logging

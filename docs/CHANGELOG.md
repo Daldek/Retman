@@ -48,9 +48,8 @@ Linki porównań na końcu pliku, od najnowszego:
 ### Dodane
 
 - Dokumentacja projektu: wymagania produktowe (`docs/PRD.md`), architektura
-  (`docs/ARCHITECTURE.md`), standardy deweloperskie
-  (`docs/DEVELOPMENT_STANDARDS.md`), rejestr decyzji, dziennik postępu
-  i ten changelog; `README.md`, `CLAUDE.md`, licencja MIT.
+  (`docs/ARCHITECTURE.md`), rejestr decyzji, dziennik postępu i ten changelog; `README.md`,
+  `CLAUDE.md`, licencja MIT.
 - Pakiet `retman` (Python ≥ 3.12, ADR-002) z zależnością podstawową `httpx` (ADR-005).
 - Plik centralny `retman.toml`: szablon z komentarzami, `retman init`, walidacja
   wszystkich ustawień naraz; progi `"auto"` odrzucane poza backendem basal
@@ -147,6 +146,10 @@ Linki porównań na końcu pliku, od najnowszego:
 - `list_commands`, `command_schema`, `validate_command`, `check_command` and `run_command` are the public
   API, with the error classes and the registry (`retman.__all__`); `AGENTS.md` and `llms.txt` are generated
   from the catalog; the JSON Schemas of the documents are shipped in `retman/schemas/` (ADR-022).
+- Documentation: `CLAUDE.md` is English and follows DOC-3.1; `docs/DEVELOPMENT_STANDARDS.md` is
+  removed (DEV-1.3). The project rules are in `CLAUDE.md`, the checklists for a new operation,
+  data kind, backend, extractor and command are `docs/ARCHITECTURE.md` 13, and the standard
+  itself is the Nogat standard 2.1.
 - **Breaking: the settings are the `[retman]` tables of `nogat.toml`, read with the `RETMAN_*`
   variables** (DEV-18, ECO-028, ADR-021). `retman.toml` is no longer read: write the tables as
   `[retman.decision]`, `[retman.tools.kartograf]` and so on (`retman init` writes them into

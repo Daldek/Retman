@@ -2395,3 +2395,114 @@ Zakres produktowy wersji opisuje PRD. Tu: które komponenty techniczne powstają
     od wyniku.
 16. **Pytania Retmana przez MCP** (p. 7.5.1) — wartości dostarczone przez agenta jako `known`
     czy także wybory przez elicitation. Rozstrzygnięcie na starcie v0.3.
+
+---
+
+## 13. Checklists for typical tasks
+
+The steps of the tasks that repeat. Each task ends with the gate (`scripts/gate.sh`), and the
+change ships with its documentation (CLAUDE.md, Process rules).
+
+### 13.1. A new operation of a tool
+
+1. **Draft from the catalog of the tool.** `retman scaffold list --tool <tool>` shows which
+   commands the catalog exposes and which operations use them; `retman scaffold draft --tool
+   <tool> --command "<command>" --write` writes a draft of the call builder and of the texts
+   into the git-ignored folder `src/retman/tools/<tool>/_drafts/` (section 3.2.3). The draft is
+   reviewed and moved by hand. The manifest stays static: options are never derived from the
+   installed tool when it loads (ADR-019).
+2. **Manifest** `src/retman/tools/<tool>/manifest.py`: `id` (unique in Retman), `category`,
+   `inputs` and `outputs` with data kinds, `params` with the types `choice`, `free` and `bool`,
+   `required`, `default`, `multiple` and `range`. Option keys have no dots (`0_5m`) and carry
+   `tool_values` when the value of the tool differs; `option_meta` holds per-option facts
+   (sections 4.1 and 4.3).
+3. **Execution.** `calls`: a pure call builder, without file system and network, from the
+   `commands` of the catalog; `describe` when the generic mapping is not enough; or a `handler`,
+   only when the result needs processing: it uses only the public API of the tool, takes inputs
+   as files, writes only into `output_dir`, and never calls `input()` or `print()` (section
+   3.2.4). Every value the tool accepts is either offered or listed in `excluded` with a reason
+   (the coverage check).
+4. **`preview`** (offline): plan rows and problems that make Retman ask again; the adapter
+   validates the calls. A test with `FakeToolClient` asserts that no `run`, `check` or `query`
+   call happens before `plan.confirm()` (N-12).
+5. **`check`** only when a check over the network is meaningful (available years, resolutions,
+   published archives) and the call itself does not carry the answer: the text
+   `operations.<id>.check.notice` and the `[check.*]` lines (section 6.5). An operation with a
+   network command that writes, and without `check`, declares `no_check` with a reason (drift
+   check X7).
+6. **Optional parameter** (no `required` and no `default`): the text `params.<p>.unset` says
+   what its absence means (a plan row, N-11).
+7. **Texts**, in every language file of the tool (`src/retman/tools/<tool>/<lang>.toml`):
+   `label` and `description` of the operation; the questions (`question` for the user,
+   `model_question`, "what does the command name", for `choice` and `bool` parameters, ADR-008);
+   the options with `label` (for the user) and `description` with synonyms and English names
+   (for the model; section 4.2, ADR-007); a parameter that a command may omit has an option
+   `unspecified` with only a `description` (section 3.4). Also `[errors.<code>]` for the error
+   codes of the tool, `[warnings.*]`, `[problems.*]`, `[preview.*]` and, for a new category,
+   `[categories.<id>]` with `label` and `description`.
+8. **A new data kind?** Section 13.2.
+9. **Tests:** builders and mappers on recorded documents, the run with `FakeToolClient`,
+   conformance with the real tool offline (section 8.3); `retman scaffold check` reports no
+   error.
+10. **Command set:** at least 15 commands in `src/retman/eval/commands.jsonl`, among them
+    incomplete, ambiguous and out-of-scope ones (section 8.1); run `retman eval run`.
+11. **Category limits:** a category above 9 operations, or more than 9 categories, is split;
+    the loader rejects it (section 3.4, point 1).
+
+### 13.2. A new data kind
+
+1. An entry in `src/retman/kinds.py`: the name, the accepted extensions and a validator (a
+   `Path` to an error key of `[kinds.errors]`, or `None`): standard library only, only the
+   beginning of the file, no network (section 3.2.6).
+2. Choose a format that the GUIs of the tools can load (section 12, item 7).
+3. Tests of the validator in `tests/unit/test_kinds*.py`: a valid file, every rejection reason
+   and the extension.
+4. The description in section 3.2.6, in the same commit.
+
+### 13.3. A new model backend
+
+1. A class in `src/retman/backends/` that implements `DecisionBackend` and/or `TextBackend`
+   (section 3.3.1): HTTP directly, no provider SDK.
+2. Confidence: calibrated, or `logprobs`, `consistency` or `none` (section 3.3.3); the
+   threshold `auto` with this backend is a configuration error (section 6.2).
+3. Settings in `[retman.decision]` with comments in the template of `retman config init`
+   (`src/retman/config_template.toml`, section 9.1), the variables in
+   `src/retman/environment.py`, and the README table and `.env.example` (DEV-18.3).
+4. Checks in `retman doctor check`: the address, the answer and a test question (section 7.2).
+5. Offline tests on fixtures from real server responses (`tests/fixtures/<backend>/`).
+6. `retman eval run` on the new backend; the report goes into the plan it belongs to.
+
+### 13.4. A new extractor
+
+1. A module in `src/retman/extractors/`, without a tool import and without network: a text
+   reader that returns `list[Match]` with a normalised value that serialises to JSON. An
+   ambiguous notation gives several readings (Retman asks, section 6.1), never a silent choice;
+   a fuzzy match sets `Match.confirm`.
+2. A value validator (an error key of `[extractors.errors]`, or `None`).
+3. Entries in the registries of `src/retman/extractors/__init__.py`: `EXTRACTORS` (or
+   `CONTEXT_EXTRACTORS` when the reader needs an `ExtractionContext`), `VALIDATORS`
+   (`CONTEXT_VALIDATORS`), optionally `ANSWER_EXTRACTORS` (a looser reader of the answer to a
+   question about this parameter), `CONTEXT_HINTS` and `DESCRIBERS` (the text of the value in the
+   plan).
+4. Texts in the core translation files under `[extractors.*]`: labels of the readings, errors,
+   the text in the plan and hints; `tests/unit/extractors/test_registry.py` checks that every
+   key that the code names exists.
+5. Tests without a model: every notation, ambiguous forms, an answer to a question and boundary
+   values. Run doctests through `importlib`, not by file path (`extractors/numbers.py` shadows
+   the standard module `numbers`).
+6. Use in a manifest: `extractor` in a `free` or `choice` parameter (section 4.3); rows of
+   `commands.jsonl` with values of the parameter.
+
+### 13.5. A new command of the catalog
+
+1. Write the operation in `src/retman/operations/` and export it in
+   `src/retman/operations/__init__.py`; it takes keyword-only parameters named like the options.
+2. Declare `Command` and `Option` in `src/retman/catalog/commands.py`; add the Polish texts to
+   `src/retman/i18n/pl.toml` under `[catalog.<operation_id>]` (a contract test requires one for
+   every command, option, rule and choice, AGI-9.1); add the schema of its document to
+   `scripts/generate_result_schemas.py`.
+3. Regenerate what follows from the catalog: `uv run scripts/generate_result_schemas.py`,
+   `retman commands guide --format agents --output AGENTS.md --force` and
+   `retman commands guide --format llms --output llms.txt --force`.
+4. A command that writes files has `--check` and `--force` and reports its targets as
+   `retman-targets/1` (ADR-022); the contract tests then cover parity of the interfaces.

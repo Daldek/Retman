@@ -112,7 +112,7 @@ ponownie (szczegóły w README narzędzia).
 | [DECISIONS.md](docs/DECISIONS.md) | Rejestr decyzji architektonicznych (ADR) |
 | [CHANGELOG.md](docs/CHANGELOG.md) | Historia zmian per wydanie |
 | [PROGRESS.md](docs/PROGRESS.md) | Bieżący stan prac |
-| [DEVELOPMENT_STANDARDS.md](docs/DEVELOPMENT_STANDARDS.md) | Dla deweloperów: środowisko, testy, konwencje, workflow |
+| [CLAUDE.md](CLAUDE.md) | Dla deweloperów: zasady pracy, środowisko, testy, mapa dokumentacji |
 
 ## Wymagania
 

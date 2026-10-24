@@ -243,7 +243,7 @@ zrzucać (np. ≤ jedna linia na rok/kombinację); linie trafiają do dziennika 
 Dodatki do `validate_manifest`: dla `preview` i `check` niepuste i zawiera `":"` (ta sama reguła co
 `handler`); gdy `check` jest obecny, wymagany klucz tłumaczenia `operations.<id>.check.notice` w
 każdym zadeklarowanym języku. Klucze pozycji nie są walidowane statycznie (tak jak
-`HandlerWarning.key`); ćwiczą je testy handlerów (STANDARDS 10.4).
+`HandlerWarning.key`); ćwiczą je testy handlerów (CLAUDE.md, Tests).
 
 ### 4.3 Teksty
 
@@ -479,7 +479,7 @@ dotykania warstwy 1.
   — wdrażane wg decyzji końcowej 1); 7.1 linia zakresu.
 - **DECISIONS**: nowy ADR „Sieć dopiero po potwierdzeniu: `preview` offline i sprawdzenie
   dostępności” — zapisuje delegację (decyzje autora 4 + 8), opcje z p. 1, konsekwencje; wiersz indeksu.
-- **DEVELOPMENT_STANDARDS** 17.1: kroki „preview (validate_command, test offline pod nagrywającą
+- **ARCHITECTURE 13.1**: kroki „preview (validate_command, test offline pod nagrywającą
   blokadą)” i „check? (czy jest sensowne sprawdzenie wstępne w sieci; tekst uwagi)”.
 - **CLAUDE.md** punkt twardego ograniczenia: „Bez sieci przed potwierdzeniem (N-12): narzędzia
   wołamy z siecią dopiero po `plan.confirm()`; wyjątek: `retman.check()` po `plan.confirm_check()`.”

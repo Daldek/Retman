@@ -93,7 +93,7 @@ samym środowisku co Retman (PRD N-09, ARCHITECTURE 9.4). Retman miał wymagać 
 **Decyzja:** A.
 
 **Konsekwencje:** `requires-python = ">=3.12"`; zmienione ARCHITECTURE 9.2, 9.3,
-STANDARDS 5.1, 6.1, 8.1, README, CLAUDE.md.
+README, CLAUDE.md i dawne standardy deweloperskie (dziś DEV-6.1, DEV-7.1, DEV-7.3).
 
 ---
 
@@ -115,7 +115,7 @@ instalujących narzędzia (ARCHITECTURE 9.3).
 (`kartograf @ git+https://github.com/Daldek/Kartograf@v0.7.2`) — nie trafia do metadanych
 pakietu, więc użytkownik dalej instaluje narzędzia sam (`--with`).
 
-**Konsekwencje:** STANDARDS 6.1 opisuje `uv pip install --group tools`. Katalog
+**Konsekwencje:** CLAUDE.md (środowisko i komendy) opisuje `uv sync --locked --all-extras`, które instaluje też grupę `tools`. Katalog
 `../Kartograf` nie jest używany (jego gałąź robocza nie musi odpowiadać wydaniu).
 
 **Errata 1 (2026-10-19, ADR-012):** zakres `>=0.7.2,<0.8` i pin `@v0.7.2` zastąpione przez
@@ -155,7 +155,7 @@ mieć kilka plików tego samego rodzaju (arkusze). Lista dla pozostałych narzę
 **Status:** Przyjęta
 
 **Kontekst:** Zależności podstawowe to tylko klient HTTP (ARCHITECTURE 9.3); backendy
-potrzebują jawnych timeoutów i testów offline na zapisanych odpowiedziach (STANDARDS 10.4, 13.2).
+potrzebują jawnych timeoutów i testów offline na zapisanych odpowiedziach (DEV-10.2, DEV-13.2).
 
 **Opcje:**
 - A) `httpx` — timeouty per zapytanie, wbudowany `MockTransport` do testów offline,
@@ -223,7 +223,7 @@ krótkie nazwy.
 i `options.<klucz>.description`; `unspecified` nigdy nie jest pokazywany, więc ma tylko
 `description`. Walidacja manifestu wymaga obu pól. Odpowiedź użytkownika własnymi słowami
 model też dopasowuje do opisów (opcji i operacji), nie do etykiet. ARCHITECTURE 4.2,
-DEVELOPMENT_STANDARDS 17.
+13.1.
 
 ---
 
@@ -254,7 +254,7 @@ do rozważenia dla układu wyniku (`target_crs`), którego A nie poprawia.
 odpowiedzi własnymi słowami, a pytanie użytkownika (`question`) — tylko w terminalu
 i w dzienniku. Pytanie o operację (`dialog.operation`) bez zmian. Przy backendzie basal
 do sprawdzenia, czy jego kalibracja pasuje do takiego brzmienia. ARCHITECTURE 3.3.1, 4.2,
-DEVELOPMENT_STANDARDS 17.1.
+13.1.
 
 ---
 
@@ -552,7 +552,7 @@ manifestu przez `validate_command` offline, kontrola pokrycia (każda wartość 
 oferowana albo w `excluded`), efekty sieciowe, teksty kodów błędów (X1–X10). Lekka wersja w
 `retman doctor`.
 
-**Konsekwencje:** ARCHITECTURE 3.2.3, 3.2.7, 8.3; STANDARDS 17. Badanie:
+**Konsekwencje:** ARCHITECTURE 3.2.3, 3.2.7, 8.3, 13. Badanie:
 `docs/research/2026-10-19-integracja-narzedzi.md` (rozdz. 2–3).
 
 ---

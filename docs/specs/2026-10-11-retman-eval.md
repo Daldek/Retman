@@ -3,7 +3,7 @@
 **Status:** przyjęta przez autora (2026-10-12)
 **Data:** 2026-10-11
 **Podstawa:** PRD W-01, W-02, W-03, N-05, N-07, rozdz. 8; ARCHITECTURE 3.4, 6.2, 8.1–8.3, 9.2;
-STANDARDS 6.3, 6.4, 10.4, 17.1
+CLAUDE.md (środowisko i komendy, testy), ARCHITECTURE 13.1
 
 ## 1. Cel
 
@@ -111,7 +111,7 @@ retman-eval --config PATH [--commands PATH] [--operations ID[,ID...]] [--tags TA
 | `--output` | surowe rekordy (p. 4.3) do dalszej analizy |
 | `--report` | raport Markdown; bez opcji raport trafia na standardowe wyjście |
 
-Raporty z przebiegów na modelach zapisuje się w `docs/research/` (STANDARDS 6.4).
+Raporty z przebiegów na modelach zapisuje się w planie, do którego należą (`docs/plans/`, `CLAUDE.md`); dotychczasowe leżą w `docs/research/`.
 
 **Kody wyjścia:**
 
@@ -260,7 +260,7 @@ Test `live` (świadomie, `-m live`): jeden przebieg kilku poleceń na serwerze z
    raport z wszystkimi miarami z p. 5.2 i krzywą z p. 5.3.
 2. Raport z przebiegu Bielik 11B (`logprobs`) trafia do `docs/research/`, z zaleceniem progów
    dla `--target-error 0.01`.
-3. Testy z p. 8 przechodzą offline; bramka STANDARDS 18 czysta.
+3. Testy z p. 8 przechodzą offline; bramka (`scripts/gate.sh`) przechodzi.
 4. Specyfikacja i PROGRESS opisują stan; ARCHITECTURE 8.1–8.2 zostaje bez zmian do decyzji
    z p. 10.1.
 
