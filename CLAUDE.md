@@ -37,14 +37,14 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 - Język (ARCHITECTURE 1.3): kod, identyfikatory, komentarze i docstringi po angielsku;
   teksty dla użytkownika i modelu wyłącznie w plikach tłumaczeń (`pl.toml`);
   dokumentacja po polsku.
-- Środowisko przez `uv` (`uv sync --all-extras --group tools`), Python ≥ 3.12 (ADR-002),
-  wyłącznie z `.venv` (STANDARDS 6.1); ręczne uruchomienia CLI poza repo, testy nie dotykają
-  prawdziwego `retman.toml` (STANDARDS 6.4).
+- Środowisko przez `uv` (`uv sync --locked --all-extras` instaluje też grupę `tools` z narzędziami
+  do testów handlerów), Python ≥ 3.12 (ADR-002), wyłącznie z `.venv` (STANDARDS 6.1); ręczne
+  uruchomienia CLI poza repo, testy nie dotykają prawdziwego `retman.toml` (STANDARDS 6.4).
 - Testy offline bez GPU i bez serwera modelu: `FakeDecisionBackend`, `FakeToolClient`,
   `-m "not live"` (STANDARDS 6.3, 10.4); bez `conftest.py` w podfolderach `tests/`.
-- Bramka przed commitem/merge: pytest offline zielone, `ruff check .`
-  i `ruff format --check .` czyste, `mypy retman/ tests/` bez błędów,
-  `retman-scaffold --check` (STANDARDS 6.3, 18).
+- Bramka przed każdym commitem: `scripts/gate.sh` (uv sync --locked, `ruff format --check`,
+  `ruff check`, mypy, pytest offline z pokryciem — razem z zgodnością manifestów z zainstalowanymi
+  narzędziami — i kontrola commitów; DEV-7.6). Nie commituj, gdy któryś krok nie przechodzi.
 - Końce linii LF we wszystkich plikach, bez wyjątków (STANDARDS 5.5).
 - Nie rozstrzygaj sam miejsc `[DO UZUPEŁNIENIA]` ani otwartych kwestii (PRD 11,
   ARCHITECTURE 12) — to decyzje autora; zgłoś je i zapytaj.

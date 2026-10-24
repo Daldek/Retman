@@ -1276,35 +1276,33 @@ wheels = [
 [[package]]
 name = "retman"
 source = { editable = "." }
+default-groups = ["dev", "tools"]
 dependencies = [
     { name = "httpx" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
-
-[package.dev-dependencies]
 tools = [
     { name = "imgwtools", extra = ["store"] },
     { name = "kartograf" },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
-]
-provides-extras = ["dev"]
+requires-dist = [{ name = "httpx", specifier = ">=0.27" }]
 
 [package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.11" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-cov", specifier = ">=5.0" },
+    { name = "ruff", specifier = ">=0.6" },
+]
 tools = [
     { name = "imgwtools", extras = ["store"], git = "https://github.com/Daldek/IMGWTools?rev=0d98f3babeeeee49b2146a977b62bfa92114beea" },
     { name = "kartograf", git = "https://github.com/Daldek/Kartograf?rev=8e9bcbb058d11f06afae5a65e62f31870f69d169" },
