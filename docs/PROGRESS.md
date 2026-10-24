@@ -1,551 +1,147 @@
-# PROGRESS — Retman
+# PROGRESS: Retman
 
-Bieżący stan prac. Stan gałęzi, tagów i `origin` sprawdzaj w gicie
-(`git status`, `git log`, `git ls-remote --tags origin`), nie w tym dzienniku.
-Szablony wpisów: [Szablony](#szablony).
+Current state only (DOC-6.1). Branch, tag and remote state: ask git (`git status`,
+`git log --oneline -10`). History: the git log and [CHANGELOG](CHANGELOG.md); the long
+session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.md`.
 
-## Status projektu
+## Status
 
-| Element | Status | Uwagi |
-|---------|--------|-------|
-| Dokumentacja projektowa (PRD, ARCHITECTURE, DEVELOPMENT_STANDARDS, USAGE) | ✅ Gotowy | ADR-001–019; przewodnik `docs/USAGE.md`; otwarte kwestie: PRD rozdz. 11, ARCHITECTURE rozdz. 12 |
-| Repozytorium (`main`, `develop`, `origin`) | ✅ Gotowy | `main` i `develop` na `origin` |
-| Lista pierwszych operacji v0.1 | ✅ Gotowy | Kartograf 0.8.0: 4 operacje (ADR-001, ADR-012); IMGWTools 3.0.0: 26 operacji w 6 kategoriach (ADR-017) |
-| Szkielet pakietu, `pyproject.toml`, `retman.toml` i `retman init` | ✅ Gotowy | ARCHITECTURE 3.1, 9.1; Python ≥ 3.12 (ADR-002) |
-| Ekstraktory (w tym prawdopodobieństwo) | 🚧 W toku | gotowe: `area` (z plikiem geometrii), `crs`, `path`, `result`, `station`, `years`, `period`, `year_type`, `point`, `grid_cell`, `probability`, `duration`, `variables`, `place_query`, `synop_station`, `identifier`; brak: liczby z jednostkami |
-| Backendy `basal`, `openai_compatible`, `none`; `FakeDecisionBackend` | 🚧 W toku | gotowe: `openai_compatible`, atrapa; `basal` — brak specyfikacji API basal-serve |
-| Rdzeń: pipeline, `Plan`, `dialog`, `Result` | ✅ Gotowy | ARCHITECTURE 2, 6, 7.1, 7.3 |
-| Rejestr operacji, wspólny adapter, `kinds`, `retman-scaffold` | ✅ Gotowy | warstwa komend (ADR-013), rozpoznawanie dwustopniowe, `retman-scaffold list/draft/--check` (ADR-019) |
-| Przestrzeń robocza, dziennik projektu, ślad audytowy, zbiór poleceń | ✅ Gotowy | ARCHITECTURE 5; dziennik z danymi planu i zbiór za zgodą (ADR-010); `retman collect` — ADR-011, odłożone |
-| CLI, `retman doctor`, `results`, `log` | ✅ Gotowy | ARCHITECTURE 6.4, 7.1, 7.2 |
-| `retman-eval` i zbiór poleceń testowych | 🚧 W toku | kod gotowy; 614 poleceń (szkic agentów, Kartograf + IMGWTools); ostatni przebieg z Bielikiem 11B na starym zbiorze 83 poleceń; czeka: przegląd zbioru, przebieg na nowym zbiorze, progi |
-| CI (Windows, Linux, macOS; test instalacji; wersje narzędzi) | ⏳ Planowany | ARCHITECTURE 3.2.7, 9.4 |
+| Component | State | Note |
+|---|---|---|
+| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-019) | done, Polish | translation to English pending (ECO-005); open questions: PRD ch. 11, ARCHITECTURE ch. 12 |
+| Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
+| Registry, command layer, data kinds, `retman-scaffold` | done | ADR-013, ADR-019 |
+| Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins commits `8e9bcbb` (Kartograf) and `0d98f3b` (IMGWTools) until the tags `v0.8.0` and `v3.0.0` exist |
+| Extractors | in progress | missing: numbers with units; the rest of ARCHITECTURE 4.3 is done |
+| Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
+| CLI: conversation, `init`, `doctor`, `results`, `log` | done | ARCHITECTURE 6.4, 7.1, 7.2 |
+| `retman-eval` and the 614-command set | in progress | code done; the last run was on the old 83-command set |
+| Nogat standard 2.1, structure and tooling | done | branch `chore/nogat-2.1`, 9 commits: gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
+| Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file; open: see Next 1 |
+| Nogat standard 2.1, error registry, agent interfaces, user environment | planned | see Next 1 |
+| Gate | green | `scripts/gate.sh`: 2577 offline tests, coverage 95%, ruff, mypy strict; run with `TMPDIR=$HOME/.cache/retman-tmp` (a network share breaks SQLite and links) |
+| CI (Linux, macOS, Windows) | written, not run | `.github/workflows/ci.yml` and `live.yml`; nothing is pushed |
 
-## Checkpointy
+Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 
-### CP0 — Dokumentacja startowa
-- **Data:** 2026-10-11
-- **Wersja:** — (przed v0.1.0)
-- **Zakres:** PRD, architektura, standardy deweloperskie, szablony DECISIONS/PROGRESS/CHANGELOG, README, CLAUDE.md, licencja MIT, konfiguracja repozytorium; pierwszy commit `70857c0`
+| Item | Why |
+|---|---|
+| History rewrite and mailmap (phase 1) | Retman needs only DEV-4.2: the commits are by `Daldek <git@debever.pl>`; a rewrite is the author's step |
+| Rulesets for `main`, `develop` and `v*` tags, private vulnerability reporting, Dependabot security updates, default branch (DEV-3.6, DEV-13.6, DEV-13.7) | GitHub settings |
+| `docs/CLA.md` | the author's legal text; `CONTRIBUTING.md` and the pull request template already refer to it |
+| Tags, releases, replacing the commit pins of the `tools` group by tags, PyPI name `nogat-retman` (phases 5 and 6) | need the producers' tags and the author's approval |
+| Push of `chore/nogat-2.1`, pull request, merge into `develop` | approvals (DEV-3.3) |
 
-## Ostatnia sesja
+## Next
 
-> **START NASTĘPNEJ SESJI (stan 2026-10-20, koniec sesji):** praca na `develop`, zmiany
-> z 2026-10-19/20 w commicie `9523438` (lokalnie, nie wypchnięte na `origin`). Retman działa
-> na Kartografie 0.8.0 i IMGWTools 3.0.0 (piny commitów w grupie
-> `tools`; tagi `v0.8.0`/`v3.0.0` jeszcze nie wypchnięte). Bramka zielona: 2554 testy offline,
-> ruff, mypy, `retman-scaffold --check --require-tools` 0/0. Live: testy Kartografa 5/5.
-> **Do zrobienia, w kolejności:**
-> 1. Push `develop` na `origin` (po decyzji autora).
-> 2. Po wypchnięciu tagów: przepiąć grupę `tools` na `@v0.8.0` i `@v3.0.0`, uruchomić bramkę.
-> 3. Przegląd zbioru `retman/eval/commands.jsonl` (614 poleceń, szkic agentów) i przebieg
->    `retman-eval` z Bielikiem 11B na nowym zbiorze (dwustopniowe rozpoznawanie, `0_5m` vs `5m`);
->    potem progi pewności.
-> 4. Testy live IMGWTools (nie ma ich w zbiorze `live`) i smoke CLI na Windows/macOS (zapis
->    magazynów dowiązaniami twardymi).
-> 5. Uzupełnić spec. `retman-eval` (`docs/specs/2026-10-11-retman-eval.md`): pliki zastępcze
->    geometrii, katalog stacji offline, parametry nieobowiązkowe nigdy w `expect_clarify`.
-> 6. CI (Windows/Linux/macOS), `retman collect export`/`draft` (ADR-011) — gdy autor zdecyduje.
-> Decyzje autora: wartości docelowe (PRD W-01, N-07, rozdz. 8), ADR wsteczne dla pierwszej
-> sesji, prefiks „Błąd:” i kod 1 dla polecenia spoza zakresu w CLI, backend basal (czeka na API
-> basal-serve). Do oceny: łańcuchy jako przepisy autora i n8n (teraz są dwa narzędzia).
-> Uwagi: istniejące pliki `retman.toml` wymagają sekcji `[tools.kartograf]` i `[tools.imgwtools]`
-> (`retman init` od nowa); adres LM Studio podaje użytkownik — nie zapisywać nigdzie.
-> Tryb pracy (autor, 2026-10-20): sekwencyjnie i oszczędnie z limitami modeli — bez szerokich
-> fal równoległych subagentów.
+1. **Resume the standard 2.1 adoption on `chore/nogat-2.1`** (one commit per step, gate
+   green before each; the source of the rules is the Nogat branch `feature/data-output`,
+   `git -C ~/workspace/Nogat show feature/data-output:standards/<file>`):
+   1. `docs: CLAUDE.md` in English within 200 lines (DOC-3.1): profile `tool` (DEV-1.1),
+      critical rules, environment and commands (`scripts/gate.sh`), code map, documentation
+      map, session workflow, link to the Retman entry of Nogat `ecosystem.yaml`, and a
+      **Deviations** section (DEV-1.2) that keeps the DEV-7.3 line now in the Polish
+      `CLAUDE.md` and adds DEV-18.1 if the config keeps N-11 (no hidden defaults). Then
+      `git rm docs/DEVELOPMENT_STANDARDS.md` (DEV-1.3). What is project-specific there must
+      move: the checklists of section 17 (new operation, kind, backend, extractor) to a new
+      last chapter of `docs/ARCHITECTURE.md`; the rules of sections 6.4 (run the CLI outside
+      the repository, results go to `retman-output/`), 10.4 (no `conftest.py` in test
+      subfolders, offline tests, the dummy tool), 14 and 16 (privacy, "never" list) to
+      `CLAUDE.md`.
+   2. `docs: CHANGELOG` in English, heading `## [Unreleased]` (DOC-7.1, REL-1.1), sections
+      Added, Changed, Removed, Fixed, ADR references in parentheses.
+   3. `docs: DECISIONS` in English with the statuses of DOC-8.1; new ADRs as files in
+      `docs/decisions/` (DOC-8.2), starting with ADR-020: `src/` layout, gate and CI, test tree,
+      the mypy deviation, the technical log on stderr without a file, standard 2.1 decisions.
+   4. **Error registry** (ERR-3, ERR-4). Copy `error_registry.json` and `schemas/agent/*`
+      into `schemas/nogat/` as Hydrolog did (branch `chore/nogat-2.1` of Hydrolog:
+      `schemas/nogat/README.md`, `scripts/generate_errors.py`, `src/hydrolog/_errors.py`);
+      give `RetmanError` the fields `code`, `message`, `details`, `hint` (DEV-11.1; classes in
+      `src/retman/exceptions.py`); map exits: cancelled 3 to `cancelled` 130, out of scope to
+      `unsupported` 15, a wrong option or variable (`UsageError`) to `validation_error` 2, the
+      rest by ERR-1 with `details.reason`; the last stderr line is `retman-error/1` (AGI-3.3);
+      `retman-eval` (exit 4, W-03) and `retman-scaffold` follow; contract test: module equals
+      copy. Update USAGE 8 and ARCHITECTURE 6.4 (exit code tables).
+   5. **Agent interfaces** (profile `tool`; the registry lists CLI and Python, no MCP, no
+      REST): catalog `retman-commands/1` with `list_commands`, `command_schema`,
+      `validate_command`, `check_command`, `run_command` in `retman.__all__` (AGI-2.1,
+      AGI-7.1); the envelope `retman-result/1` with `--json`, `--lang`, `--check`, `--yes`
+      (AGI-3.2, AGI-3.4, AGI-4.2); `retman commands list|schema|guide`; generated `AGENTS.md`
+      and `llms.txt` from `src/retman/_data/agents/` (AGI §8, DOC §4, DOC §5); contract tests
+      (schemas, freshness, budgets of DOC-1.7, `__all__` and a consumer snippet checked by
+      mypy); `--help` texts from translation files (AGI-3.7). Consume tools through the
+      catalog functions where possible: the only direct `DownloadManager` path is the
+      orthophoto handler (`src/retman/tools/kartograf/handlers.py`).
+   6. **User environment** (DEV §18, ECO-028): `retman.toml` becomes the `[retman]` table of
+      `nogat.toml` (`NOGAT_CONFIG`, `platformdirs.user_config_path("nogat")`), shared keys
+      `[nogat] lang`, `data_dir`, `cache_dir`, variables `RETMAN_<KEY>` before `NOGAT_<KEY>`
+      (`src/retman/config.py`, `config_template.toml`, `initialize.py`, `doctor.py`);
+      `retman config show --json` with each key, value and source and the credential names
+      present or missing (DEV-18.6); extend `.env.example`; add `platformdirs` to the
+      dependencies. `retman init` appends the table without touching other tables.
+   7. **README** in the order of DOC-2.1 within 400 lines (summary paragraph at most 400
+      characters, "For AI agents" with the links to `llms.txt` and `AGENTS.md`), then USAGE,
+      PRD and ARCHITECTURE in English, then `docs/research/` and `docs/specs/` (translate or
+      archive; DEV-17.4 stops new files there); new plans go to `docs/plans/`.
+2. **Migrate the calls to the changing producer APIs, after Kartograf and IMGWTools have
+   DEV §19 on their development heads** (do not before; ECO-051, data-output plan step 5).
+   Call sites, as of 2026-10-24:
+   - `src/retman/tools/kartograf/client.py` lines 9, 188, 195, 258, 273: `output_dir=` passed
+     to `validate_command`, `run_command`, `check_command` and shown on the command line
+     becomes `root=` (`--root`).
+   - `src/retman/tools/kartograf/handlers.py` lines 84 and 137: `DownloadManager(output_dir=...)`
+     becomes `root=`.
+   - `src/retman/tools/imgwtools/client.py` lines 62 to 71: `reference_data_dir` is exported as
+     `IMGW_DATA_DIR` and becomes `IMGW_REFERENCE_DIR`; lines 95 to 101 and 161 to 174 pass
+     `root` and show `--root`: recheck against the default root `<data_dir>/imgw` and `IMGW_ROOT`
+     (was `IMGW_STORE_ROOT`); `src/retman/stores.py` lines 19 to 22 and 154 to 156 (marker
+     `imgw-store.json`, `store init`) follow the marker rules of DEV-19.12 and DEV-19.13.
+   - Error codes: the Kartograf and IMGWTools codes change to the registry codes
+     (`no_coverage` to `no_data`, `download_failed` to `source_unavailable`, and so on, ERR §4):
+     the `[errors]` texts in `src/retman/tools/*/pl.toml`, the exemptions in
+     `src/retman/devtools/readers/*.py`, the tests under `tests/integration/tools/` and
+     `tests/contract/test_tool_conformance.py`.
+   - `store_dir` of `[tools.kartograf]` and `[tools.imgwtools]` keeps meaning the store root;
+     whether it stays required (DEV-19.2 gives each tool a default root) is decided in Retman
+     (see Open questions). Then USAGE, ARCHITECTURE, CHANGELOG.
+3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
+   `v3.0.0` once they exist (REL-5.3), run `uv lock` and the gate.
+4. Review `src/retman/eval/commands.jsonl` (614 commands, an agent draft), run `retman-eval`
+   with Bielik 11B on it (two-stage recognition, `0_5m` against `5m`), then set the confidence
+   thresholds.
+5. Live tests of IMGWTools (none in the `live` set), a smoke run of the CLI on Windows and
+   macOS (hard-link stores), the first CI run after the push.
+6. Complete `docs/specs/2026-10-11-retman-eval.md`: geometry placeholder files, the offline
+   station catalog, optional parameters never in `expect_clarify`.
+7. `retman collect export` and `retman collect draft` (ADR-011) when the author decides.
 
-### Migracja na Kartograf 0.8.0 i całe IMGWTools 3.0.0 (2026-10-19/20)
+## Open questions
 
-- **Zlecenie użytkownika:** przejść na Kartograf 0.8.0 jak najszybciej; całe IMGWTools (z ČHMÚ)
-  w v0.1; pozostałe kwestie architektury rozstrzygnąć badaniem (decyzje delegowane).
-- **Decyzje użytkownika:** Retman pyta o każdą nową wartość (NMPT: rozdzielczość i układ;
-  ortofotomapa: kolor — osobny handler na `GugikOrtoProvider`); wszystkie rozdzielczości; bez
-  sieci przed potwierdzeniem, sprawdzenie jako osobny jawny krok; magazyn IMGW obok magazynu
-  Kartografa; poprawka przenośnego zapisu IMGWTools trafi do v3.0.0 (wypchnięta jako `0d98f3b`);
-  MCP — decyzja delegowana. Na końcu: praca sekwencyjna, oszczędnie z limitami.
-- **Zrobione:** badania (6 raportów w `docs/research/2026-10-19-*.md`), ADR-012–019, erraty
-  ADR-001/003/004/006; warstwa komend (`retman/adapters/catalog.py`), podgląd offline z ponownym
-  pytaniem, krok sprawdzenia (`s`), rozpoznawanie dwustopniowe, plik geometrii jako obszar,
-  magazyny `[tools.*]` z `retman init`/`retman doctor`, 15 nowych rodzajów danych, nowe
-  ekstraktory, adapter Kartografa 0.8.0 (4 operacje) i IMGWTools 3.0.0 (26 operacji),
-  `retman-scaffold` (X1–X10, lekka kontrola w `doctor`), zbiór `retman-eval` 614 poleceń;
-  poprawki po smoke na żywo: wiersze planu dla nieustawionych parametrów nieobowiązkowych
-  (`params.<p>.unset`, zmiana przez `z`), uwagi narzędzia bez duplikatów i grupowane powyżej
-  5 na kod; PRD, ARCHITECTURE, STANDARDS, USAGE, README, CLAUDE.md, CHANGELOG.
-- **Weryfikacja:** `pytest -m "not live"` 2554 passed; ruff, mypy, `retman-scaffold --check
-  --require-tools` (0 błędów, 0 ostrzeżeń); `pytest -m live tests/tools/kartograf` 5/5; smoke
-  na żywo poza repo (FakeDecisionBackend, sieć po potwierdzeniu): PMAXTP POT dla punktu, stan
-  wody stacji, katalog stacji IMGW-PIB (3806 stacji, sprawdzenie `s`), wyszukanie stacji na
-  Wiśle, ortofotomapa CIR, BDOT10k SHP powiatu 2264 — działają; NMT 0,5 m KRON86 dla
-  N-34-130-D-d-2-4: sprawdzenie i wykonanie poprawnie zgłaszają brak danych. Folder smoke
-  i pliki w `~/.local/share/retman` usunięte.
-- **Otwarte:** przegląd i przebieg nowego zbioru `retman-eval`; testy live IMGWTools; tagi
-  narzędzi; Windows/macOS niesprawdzone; dokumentacja z drugiej połowy sesji (agent DocsCore
-  przerwany) uzupełniona ręcznie tylko o `no_check`, ścieżki `options.<nazwa>`,
-  `namespace_packages`, wiersze `unset` i grupowanie uwag — spec. `retman-eval`
-  (`docs/specs/2026-10-11-retman-eval.md`) nie opisuje jeszcze plików zastępczych geometrii,
-  katalogu stacji offline i reguły parametrów nieobowiązkowych.
+Decisions awaiting the author:
 
-### Kartograf 0.8.0 i IMGWTools 3.0.0 — analiza wpływu (2026-10-19)
+- Target values: recognition accuracy (PRD W-01), response time (N-07), success measures
+  (PRD ch. 8, ch. 11 item 5).
+- ADRs for the decisions of the first session, 2026-10-11 (the list is in the git history of
+  this file): record them retroactively or not.
+- The prefix "Błąd:" and exit code 1 for a command outside the scope in the CLI (an earlier
+  decision of the author); with the registry the code becomes `unsupported` (15).
+- Backend `basal`: waits for the API of basal-serve.
+- Chains as author-written recipes instead of the run-time resolver (alternative to
+  ARCHITECTURE 4.5, PRD W-12, S-05), and n8n as an environment of Retman, not an executor of
+  steps (only where Retman cannot do it); to be judged when a second tool brings real chains
+  (ARCHITECTURE 12 item 14; the full proposals are in the git history of this file).
 
-- **Zlecenie użytkownika:** sprawdzić zmiany w Kartografie (przed v0.8.0) i IMGWTools
-  (przed v3.0.0) i ich wpływ na Retmana.
-- **Zrobione:** analiza `v0.7.2..develop` Kartografa i `v2.1.1..slave` IMGWTools (subagenci
-  + własna weryfikacja sygnatur); raport
-  `docs/research/2026-10-19-kartograf-0.8.0-imgwtools-3.0.0-wplyw.md`. Wnioski: Kartograf
-  0.8.0 łamie wszystkie handlery (`DownloadManager` bez `resolution` i `last_result`,
-  wyniki `DownloadResult`, `download_pl_cutout` keyword-only z `horizontal_crs`,
-  `PlCutoutResult.file`, brak `LandCoverManager` → `download_landcover`, nowe wymagane
-  argumenty dostawców NMPT/ortofotomapy, `ValidationError` zamiast `ValueError`);
-  publiczne API geometrii odblokowuje „plik geometrii jako obszar”; IMGWTools 3.0.0 bez
-  aliasów wobec 2.x, ČHMÚ jako drugi dostawca; oba narzędzia mają katalog komend, MCP
-  i `llms.txt`.
-- **Weryfikacja:** `uv run --with ../Kartograf pytest -m "not live" tests/tools/kartograf`
-  — 8 failed / 8 (Kartograf 0.8.0); sygnatury `inspect.signature` z pakietów zbudowanych
-  z `develop`/`slave`. Kod Retmana bez zmian; repozytoria narzędzi nietknięte.
-- **Otwarte:** pytania do autora w raporcie, p. 5; tag `v0.8.0` Kartografa jeszcze nie
-  istnieje, IMGWTools 3.0.0 jest na `slave` (wydania z `master`).
+Questions raised by the adoption of standard 2.1:
 
-### Łańcuchy jako przepisy i miejsce dla n8n — analiza (2026-10-13)
-
-- **Zlecenie użytkownika:** gdzie w Retmanie jest miejsce na n8n i gotowe automatyzacje;
-  czy łańcuchy wykonywać deterministycznie (n8n zamiast Retmana lub LLM); przepisy czy
-  resolver.
-- **Decyzje użytkownika:** bez ADR — przepisy i n8n trafiają do Backlogu („Do
-  rozważenia”); ocena po dodaniu kolejnych narzędzi. n8n tylko tam, gdzie Retman nie
-  da rady albo własne rozwiązanie byłoby zbyt trudne (także jako nauka technologii).
-- **Zrobione:** analiza (ARCHITECTURE 1.2, 4.5, 5.4, 6.3, 7.4–7.5, 10, 11; USAGE 7–12;
-  dokumentacja n8n); pozycje Backlogu; otwarta kwestia ARCHITECTURE 12 pkt 14.
-  Wnioski: wykonanie i kolejność kroków już są w kodzie (model nie planuje łańcuchów),
-  jedyny wpływ modelu na kształt łańcucha to krok 4 resolvera; n8n nie dodaje
-  determinizmu, a jako wykonawca rozdzieliłby ślad audytowy (W-15) i zdublował nazwy
-  parametrów; W-05 wyklucza wykonanie bez zatwierdzenia przez człowieka.
-- **Weryfikacja:** bez zmian w kodzie; nic nie uruchamiano.
-- **Otwarte:** ocena przepisów po drugim narzędziu (wszystkie operacje Kartografa mają
-  `inputs: []`, więc łańcucha jeszcze nie ma); czy zatwierdzenie planu w innym kanale
-  (mail, komunikator przez n8n) spełnia W-05 — decyzja autora.
-
-### Dziennik z danymi planu i zbiór poleceń — ADR-010 (2026-10-12)
-
-- **Zlecenie użytkownika:** uzupełnić dziennik (decyzje modelu dla planów niewykonanych,
-  wartości jako dane, zdarzenie „poza zakresem”, zmieniana wartość); `collect_commands`
-  jako zbieranie poleceń w jednym miejscu, wyłączone domyślnie, z pytaniem w `retman init`.
-- **Zrobione:** zdarzenie `plan` z `values`/`inputs`/`questions`/`decisions`/`changed`,
-  zdarzenie `out_of_scope`; `retman/core/collection.py`; `[privacy] collect_path`
-  (ścieżka wpisana przez `retman init`, `default_collect_path`); pytanie o zgodę w
-  `retman init` (terminal; bez terminala `false`); zbiór pomija `retman-eval`; testy
-  (dziennik dla planów niewykonanych, poza zakresem, zbiór wyłączony/włączony, konfiguracja);
-  ADR-010, ARCHITECTURE 5.4, 9.1, rozdz. 10, USAGE 1.3 i 6.3–6.4, CHANGELOG.
-- **Weryfikacja:** `pytest -m "not live"` — 215 passed; ruff, mypy czyste. Smoke CLI:
-  `retman init` w terminalu (odpowiedź „t”) → `collect_commands = true` i pełna ścieżka;
-  bez terminala → `false`; polecenie z odpowiedzią i odrzuceniem → wpis w zbiorze
-  i w dzienniku z decyzjami modelu (format 0,72) i wartościami ze źródłami.
-- **Otwarte:** przekazanie zbioru i szkic wpisów `retman-eval` — rozstrzygnięte w ADR-011
-  (droga A: eksport i wysyłka ręczna, formularz z uploadem do rozważenia; `retman collect
-  export` i `retman collect draft`), wdrożenie odłożone przez autora.
-
-### Układ wyniku rozpoznawany w kodzie — ADR-009 (2026-10-12)
-
-- **Zlecenie użytkownika:** rozpoznawanie układu wyniku w kodzie, droga A (niejasne →
-  pytanie, bez modelu); odporność na brak polskich znaków i literówki.
-- **Zrobione:** `retman/extractors/crs.py` (`extract_crs` z rolą wzmianki: po prostokącie /
-  słowa „wynik”, „do”, „przelicz”… / niezgodność z układem liczb; `read_crs_answer` dla
-  odpowiedzi; normalizacja znaków z `ł`; jedna literówka w słowach ≥ 5 liter);
-  `ANSWER_EXTRACTORS`; schemat manifestu: `choice` z `extractor` i `option_values`
-  (walidacja; teksty modelu niewymagane); pipeline: `_extracted_choice` i odpowiedź
-  bez modelu, komunikaty `dialog.several_values`/`unsupported_value`; Kartograf
-  `target_crs` z ekstraktorem, usunięte teksty modelu; testy ekstraktora (role, literówki,
-  odpowiedzi), pipeline (bez modelu, prostokąt ≠ wynik, nieobsługiwany kod, odpowiedź
-  „2180”/„4326”), walidacji; zbiór: `kartograf-cutout-020`–`023`; ADR-009, ARCHITECTURE
-  3.1 i 4.3, USAGE, CHANGELOG, raport w `docs/research/`.
-- **Weryfikacja:** `pytest -m "not live"` — 209 passed, `crs.py` 96%; ruff, mypy czyste.
-  `retman-eval` z Bielikiem 11B (83 polecenia): W-02 0/189, ciche zgadywanie 0,
-  `target_crs` 23/23 zgodnie z oczekiwaniem, pokrycie poleceń kompletnych 14/39. Adres
-  serwera nie trafił do repo.
-
-### Osobne pytanie dla modelu — ADR-008 (2026-10-12)
-
-- **Zlecenie użytkownika:** wdrożenie pkt 1 z propozycji poprawy rozpoznawania (osobne
-  pytanie dla modelu).
-- **Zrobione:** `model_question` dla parametrów `choice`/`bool` (walidacja manifestu,
-  pipeline: decyzja z polecenia i z odpowiedzi własnymi słowami); teksty w
-  `retman/tools/kartograf/pl.toml` i w fixture; testy (pipeline: model dostaje
-  `model_question`, użytkownik `question`; walidacja: brak `model_question` = błąd);
-  ADR-008, ARCHITECTURE 3.3.1 i 4.2, STANDARDS 17.1, CHANGELOG, raport w `docs/research/`.
-- **Weryfikacja:** `pytest -m "not live"` — 179 passed; ruff, mypy czyste. Pełny
-  `retman-eval` z Bielikiem 11B: parametry 0,55 → 0,78, pytania zbędne 66 → 30, pokrycie
-  poleceń kompletnych 6/36 → 11/36, W-02 2 → 1, `product` 16/33 → 32/33; operacja bez
-  zmian (0,89). Adres serwera nie trafił do repo; konfiguracja tymczasowa usunięta.
-
-### Przebieg `retman-eval` z Bielikiem 11B (2026-10-12)
-
-- **Zlecenie użytkownika:** test działania z Bielikiem; przebieg roboczy na szkicu zbioru.
-- **Zrobione:**
-  - `retman doctor` z LM Studio (`bielik-11b-v3.0-instruct-mlx`): wszystko ✓, pytanie
-    testowe pewność 1,00 z logprobs;
-  - `retman-eval --target-error 0.01` (79 poleceń, ok. 14 min); analiza
-    `docs/research/2026-10-12-bielik-11b-retman-eval.md`, raport narzędzia
-    `…-raport.md`;
-  - eksperyment z neutralnymi opisami `unspecified` — gorzej dla `product`/`format`,
-    teksty przywrócone;
-  - `retman/eval/metrics.py`: lista „Błędne przypadki” bez wartości zapytanych i bez
-    parametrów zależnych od niezapytanego (miary bez zmian); test zaktualizowany.
-- **Wynik:** operacja 0,89, W-03 0 naruszeń, W-02 2/137 (ciche zgadywanie `target_crs`
-  z kodu prostokąta wejściowego, pewność 0,93–0,94), `product` 16/33 (model wybiera
-  „nie podano” mimo NMT/DSM), pokrycie poleceń kompletnych 6/36, mediana planu 11 s.
-  Zalecane progi: operacja 0,70, parametry 0,94 (niepotwierdzone, < 100 decyzji).
-- **Weryfikacja:** `pytest -m "not live"` — 179 passed; ruff, mypy czyste; adres serwera
-  nie występuje w repo (grep); konfiguracja tymczasowa usunięta.
-
-### Kod EPSG bez prefiksu (2026-10-12)
-
-- **Zlecenie użytkownika:** Retman ma rozpoznawać kod EPSG także jako samą liczbę
-  z kontekstu (`2180` zamiast `EPSG:2180`).
-- **Ustalenia:** prostokąt (ekstraktor `area`) już wcześniej nie zależał od zapisu
-  `EPSG:` — układ wynika z zakresu liczb; same `2180`/`3045` nie są czytane jako TERYT ani
-  współrzędna (sprawdzone). Kod EPSG w poleceniu dotyczy więc tylko wyboru `target_crs`,
-  który robi model z kontekstu (prostokąt wejściowy vs wynik).
-- **Zrobione:** opisy opcji `target_crs` dla modelu z samym kodem (`EPSG:2180, kod 2180 —
-  …`), opis `unspecified` odróżnia układ prostokąta wejściowego od układu wyniku, `help`
-  pytania mówi, że kod można podać samą liczbą; w zbiorze `retman-eval`
-  `kartograf-cutout-016`–`019` (kody bez prefiksu, w tym przypadek dwuznaczny „w układzie
-  2180” → pytanie); USAGE 9, CHANGELOG.
-- **Weryfikacja:** `pytest -m "not live"` — 179 passed (walidacja zbioru z nowymi wpisami).
-  Bez przebiegu na modelu — skuteczność zmierzy `retman-eval` na nowych wpisach.
-- **Otwarte:** jeśli Bielik nie będzie trafnie wiązał samych kodów, alternatywą jest
-  rozpoznawanie kodu w kodzie (ekstraktor z regułami kontekstu „wynik/do/przelicz”) —
-  decyzja po przebiegu `retman-eval`.
-
-### Przewodnik `docs/USAGE.md` (2026-10-12)
-
-- **Zlecenie użytkownika:** opis sposobu pracy z Retmanem z przykładami.
-- **Zrobione:**
-  - `docs/USAGE.md` (przygotowanie, folder projektu, polecenia, pytania, plan i `z`,
-    wykonanie, `results`/`log`/`result.json`, sesja, opcje, praca bez terminala, kody
-    wyjścia, operacje Kartografa i formy obszaru, API Pythona, `retman doctor`,
-    `retman-eval`, ograniczenia); odsyłacze w README i CLAUDE.md, CHANGELOG;
-  - poprawki znalezione przy nagrywaniu przykładów: podwójne „np. np.” w podpowiedziach
-    (`example` w `retman/tools/kartograf/pl.toml` i `dialog.example_path` bez „np.” — dodaje
-    je `cli.example`); `retman results` powtarzał numer wyniku (`cli.results_line` =
-    samo podsumowanie).
-- **Weryfikacja:** przykłady CLI nagrane prawdziwym `retman.cli.main` z atrapą modelu
-  (`FakeDecisionBackend`) w folderze tymczasowym (usunięty); wycinek NMT 100 × 100 m
-  pobrany z GUGiK naprawdę (GeoTIFF, `result.json`, `results`, `log`); przykłady API
-  Pythona (`plan`/`answer`/`PlanNotConfirmedError`/`to_dict`/`from_dict`/`known`)
-  uruchomione; formy obszaru sprawdzone ekstraktorem; `pytest -m "not live"` — 179 passed.
-
-### Nazwy specyfikacji i planów z datą (2026-10-12)
-
-- **Decyzje użytkownika:** specyfikacje i plany (oraz raporty z badań) mają w nazwie datę
-  `YYYY-MM-DD` — reguła w STANDARDS 7.1 i mapie dokumentacji w CLAUDE.md.
-- **Zrobione:** `docs/specs/retman-eval.md` → `docs/specs/2026-10-11-retman-eval.md`
-  (data z nagłówka specyfikacji); odsyłacze w CHANGELOG, DECISIONS (ADR-006), PROGRESS,
-  STANDARDS 6.4. `docs/research/` już spełniał regułę; `docs/plans/` jeszcze nie istnieje.
-
-### `retman doctor` (2026-10-12)
-
-- **Zlecenie użytkownika:** przejście do `retman doctor`.
-- **Zrobione:**
-  - `retman/doctor.py` (`run_doctor` → `DoctorReport`: tekst jak w ARCHITECTURE 7.2 i
-    `--json`), polecenie `retman doctor [--json]` w CLI; teksty `[doctor]` w
-    `retman/i18n/pl.toml`;
-  - sekcje: konfiguracja (plik, projekt, zapis, liczba wyników, nieczytelne `result.json`),
-    model decyzyjny (adres, `GET /models`, pytanie testowe NMT vs pogoda, pewność, progi),
-    narzędzia (wersja na tle zakresu, liczba operacji, `[adapters] enabled`, polecenie
-    doinstalowania), tłumaczenia, model tekstowy;
-  - kod 1 tylko przy problemach blokujących: błąd konfiguracji, model niedostępny albo
-    pytanie testowe zakończone błędem, brak dostępnych operacji, błędne tłumaczenia;
-    błędna odpowiedź na pytanie testowe, model spoza listy serwera, brak pewności,
-    nieczytelne wyniki — ostrzeżenia;
-  - pole `source` w manifeście (wymagane, walidowane) do podpowiedzi `uv … --with`
-    (ARCHITECTURE 4.1); Kartograf: `git+https://github.com/Daldek/Kartograf`;
-  - testy `tests/test_doctor.py` (13), CHANGELOG.
-- **Weryfikacja:** `pytest -m "not live"` — 179 passed; ruff, mypy czyste. Smoke CLI poza
-  repo: konfiguracja z szablonu (`basal`) → backend niedostępny, kod 1; brak pliku →
-  podpowiedź `retman init`, kod 1; `openai_compatible` na lokalnym serwerze testowym
-  (stdlib HTTP) → model na liście, poprawna odpowiedź, ostrzeżenie o `confidence = "none"`,
-  kod 0; po zatrzymaniu serwera → „serwer modelu nie odpowiada” z podpowiedzią, kod 1.
-  Bez prawdziwego LM Studio.
-
-### `retman-eval` (2026-10-12)
-
-- **Zlecenie użytkownika:** implementacja `retman-eval` po akceptacji specyfikacji.
-- **Decyzje użytkownika:** specyfikacja `docs/specs/2026-10-11-retman-eval.md` przyjęta bez zmian.
-- **Zrobione:**
-  - `OutOfScopeError(RetmanError)` z `operations` (spec. 7); CLI bez zmian (nadal „Błąd:”
-    i kod 1 — decyzja autora);
-  - `retman/eval/dataset.py` (wczytanie i walidacja wpisów, spec. 2.2, manifesty wszystkich
-    narzędzi z `retman/tools/`), `runner.py` (CLI, izolacja w katalogu tymczasowym, licznik
-    zapytań do modelu), `metrics.py` (spec. 5), `report.py` (teksty w `[eval]`
-    `retman/i18n/pl.toml`); skrypt `retman-eval` w `pyproject.toml`;
-  - szkic zbioru: 4 × 15 poleceń Kartografa, 10 `out_of_scope`, 5 `near_miss`; tagi:
-    formal 31, colloquial 20, typo 10, incomplete 23, ambiguous 4, complete 33;
-  - testy `tests/eval/` (walidacja zbioru i reguły budowy 2.3, miary, krzywa progów,
-    izolacja, brak adresu w rekordach) + test `live`;
-  - ARCHITECTURE 3.1 (moduły `eval/`), status specyfikacji, CHANGELOG.
-- **Weryfikacja:** `pytest -m "not live"` — 166 passed, pokrycie 89% (`eval/` 86–99%);
-  ruff, mypy czyste. Smoke: `retman-eval` (`main`) na całym zbiorze z
-  `FakeDecisionBackend` wybierającym zawsze NMT dla arkusza → raport z wszystkimi
-  sekcjami, 75 rekordów, kod 4 (15 naruszeń W-03), brak plików poza katalogiem
-  tymczasowym. Przebiegu na modelu nie było.
-- **Do przeglądu w zbiorze:** `kartograf-hierarchy-006/-007` (godła PL-2000 i dostępność
-  skali zależą od pokrycia GUGiK), `kartograf-cutout-008/-009/-015`,
-  `kartograf-bdot-011` (kolejność osi PL-1992 → pytanie), `kartograf-bdot-015` (pytanie
-  o format zostawia go nieokreślonym), `near-005` (przycięcie ortofotomapy do wielokąta).
-
-### Etykiety i opisy opcji (2026-10-12)
-
-- **Zlecenie użytkownika:** stan prac; pytanie, dlaczego `pl.toml` obok NMT wymienia DEM
-  i „rzeźbę terenu”.
-- **Decyzje użytkownika:** opcje rozdzielone jak operacje — `label` dla użytkownika,
-  `description` z synonymami i nazwami angielskimi dla modelu, bo w praktyce używa się
-  angielskich nazw i skrótów (ADR-007).
-- **Zrobione:**
-  - `core/pipeline.py`: pytania i plan pokazują `options.<klucz>.label`; model dostaje
-    `options.<klucz>.description` (także `unspecified`) — przy poleceniu i przy odpowiedzi
-    własnymi słowami; odpowiedź na pytanie o operację model dopasowuje do `description`
-    operacji, nie do `label`;
-  - `registry/manifest.py`: walidacja wymaga `label` i `description` każdej opcji
-    oraz `unspecified.description`;
-  - `retman/tools/kartograf/pl.toml`: krótkie etykiety opcji; w opisach dodane DTM,
-    orthophoto, PUWG 1992, UTM 33N, Křovák, poziom odniesienia Amsterdam, GPKG/SHP;
-  - testy: `test_choice_options_show_labels_and_offer_descriptions_to_model`, przypadek
-    opcji z jednym tekstem w `test_validate_manifest_reports_missing_language_option_and_example`;
-    fixture `dummy_tool/pl.toml` w nowym schemacie;
-  - dokumentacja: ADR-007, ARCHITECTURE 4.2, STANDARDS 17.1, CHANGELOG.
-- **Weryfikacja:** `pytest -m "not live"` — 143 passed; `ruff check`, `ruff format
-  --check`, `mypy retman/ tests/` czyste. Smoke (skrypt z `FakeDecisionBackend`
-  na prawdziwych tekstach Kartografa): pytanie pokazuje „1 m”, „5 m (tylko EVRF2007)”,
-  plan „Rozdzielczość NMT: 1 m”, model dostał opisy z „NMT/DEM”. Bez modelu na żywo —
-  wpływ synonimów na trafność zmierzy `retman-eval`.
-- **Przegląd `pl.toml`:** autor zaakceptował treść Kartografa (etykiety, synonimy,
-  pytania, `help`, `example`) bez zmian.
-
-### Pionowy przekrój na Kartografie 0.7.2 (2026-10-11)
-
-- **Zlecenie użytkownika:** kontynuacja prac; Kartograf v0.7.2 jako pierwsze narzędzie
-  do testowania możliwości Retmana.
-- **Decyzje użytkownika:** operacje Kartografa i formy obszaru (ADR-001); Python ≥ 3.12
-  (ADR-002); zakres `>=0.7.2,<0.8` i grupa `tools` z tagiem Git (ADR-003); osobny `kind`
-  na produkt (ADR-004); kolejność sesji: szkielet + konfiguracja, potem przekrój
-  Kartografa; operacje Kartografa bez wartości domyślnych — Retman dopytuje (ADR-006);
-  `retman-eval`: na razie LM Studio (basal-serve niedostępny), zbiór jako szkic agenta,
-  kod 0 poza naruszeniem W-03 (kod 4), ARCHITECTURE 8 bez zmian (specyfikacja rozdz. 10).
-  Adresu serwera LM Studio i ścieżki przestrzeni roboczej agenta nie wolno zapisywać
-  w żadnym pliku.
-- **Zrobione:**
-  - `pyproject.toml`, `.venv` przez `uv` (zainstalowany w `~/.local/bin`), konfiguracja
-    ruff (bez plików `.md` — przykłady „BAD” w dokumentacji), mypy, pytest, coverage;
-  - `config.py` + szablon, `exceptions.py`, loader tłumaczeń, izolacja sieci w testach;
-  - ekstraktory `area`/`path`/`result`; backend `openai_compatible` + `FakeDecisionBackend`;
-    `kinds.py`; `retman/tools/kartograf/` (manifest, handlery, `pl.toml`); rejestr,
-    adapter, pipeline, plan, dialog, workspace, journal, CLI (subagenci, integracja
-    i poprawki w tej sesji);
-  - poprawki po smoke: decyzja z `logprobs` = najbardziej prawdopodobna opcja, nie
-    wylosowany token (`27c6864`); niska pewność przy `unspecified` → pytanie zamiast
-    wartości domyślnej; `label` operacji dla użytkownika oddzielony od `description`
-    dla modelu; plan pokazuje odczyt prostokąta jako N/E;
-  - badanie LM Studio: `docs/research/2026-10-11-lm-studio-openai-compatible.md`
-    (ARCHITECTURE 12 pkt 9);
-  - specyfikacja `docs/specs/2026-10-11-retman-eval.md`; manifest Kartografa bez `default` (ADR-006);
-  - dokumentacja: ADR-001–006, PRD 7.2, ARCHITECTURE 3.1, 3.2.6, 4.1–4.3, 9.2–9.3, 12,
-    STANDARDS 5.1, 6.1, 8.1, README, CLAUDE.md, CHANGELOG.
-- **Weryfikacja:** `pytest -m "not live"` — 142 passed, pokrycie 88% (rdzeń ≥ 84%);
-  `pytest -m live` — 6 passed (5 handlerów Kartografa na GUGiK, 1 Bielik 11B);
-  `ruff check`, `ruff format --check`, `mypy retman/ tests/` czyste. Smoke CLI
-  w folderze projektu poza repo z Bielikiem 11B: NMT 5 m dla N-34-130-D-d-2-4 →
-  `ok=False` (GUGiK nie ma 5 m dla arkusza, komunikat Kartografa, exit 1); wycinek NMT dla
-  prostokąta WGS84 → GeoTIFF EPSG:2180 1 m, 573×561, 77–90 m (Poznań), exit 0; sesja:
-  BDOT10k TERYT 2264 z `z` (zmiana na SHP) → 58 plików `.shp`, `koniec` exit 0;
-  polecenie spoza zakresu → lista operacji; bez TTY → exit 2; `results`, `log` działają.
-- **Otwarte:**
-  - **plik geometrii (SHP/GPKG)**: ekstraktor go rozpoznaje, ale żadna operacja Kartografa
-    go nie przyjmuje — `download_pl_cutout(geometry=)` w 0.7.2 jest nieaktywny, a publiczne
-    API nie ma funkcji zwracającej prostokąt geometrii (potrzebna np.
-    `get_overall_bbox(path, layer=None, target_crs=...)` w `__all__` Kartografa) —
-    decyzja autora;
-  - backend `basal`: brak specyfikacji API basal-serve i serwera do nagrania fixtur;
-    konfiguracja z `backend = "basal"` kończy się komunikatem `backend_unavailable`;
-  - Qwen w LM Studio nieprzetestowany (serwer odmówił załadowania — zasoby);
-  - `retman-scaffold --check` z bramki (CLAUDE.md) jeszcze nie istnieje;
-  - polecenie spoza zakresu jest wypisywane z prefiksem „Błąd:” i kończy się kodem 1 —
-    do przemyślenia przy `retman-eval`/UX;
-  - Kartograf przy folderze projektu na udziale CIFS zgłasza „database is locked” dla
-    cache metadanych w folderze wyniku i pracuje bez cache (zachowanie Kartografa).
-
-### Start projektu: dokumentacja i repozytorium (2026-10-11)
-
-- **Zlecenie użytkownika:** zapoznanie z dokumentacją, weryfikacja i aktualizacja
-  dokumentów (subagent na modelu z roli `slow`), README, układ dokumentacji
-  wg konwencji Kartografa, `CLAUDE.md`, standardy deweloperskie, inicjalizacja gita.
-- **Decyzje użytkownika:**
-  - liczba prawdopodobieństwa bez „%”, „Q” i okresu w latach zawsze wywołuje
-    pytanie (ARCHITECTURE 4.4);
-  - wykonanie bez potwierdzenia wykluczone w wersjach 0.x, nie na stałe
-    (PRD 7.3, ARCHITECTURE 1.1, 1.2, 6.3, rozdz. 10);
-  - `retman-eval` i zbiór poleceń testowych w pakiecie podstawowym
-    (ARCHITECTURE 3.1, 8.1, 8.2, 9.3);
-  - bez biblioteki do zapisu TOML: odczyt `tomllib`, `retman init` zapisuje
-    z szablonu (ARCHITECTURE 9.3);
-  - `DESIGN.md` → `docs/ARCHITECTURE.md`; dokumentacja w `docs/` jak w Kartografie;
-  - końce linii LF we wszystkich plikach, bez wyjątków (STANDARDS 5.5);
-  - repozytorium `github.com/Daldek/Retman`.
-- **Zrobione:**
-  - weryfikacja PRD i ARCHITECTURE: m.in. W-15 zależne od `journal_commands`,
-    progi `"auto"` tylko z backendem `basal` (inaczej błąd konfiguracji,
-    ARCHITECTURE 6.2), LM Studio dla decyzji już w 0.1 (9.4),
-    `Retman.from_config()` czyta plik centralny (7.1), `Question.type` zamiast
-    `Question.kind`, poprawiony przykład „Q1% i Q10%” (4.4), poprawione odsyłacze;
-  - nowe pliki: `README.md`, `CLAUDE.md`, `docs/DEVELOPMENT_STANDARDS.md`,
-    szablony `docs/DECISIONS.md`, `docs/PROGRESS.md`, `docs/CHANGELOG.md`,
-    `LICENSE`, `.gitignore`, `.gitattributes`, `.editorconfig`;
-  - `git init`: commit `70857c0` na `main`, gałąź `develop`, remote `origin`;
-    `<github-user>` w ARCHITECTURE zastąpione adresami `github.com/Daldek/…`;
-  - wpis sesji, CP0 i backlog w PROGRESS, sekcja `[0.1.0] - Unreleased`
-    w CHANGELOG (commit `8c7657c`);
-  - instrukcja założenia repozytorium (`gh repo create` albo github.com/new
-    bez README/licencji) — `gh` nie jest zainstalowany na maszynie agenta;
-    repozytorium założył i wypchnął użytkownik.
-- **Weryfikacja:** odsyłacze `p.`/`rozdz.`/`[W-xx]`/`[N-xx]`/`S-xx` sprawdzone
-  skryptem subagenta (brak martwych); brak odwołań do `DESIGN`;
-  `git ls-files --eol` bez `w/crlf`; `git ls-remote --heads origin` —
-  tylko `develop` (`8c7657c`).
-- **Otwarte:** decyzje z Backlogu; push `main`; czy zapisać decyzje
-  z tej sesji jako ADR-001… w `docs/DECISIONS.md` (pytanie bez odpowiedzi).
-  Override modelu subagentów (`task` → rola `slow`) był tylko na tę sesję,
-  niezapisany.
-
-## Backlog
-
-#### Do 0.1.0
-
-Decyzje autora (blokują część implementacji):
-
-- [x] **Operacja drugiego narzędzia** (PRD 7.1) — całe IMGWTools 3.0.0, 26 operacji (ADR-017).
-- [x] **Rodzaje danych dla Kartografa** — ADR-004, ARCHITECTURE 3.2.6; IMGWTools — ADR-017.
-- [x] **Plik geometrii jako obszar** — ADR-016 (przekazanie pliku Kartografowi).
-- [x] **Migracja adaptera na Kartograf 0.8.0** — ADR-012, ADR-013 (sesja 2026-10-19/20).
-- [ ] **Przepięcie grupy `tools` na tagi** `v0.8.0` i `v3.0.0` — po ich wypchnięciu.
-- [ ] **Testy live IMGWTools** i smoke na Windows/macOS.
-- [ ] **Wartości docelowe**: trafność rozpoznania (W-01), czas odpowiedzi (N-07),
-  miary sukcesu — PRD rozdz. 8, 11 pkt 5.
-- [x] **Push `main` na `origin`** — `main` na `origin` (`70857c0`).
-- [ ] **ADR dla decyzji z pierwszej sesji 2026-10-11** (lista we wpisie „Start projektu”) —
-  czy zapisywać wstecznie w `docs/DECISIONS.md`.
-
-Implementacja (kolejność wg ARCHITECTURE rozdz. 11):
-
-- [x] **Szkielet pakietu i konfiguracja** — `pyproject.toml`, `retman/config.py`,
-  `tests/conftest.py`, `retman init` (sesja 2026-10-11, przekrój Kartografa).
-- [x] **`retman doctor`** (ARCHITECTURE 7.2) — sesja 2026-10-12.
-- [ ] **`retman-eval` i zbiór poleceń testowych** — kod gotowy (sesja 2026-10-12);
-  pierwszy przebieg Bielik 11B (2026-10-12, `docs/research/`); czeka przegląd zbioru,
-  strojenie opisów i decyzja o progach (ARCHITECTURE 6.2, 8; spec. rozdz. 9).
-- [x] **Ekstraktor prawdopodobieństwa** (ARCHITECTURE 4.4) — sesja 2026-10-19/20.
-- [ ] **Pozostałe ekstraktory** — liczby z jednostkami; gotowe pozostałe (stacje, daty, punkt,
-  komórka siatki, czas trwania, zmienne, nazwa zadania — ADR-017).
-- [ ] **Backend `basal`** — po uzyskaniu specyfikacji API basal-serve i serwera do
-  nagrania fixtur (ARCHITECTURE 3.3, STANDARDS 10.4).
-- [x] **Backend `openai_compatible` i `FakeDecisionBackend`** (ARCHITECTURE 3.3, 8.3).
-- [x] **Rdzeń** — pipeline, `Plan`, `dialog`, `Result`, `PlanNotConfirmedError`.
-- [x] **Rejestr operacji, wspólny adapter, `kinds`** (ARCHITECTURE 3.2, 4.1–4.3).
-- [x] **`retman-scaffold`** — `list`, `draft`, `--check` (ADR-019).
-- [ ] **`retman collect export` i `retman collect draft`** (ADR-011) — wdrożenie odłożone
-  przez autora; zakres i reguły szkicu w ADR-011.
-- [x] **Przestrzeń robocza, dziennik projektu, ślad audytowy** (ARCHITECTURE 5).
-- [x] **CLI, `results`, `log`, `init`** (ARCHITECTURE 6.4, 7.1).
-- [ ] **CI** — Windows, Linux, macOS; test instalacji; testy handlerów na
-  wersjach narzędzi; kontrola rozjazdów (ARCHITECTURE 3.2.7, 9.4).
-- [ ] **Pomiary czasu odpowiedzi** (ARCHITECTURE 9.2) — z `retman-eval` (Bielik 11B, LM
-  Studio w sieci lokalnej): mediana planu 10,6 s, P90 11,8 s, ok. 3,7 s na zapytanie;
-  wartość docelowa N-07 nieustalona.
-
-#### Do rozważenia (ocena po dodaniu kolejnych narzędzi)
-
-Propozycje z sesji 2026-10-13, bez ADR; autor ocenia je, gdy będą łańcuchy do sprawdzenia.
-
-- [ ] **Łańcuchy jako przepisy autora zamiast resolvera w trakcie pracy** (alternatywa
-  dla ARCHITECTURE 4.5; PRD W-12, S-05). Przepis pisze autor (kod + wiedza dziedzinowa):
-  lista kroków, powiązania wyjście→wejście (`kind`), jawne źródło każdego parametru
-  (polecenie, pytanie, wcześniejszy krok, wartość stała widoczna w planie ze źródłem
-  `recipe` — nowe źródło w ARCHITECTURE 5.4, wymóg N-11), kontrole między krokami
-  (ARCHITECTURE 12 pkt 6); teksty w `pl.toml`. Model wybiera przepis z listy (jak
-  operację), pytania z wszystkich kroków naraz, jeden plan do zatwierdzenia (W-05).
-  Logika resolvera nie planuje w trakcie pracy, tylko pomaga: `retman recipes draft
-  <operacja>` (szkic przepisu), `retman recipes check` (operacje i wersje narzędzi,
-  zgodność `kind`, źródło każdego parametru, brak cykli, kolejność wg zależności,
-  komplet tłumaczeń — do bramki obok `retman-scaffold --check`), `retman recipes show`
-  (opis po polsku i diagram mermaid do przeglądu). Testy: plan z `FakeDecisionBackend`,
-  wpisy w `commands.jsonl` z oczekiwanym przepisem, test `live` na małym obszarze.
-  Zysk: każdy wykonywany łańcuch przejrzany przez specjalistę, znika wybór modelu
-  w kroku 4 resolvera. Koszt: każdy łańcuch trzeba dopisać; polecenie bez przepisu →
-  odmowa z listą możliwości (W-03). Przy przyjęciu: ADR, ARCHITECTURE 1.2, 3.1, 4.5,
-  5.4, 11; PRD W-12; STANDARDS 17 (checklista „nowy przepis”).
-- [ ] **n8n jako otoczenie Retmana, nie wykonawca kroków** — kryterium autora: tylko tam,
-  gdzie Retman nie da rady albo własne rozwiązanie byłoby zbyt trudne. Nie dla n8n:
-  przepisy, kolejność i wykonanie kroków (ślad audytowy W-15 w jednym miejscu, jedno
-  źródło nazw parametrów, testy offline). Możliwe zastosowania (n8n na własnym serwerze —
-  ARCHITECTURE 10; licencja Sustainable Use, przepływy poza pakietem, np. `examples/n8n/`):
-  1. monitoring `retman doctor --json` z alertem przy kodzie 1 — możliwe już teraz;
-  2. kontrola jakości przy nowej wersji narzędzia lub modelu: `retman-eval`, porównanie
-     z poprzednim raportem, alert przy kodzie 4 (W-03) — możliwe już teraz;
-  3. rejestr obliczeń: `result.json` i `journal.jsonl` do arkusza lub bazy (tylko odczyt;
-     treść poleceń przy `journal_commands = true`) — możliwe już teraz;
-  4. przyjmowanie zleceń (mail, formularz, Teams) i zatwierdzanie planu w tym samym
-     kanale — po API HTTP (v0.4) i decyzji, czy taki kanał spełnia W-05;
-  5. partie z listy (godła, TERYT) z wartościami `known` — wymaga decyzji o jednym
-     zatwierdzeniu dla wielu planów;
-  6. ponowne wykonanie zapisanego planu (`retman rerun #N`, ARCHITECTURE 5.5) — bez
-     modelu, z zatwierdzeniem.
-  Ułatwienia po stronie Retmana (dla każdego orkiestratora): `--json` dla planu w CLI
-  (dziś tylko `doctor`; `plan.to_dict()` istnieje), zapis planu do pliku i wykonanie
-  zatwierdzonego planu z wpisem w dzienniku (ARCHITECTURE 7.4, wariant A), API HTTP
-  z krokami `plan`/`answer`/`confirm`/`execute` i webhookiem po zakończeniu (v0.4).
-  Węzeł Execute Command w n8n od 2.0 jest domyślnie wyłączony — lepsza droga przez HTTP.
-  Opcjonalny wykonawca `n8n` (zatwierdzony plan na webhook, kroki wołają Retmana przez
-  API HTTP) — tylko jeśli pkt 1–4 pokażą potrzebę.
-
----
-
-## Szablony
-
-**Status elementu** — wiersz tabeli „Status projektu”; status: `✅ Gotowy`,
-`🚧 W toku`, `⏳ Planowany`, `❌ Wstrzymany`:
-
-```markdown
-| Element | ✅ Gotowy | wersja, odsyłacze (ADR-XXX, ARCHITECTURE p. X.Y), uwagi |
-```
-
-**Checkpoint** — po każdym wydaniu, od najstarszego:
-
-```markdown
-### CPN — Tytuł
-- **Data:** RRRR-MM-DD
-- **Wersja:** vX.Y.Z
-- **Zakres:** najważniejsze zmiany; pełna lista: `docs/CHANGELOG.md` [X.Y.Z]
-```
-
-**Sesja** — na początku sekcji „Ostatnia sesja” (od najnowszej); stan do
-podjęcia w następnej sesji w bloku `START NASTĘPNEJ SESJI` nad wpisami:
-
-```markdown
-> **START NASTĘPNEJ SESJI (stan RRRR-MM-DD):** co jest w toku, co zrobić
-> najpierw, jakie decyzje czekają na użytkownika.
-
-### Tytuł sesji (RRRR-MM-DD)
-
-- **Zlecenie użytkownika:** czego dotyczyła sesja.
-- **Decyzje użytkownika:** ustalenia (ADR-XXX, jeśli powstał).
-- **Zrobione:** zmiany z odsyłaczami (pliki, commity, raporty).
-- **Weryfikacja:** co uruchomiono i z jakim wynikiem.
-- **Otwarte:** co zostało i dlaczego.
-```
-
-**Pozycja backlogu** — w podsekcji wersji docelowej; `[x]` po zakończeniu,
-z odsyłaczem do miejsca realizacji:
-
-```markdown
-#### Do X.Y.Z
-
-- [ ] **Tytuł** — opis, źródło (PRD W-xx / ARCHITECTURE p. X.Y / ADR-XXX).
-```
+- A plan that needs answers or a confirmation while stdin is not a terminal ends with exit 2
+  today; exit 2 is `validation_error` in the registry. Proposal: `validation_error` with
+  `details.reason` `input_required` (ERR-1, no new code).
+- `retman-eval` and `retman-scaffold` are separate executables; AGI-3.1 asks for one
+  executable per project. Proposal: `retman eval` and `retman scaffold` groups, the old names
+  removed.
+- N-11 (no hidden defaults: every value is in the config file) against DEV-18.1 (every tool
+  works without `nogat.toml`). Proposal: a deviation line in `CLAUDE.md` for the model backend
+  and the tool stores, which have no meaningful default.
+- Whether `store_dir` gets a default under `<data_dir>` (DEV-19.2) or stays required.
+- Research notes and specs (about 6,200 lines of Polish text in `docs/research/` and
+  `docs/specs/`): translate them or leave them in the git history only.
