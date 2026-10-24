@@ -38,17 +38,17 @@ htmlcov/
 # Drafts of retman-scaffold (ARCHITECTURE 3.2.3): never reviewed, never committed
 src/retman/tools/*/_drafts/
 
-# Secrets (DEVELOPMENT_STANDARDS 14.1)
+# Secrets (DEV-13.1)
 .env
 .env.local
 *.pem
 *.key
 
-# Retman results from accidental runs inside the repo (DEVELOPMENT_STANDARDS 6.4)
+# Retman results from accidental runs inside the repo (CLAUDE.md)
 retman-output/
 
 # Python version
 .python-version
 
-# Lokalne ustawienia Claude Code i tymczasowe worktree agentów
+# Local Claude Code settings and temporary agent worktrees
 .claude/
