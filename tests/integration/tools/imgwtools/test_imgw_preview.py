@@ -114,7 +114,8 @@ def test_a_store_that_does_not_exist_blocks_every_operation_that_needs_it(
     assert problem.params == ()
     assert problem.text.startswith("Magazyn IMGW (")
     assert (
-        "nie jest jeszcze utworzony" in problem.text and "retman init" in problem.text
+        "nie jest jeszcze utworzony" in problem.text
+        and "retman config init" in problem.text
     )
     assert result.rows == []
 

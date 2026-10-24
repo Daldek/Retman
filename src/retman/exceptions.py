@@ -20,12 +20,13 @@ exception carries such a text (:class:`OutOfScopeError`) it is a separate attrib
 import copy
 import errno
 import os
-from collections.abc import Iterable, Mapping
-from pathlib import Path, PurePath
+from collections.abc import Mapping
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any, ClassVar, Final, Literal
 
 from retman._errors import CODES, ErrorCodeName, RegistryCode
+from retman._json import to_jsonable
 
 ErrorCode = ErrorCodeName
 """Name of a registry code that a CLI call can end with (``_errors.ErrorCodeName``)."""
@@ -69,23 +70,6 @@ class Terminated(BaseException):
     A ``BaseException`` like ``KeyboardInterrupt``: no ``except Exception`` of the
     pipeline may turn it into a failed result.
     """
-
-
-def _jsonable(value: object) -> Any:
-    """Return ``value`` as a JSON value; unknown objects become their ``str``."""
-    if value is None or isinstance(value, str | bool | int):
-        return value
-    if isinstance(value, float):
-        return value if value == value and abs(value) != float("inf") else None
-    if isinstance(value, PurePath):
-        return str(value)
-    if isinstance(value, Mapping):
-        return {str(key): _jsonable(item) for key, item in value.items()}
-    if isinstance(value, set | frozenset):
-        return sorted((_jsonable(item) for item in value), key=str)
-    if isinstance(value, Iterable):
-        return [_jsonable(item) for item in value]
-    return str(value)
 
 
 class RetmanError(Exception):
@@ -194,12 +178,23 @@ class InvalidValueError(RetmanError, ValueError):
     default_reason: ClassVar[str | None] = "invalid_value"
 
 
+class CommandNotFoundError(RetmanError):
+    """A command name is not in the catalog (AGI-2.1).
+
+    Default code: ``not_found``, reason ``unknown_command``; ``details.suggestions``
+    lists the names that look like it.
+    """
+
+    default_code: ClassVar[ErrorCode] = "not_found"
+    default_reason: ClassVar[str | None] = "unknown_command"
+
+
 class ConfigError(RetmanError):
     """The settings cannot be used (DEV-18.1).
 
     Default code: ``validation_error``, reason ``invalid_config``; a settings file
     named by ``--config`` or ``NOGAT_CONFIG`` that does not exist is ``not_found``
-    (reason ``missing_config``) and one that ``retman init`` would overwrite is
+    (reason ``missing_config``) and one that ``retman config init`` would overwrite is
     ``conflict`` (reason ``output_exists``).
 
     Parameters
@@ -221,20 +216,40 @@ class ConfigError(RetmanError):
             "not_found",
             "missing_config",
             "Name an existing settings file with `--config` or NOGAT_CONFIG, or "
-            "create one with `retman init`.",
+            "create one with `retman config init`.",
         ),
         "already_exists": (
             "conflict",
             "output_exists",
-            "Edit the existing [retman] table instead; `retman init` never "
+            "Edit the existing [retman] table instead; `retman config init` never "
             "overwrites it.",
         ),
     }
     _HINT: ClassVar[str] = (
         "Fix the settings named in details.keys (`retman config show` lists every "
-        "setting with its value and source); `retman init` writes a complete "
+        "setting with its value and source); `retman config init` writes a complete "
         "[retman] table into a settings file that has none."
     )
+
+    @classmethod
+    def classify(cls, problem: str) -> tuple[ErrorCode, str]:
+        """Return the registry code and the ``details.reason`` of one problem.
+
+        Parameters
+        ----------
+        problem : str
+            A translation key under ``config``, e.g. ``"missing_key"``.
+
+        Returns
+        -------
+        tuple
+            ``("not_found", "missing_config")`` and ``("conflict", "output_exists")``
+            for the two special problems, else ``("validation_error", problem)``.
+        """
+        special = cls._SPECIAL.get(problem)
+        if special is not None:
+            return special[0], special[1]
+        return "validation_error", problem
 
     def __init__(
         self,
@@ -387,7 +402,7 @@ class BackendError(RetmanError):
     Parameters
     ----------
     url : str
-        Server address of the backend (shown by ``retman doctor``).
+        Server address of the backend (shown by ``retman doctor check``).
     message : str, optional
         What went wrong, appended to the summary.
     """
@@ -396,7 +411,7 @@ class BackendError(RetmanError):
     default_reason: ClassVar[str | None] = "backend_error"
     summary: ClassVar[str] = "The model server failed"
     remedy: ClassVar[str] = (
-        "Run `retman doctor` to test the model server and its settings."
+        "Run `retman doctor check` to test the model server and its settings."
     )
 
     def __init__(self, url: str, message: str = "") -> None:
@@ -418,7 +433,8 @@ class BackendConnectionError(BackendError):
     default_reason: ClassVar[str | None] = "backend_connection"
     summary: ClassVar[str] = "The model server did not respond"
     remedy: ClassVar[str] = (
-        "Start the model server or fix the `decision` url; `retman doctor` tests it."
+        "Start the model server or fix the `decision` url; "
+        "`retman doctor check` tests it."
     )
 
 
@@ -431,8 +447,8 @@ class InvalidModelAnswerError(BackendError):
     default_reason: ClassVar[str | None] = "invalid_model_answer"
     summary: ClassVar[str] = "The model answered outside the allowed options"
     remedy: ClassVar[str] = (
-        "Repeat the command, or tune the model with `retman eval`; "
-        "`retman doctor` tests the model server."
+        "Repeat the command, or tune the model with `retman eval run`; "
+        "`retman doctor check` tests the model server."
     )
 
 
@@ -569,7 +585,7 @@ def error_document(
     }
     if hint:
         document["hint"] = hint
-    document["details"] = _jsonable(details)
+    document["details"] = to_jsonable(details)
     document["exit_code"] = entry.exit_code
     if command is not None:
         document["command"] = command

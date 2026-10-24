@@ -1,10 +1,11 @@
-"""Outcomes and errors of a command-line call: exit codes, last stderr line, SIGTERM.
+"""Outcomes and errors of a command-line call: exit codes, documents, SIGTERM.
 
 An error (ERR §2) ends a call with the exit code of its registry code and, as the last
 line of stderr, the ``retman-error/1`` document as compact JSON (AGI-3.3). An outcome
-(ERR §1) that is not an error needs no document: ``cancelled`` (the user stopped the
-call) has its own exit code, and ``partial`` and ``failed`` print the result they
-belong to. The CLI has one place for this, here.
+(ERR §1) that is not an error needs no error document: ``cancelled`` (the user stopped
+the call) has its own exit code, and ``partial`` and ``failed`` print the result they
+belong to: the ``retman-result/1`` envelope with ``--json`` (AGI-3.2), the text of the
+result otherwise (:func:`report_outcome`). The CLI has one place for this, here.
 """
 
 import json
@@ -13,10 +14,14 @@ import sys
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from types import FrameType
-from typing import Any, Final, TextIO
+from typing import TYPE_CHECKING, Any, Final, TextIO
 
 from retman._errors import OUTCOMES
 from retman.exceptions import Terminated, error_document
+
+if TYPE_CHECKING:
+    from retman.catalog.envelope import CommandResult
+    from retman.i18n.loader import Texts
 
 EXIT_OK: Final = OUTCOMES["ok"]
 EXIT_PARTIAL: Final = OUTCOMES["partial"]
@@ -43,6 +48,44 @@ def write_document(document: Mapping[str, Any], stream: TextIO | None = None) ->
     print(json.dumps(document, separators=(",", ":")), file=target, flush=True)
     exit_code: int = document["exit_code"]
     return exit_code
+
+
+def report_outcome(
+    result: "CommandResult",
+    *,
+    as_json: bool,
+    texts: "Texts",
+    stream: TextIO | None = None,
+) -> int:
+    """Print the result of a command and return the exit code of its status.
+
+    With ``as_json`` the stream gets exactly the envelope on one line and nothing
+    else (AGI-3.2); otherwise the text of the result in the language of ``texts``.
+    ``ok``, ``partial``, ``failed`` and ``cancelled`` are all printed: they are
+    outcomes, not errors (ERR §1).
+
+    Parameters
+    ----------
+    result : CommandResult
+        The envelope of the command.
+    as_json : bool
+        Print the envelope instead of the text.
+    texts : Texts
+        Translated texts for the terminal rendering.
+    stream : TextIO, optional
+        Where the output goes; stdout when ``None``.
+
+    Returns
+    -------
+    int
+        ``0``, ``10``, ``11`` or ``130``.
+    """
+    target = stream if stream is not None else sys.stdout
+    if as_json:
+        print(result.to_json(), file=target, flush=True)
+    else:
+        print(result.view(texts), end="", file=target, flush=True)
+    return result.exit_code
 
 
 def report_error(

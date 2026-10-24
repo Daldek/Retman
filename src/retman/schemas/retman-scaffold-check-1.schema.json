@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-scaffold-check-1.schema.json",
+  "title": "retman-scaffold-check/1",
+  "description": "The drift check of the tool descriptions: one block per tool with its findings; the envelope lists each tool as a unit. It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "tools"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-scaffold-check/1"
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "tool",
+          "status",
+          "findings"
+        ],
+        "properties": {
+          "tool": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "checked",
+              "skipped",
+              "missing",
+              "unsupported",
+              "failed"
+            ]
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supported": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "calls": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "check",
+                "severity",
+                "key",
+                "args",
+                "text"
+              ],
+              "properties": {
+                "check": {
+                  "type": "string"
+                },
+                "severity": {
+                  "enum": [
+                    "error",
+                    "warning",
+                    "info"
+                  ]
+                },
+                "operation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "key": {
+                  "type": "string"
+                },
+                "args": {
+                  "type": "object"
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

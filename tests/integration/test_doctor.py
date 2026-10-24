@@ -1,4 +1,4 @@
-"""``retman doctor``: blocking problems, hints and the report contract (ARCH 7.2)."""
+"""``retman doctor check``: blocking problems, hints and the report (ARCH 7.2)."""
 
 import errno
 import importlib.metadata
@@ -10,6 +10,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from document_schemas import violations
 
 from retman import cli
 from retman.backends.base import Decision
@@ -161,7 +162,7 @@ def test_missing_config_points_to_init_and_still_checks_tools(tmp_path: Path, du
     text = report.to_text(texts)
 
     assert report.exit_code == 10
-    assert "retman init" in text
+    assert "retman config init" in text
     assert "dummy_tool 1.2.0" in text
 
 
@@ -236,19 +237,29 @@ def test_polish_plural_of_operation_counts(count: int, expected: str):
     assert _plural(load_core_texts("pl"), "operations", count) == expected
 
 
-def test_cli_doctor_json_reports_the_same_checks_and_exit_code(
+def test_cli_doctor_json_prints_the_envelope_with_a_unit_per_check(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     code = cli.main(
-        ["--config", str(tmp_path / "absent.toml"), "--json", "doctor"],
+        ["doctor", "check", "--config", str(tmp_path / "absent.toml"), "--json"],
         project_dir=tmp_path,
     )
-    report = json.loads(capsys.readouterr().out)
+    envelope = json.loads(capsys.readouterr().out)
 
-    assert code == report["exit_code"] == 10
+    assert code == 10
+    assert (envelope["command"], envelope["status"]) == ("doctor check", "partial")
+    report = envelope["result"]
+    assert report["schema"] == "retman-doctor/1"
+    assert violations("retman-doctor/1", report) == []
     configuration = report["sections"][0]
     assert configuration["key"] == "configuration"
     assert configuration["checks"][0]["blocking"] is True
+    failed = [item for item in envelope["items"] if item["status"] == "failed"]
+    assert [(item["id"], item["code"], item["reason"]) for item in failed] == [
+        ("configuration.1", "not_found", "missing_config")
+    ]
+    ok_ids = {item["id"] for item in envelope["items"] if item["status"] == "ok"}
+    assert "configuration.1" not in ok_ids and ok_ids
 
 
 # --- stores of the tools (ARCH 7.2, 9.1) ---------------------------------------------
@@ -372,8 +383,8 @@ def test_stores_not_created_yet_warn_with_a_hint_and_do_not_block(
     assert [s for s, line in stores if "pyarrow" not in line] == ["warning"] * 4
     assert "Kartograf utworzy go przy pierwszym pobraniu" in text
     assert (
-        "nie został jeszcze utworzony (brak imgw-store.json) → utwórz go: retman init"
-        in text
+        "nie został jeszcze utworzony (brak imgw-store.json) → utwórz go: "
+        "retman config init" in text
     )
     # Nothing was created while looking
     assert not (tmp_path / "stores").exists()

@@ -1,6 +1,6 @@
 """Drafts of a manifest entry, a call builder and translations from a tool's catalog.
 
-``retman-scaffold draft`` writes what the catalog and the tool's own offline
+``retman scaffold draft`` writes what the catalog and the tool's own offline
 validation can say: the parameters, the choice options narrowed by probing the
 tool (the pairs it accepts, the options that do not apply), the ``tool_values``
 and ``depends_on`` that follow. Everything that is a decision of the author stays

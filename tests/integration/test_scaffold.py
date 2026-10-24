@@ -1,4 +1,4 @@
-"""``retman-scaffold``: the drift check X1-X10, drafts, the CLI and the doctor line.
+"""``retman scaffold``: the drift check X1-X10, drafts, the CLI and the doctor line.
 
 Everything runs on the dummy tool with a hand-made catalog and a programmed
 validation, offline; the real tools are met only by ``tests/tools/test_conformance``.
@@ -17,8 +17,11 @@ from types import ModuleType
 from typing import Any, cast
 
 import pytest
+from document_schemas import violations
+from error_documents import last_line_document
 
 from retman.adapters.catalog import CatalogCall, ToolContext, ToolDocument, ToolError
+from retman.cli import main
 from retman.devtools import grid
 from retman.devtools.draft import MAX_OPTIONS, build_draft
 from retman.devtools.drift import Finding, ToolReport, check_tools, light_findings
@@ -34,7 +37,6 @@ from retman.devtools.model import (
     load_reader,
 )
 from retman.devtools.report import finding_text
-from retman.devtools.scaffold import main
 from retman.doctor import run_doctor
 from retman.eval.dataset import EvalCommand
 from retman.i18n.loader import load_core_texts
@@ -1136,7 +1138,7 @@ def test_client_is_built_by_the_manifest_from_scratch_settings(
 def cli(
     dummy: tuple[ManifestSpec, Path], capsys: pytest.CaptureFixture[str]
 ) -> Callable[..., tuple[int, str, str]]:
-    """``retman-scaffold`` on the dummy tool: exit code, standard output, errors."""
+    """``retman scaffold`` on the dummy tool: exit code, standard output, errors."""
 
     def invoke(
         *argv: str,
@@ -1147,12 +1149,12 @@ def cli(
     ) -> tuple[int, str, str]:
         manifest, folder = dummy
         code = main(
-            list(argv),
+            ["scaffold", *argv],
             manifests=[(manifest, folder)],
             version_lookup=lambda _: version,
             readers={TOOL: reader or reader_of(make_catalog())},
             clients={TOOL: FakeToolClient(validation={"elevation download": rule})},
-            commands=sample_rows(),
+            command_rows=sample_rows(),
             **options,
         )
         captured = capsys.readouterr()
@@ -1164,46 +1166,52 @@ def cli(
 def test_check_of_a_conforming_tool_exits_zero_and_hides_information(
     cli: Callable[..., tuple[int, str, str]],
 ) -> None:
-    code, out, err = cli("--check")
+    code, out, err = cli("check")
 
     assert (code, err) == (0, "")
     assert (
         "dummy_tool 1.2.0 (obsługiwane >=1.2,<2): operacje 1, punkty siatki 12" in out
     )
     assert "Kontrola rozjazdów przeszła: błędy 0, ostrzeżenia 0, informacje 1." in out
-    assert "x2" not in out and "--verbose" in out
+    assert "x2" not in out and "--include-info" in out
 
 
-def test_verbose_check_shows_the_information_lines(
+def test_check_with_include_info_shows_the_information_lines(
     cli: Callable[..., tuple[int, str, str]],
 ) -> None:
-    code, out, _ = cli("--check", "--verbose")
+    code, out, _ = cli("check", "--include-info")
 
     assert code == 0
     assert "· X2" in out and "resolution, vertical_crs" in out
 
 
-def test_check_with_errors_exits_one_and_names_the_problem(
+def test_check_with_errors_exits_eleven_and_names_the_problem(
     cli: Callable[..., tuple[int, str, str]],
 ) -> None:
-    code, out, _ = cli("--check", rule=accepting_2m)
+    code, out, _ = cli("check", rule=accepting_2m)
 
     assert code == 11
     assert "✗ X4" in out and "„2m”" in out
     assert "Kontrola rozjazdów wykryła błędy: błędy 1" in out
 
 
-def test_check_json_is_a_document_with_findings_and_the_exit_code(
+def test_check_json_is_an_envelope_with_a_unit_per_tool(
     cli: Callable[..., tuple[int, str, str]],
 ) -> None:
-    code, out, _ = cli("--check", "--json", rule=accepting_2m)
+    code, out, _ = cli("check", "--json", rule=accepting_2m)
 
-    document = json.loads(out)
-    assert (code, document["exit_code"], document["schema"]) == (
+    envelope = json.loads(out)
+    assert (code, envelope["status"], envelope["schema"]) == (
         11,
-        11,
-        "retman-scaffold-check/1",
+        "failed",
+        "retman-result/1",
     )
+    assert [
+        (i["id"], i["status"], i["code"], i["reason"]) for i in envelope["items"]
+    ] == [(TOOL, "failed", "internal_error", "tool_drift")]
+    document = envelope["result"]
+    assert document["schema"] == "retman-scaffold-check/1"
+    assert violations("retman-scaffold-check/1", document) == []
     (tool,) = document["tools"]
     assert (tool["tool"], tool["status"], tool["points"]) == (TOOL, "checked", 12)
     gap = next(f for f in tool["findings"] if f["check"] == "X4")
@@ -1211,11 +1219,21 @@ def test_check_json_is_a_document_with_findings_and_the_exit_code(
     assert "„2m”" in gap["text"]
 
 
+def test_check_json_of_a_conforming_tool_is_ok_with_an_ok_unit(
+    cli: Callable[..., tuple[int, str, str]],
+) -> None:
+    code, out, _ = cli("check", "--json")
+
+    envelope = json.loads(out)
+    assert (code, envelope["status"]) == (0, "ok")
+    assert [(i["id"], i["status"]) for i in envelope["items"]] == [(TOOL, "ok")]
+
+
 def test_missing_tool_is_skipped_unless_ci_requires_it(
     cli: Callable[..., tuple[int, str, str]],
 ) -> None:
-    skipped = cli("--check", "--verbose", version="2.0.0")
-    required = cli("--check", "--require-tools", version="2.0.0")
+    skipped = cli("check", "--include-info", version="2.0.0")
+    required = cli("check", "--require-tools", version="2.0.0")
 
     assert skipped[0] == 0 and "poza obsługiwanym zakresem" in skipped[1]
     assert required[0] == 11 and "✗ T" in required[1]
@@ -1224,11 +1242,19 @@ def test_missing_tool_is_skipped_unless_ci_requires_it(
 def test_check_can_be_limited_to_one_tool_and_operation(
     cli: Callable[..., tuple[int, str, str]],
 ) -> None:
-    assert cli("--check", "--tool", TOOL, "--operation", "fetch_dem")[0] == 0
-    code, _, err = cli("--check", "--tool", "other")
-    assert (code, "Nieznane narzędzie „other”" in err) == (2, True)
-    code, _, err = cli("--check", "--operation", "nope")
-    assert (code, "Nieznana operacja „nope”" in err) == (2, True)
+    assert cli("check", "--tool", TOOL, "--operation", "fetch_dem")[0] == 0
+    code, _, err = cli("check", "--tool", "other")
+    details = last_line_document(err)["details"]
+    assert code == 2
+    assert (details["option"], details["value"], details["allowed"]) == (
+        "tool",
+        "other",
+        [TOOL],
+    )
+    code, _, err = cli("check", "--operation", "nope")
+    details = last_line_document(err)["details"]
+    assert (code, details["option"], details["value"]) == (2, "operation", "nope")
+    assert "fetch_dem" in details["allowed"]
 
 
 def test_check_takes_samples_from_a_commands_file(
@@ -1247,7 +1273,7 @@ def test_check_takes_samples_from_a_commands_file(
     path.write_text(json.dumps(record) + "\n", encoding="utf-8")
 
     code = main(
-        ["--check", "--commands", str(path)],
+        ["scaffold", "check", "--commands", str(path)],
         manifests=[dummy],
         version_lookup=lambda _: "1.2.0",
         readers={TOOL: reader_of(make_catalog())},
@@ -1267,38 +1293,33 @@ def test_check_says_so_when_the_commands_file_is_malformed(
     path.write_text("this is not JSON\n", encoding="utf-8")
 
     code = main(
-        ["--check", "--commands", str(path)],
+        ["scaffold", "check", "--commands", str(path)],
         manifests=[dummy],
         version_lookup=lambda _: "1.2.0",
         readers={TOOL: reader_of(make_catalog())},
     )
 
     captured = capsys.readouterr()
+    document = last_line_document(captured.err)
     assert (code, captured.out) == (7, "")
-    assert "Nie można odczytać zbioru poleceń retman-eval" in captured.err
+    assert (document["code"], document["exit_code"]) == ("data_error", 7)
+    assert "invalid JSON" in document["message"]
 
 
-@pytest.mark.parametrize(
-    ("argv", "message"),
-    [
-        ([], "Podaj --check albo polecenie list lub draft"),
-        (["--check", "list", TOOL], "--check nie łączy się"),
-        (["draft", TOOL, "x", "--fix", "product"], "wymaga postaci nazwa=wartość"),
-    ],
-)
-def test_usage_mistakes_exit_two_with_a_polish_message(
-    cli: Callable[..., tuple[int, str, str]], argv: list[str], message: str
+def test_a_fix_without_a_value_is_a_validation_error_naming_the_option(
+    cli: Callable[..., tuple[int, str, str]],
 ) -> None:
-    code, out, err = cli(*argv)
+    code, out, err = cli("draft", "--tool", TOOL, "--command", "x", "--fix", "product")
 
+    details = last_line_document(err)["details"]
     assert (code, out) == (2, "")
-    assert err.startswith("Błędne użycie:") and message in err
+    assert (details["option"], details["reason"]) == ("fix", "invalid_fix")
 
 
 def test_list_shows_every_command_with_its_operations_and_a_suggested_use(
     cli: Callable[..., tuple[int, str, str]],
 ) -> None:
-    code, out, _ = cli("list", TOOL)
+    code, out, _ = cli("list", "--tool", TOOL)
 
     lines = out.splitlines()
     assert code == 0 and lines[0] == "dummy_tool 1.2.0: komend w katalogu: 2"
@@ -1310,13 +1331,30 @@ def test_list_shows_every_command_with_its_operations_and_a_suggested_use(
     )
 
 
+def test_list_json_is_a_document_of_the_commands_of_the_tool(
+    cli: Callable[..., tuple[int, str, str]],
+) -> None:
+    code, out, _ = cli("list", "--tool", TOOL, "--json")
+
+    document = json.loads(out)["result"]
+    assert code == 0 and document["schema"] == "retman-scaffold-list/1"
+    assert violations("retman-scaffold-list/1", document) == []
+    commands = {entry["id"]: entry for entry in document["commands"]}
+    assert commands["elevation download"]["operations"] == ["fetch_dem"]
+    assert commands["elevation download"]["writes"] is True
+
+
 def test_list_of_a_tool_without_a_reader_fails_with_a_message(
     dummy: tuple[ManifestSpec, Path], capsys: pytest.CaptureFixture[str]
 ) -> None:
-    code = main(["list", TOOL], manifests=[dummy], readers={})
+    code = main(["scaffold", "list", "--tool", TOOL], manifests=[dummy], readers={})
 
+    document = last_line_document(capsys.readouterr().err)
     assert code == 15
-    assert "nie ma czytnika katalogu" in capsys.readouterr().err
+    assert (document["code"], document["details"]["reason"]) == (
+        "unsupported",
+        "no_reader",
+    )
 
 
 # --- drafts -------------------------------------------------------------------------
@@ -1519,8 +1557,11 @@ def test_draft_on_the_command_line_prints_or_writes_and_never_overwrites(
     tmp_path: Path,
 ) -> None:
     argv = [
+        "scaffold",
         "draft",
+        "--tool",
         TOOL,
+        "--command",
         "elevation download",
         "--fix",
         "product=nmt",
@@ -1545,6 +1586,10 @@ def test_draft_on_the_command_line_prints_or_writes_and_never_overwrites(
     )
     assert not (tmp_path / TOOL).exists()
 
+    assert main([*argv, "--write", "--check"], **options) == 0
+    plan = capsys.readouterr().out
+    assert plan.count("zapis") >= 2 and not (tmp_path / TOOL).exists()
+
     assert main([*argv, "--write"], **options) == 0
     folder = tmp_path / TOOL / "_drafts"
     assert sorted(p.name for p in folder.iterdir()) == [
@@ -1557,11 +1602,21 @@ def test_draft_on_the_command_line_prints_or_writes_and_never_overwrites(
     assert b"\r" not in (folder / "download_dem_sheet.py").read_bytes()
     capsys.readouterr()
 
+    assert main([*argv, "--write", "--check", "--json"], **options) == 0
+    targets = json.loads(capsys.readouterr().out)["result"]["targets"]
+    assert [target["action"] for target in targets] == ["conflict", "conflict"]
+
     assert main([*argv, "--write"], **options) == 4
-    assert "Plik szkicu już istnieje" in capsys.readouterr().err
+    document = last_line_document(capsys.readouterr().err)
+    assert document["code"] == "conflict"
+    assert document["details"]["reason"] == "output_exists"
+    assert sorted(Path(path).name for path in document["details"]["paths"]) == [
+        "download_dem_sheet.py",
+        "download_dem_sheet.toml",
+    ]
 
 
-# --- retman doctor -----------------------------------------------------------------
+# --- retman doctor check -----------------------------------------------------------
 
 
 def conformance(
@@ -1569,7 +1624,7 @@ def conformance(
     rule: Callable[[CatalogCall], ToolError | None],
     seen: list[str] | None = None,
 ) -> Callable[[ManifestSpec, Path, str], list[Finding] | None]:
-    """The light check of ``retman doctor`` for the dummy tool, as it takes it."""
+    """The light check of ``retman doctor check`` for the dummy tool, as it takes it."""
     client = FakeToolClient(validation={"elevation download": rule})
 
     def check(
@@ -1634,7 +1689,7 @@ def test_doctor_names_a_value_a_newer_tool_offers_without_blocking(
     section = next(s for s in report.sections if s.key == "conformance")
     assert (
         section.checks[0].hint
-        == "uruchom retman-scaffold --check; opisy tego narzędzia wymagają przeglądu"
+        == "uruchom retman scaffold check; opisy tego narzędzia wymagają przeglądu"
     )
     # a drifted description is the author's to fix, not a reason to stop working
     assert not section.checks[0].blocking

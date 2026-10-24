@@ -1,4 +1,4 @@
-"""The settings of Retman: ``[retman]`` of ``nogat.toml``, checked, and ``retman init``.
+"""The settings of Retman: ``[retman]`` of ``nogat.toml``, checked, and written out.
 
 :mod:`retman.environment` finds each value (option, variable, file, default,
 DEV-18.1); this module checks them and builds what the program uses. Every setting
@@ -6,7 +6,7 @@ has a default except the model server (``[retman.decision]``), which has no
 meaningful one: :func:`load_config` reports what is missing, while
 :func:`load_settings`, and with it every command that needs no model, works from
 the defaults (N-11 read as "no hidden default": ``retman config show`` lists each
-value with its source and ``retman init`` writes the tables out).
+value with its source and ``retman config init`` writes the tables out).
 """
 
 import json
@@ -26,6 +26,7 @@ from retman.environment import (
     TOOL,
     ConfigFile,
     Environment,
+    OptionValue,
     environment,
 )
 from retman.exceptions import ConfigError
@@ -249,7 +250,10 @@ def _raise_file_problem(file: ConfigFile) -> None:
 
 
 def load_settings(
-    path: Path | None = None, *, environ: Mapping[str, str] | None = None
+    path: Path | None = None,
+    *,
+    environ: Mapping[str, str] | None = None,
+    options: Mapping[str, OptionValue] | None = None,
 ) -> Settings:
     """Read and validate every setting but the model server.
 
@@ -260,6 +264,9 @@ def load_settings(
         configuration folder of ``nogat``.
     environ : Mapping[str, str], optional
         The process environment; ``os.environ`` by default.
+    options : Mapping[str, OptionValue], optional
+        The settings given by command-line options (``--lang``, ``--verbose``,
+        ``--quiet``; :func:`retman.environment.cli_options`).
 
     Returns
     -------
@@ -275,7 +282,7 @@ def load_settings(
         (``"invalid_section"``), or a value is not valid; all problems of the
         values are reported at once.
     """
-    env = environment(path, environ)
+    env = environment(path, environ, options)
     _raise_file_problem(env.file)
     problems = _Problems()
     _check_values(env, problems, model=False)
@@ -286,7 +293,10 @@ def load_settings(
 
 
 def load_config(
-    path: Path | None = None, *, environ: Mapping[str, str] | None = None
+    path: Path | None = None,
+    *,
+    environ: Mapping[str, str] | None = None,
+    options: Mapping[str, OptionValue] | None = None,
 ) -> Config:
     """Read and validate every setting, the model server included.
 
@@ -297,6 +307,8 @@ def load_config(
         configuration folder of ``nogat``.
     environ : Mapping[str, str], optional
         The process environment; ``os.environ`` by default.
+    options : Mapping[str, OptionValue], optional
+        As for :func:`load_settings`.
 
     Returns
     -------
@@ -309,7 +321,7 @@ def load_config(
         As :func:`load_settings`, and ``"missing_key"`` for a model setting that
         nothing sets: the model server has no default.
     """
-    env = environment(path, environ)
+    env = environment(path, environ, options)
     _raise_file_problem(env.file)
     problems = _Problems()
     _check_values(env, problems, model=True)
@@ -323,7 +335,7 @@ def load_config(
 
 @dataclass(frozen=True)
 class ToolPaths:
-    """The absolute paths ``retman init`` writes to the ``[retman.tools.*]`` tables."""
+    """The absolute paths ``config init`` writes to the ``[retman.tools.*]`` tables."""
 
     kartograf_store: Path
     kartograf_cache: Path
@@ -332,7 +344,7 @@ class ToolPaths:
 
 
 def default_stores_dir(env: Environment) -> Path:
-    """Folder offered by ``retman init`` for the stores of all tools: ``data_dir``.
+    """Folder offered by ``retman config init`` for the stores of all tools.
 
     The tool stores are two folders inside it (``kartograf`` and ``imgw``), so
     they share one disk; the user may choose another folder.
@@ -346,7 +358,7 @@ def default_collect_path(env: Environment) -> Path:
 
 
 def tool_paths(env: Environment, stores_dir: Path | None = None) -> ToolPaths:
-    """Paths of the tool stores for the folder chosen in ``retman init``.
+    """Paths of the tool stores for the folder chosen in ``retman config init``.
 
     Both stores are folders inside ``stores_dir`` (one disk, two folders); the
     cache and the reference files stay in the cache folder, a local disk. Paths
@@ -386,7 +398,7 @@ def config_template(
     stores_dir: Path | None = None,
     env: Environment | None = None,
 ) -> str:
-    """Text of the ``[retman]`` tables with comments, written by ``retman init``.
+    """Text of the ``[retman]`` tables with comments, written by ``config init``.
 
     Every path is written out for this system, so the file shows every value
     Retman uses (no hidden defaults, N-11). The shared keys (``lang``,
@@ -425,10 +437,10 @@ def config_template(
 
 
 def init_target(env: Environment) -> Path:
-    """Return the file ``retman init`` writes, or raise why it cannot.
+    """Return the file ``retman config init`` writes, or raise why it cannot.
 
-    The checks come before any question of ``retman init``: the answers would be
-    thrown away.
+    The checks come before any question of ``retman config init``: the answers would
+    be thrown away.
 
     Raises
     ------
@@ -451,12 +463,12 @@ def init_config(
     stores_dir: Path | None = None,
     environ: Mapping[str, str] | None = None,
 ) -> Path:
-    """Write the ``[retman]`` tables into ``nogat.toml`` (``retman init``).
+    """Write the ``[retman]`` tables into ``nogat.toml`` (``retman config init``).
 
     A missing file is created; an existing one gets the tables appended and its
     other tables stay as they are. Only the file is written: the store folders are
-    created by the caller (``retman init``), never as a side effect of writing the
-    settings.
+    created by the caller (``retman config init``), never as a side effect of
+    writing the settings.
 
     Parameters
     ----------

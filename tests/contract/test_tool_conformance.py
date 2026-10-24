@@ -2,7 +2,7 @@
 
 The real tools are used offline: the tool's own validation (``validate_command``)
 judges every point of the manifest grid, and the catalog is read for the coverage
-and effects checks (``retman-scaffold --check``, ARCHITECTURE 3.2.3, 3.2.7). A tool
+and effects checks (``retman scaffold check``, ARCHITECTURE 3.2.3, 3.2.7). A tool
 that is not installed, or installed in a version outside its manifest's range, is
 skipped; the CI runs this on the oldest and the newest supported version.
 """
@@ -105,7 +105,7 @@ def test_operation_conforms_to_the_installed_tool(
     report = check(tool, rows, operations=[operation])
 
     # No drift (X1-X4, X6-X7); and the operation has complete rows with free values
-    # in the retman-eval dataset, so that its grid could be built (X10)
+    # in the eval command set, so that its grid could be built (X10)
     assert problems(report, "error") == []
     assert [f for f in report.findings if f.check == "X10"] == []
     assert report.points > 0
@@ -143,5 +143,5 @@ def test_committed_translations_hold_no_draft_markers() -> None:
         or "SPLIT_REQUIRED" in path.read_text(encoding="utf-8")
     ]
 
-    # ``retman-scaffold draft`` leaves TODO markers: nobody reviewed that text yet
+    # ``retman scaffold draft`` leaves TODO markers: nobody reviewed that text yet
     assert marked == []

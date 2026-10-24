@@ -43,6 +43,7 @@ każda relacja jest zapisana po obu stronach.
 | [ADR-019](#adr-019-statyczne-manifesty-i-retman-scaffold-z-katalogów-narzędzi) | Statyczne manifesty i `retman-scaffold` z katalogów narzędzi | 2026-10-19 | Przyjęta |
 | [ADR-020](decisions/0020-error-registry.md) | Adopt the shared error registry (new ADRs are files in `decisions/`, DOC-8.2) | 2026-10-24 | Przyjęta |
 | [ADR-021](decisions/0021-user-environment.md) | User environment: `[retman]` in `nogat.toml`, variables and user directories | 2026-10-24 | Przyjęta; zastępuje część ADR-010 i ADR-015 |
+| [ADR-022](decisions/0022-agent-interfaces.md) | Agent interfaces: one command catalog, one `retman` executable | 2026-10-24 | Przyjęta; zastępuje układ poleceń z ADR-011 i ADR-019 |
 
 ---
 

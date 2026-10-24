@@ -1,4 +1,4 @@
-"""``retman init``: the settings tables, the tool store folders and the consent."""
+"""``retman config init``: the settings tables, the store folders and the consent."""
 
 import errno
 import io
@@ -45,7 +45,9 @@ def _init(
     config = tmp_path / "nogat.toml"
     if answers is not None:
         monkeypatch.setattr("sys.stdin", Terminal(answers))
-    return cli.main(["--config", str(config), "init"], project_dir=tmp_path), config
+    return cli.main(
+        ["config", "init", "--config", str(config)], project_dir=tmp_path
+    ), config
 
 
 def test_init_without_a_terminal_writes_the_config_and_creates_nothing_else(
@@ -180,7 +182,7 @@ def test_an_existing_retman_table_is_reported_before_any_question(
     terminal = Terminal("n\n")
     monkeypatch.setattr("sys.stdin", terminal)
 
-    status = cli.main(["--config", str(config), "init"], project_dir=tmp_path)
+    status = cli.main(["config", "init", "--config", str(config)], project_dir=tmp_path)
     captured = capsys.readouterr()
 
     assert status == 4
@@ -202,7 +204,7 @@ def test_the_tables_are_added_to_a_file_that_has_none(
     config.write_text('[nogat]\nlang = "pl"\n', encoding="utf-8")
     monkeypatch.setattr("sys.stdin", io.StringIO(""))
 
-    status = cli.main(["--config", str(config), "init"], project_dir=tmp_path)
+    status = cli.main(["config", "init", "--config", str(config)], project_dir=tmp_path)
 
     assert status == 0
     assert config.read_text(encoding="utf-8").startswith('[nogat]\nlang = "pl"\n\n')

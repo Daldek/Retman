@@ -65,6 +65,7 @@ journal_commands = true    # store command texts and answers in the project jour
 [retman.privacy]
 # Collect planning outcomes (command, plan, answers, model decisions) from ALL projects
 # in one file, to build and tune the test set (ARCHITECTURE 5.4, chapter 10). Separate from
-# the project journal; stays on this computer, nothing is sent anywhere. retman init asks.
+# the project journal; stays on this computer, nothing is sent anywhere.
+# `retman config init` asks.
 collect_commands = @COLLECT_COMMANDS@
 collect_path = @COLLECT_PATH@

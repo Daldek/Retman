@@ -2,11 +2,11 @@
 # Każda sekcja należy do jednego modułu; klucze odpowiadają identyfikatorom w kodzie.
 
 [config]
-missing_file = "Brak pliku ustawień {path}. Wskaż istniejący plik (--config albo zmienna NOGAT_CONFIG) albo utwórz go poleceniem: retman init"
+missing_file = "Brak pliku ustawień {path}. Wskaż istniejący plik (--config albo zmienna NOGAT_CONFIG) albo utwórz go poleceniem: retman config init"
 unreadable_file = "Nie można odczytać pliku ustawień {path}: {error}"
 invalid_toml = "Plik ustawień {path} nie jest poprawnym plikiem TOML: {error}"
 invalid_section = "W pliku ustawień {path} sekcja nie jest tabelą TOML: {error}"
-missing_key = "Brak ustawień modelu decyzyjnego: {keys}. Wpisz je w tabeli [retman.decision] pliku ustawień {path} albo ustaw zmienne RETMAN_DECISION_...; retman init zapisuje wzór tabeli"
+missing_key = "Brak ustawień modelu decyzyjnego: {keys}. Wpisz je w tabeli [retman.decision] pliku ustawień {path} albo ustaw zmienne RETMAN_DECISION_...; retman config init zapisuje wzór tabeli"
 invalid_value = "Niepoprawna wartość ustawienia: {keys} (plik {path}, zmienne RETMAN_...); retman config show pokazuje wartości i ich źródła"
 auto_threshold_without_basal = "Progi pewności \"auto\" działają tylko z backend = \"basal\"; wpisz liczbę dostrojoną dla modelu ({keys})"
 already_exists = "Plik ustawień {path} ma już tabelę [retman] (nie nadpisuję)"
@@ -32,6 +32,7 @@ unset = "(nie ustawiono)"
 source_default = "domyślna"
 source_env = "zmienna {name}"
 source_file = "plik, tabela {name}"
+source_option = "opcja {name}"
 credentials = "Dane uwierzytelniające (zmienne środowiska; wartości nie są pokazywane):"
 credential = "  {name}: {state}"
 credential_present = "jest"
@@ -198,7 +199,7 @@ duration_hours = "{hours} h"
 # Podpowiedzi do pytań o wymagany parametr, którego nie udało się odczytać (explain_missing).
 [extractors.hints]
 station_no_catalog = "Nie ma katalogu stacji IMGW, więc rozpoznaję tylko kody stacji (9 cyfr dla IMGW-PIB, identyfikator WIGOS dla ČHMÚ). Katalog tworzy polecenie „Zbuduj katalog stacji IMGW”."
-station_catalog_unreadable = "Nie można odczytać katalogu stacji IMGW, więc rozpoznaję tylko kody stacji. Sprawdź: retman doctor"
+station_catalog_unreadable = "Nie można odczytać katalogu stacji IMGW, więc rozpoznaję tylko kody stacji. Sprawdź: retman doctor check"
 years_open_end = "Podano tylko początek okresu ({year}); podaj też jego koniec, np. „2010–2020”."
 years_open_start = "Podano tylko koniec okresu ({year}); podaj też jego początek, np. „2010–2020”."
 period_open_end = "Podano tylko początek okresu ({date}); podaj też jego koniec, np. „od 2010-01-01 do 2020-12-31” albo „2010–2020”."
@@ -280,6 +281,21 @@ check_confirmation = "Połączyć się z internetem i sprawdzić? [t]ak / [n]ie"
 check_declined = "Sprawdzenie pominięte."
 checking = "Sprawdzam… (Ctrl+C przerywa)"
 warning = "Uwaga: {text}"
+more = "Są dalsze pozycje: następna strona to --cursor {cursor}"
+description = "Retman zamienia polecenie po polsku w plan dla narzędzi hydrologicznych (Kartograf, IMGWTools), dopytuje o braki, pokazuje plan do potwierdzenia i wykonuje go. Polecenie to grupa i czasownik: retman <grupa> <czasownik> [opcje]."
+epilog = "Opis polecenia i jego opcji: retman <grupa> <czasownik> --help. Wszystkie polecenia: retman commands list."
+group_plan = "polecenie po polsku: plan i wykonanie"
+group_config = "ustawienia: pokaż i zapisz"
+group_doctor = "diagnostyka: co działa, co nie i jak to naprawić"
+group_results = "wyniki zapisane w folderze projektu"
+group_journal = "dziennik zdarzeń folderu projektu"
+group_commands = "katalog poleceń i przewodniki dla agentów"
+group_eval = "ocena modelu na zbiorze poleceń"
+group_scaffold = "opisy narzędzi: kontrola rozjazdów i szkice (dla programistów)"
+help_json = "Wypisz jeden dokument JSON (kopertę retman-result/1) i nic więcej; nigdy nie pyta."
+help_lang = "Język tekstów dla człowieka: pl albo en (teksty istnieją po polsku)."
+help_verbose = "Log techniczny na stderr na poziomie debug."
+help_quiet = "Log techniczny na stderr tylko z błędami."
 
 [results]
 success = "Gotowe. Wynik #{number}: {operation}. Pliki: {directory}"
@@ -302,13 +318,13 @@ check_approved = "wykonane"
 check_rejected = "pominięte"
 
 [errors]
-backend_connection = "Nie można połączyć się z modelem pod adresem {url}. Sprawdź: retman doctor"
+backend_connection = "Nie można połączyć się z modelem pod adresem {url}. Sprawdź: retman doctor check"
 backend = "Błąd modelu: {error}"
 manifest = "Błąd opisu narzędzia: {error}"
 retman = "Błąd: {error}"
 tool_error = "Narzędzie {tool} zgłosiło błąd ({code}): {detail}"
-tool_drift = "Zainstalowane narzędzie {tool} nie przyjmuje już operacji {operation} ({detail}). Sprawdź: retman doctor"
-tool_import = "Nie można załadować narzędzia {tool}: {error}. Sprawdź: retman doctor"
+tool_drift = "Zainstalowane narzędzie {tool} nie przyjmuje już operacji {operation} ({detail}). Sprawdź: retman doctor check"
+tool_import = "Nie można załadować narzędzia {tool}: {error}. Sprawdź: retman doctor check"
 unexpected = "Nieoczekiwany błąd: {error}. To błąd Retmana: zgłoś go razem z poleceniem i wersją."
 
 # Ostrzeżenia operacji, które Retman składa sam (src/retman/adapters/catalog.py); tekst narzędzia ma pierwszeństwo.
@@ -340,12 +356,12 @@ invalid_rows = "Wiersze pliku {path} nie pasują do nagłówka (rodzaj {kind})"
 invalid_json = "Plik {path} nie jest poprawnym dokumentem JSON (rodzaj {kind})"
 invalid_schema = "Plik {path} ma inny schemat dokumentu, niż wymaga rodzaj {kind}"
 
-# Kreator retman init: magazyny narzędzi i magazyn IMGWTools (retman/initialize.py).
+# Kreator retman config init: magazyny narzędzi i magazyn IMGWTools (retman/initialize.py).
 [init]
 stores_question = "Gdzie trzymać dane pobierane przez narzędzia (Kartograf, IMGWTools)?\nMagazyny to dwa osobne foldery w wybranym folderze — kartograf i imgw — więc oba są na jednym dysku. Wybierz dysk z dużą ilością miejsca: rastry i archiwa zajmują gigabajty, a magazyny są wspólne dla wszystkich projektów.\nPlik cache Kartografa trafi na dysk lokalny użytkownika: {cache}."
 stores_prompt = "Folder na magazyny [Enter = {path}]: "
 stores_not_absolute = "Podaj ścieżkę bezwzględną, bez „..”."
-folder_failed = "Nie można utworzyć folderu {path}: {error}. Plik konfiguracji nie został zapisany; uruchom retman init ponownie i wskaż inny folder."
+folder_failed = "Nie można utworzyć folderu {path}: {error}. Plik konfiguracji nie został zapisany; uruchom retman config init ponownie i wskaż inny folder."
 stores_summary = "Magazyny narzędzi (ustawienia [retman.tools.*] w pliku):\n  Kartograf: {kartograf}\n  IMGWTools: {imgwtools}"
 not_created = "Foldery magazynów nie zostały utworzone (brak terminala): Kartograf utworzy swój przy pierwszym pobraniu, a magazyn IMGWTools utworzysz poleceniem „Utwórz magazyn IMGW”."
 imgw_question = "Czy utworzyć teraz magazyn IMGWTools w {path}?\nTworzenie nie używa sieci: w pustym folderze powstaje znacznik magazynu. Bez magazynu nie działają operacje na danych IMGW, które zapisują się lokalnie."
@@ -353,12 +369,12 @@ imgw_prompt = "Utworzyć magazyn IMGWTools? [t]ak / [N]ie: "
 imgw_ok = "Magazyn IMGWTools gotowy: {path}"
 imgw_existing = "Magazyn IMGWTools już istnieje: {path}"
 imgw_declined = "Magazyn IMGWTools nie został utworzony; utworzysz go poleceniem „Utwórz magazyn IMGW”."
-imgw_not_installed = "IMGWTools nie jest zainstalowany, więc magazyn {path} nie został utworzony; po instalacji utworzysz go poleceniem „Utwórz magazyn IMGW” (retman doctor podpowie instalację)."
+imgw_not_installed = "IMGWTools nie jest zainstalowany, więc magazyn {path} nie został utworzony; po instalacji utworzysz go poleceniem „Utwórz magazyn IMGW” (retman doctor check podpowie instalację)."
 imgw_refused = "IMGWTools nie utworzył magazynu w {path}: {detail}"
 imgw_not_atomic = "IMGWTools nie utworzył magazynu w {path}: system plików nie obsługuje dowiązań twardych ({detail}). Magazyny narzędzi wymagają dysku z dowiązaniami twardymi (nie ma ich FAT/exFAT ani część udziałów sieciowych) — zmień [retman.tools.imgwtools] store_dir i [retman.tools.kartograf] store_dir w pliku ustawień na foldery na innym dysku."
-no_hardlinks = "Dysk wybranego folderu ({path}) nie obsługuje dowiązań twardych ({reason}), a oba magazyny narzędzi ich wymagają (nie ma ich FAT/exFAT ani część udziałów sieciowych). Plik konfiguracji nie został zapisany; uruchom retman init ponownie i wskaż folder na innym dysku."
+no_hardlinks = "Dysk wybranego folderu ({path}) nie obsługuje dowiązań twardych ({reason}), a oba magazyny narzędzi ich wymagają (nie ma ich FAT/exFAT ani część udziałów sieciowych). Plik konfiguracji nie został zapisany; uruchom retman config init ponownie i wskaż folder na innym dysku."
 
-# Raport retman doctor (retman/doctor.py, ARCHITECTURE 7.2).
+# Raport retman doctor check (retman/doctor.py, ARCHITECTURE 7.2).
 [doctor]
 title = "Retman {version}"
 line = "  {marker} {text}"
@@ -399,7 +415,7 @@ test_terrain = "Pobranie numerycznego modelu terenu (NMT, DEM) dla arkusza mapy"
 test_weather = "Prognoza pogody na jutro"
 test_ok = "pytanie testowe: poprawna odpowiedź ({details})"
 test_wrong = "pytanie testowe: błędna odpowiedź ({details})"
-hint_test_wrong = "model wybiera nietrafnie; sprawdź model w konfiguracji i uruchom retman-eval"
+hint_test_wrong = "model wybiera nietrafnie; sprawdź model w konfiguracji i uruchom retman eval run"
 test_failed = "pytanie testowe nie powiodło się: {error}"
 confidence_value = "pewność {value} {method}"
 confidence_missing = "bez pewności"
@@ -408,7 +424,7 @@ method_logprobs = "z logprobs"
 method_consistency = "ze zgodności odpowiedzi"
 confidence_none = "pewność: niedostępna (confidence = \"none\") — wybory modelu w planie są oznaczone jako niezweryfikowane"
 hint_confidence_none = "ustaw confidence = \"auto\" w [retman.decision] ({path}), jeśli serwer podaje logprobs"
-thresholds_auto = "progi pewności: \"auto\" — zalecane dostrojenie na własnym zbiorze testowym (retman-eval, ARCHITECTURE 6.2)"
+thresholds_auto = "progi pewności: \"auto\" — zalecane dostrojenie na własnym zbiorze testowym (retman eval run, ARCHITECTURE 6.2)"
 thresholds = "progi pewności: operacja {operation}, parametr {parameter}"
 tool_ok = "{tool} {version}, obsługiwane {supported}, {operations}"
 tool_missing = "{tool}: nie zainstalowany"
@@ -423,7 +439,7 @@ no_operations = "brak dostępnych operacji"
 hint_no_operations = "doinstaluj obsługiwane narzędzie (polecenia powyżej) albo sprawdź [retman.adapters] enabled"
 translations_ok = "komplet"
 translations_problem = "{problem}"
-hint_translations = "błąd instalacji Retmana; zainstaluj go ponownie i zgłoś problem z wynikiem retman doctor --json"
+hint_translations = "błąd instalacji Retmana; zainstaluj go ponownie i zgłoś problem z wynikiem retman doctor check --json"
 text_off = "wyłączony ([retman.text] backend = \"{backend}\")"
 
 # Magazyny danych narzędzi (retman/doctor.py, retman/stores.py): {tool} to nazwa narzędzia
@@ -448,7 +464,7 @@ cache_not_writable = "kartograf: brak prawa zapisu do cache metadanych {path}; K
 hint_cache = "utwórz folder {folder} albo zmień [retman.tools.kartograf] cache_file w {config} (plik na lokalnym dysku)"
 imgw_ready = "imgwtools: magazyn {path} (znacznik {marker}, schemat {schema}, dowiązania twarde działają)"
 imgw_not_initialised = "imgwtools: magazyn {path} nie został jeszcze utworzony (brak {marker})"
-hint_imgw_init = "utwórz go: retman init (w terminalu) albo polecenie „Utwórz magazyn IMGW”"
+hint_imgw_init = "utwórz go: retman config init (w terminalu) albo polecenie „Utwórz magazyn IMGW”"
 imgw_foreign = "imgwtools: folder {path} nie jest pusty i nie jest magazynem IMGWTools"
 hint_imgw_foreign = "wskaż pusty folder w [retman.tools.imgwtools] store_dir ({config}); IMGWTools nie tworzy magazynu w folderze z innymi plikami"
 imgw_unreadable = "imgwtools: znacznik {marker} w {path} jest nieczytelny"
@@ -466,23 +482,9 @@ probe_ok = "imgwtools {version}: zapis do magazynu działa na tym systemie (pró
 probe_failed = "imgwtools {version}: zapis do magazynu nie działa na tym systemie: {detail}"
 hint_probe_failed = "sprawdź, czy dysk magazynu ma dowiązania twarde i czy IMGWTools jest w aktualnej wersji (\"{source}\"); do czasu naprawy wyłącz narzędzie w [retman.adapters] enabled ({config})"
 
-# Raport planowania retman-eval (bez adresów serwera i ścieżek lokalnych).
+# Raport oceny planowania (retman eval run; bez adresów serwera i ścieżek lokalnych).
 [eval]
-cli_description = "Ocena planowania poleceń bez wykonywania operacji."
-help_config = "Plik ustawień (nogat.toml) z tabelą [retman]; domyślnie plik z NOGAT_CONFIG albo z folderu ustawień użytkownika. Model decyzyjny jest wymagany: tabela [retman.decision] albo zmienne RETMAN_DECISION_*."
-help_commands = "Zbiór poleceń JSONL (domyślnie zbiór z pakietu)."
-help_operations = "Identyfikatory operacji oddzielone przecinkami."
-help_tags = "Tagi oddzielone przecinkami."
-help_repeat = "Liczba powtórzeń każdego polecenia."
-help_target = "Docelowy odsetek błędów decyzji ponad zalecanym progiem."
-help_output = "Plik JSONL z surowymi rekordami."
-help_report = "Plik raportu Markdown (domyślnie standardowe wyjście)."
-invalid_arguments = "Liczba powtórzeń musi być dodatnia, a docelowy błąd w zakresie (0, 1]."
-invalid_dataset = "Niepoprawne argumenty lub zbiór poleceń: {error}"
-empty_selection = "Filtry nie wybrały żadnego polecenia."
-backend_error = "Model nie odpowiedział poprawnie; przebieg przerwano bez raportu częściowego."
-failure = "Nie udało się przeprowadzić oceny: {error}"
-interrupted = "Przerwano ocenę."
+report_written = "Raport zapisano: {path}"
 title = "# Ocena planowania Retmana"
 configuration = "## Konfiguracja"
 version = "- Retman: {value}"
@@ -550,36 +552,9 @@ queries_median_column = "Mediana zapytań"
 queries_p90_column = "P90 zapytań"
 queries_max_column = "Maksimum zapytań"
 
-# Narzędzie deweloperskie retman-scaffold: szkice i kontrola rozjazdów (src/retman/devtools).
+# Narzędzie deweloperskie retman scaffold: szkice i kontrola rozjazdów (src/retman/devtools).
 [scaffold]
-cli = "Narzędzie deweloperskie Retmana: szkice opisów narzędzi z ich katalogów komend oraz kontrola rozjazdów opisów z zainstalowanymi narzędziami (wszystko offline)."
-h_check = "Kontrola rozjazdów X1–X10: opisy w Retmanie wobec zainstalowanych narzędzi."
-h_tool = "Sprawdź tylko to narzędzie (można powtórzyć)."
-h_operation = "Sprawdź tylko tę operację (można powtórzyć)."
-h_json = "Wypisz raport kontroli jako dokument JSON."
-h_require_tools = "Brak narzędzia albo wersja spoza obsługiwanego zakresu jest błędem (dla CI)."
-h_verbose = "Pokaż także linie informacyjne."
-h_commands = "Plik JSONL z poleceniami retman-eval, z których pochodzą wartości próbek (domyślnie zbiór z pakietu)."
-h_list = "Wypisz komendy katalogu narzędzia, operacje, które ich używają, i sugerowane zastosowanie."
-h_draft = "Szkic wpisu manifestu, buildera wywołań i tłumaczeń dla jednej komendy katalogu."
-h_tool_name = "Nazwa narzędzia, np. kartograf albo imgwtools."
-h_command = "Komenda katalogu, np. \"elevation download\"."
-h_fix = "Opcja o stałej wartości, która nie jest parametrem (nazwa=wartość; można powtórzyć)."
-h_only = "Opcje do wystawienia jako parametry (po przecinku); pozostałe są pomijane."
-h_id = "Identyfikator operacji (domyślnie nazwa komendy)."
-h_write = "Zapisz szkic w src/retman/tools/<narzędzie>/_drafts/ zamiast wypisać go na standardowe wyjście."
-usage_error = "Błędne użycie: {error}"
-usage_nothing = "Podaj --check albo polecenie list lub draft (retman-scaffold --help)."
-usage_both = "--check nie łączy się z poleceniami list i draft."
-unknown_tool = "Nieznane narzędzie „{tool}” (są: {known})."
-unknown_operation = "Nieznana operacja „{operation}”."
-invalid_fix = "Opcja --fix wymaga postaci nazwa=wartość, a podano „{item}”."
-no_reader = "Dla narzędzia „{tool}” nie ma czytnika katalogu (src/retman/devtools/readers/{tool}.py)."
-invalid_commands = "Nie można odczytać zbioru poleceń retman-eval: {error}"
-failure = "Nie udało się: {error}"
-interrupted = "Przerwano."
 draft_written = "Szkic zapisano: {python} oraz {toml}"
-draft_exists = "Plik szkicu już istnieje: {path}. Usuń go albo wybierz inny identyfikator (--id)."
 list_title = "{tool} {version}: komend w katalogu: {count}"
 col_command = "Komenda"
 col_group = "Grupa"
@@ -602,13 +577,13 @@ marker_warning = "!"
 marker_info = "·"
 summary_clean = "Kontrola rozjazdów przeszła: błędy {errors}, ostrzeżenia {warnings}, informacje {infos}."
 summary_failed = "Kontrola rozjazdów wykryła błędy: błędy {errors}, ostrzeżenia {warnings}, informacje {infos}."
-infos_hidden = "Linie informacyjne ({count}) pokazuje opcja --verbose."
-# retman doctor: lekka kontrola zgodności (X1, X4) dla używanych narzędzi
-doctor_section = "Zgodność opisów z narzędziami (retman-scaffold --check)"
+infos_hidden = "Linie informacyjne ({count}) pokazuje opcja --include-info."
+# retman doctor check: lekka kontrola zgodności (X1, X4) dla używanych narzędzi
+doctor_section = "Zgodność opisów z narzędziami (retman scaffold check)"
 doctor_ok = "{tool} {version}: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)"
-doctor_hint = "uruchom retman-scaffold --check; opisy tego narzędzia wymagają przeglądu"
+doctor_hint = "uruchom retman scaffold check; opisy tego narzędzia wymagają przeglądu"
 doctor_failed = "{tool}: nie udało się sprawdzić zgodności opisów z katalogiem narzędzia: {error}"
-doctor_unchecked = "{tool}: nie sprawdzono zgodności operacji ({count}), bo zbiór retman-eval nie ma ich poleceń z wartościami parametrów: {operations}"
+doctor_unchecked = "{tool}: nie sprawdzono zgodności operacji ({count}), bo zbiór poleceń oceny nie ma dla nich wierszy z wartościami parametrów: {operations}"
 
 # Treść ustaleń kontroli rozjazdów; klucze to Finding.key (src/retman/devtools/drift.py).
 [scaffold.finding]
@@ -648,5 +623,298 @@ x8_translation_unreadable = "Narzędzie {tool}: nie można wczytać tłumaczeń 
 x8_error_text_missing = "Narzędzie {tool}: w {file} brakuje tekstów [errors.<kod>] dla kodów błędów: {codes}."
 x8_unknown_schema = "Narzędzie {tool}: komenda „{command}” zwraca dokument „{schema}”, którego klient Retmana nie zna (zna: {known})."
 x9_unexposed = "Narzędzie {tool}: {count} komend danych nie używa żadna operacja: {commands}."
-x10_no_samples = "Operacja {operation}: brak kompletnych poleceń w zbiorze retman-eval z wartościami parametrów {params}, więc siatki nie sprawdzono."
+x10_no_samples = "Operacja {operation}: brak kompletnych poleceń w zbiorze poleceń oceny z wartościami parametrów {params}, więc siatki nie sprawdzono."
 x10_no_points = "Operacja {operation}: z próbek nie powstał żaden kompletny punkt siatki."
+
+# Widok katalogu poleceń w terminalu: retman commands schema (src/retman/catalog/describe.py).
+[commands_view]
+heading = "{name}: {summary}"
+options = "Opcje:"
+no_options = "Opcje: brak."
+required = "wymagana"
+default = "domyślnie {value}"
+default_note = "(domyślnie: {value})"
+type_string = "TEKST"
+type_integer = "LICZBA CAŁKOWITA"
+type_number = "LICZBA"
+type_choice = "WYBÓR"
+type_path = "ŚCIEŻKA"
+type_string_list = "TEKST (opcję można powtórzyć)"
+result = "Wynik: dokument {schema} ({cardinality})."
+cardinality_single = "jeden"
+cardinality_bounded = "ograniczony"
+cardinality_unbounded = "bez ograniczenia, stronami"
+effects = "Skutki: {effects}."
+effect_read_only = "tylko czyta"
+effect_writes_none = "nic nie zapisuje"
+effect_writes_add = "zapisuje nowe pliki"
+effect_writes_replace = "zapisuje pliki i może je zastąpić"
+effect_writes_delete = "usuwa pliki"
+effect_network = "używa sieci"
+effect_destructive = "może zastąpić istniejące dane"
+rules = "Zasady dla agentów:"
+errors = "Możliwe błędy: {errors}."
+examples = "Przykłady:"
+guide_written = "Zapisano: {path}"
+
+# Plan zapisu plików dla --check poleceń, które zapisują (src/retman/operations/documents.py).
+[targets]
+title = "Plan zapisu (nic nie zostanie zapisane):"
+line = "  {action}: {path}"
+action_write = "zapis"
+action_replace = "zastąpienie"
+action_conflict = "konflikt (plik istnieje; --force go zastąpi)"
+
+# Teksty katalogu poleceń: summary, description, rules i opcje (src/retman/catalog/commands.py).
+# Polskie tłumaczenia angielskich tekstów katalogu (AGI-9.1); nazwy poleceń, opcji i wartości zostają angielskie (AGI-1.6).
+[catalog.retman_plan_run]
+summary = "Zaplanuj operację z polecenia po polsku i, po potwierdzeniu, wykonaj ją."
+description = "Rozpoznaje operację w poleceniu po polsku, uzupełnia wartości, które polecenie podaje, i wymienia pytania bez odpowiedzi; z `yes` wykonuje kompletny plan. Służy do pobierania i przygotowania danych z Kartografa i IMGWTools słowami po polsku. Nie służy do innych języków ani do dokładnych wywołań narzędzia (użyj samego narzędzia)."
+rules = [
+  "Najpierw `check`: otwarte `questions` znaczą, że plan jest niekompletny.",
+  "Brakujące wartości dopisz do `text` i powtórz; bez terminala nic nie jest pytane.",
+  "`yes` dawaj dopiero po zatwierdzeniu planu przez użytkownika.",
+]
+
+[catalog.retman_plan_run.options.text]
+description = "Polecenie po polsku, np. „Pobierz NMT 1 m dla arkusza N-34-130-D-d-2-4”. Bez niego terminal rozpoczyna sesję."
+
+[catalog.retman_plan_run.options.check]
+description = "Plan bez skutków: rozpoznaj, pokaż plan z otwartymi pytaniami i zatrzymaj się. Nic nie jest wykonywane ani zapisywane."
+
+[catalog.retman_plan_run.options.yes]
+description = "Potwierdź plan bez pytania i wykonaj go. Otwarte pytanie jest błędem: nie ma kto odpowiedzieć."
+
+[catalog.retman_plan_run.options.explain]
+description = "Dodaj decyzje modelu: wybór, pewność, metodę i prawdopodobieństwo każdej opcji."
+
+[catalog.retman_plan_run.options.config]
+description = "Plik ustawień (nogat.toml); domyślnie folder ustawień użytkownika albo NOGAT_CONFIG."
+
+[catalog.retman_config_show]
+summary = "Pokaż każde ustawienie z wartością i źródłem oraz magazyny narzędzi."
+description = "Pokazuje plik ustawień, każdy klucz Retmana z wartością i warstwą, która ją dała (opcja, zmienna, plik, domyślna), zmienne z danymi uwierzytelniającymi (jest albo brak, nigdy wartość) i magazyny narzędzi. Służy do sprawdzenia, co obowiązuje. Tylko czyta. Nie służy do zmiany ustawień: edytuj `nogat.toml`."
+rules = [
+  "Czytaj `keys.<nazwa>.source`, by wiedzieć, skąd jest wartość.",
+  "Dane uwierzytelniające to zmienne środowiska; nie wpisuj ich do pliku.",
+]
+
+[catalog.retman_config_show.options.config]
+description = "Plik ustawień (nogat.toml); domyślnie folder ustawień użytkownika albo NOGAT_CONFIG."
+
+[catalog.retman_config_init]
+summary = "Wpisz tabele [retman] z widocznymi wartościami domyślnymi do nogat.toml."
+description = "Dopisuje pełne tabele `[retman]` do `nogat.toml` (plik powstaje, jeśli go nie ma); inne tabele zostają. Nigdy nie nadpisuje istniejącej tabeli `[retman]` i bez terminala nie tworzy folderów. Użyj raz na użytkownika, przed pierwszym planem. Nie służy do zmiany istniejącej tabeli: edytuj plik."
+rules = [
+  "Najpierw `check`: istniejąca tabela [retman] to konflikt.",
+  "Zapytaj użytkownika, zanim ustawisz `collect_commands`.",
+]
+
+[catalog.retman_config_init.options.config]
+description = "Plik ustawień do zapisu (nogat.toml); domyślnie folder ustawień użytkownika albo NOGAT_CONFIG."
+
+[catalog.retman_config_init.options.collect_commands]
+description = "Zbieraj polecenia ze wszystkich projektów w jednym pliku, do budowy zbioru testowego (ADR-010). Najpierw zapytaj użytkownika: to zapis jego słów. Domyślnie wyłączone."
+
+[catalog.retman_config_init.options.stores_dir]
+description = "Folder na magazyny obu narzędzi (w środku kartograf i imgw); domyślnie folder danych nogat."
+
+[catalog.retman_config_init.options.check]
+description = "Plan bez skutków: pokaż, co zostałoby zapisane, i zatrzymaj się."
+
+[catalog.retman_doctor_check]
+summary = "Sprawdź ustawienia, serwer modelu, narzędzia i magazyny; podaj, jak naprawić każdy problem."
+description = "Jeden raport: ustawienia i folder projektu, serwer modelu, zainstalowane narzędzia i ich magazyny, rozjazdy opisów narzędzi, tłumaczenia. Każda kontrola to jednostka w `items`; nieudana ma kod z rejestru i podpowiedź. Użyj, gdy polecenie zawodzi albo po instalacji narzędzia; nie służy do planowania (`plan run`). `deep` dodaje próbny zapis do magazynu IMGWTools."
+rules = [
+  "`partial` znaczy, że część kontroli nie przeszła, `failed` — że żadna.",
+  "Naprawiaj kontrole blokujące w podanej kolejności; podpowiedź wskazuje polecenie.",
+]
+
+[catalog.retman_doctor_check.options.config]
+description = "Plik ustawień (nogat.toml); domyślnie folder ustawień użytkownika albo NOGAT_CONFIG."
+
+[catalog.retman_doctor_check.options.deep]
+description = "Wykonaj też wolniejsze kontrole: próbny zapis do magazynu IMGWTools na własnych danych testowych narzędzia, w folderze tymczasowym, bez sieci."
+
+[catalog.retman_results_list]
+summary = "Wypisz ponumerowane wyniki zapisane w folderze projektu."
+description = "Czyta folder wyników bieżącego katalogu (ustawienie `output.results_dir`): numer, operację, powodzenie i podsumowanie każdego wyniku w kolejności numerów. Służy do znalezienia numeru wyniku, do którego odwołuje się późniejsze polecenie. Niczego w projekcie nie zmienia. Nie służy do szczegółów jednego przebiegu: czytaj jego folder."
+rules = [
+  "Uruchamiaj w folderze projektu: wyniki należą do folderu.",
+]
+
+[catalog.retman_results_list.options.config]
+description = "Plik ustawień (nogat.toml); domyślnie folder ustawień użytkownika albo NOGAT_CONFIG."
+
+[catalog.retman_results_list.options.limit]
+description = "Liczba wyników na stronie; z nią wynik ma `page`."
+
+[catalog.retman_results_list.options.cursor]
+description = "Wartość `page.next_cursor` poprzedniej strony, podana bez zmian."
+
+[catalog.retman_journal_show]
+summary = "Pokaż dziennik zdarzeń folderu projektu."
+description = "Czyta dziennik folderu wyników: polecenia, pytania, odpowiedzi, plany, zatwierdzenia i wykonania w kolejności, w jakiej się zdarzyły. Służy do sprawdzenia, o co pytano i co wykonano. Poleceń i odpowiedzi nie ma, gdy `log.journal_commands` jest wyłączone. Nie służy do wyników: użyj `results list`."
+rules = [
+  "Przeglądaj stronami przez `cursor`: najnowsze zdarzenia są na ostatniej stronie.",
+]
+
+[catalog.retman_journal_show.options.config]
+description = "Plik ustawień (nogat.toml); domyślnie folder ustawień użytkownika albo NOGAT_CONFIG."
+
+[catalog.retman_journal_show.options.limit]
+description = "Liczba zdarzeń na stronie; z nią wynik ma `page`."
+
+[catalog.retman_journal_show.options.cursor]
+description = "Wartość `page.next_cursor` poprzedniej strony, podana bez zmian."
+
+[catalog.retman_commands_list]
+summary = "Wypisz polecenia katalogu."
+description = "Jedna linia na polecenie: nazwa, `operation_id`, opis i informacja, czy tylko czyta. Użyj najpierw. Nie służy do opcji: użyj `commands schema`."
+rules = [
+  "Nie zgaduj opcji: czytaj `commands schema`.",
+]
+
+[catalog.retman_commands_list.options.limit]
+description = "Liczba poleceń na stronie; z nią wynik ma `page`."
+
+[catalog.retman_commands_list.options.cursor]
+description = "Wartość `page.next_cursor` poprzedniej strony, podana bez zmian."
+
+[catalog.retman_commands_schema]
+summary = "Opisz polecenie: opcje, wynik, skutki, zasady, przykłady i błędy."
+description = "Wpis `retman-commands/1` jednego polecenia albo wszystkich stronami. Opcje mają typ, jednostkę, granice, wartości z objaśnieniami, rolę ścieżki i grupę wykluczania; skutki mówią, czy polecenie zapisuje albo używa sieci. Użyj przed wywołaniem polecenia. Nie służy do listy nazw: użyj `commands list`."
+rules = [
+  "Przed poleceniem, które zapisuje, przeczytaj `effects` i `errors`.",
+]
+
+[catalog.retman_commands_schema.options.command]
+description = "Nazwa polecenia („plan run”) albo jego operation_id; bez niej wszystkie polecenia, stronami."
+
+[catalog.retman_commands_schema.options.limit]
+description = "Liczba poleceń na stronie; z nią wynik ma `page`."
+
+[catalog.retman_commands_schema.options.cursor]
+description = "Wartość `page.next_cursor` poprzedniej strony, podana bez zmian."
+
+[catalog.retman_commands_guide]
+summary = "Wypisz albo zapisz AGENTS.md, llms.txt lub blok dla innego repozytorium."
+description = "Składa przewodniki dla agentów z katalogu poleceń i rejestru błędów. `output` zapisuje plik (zastępuje go tylko z `force`); `inject` zastępuje blok Retmana w AGENTS.md repozytorium, które używa Retmana, za każdym razem tak samo. Użyj do odświeżenia plików generowanych; nigdy nie edytuj ich ręcznie. Nie służy do poznania jednego polecenia: użyj `commands schema`."
+rules = [
+  "Z `output` albo `inject` najpierw uruchom `check`.",
+]
+
+[catalog.retman_commands_guide.options.format]
+description = "Który przewodnik złożyć."
+
+[catalog.retman_commands_guide.options.format.meanings]
+agents = "AGENTS.md: pełny przewodnik dla agentów, które używają Retmana"
+llms = "llms.txt: streszczenie i odsyłacze w układzie llmstxt.org"
+agents-md-block = "zwarty blok do AGENTS.md innego repozytorium"
+
+[catalog.retman_commands_guide.options.output]
+description = "Plik do zapisu zamiast wypisania przewodnika."
+
+[catalog.retman_commands_guide.options.inject]
+description = "AGENTS.md, w którym zostaje zastąpiony blok Retmana (plik powstaje, jeśli go nie ma); wymaga formatu `agents-md-block`."
+
+[catalog.retman_commands_guide.options.check]
+description = "Plan bez skutków: pokaż, co zostałoby zapisane, i zatrzymaj się."
+
+[catalog.retman_commands_guide.options.force]
+description = "Zastąp plik z `output`, jeśli istnieje."
+
+[catalog.retman_eval_run]
+summary = "Zmierz, jak model wybiera operacje i wartości na zbiorze poleceń."
+description = "Planuje każde polecenie zbioru bez wykonywania czegokolwiek, potem raportuje trafność, błędnie przyjęte wartości, ciche zgadywanie, naruszenia W-03, czasy i zalecane progi pewności. Użyj po zmianie modelu albo opisów. Wymaga serwera modelu. Nie służy do planowania jednego polecenia: użyj `plan run` z `check`."
+rules = [
+  "Najpierw `doctor check`: serwer modelu musi odpowiadać.",
+  "Nieudana jednostka w `items` to polecenie, które trzeba było odrzucić, a zaplanowano je.",
+]
+
+[catalog.retman_eval_run.options.config]
+description = "Plik ustawień (nogat.toml); domyślnie folder ustawień użytkownika albo NOGAT_CONFIG."
+
+[catalog.retman_eval_run.options.commands]
+description = "Plik JSONL z poleceniami; domyślnie zbiór dostarczony z Retmanem."
+
+[catalog.retman_eval_run.options.operations]
+description = "Oceń tylko polecenia, które oczekują tych operacji (opcję można powtórzyć)."
+
+[catalog.retman_eval_run.options.tags]
+description = "Oceń tylko polecenia z którymś z tych tagów (opcję można powtórzyć)."
+
+[catalog.retman_eval_run.options.repeat]
+description = "Zaplanuj każde polecenie tyle razy (stabilność modelu)."
+
+[catalog.retman_eval_run.options.target_error]
+description = "Dopuszczalny odsetek błędnych decyzji przyjętych bez pytania, w (0, 1]; dodaje zalecane progi."
+
+[catalog.retman_eval_run.options.output]
+description = "Plik na surowy zapis każdego przebiegu (JSON lines)."
+
+[catalog.retman_eval_run.options.report]
+description = "Plik na raport Markdown; bez niego raport jest wypisywany."
+
+[catalog.retman_eval_run.options.check]
+description = "Plan bez skutków: pokaż, co zostałoby zapisane, i zatrzymaj się."
+
+[catalog.retman_eval_run.options.force]
+description = "Zastąp `output` i `report`, jeśli istnieją."
+
+[catalog.retman_scaffold_check]
+summary = "Porównaj opisy narzędzi z zainstalowanymi narzędziami i zgłoś rozjazdy."
+description = "Wykonuje offline każde wywołanie, które da się zbudować z opisów, wobec zainstalowanego narzędzia i porównuje to, co narzędzie przyjmuje, z tym, co oferuje manifest (kontrole X1–X10). Każde narzędzie to jednostka w `items`. Użyj po aktualizacji narzędzia albo zmianie opisu. Nic nie jest pobierane ani zapisywane. Nie służy do oceny modelu: użyj `eval run`."
+rules = [
+  "Napraw ustalenia `error`; `warning` i `info` nie blokują pracy.",
+]
+
+[catalog.retman_scaffold_check.options.tool]
+description = "Sprawdź tylko te narzędzia (opcję można powtórzyć)."
+
+[catalog.retman_scaffold_check.options.operation]
+description = "Sprawdź tylko te operacje (opcję można powtórzyć)."
+
+[catalog.retman_scaffold_check.options.commands]
+description = "Plik JSONL z poleceniami, z których budowane są siatki; domyślnie zbiór dostarczony z Retmanem."
+
+[catalog.retman_scaffold_check.options.require_tools]
+description = "Niezainstalowane narzędzie jest błędem, a nie pominiętym narzędziem."
+
+[catalog.retman_scaffold_check.options.include_info]
+description = "Wypisz też ustalenia o ważności info."
+
+[catalog.retman_scaffold_list]
+summary = "Wypisz komendy danych katalogu narzędzia i operacje, które ich używają."
+description = "Czyta katalog zainstalowanego narzędzia i pokazuje każdą komendę danych z grupą, skutkami, operacjami, które ją wywołują, i sposobem użycia. Użyj, by znaleźć, co mogłaby obejmować nowa operacja. Narzędzie musi być zainstalowane. Nie służy do kontroli rozjazdów: użyj `scaffold check`."
+
+[catalog.retman_scaffold_list.options.tool]
+description = "Nazwa narzędzia."
+
+[catalog.retman_scaffold_draft]
+summary = "Naszkicuj operację z jednej komendy katalogu narzędzia, do ręcznego przeglądu."
+description = "Buduje punkt wyjścia nowej operacji: Python buildera wywołań i tabelę tłumaczeń. `write` zapisuje je w `src/retman/tools/<narzędzie>/_drafts/` i nigdy nie zastępuje pliku. Nie dla użytkowników, tylko do rozwijania Retmana."
+rules = [
+  "Przejrzyj każdy szkic: nic nie jest podłączane do rejestru za Ciebie.",
+]
+
+[catalog.retman_scaffold_draft.options.tool]
+description = "Nazwa narzędzia."
+
+[catalog.retman_scaffold_draft.options.command]
+description = "Komenda katalogu narzędzia, z której powstaje szkic, np. „elevation download”."
+
+[catalog.retman_scaffold_draft.options.fix]
+description = "Ustal opcję narzędzia na wartość, `nazwa=wartość` (opcję można powtórzyć)."
+
+[catalog.retman_scaffold_draft.options.only]
+description = "Zostaw w szkicu tylko te opcje narzędzia (opcję można powtórzyć)."
+
+[catalog.retman_scaffold_draft.options.id]
+description = "Identyfikator nowej operacji."
+
+[catalog.retman_scaffold_draft.options.write]
+description = "Zapisz szkic jako pliki zamiast go wypisać."
+
+[catalog.retman_scaffold_draft.options.check]
+description = "Plan bez skutków: pokaż pliki, które utworzyłby `write`, i zatrzymaj się."

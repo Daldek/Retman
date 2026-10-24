@@ -1,4 +1,4 @@
-"""Consumer-visible plan-only evaluation, metrics and report behavior."""
+"""Consumer-visible evaluation that plans without effects, metrics and the report."""
 
 import json
 from dataclasses import replace
@@ -7,12 +7,13 @@ from pathlib import Path
 import pytest
 from error_documents import last_line_document
 
+from retman import cli
 from retman.backends.base import Decision
 from retman.config import Thresholds, init_config, load_config
 from retman.eval.dataset import EvalCommand
 from retman.eval.metrics import recommend_threshold, summarize, threshold_curve
 from retman.eval.report import render_report
-from retman.eval.runner import main, run_evaluation
+from retman.eval.runner import run_evaluation
 from retman.i18n.loader import load_core_texts
 from retman.registry.loader import load_operations
 from retman.testing import FakeDecisionBackend
@@ -423,13 +424,13 @@ def test_cli_invalid_config_and_args_exit_with_registry_codes_and_no_partial_fil
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     output = tmp_path / "raw.jsonl"
+    absent = tmp_path / "absent.toml"
     assert (
-        main(["--config", str(tmp_path / "absent.toml"), "--output", str(output)]) == 3
+        cli.main(["eval", "run", "--config", str(absent), "--output", str(output)]) == 3
     )
     assert not output.exists()
-    assert main([]) == 2
-    assert main(["--config", "x", "--repeat", "0"]) == 2
-    assert main(["--config", "x", "--bad-option"]) == 2
+    assert cli.main(["eval", "run", "--repeat", "0"]) == 2
+    assert cli.main(["eval", "run", "--config", "x", "--bad-option"]) == 2
     captured = capsys.readouterr()
     assert "Błąd" not in captured.out
     document = last_line_document(captured.err)

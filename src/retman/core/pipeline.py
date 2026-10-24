@@ -37,6 +37,7 @@ from retman.core.journal import Journal, sha256_file, utc_now
 from retman.core.plan import Plan, PlanValue, Source
 from retman.core.result import Result
 from retman.core.workspace import Workspace, WorkspaceFile
+from retman.environment import OptionValue
 from retman.exceptions import (
     CheckNotConfirmedError,
     InvalidModelAnswerError,
@@ -131,9 +132,14 @@ class Retman:
         *,
         backend: DecisionBackend | None = None,
         project_dir: Path | None = None,
+        options: Mapping[str, OptionValue] | None = None,
     ) -> "Retman":
-        """Load the central config; permit an injected offline decision backend."""
-        config = load_config(path)
+        """Load the central config; permit an injected offline decision backend.
+
+        ``options`` are the settings given by command-line options (``--lang``,
+        ``--verbose``; :func:`retman.environment.cli_options`).
+        """
+        config = load_config(path, options=options)
         texts = load_core_texts(config.language)
         return cls(
             config,
@@ -199,7 +205,7 @@ class Retman:
                     code="missing_dependency",
                     details={"reason": "tool_not_installed", "tool": operation.tool},
                     hint="Install the tool in the environment of Retman; "
-                    "`retman doctor` lists the supported versions.",
+                    "`retman doctor check` lists the supported versions.",
                     text=self.texts.get(
                         "errors.tool_import", tool=operation.tool, error=err
                     ),
@@ -288,8 +294,8 @@ class Retman:
                 "No operation is available",
                 code="missing_dependency",
                 details={"reason": "no_operations"},
-                hint="Install a supported tool (`retman doctor` lists them) or check "
-                "the `adapters` setting.",
+                hint="Install a supported tool (`retman doctor check` lists them) "
+                "or check the `adapters` setting.",
                 text=self.texts.get("dialog.no_operations"),
             )
         self._memo = {}

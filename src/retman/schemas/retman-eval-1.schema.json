@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-eval-1.schema.json",
+  "title": "retman-eval/1",
+  "description": "The measures of an evaluation of the model on the command set; the envelope lists the commands that had to be refused as units. It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "commands",
+    "runs",
+    "repeat",
+    "target_error",
+    "overall",
+    "violations"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-eval/1"
+    },
+    "commands": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "runs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "repeat": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "target_error": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "overall": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "null"
+        ]
+      }
+    },
+    "recommendations": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "violations": {
+      "type": "array"
+    },
+    "files": {
+      "type": "array",
+      "description": "Files the command wrote (DEV-19.19), added by the envelope.",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "size_bytes",
+          "sha256",
+          "status"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "status": {
+            "enum": [
+              "written",
+              "replaced"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

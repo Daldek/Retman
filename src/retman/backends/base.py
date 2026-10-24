@@ -37,7 +37,7 @@ class DecisionBackend(Protocol):
 
     @property
     def url(self) -> str:
-        """Server address (shown in the plan audit and by ``retman doctor``)."""
+        """Server address (shown in the plan audit and by ``retman doctor check``)."""
         ...
 
     @property

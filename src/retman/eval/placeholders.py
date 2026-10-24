@@ -1,6 +1,6 @@
 """Placeholder geometry files for the evaluation of commands that name a file.
 
-``retman-eval`` plans every command in an empty temporary project, where the file
+``retman eval run`` plans every command in an empty temporary project, where the file
 a command names ("dla obszaru z pliku granica.shp") does not exist and Retman
 would ask for the area instead of planning. These writers create a minimal but
 real file in its place: a Shapefile (``.shp``, ``.shx``, ``.dbf``, ``.prj``) or a

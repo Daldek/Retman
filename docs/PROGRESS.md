@@ -10,16 +10,16 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 |---|---|---|
 | Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-021) | done, Polish | translation to English pending (ECO-005), see Next 1.5; open questions: PRD ch. 11, ARCHITECTURE ch. 12 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
-| Registry, command layer, data kinds, `retman-scaffold` | done | ADR-013, ADR-019 |
+| Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
 | Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins commits `8e9bcbb` (Kartograf) and `0d98f3b` (IMGWTools) until the tags `v0.8.0` and `v3.0.0` exist |
 | Extractors | in progress | missing: numbers with units; the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
-| CLI: conversation, `init`, `config show`, `doctor`, `results`, `log` | done | ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
-| `retman-eval` and the 614-command set | in progress | code done; the last run was on the old 83-command set |
+| CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
+| `retman eval run` and the 614-command set | in progress | code done; the last run was on the old 83-command set |
 | Nogat standard 2.1, structure and tooling | done | branch `chore/nogat-2.1`: gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
 | Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
 | Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
-| Nogat standard 2.1, agent interfaces | planned | see Next 1.1 |
+| Nogat standard 2.1, agent interfaces | done | ADR-022: catalog, `retman.operations`, the CLI generated from the catalog, `retman-result/1`, schemas in `src/retman/schemas/`, generated `AGENTS.md` and `llms.txt`; the English texts of the machine documents are Next 8 |
 | Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file; open: Next 1.2 to 1.5 |
 | Gate | green | `scripts/gate.sh`: 2713 offline tests, coverage 95%, ruff, mypy strict; run it with `TMPDIR` on a local disk (a network share breaks SQLite and links) |
 | CI (Linux, macOS, Windows) | written, not run | `.github/workflows/ci.yml` and `live.yml`; nothing is pushed |
@@ -40,40 +40,16 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
    green before each; the source of the rules is the Nogat branch `feature/data-output`,
    `git -C ~/workspace/Nogat show feature/data-output:standards/<file>`; Hydrolog's and
    Kartograf's branches `chore/nogat-2.1` are the reference implementations). Order of
-   work: 1.1, then 1.2 to 1.5. ADR numbers: 0022 agent interfaces (1.1), 0023 structure,
+   work: 1.2 to 1.5 (1.1, the agent interfaces, is done: ADR-022). ADR numbers: 0023 structure,
    gate, CI, test tree, mypy deviation, technical log on stderr (1.4); ADR-020 is the error
-   registry and ADR-021 the user environment. New ADRs are English files in
-   `docs/decisions/`; the Polish index in `docs/DECISIONS.md` gets a row each.
-   1. **Agent interfaces** (profile `tool`; the registry lists CLI and Python, no MCP, no REST;
-      commit `feat(agents)!`). Decided: AGI-3.1 asks for one executable, so `retman-eval` and
-      `retman-scaffold` become groups of `retman` and leave `[project.scripts]` (no aliases).
-      Planned catalog `retman-commands/1`: `plan run` (the conversation: `--check` replaces
-      `--plan-only`, `--yes` confirms, `--explain`, `--json` never prompts, AGI-3.5),
-      `config show`, `config init`, `doctor check`, `results list`, `journal show`,
-      `commands list|schema|guide`, `eval run`, `scaffold check|list|draft`; `list_commands`,
-      `command_schema`, `validate_command`, `check_command`, `run_command` in `retman.__all__`
-      (AGI-2.1, AGI-7.1) with the error classes; envelope `retman-result/1` (AGI-4.2; the
-      outcomes `partial` and `failed` of `retman.outcomes` print it, `doctor` and `eval` list
-      their units in `items`); `--lang`; generated `AGENTS.md` and `llms.txt` from
-      `src/retman/_data/agents/` (AGI §8, DOC §4, DOC §5, `commands guide --format
-      agents|llms|agents-md-block`); contract tests (schemas via `tests/contract/nogat_schemas.py`,
-      freshness, budgets of DOC-1.7, `__all__` and a consumer snippet checked by mypy; patterns
-      in Hydrolog's `tests/contract`); `--help` texts from translation files (AGI-3.7). Consume
-      tools through the catalog functions where possible: the only direct `DownloadManager` path is
-      the orthophoto handler (`src/retman/tools/kartograf/handlers.py`). Then the hints that name
-      `retman init`, `retman-eval` or `retman-scaffold --check` (`src/retman/exceptions.py`,
-      `adapters/catalog.py`, `pl.toml`) and `cli._input_required` (name `--yes` and `--check`).
-      The user-environment commit left in `cli.py` a second positional word (`retman config
-      show`, `args.subcommand`) and bare `--json` documents for `config show` and `doctor`:
-      replace both by the groups and the envelope; `config init` is today's `retman init`
-      (`initialize.run_init`, `config.init_config`); `Environment`/`KEYS` of
-      `retman.environment` are the place for an option layer (`--lang`, `--verbose`).
+   registry, ADR-021 the user environment and ADR-022 the agent interfaces. New ADRs are English
+   files in `docs/decisions/`; the Polish index in `docs/DECISIONS.md` gets a row each.
    2. `docs: CLAUDE.md` in English within 200 lines (DOC-3.1): profile `tool` (DEV-1.1),
       critical rules, environment and commands (`scripts/gate.sh`), code map, documentation
       map, session workflow, link to the Retman entry of Nogat `ecosystem.yaml`, and a
       **Deviations** section (DEV-1.2) that keeps the DEV-7.3 line now in the Polish
-      `CLAUDE.md` and adds DEV-18.2 (journal and results in the project folder, ADR-021) and
-      DEV-2.2 (texts only in Polish, `lang = en` accepted and shown as Polish, ADR-021). Then
+      `CLAUDE.md` and adds DEV-18.2 (journal and results in the project folder, ADR-021); the
+      Polish-only texts are no deviation (Main's decision; see item 8). Then
       `git rm docs/DEVELOPMENT_STANDARDS.md` (DEV-1.3). What is project-specific there must
       move: the checklists of section 17 (new operation, kind, backend, extractor) to a new
       last chapter of `docs/ARCHITECTURE.md`; the rules of sections 6.4 (run the CLI outside
@@ -122,9 +98,12 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 6. Complete `docs/specs/2026-10-11-retman-eval.md`: geometry placeholder files, the offline
    station catalog, optional parameters never in `expect_clarify`.
 7. `retman collect export` and `retman collect draft` (ADR-011) when the author decides.
-8. English texts for the human-readable output (`lang = en` is accepted and shows Polish today;
-   DEV-2.2, AGI-9.2): the core `pl.toml` (about 650 lines), the translations of the tools and the
-   plan and result texts; then drop the DEV-2.2 deviation line of `CLAUDE.md`.
+8. English texts for the human-readable output and for the texts inside the `--json` documents of
+   `doctor check`, `scaffold check` and `eval run` (AGI-9.2; `lang = en` is accepted and shows Polish
+   today): an `en.toml` for the core `pl.toml` (about 650 lines) and for the tools in
+   `src/retman/tools/*/`; `text_language` and `machine_texts` in `retman.i18n.loader` switch when it
+   exists. Then replace the old command names (`retman init`, `retman doctor`, `retman-eval`,
+   `retman-scaffold`, `--plan-only`) that ARCHITECTURE, PRD and the specs still use (item 1.5).
 
 ## Open questions
 

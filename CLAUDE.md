@@ -7,7 +7,7 @@ Działa jako CLI `retman` i biblioteka Python; model językowy jest osobną usł
 (basal-serve albo serwer zgodny z API OpenAI). Wprowadzenie: `README.md`.
 
 **Stan:** przed v0.1.0 — rdzeń z warstwą komend (podgląd offline planu, sprawdzenie dostępności
-na życzenie), CLI, `retman doctor`, `retman-eval`, `retman-scaffold` (`list`, `draft`, `--check`),
+na życzenie), jedno CLI `retman <grupa> <czasownik>` (`plan run`, `config`, `doctor check`, `results list`, `journal show`, `commands`, `eval run`, `scaffold`),
 backend `openai_compatible` (sprawdzony z Bielikiem 11B w LM Studio) oraz adaptery Kartografa 0.8.0
 (4 operacje) i IMGWTools 3.0.0 (26 operacji, rozpoznawanie dwustopniowe); decyzje ADR-001–019;
 bieżący stan i backlog w `docs/PROGRESS.md`. Obowiązują `docs/PRD.md` i `docs/ARCHITECTURE.md`.
@@ -63,7 +63,7 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 |---|---|
 | Stan prac, ostatnia sesja, backlog | `docs/PROGRESS.md` |
 | Jak się pracuje z Retmanem (CLI, Python, przykłady) | `docs/USAGE.md` |
-| Specyfikacje komponentów (np. `retman-eval`), plany, raporty z badań (nazwy `YYYY-MM-DD-<temat>.md`, STANDARDS 7.1) | `docs/specs/`, `docs/plans/`, `docs/research/` |
+| Specyfikacje komponentów (np. `retman eval run`), plany, raporty z badań (nazwy `YYYY-MM-DD-<temat>.md`, STANDARDS 7.1) | `docs/specs/`, `docs/plans/`, `docs/research/` |
 | Workflow sesji, kolejność lektury | `docs/DEVELOPMENT_STANDARDS.md` 15 |
 | Środowisko, komendy testów/lint/mypy/eval, gdzie uruchamiać CLI | STANDARDS 6 |
 | Git, commity, język, testy, wyjątki, logging, bezpieczeństwo (zasady) | STANDARDS 1–2, 9–12, 14 |
@@ -74,13 +74,13 @@ Główne źródło konwencji i procesu: `docs/DEVELOPMENT_STANDARDS.md`.
 | Zasady projektowe, język kodu i tekstów | `docs/ARCHITECTURE.md` 1 |
 | Przebieg polecenia (kroki ①–⑥) | ARCHITECTURE 2 |
 | Moduły pakietu | ARCHITECTURE 3.1 |
-| Adaptery narzędzi: manifest, warstwa komend (`calls`, klient, podgląd, sprawdzenie), handler, wspólny adapter, `kind`, wersje, `retman-scaffold` | ARCHITECTURE 3.2 |
+| Adaptery narzędzi: manifest, warstwa komend (`calls`, klient, podgląd, sprawdzenie), handler, wspólny adapter, `kind`, wersje, `retman scaffold` | ARCHITECTURE 3.2 |
 | Modele: `DecisionBackend`/`TextBackend`, backendy, pewność, ograniczenia basala | ARCHITECTURE 3.3–3.4 |
 | Manifest, tłumaczenia, typy parametrów, prawdopodobieństwo, łańcuchy | ARCHITECTURE 4 |
 | Przestrzeń robocza, numery wyników, dziennik i ślad audytowy | ARCHITECTURE 5 |
 | Dopytywanie, progi pewności, plan, rozmowa w terminalu, kody wyjścia, sprawdzenie dostępności | ARCHITECTURE 6 |
-| CLI, API Pythona, `retman doctor`, `Result`, GUI | ARCHITECTURE 7 |
-| Zbiór testowy, miary jakości, `retman-eval`, testy | ARCHITECTURE 8 |
+| CLI, API Pythona, `retman doctor check`, `Result`, GUI | ARCHITECTURE 7 |
+| Zbiór testowy, miary jakości, `retman eval run`, testy | ARCHITECTURE 8 |
 | `nogat.toml` (`[retman]`), zmienne `RETMAN_*`, sprzęt, pakiet, instalacja | ARCHITECTURE 9, ADR-021 |
 | Bezpieczeństwo i prywatność | ARCHITECTURE 10 |
 | Komponenty w wersjach, otwarte kwestie techniczne | ARCHITECTURE 11–12 |

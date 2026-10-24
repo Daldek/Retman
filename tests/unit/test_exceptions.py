@@ -113,7 +113,8 @@ def test_a_language_other_than_pl_or_en_is_refused() -> None:
 
 
 def _check(status: str, *, blocking: bool = False) -> Check:
-    return Check(status, "text", blocking=blocking)  # type: ignore[arg-type]
+    code = "io_error" if blocking else None
+    return Check(status, "text", blocking=blocking, code=code)  # type: ignore[arg-type]
 
 
 def test_doctor_is_partial_when_a_check_blocks_and_failed_when_none_passed() -> None:

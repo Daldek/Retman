@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-guide-1.schema.json",
+  "title": "retman-guide/1",
+  "description": "A guide for agents: the text itself, or the size of the file that was written. It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "format"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-guide/1"
+    },
+    "format": {
+      "enum": [
+        "agents",
+        "llms",
+        "agents-md-block"
+      ]
+    },
+    "text": {
+      "type": "string"
+    },
+    "lines": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "files": {
+      "type": "array",
+      "description": "Files the command wrote (DEV-19.19), added by the envelope.",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "size_bytes",
+          "sha256",
+          "status"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "status": {
+            "enum": [
+              "written",
+              "replaced"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

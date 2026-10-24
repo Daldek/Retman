@@ -3,7 +3,7 @@
 A *point* is a complete parameter set as the pipeline would hand it to the
 builder: every choice and yes/no parameter that applies has a value (an optional
 one may also stay unset), the free parameters come from *samples*, the free
-values of the operation's complete rows in the ``retman-eval`` dataset. The
+values of the operation's complete rows in the eval command set. The
 choices form a cartesian product pruned by ``depends_on``; this is a superset of
 what the tool accepts by construction (a pair like 5 m + KRON86 is in it), which
 is why the check classifies rejections instead of failing on them.

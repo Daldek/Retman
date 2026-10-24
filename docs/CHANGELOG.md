@@ -134,6 +134,19 @@ Linki porównań na końcu pliku, od najnowszego:
 
 ### Zmienione
 
+- **Breaking: agent interfaces** (AGI, ADR-022). One executable `retman <group> <verb>` generated from a
+  command catalog; `retman commands list|schema|guide` serve the catalog and the guides for agents;
+  `--json` prints the envelope `retman-result/1` (the outcomes `partial` and `failed` print it too, with
+  `items`); `--lang`, `--verbose` and `--quiet` are the option layer of the settings. Migration:
+  `retman "<text>"` is `retman plan run --text "<text>"`, `--plan-only` is `--check` (and `--yes` runs a
+  complete plan without a terminal), `retman init` is `retman config init`, `retman doctor` is
+  `retman doctor check`, `retman results` is `retman results list`, `retman log` is `retman journal show`,
+  `retman-eval` is `retman eval run` (`--output` and `--report` need `--force` to replace a file) and
+  `retman-scaffold` is `retman scaffold check|list|draft` (`-v` is `--include-info`, a list is given by
+  repeating the flag). The bare JSON of `config show` and `doctor` is the `result` of the envelope.
+- `list_commands`, `command_schema`, `validate_command`, `check_command` and `run_command` are the public
+  API, with the error classes and the registry (`retman.__all__`); `AGENTS.md` and `llms.txt` are generated
+  from the catalog; the JSON Schemas of the documents are shipped in `retman/schemas/` (ADR-022).
 - **Breaking: the settings are the `[retman]` tables of `nogat.toml`, read with the `RETMAN_*`
   variables** (DEV-18, ECO-028, ADR-021). `retman.toml` is no longer read: write the tables as
   `[retman.decision]`, `[retman.tools.kartograf]` and so on (`retman init` writes them into

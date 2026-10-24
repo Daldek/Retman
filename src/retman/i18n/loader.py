@@ -55,6 +55,19 @@ class Texts:
             raise TranslationError(f"{self.source}: missing table {key!r}")
         return value
 
+    def lines(self, key: str) -> list[str]:
+        """List of texts under ``key`` (a TOML array of strings).
+
+        Raises
+        ------
+        TranslationError
+            The key is missing or is not an array of texts.
+        """
+        value = self._lookup(key)
+        if not isinstance(value, list) or not all(isinstance(i, str) for i in value):
+            raise TranslationError(f"{self.source}: missing list of texts {key!r}")
+        return list(value)
+
     def _lookup(self, key: str) -> Any:
         node: Any = self._data
         for part in key.split("."):
@@ -105,3 +118,13 @@ def text_language(lang: str) -> str:
     """
     resource = resources.files("retman.i18n").joinpath(f"{lang}.toml")
     return lang if resource.is_file() else "pl"
+
+
+def machine_texts() -> Texts:
+    """Return the texts that machine output carries: English (AGI-9.2).
+
+    The English texts are not written yet (:func:`text_language`), so the texts that
+    a document holds are Polish until they are; this is the one place that changes
+    when they are.
+    """
+    return load_core_texts(text_language("en"))

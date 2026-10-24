@@ -1,11 +1,12 @@
-"""``retman init``: the ``[retman]`` tables, the store folders and the IMGWTools store.
+"""``retman config init`` in a terminal: questions, store folders, the IMGWTools store.
 
-Questions are asked only in a terminal; without one the tables are written with the
-visible default paths and nothing else is created (ADR-010 for the command
-collection, the same rule here for the folders and the IMGWTools store).
+The tables themselves are written by the operation
+:func:`retman.operations.config_init` (also without a terminal); here a terminal
+session asks what the options did not answer, makes the folders the tables will name
+and offers to initialise the IMGWTools store (ADR-010 for the command collection, the
+same rule for the folders and the store: nothing is done without the user's word).
 """
 
-import sys
 from pathlib import Path
 
 from retman.config import (
@@ -19,6 +20,7 @@ from retman.config import (
 from retman.environment import Environment, environment
 from retman.exceptions import RetmanError
 from retman.i18n.loader import Texts
+from retman.operations.config import init_lines
 from retman.outcomes import report_error
 from retman.stores import hardlink_error, init_imgw_store, tool_installed
 
@@ -106,13 +108,19 @@ def _offer_imgw_store(store: Path, texts: Texts) -> int:
     return report_error(refused, text=text)
 
 
-def run_init(config_path: Path | None, texts: Texts) -> int:
-    """Write the ``[retman]`` tables; in a terminal also set the tool stores up.
+def run_init(
+    config_path: Path | None,
+    texts: Texts,
+    *,
+    collect_commands: bool | None = None,
+    stores_dir: Path | None = None,
+) -> int:
+    """Write the ``[retman]`` tables after the questions of a terminal session.
 
-    In a terminal the user is asked whether to collect commands (ADR-010), which
-    folder should hold the stores of the tools (Kartograf's and IMGWTools',
-    side by side on one disk) and whether to initialise the IMGWTools store now.
-    The folders are created before the file is written, so an unusable folder
+    The user is asked whether to collect commands (ADR-010) and which folder should
+    hold the stores of the tools (Kartograf's and IMGWTools', side by side on one
+    disk), unless the options already say; then whether to initialise the IMGWTools
+    store. The folders are created before the file is written, so an unusable folder
     leaves no settings behind.
 
     Parameters
@@ -122,6 +130,10 @@ def run_init(config_path: Path | None, texts: Texts) -> int:
         configuration folder of ``nogat``.
     texts : Texts
         Core texts.
+    collect_commands : bool, optional
+        The answer given by ``--collect-commands``; asked when ``None``.
+    stores_dir : Path, optional
+        The folder given by ``--stores-dir``; asked when ``None``.
 
     Returns
     -------
@@ -137,31 +149,25 @@ def run_init(config_path: Path | None, texts: Texts) -> int:
     """
     env = environment(config_path)
     target = init_target(env)  # before any question: the answers would be lost
-    interactive = sys.stdin.isatty()
-    collect = False
-    stores_dir: Path | None = None
-    if interactive:
+    collect = collect_commands
+    if collect is None:
         print(texts.get("cli.collect_question", path=default_collect_path(env)))
         collect = input(texts.get("cli.collect_prompt")).strip().lower() in _YES
-        stores_dir = _ask_stores_dir(texts, env)
-    paths = tool_paths(env, stores_dir)
-    if interactive and (failed := _create_folders(paths, texts)) is not None:
+    chosen = stores_dir if stores_dir is not None else _ask_stores_dir(texts, env)
+    paths = tool_paths(env, chosen)
+    if (failed := _create_folders(paths, texts)) is not None:
         return failed
-    print(init_config(target, collect_commands=collect, stores_dir=stores_dir))
+    written = init_config(target, collect_commands=collect, stores_dir=chosen)
     print(
-        texts.get(
-            "cli.collect_on" if collect else "cli.collect_off",
-            path=default_collect_path(env),
+        "\n".join(
+            init_lines(
+                texts,
+                target=written,
+                collect_commands=collect,
+                collect_path=default_collect_path(env),
+                paths=paths,
+                created=True,
+            )
         )
     )
-    print(
-        texts.get(
-            "init.stores_summary",
-            kartograf=paths.kartograf_store,
-            imgwtools=paths.imgwtools_store,
-        )
-    )
-    if not interactive:
-        print(texts.get("init.not_created"))
-        return 0
     return _offer_imgw_store(paths.imgwtools_store, texts)

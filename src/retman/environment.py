@@ -1,9 +1,10 @@
 """The sources of the settings of Retman: ``nogat.toml``, variables, user directories.
 
-A setting comes from the first of: the command-line option (no setting has one
-yet), the variable ``RETMAN_<KEY>``, the shared variable ``NOGAT_<KEY>`` (shared
-keys only), the table ``[retman]`` of ``nogat.toml``, the table ``[nogat]`` of it
-(shared keys only) and the built-in default (DEV-18.1, ECO-028). ``<KEY>`` is the
+A setting comes from the first of: the command-line option (``--lang``, ``--verbose``
+and ``--quiet`` are the only ones, :func:`cli_options`), the variable
+``RETMAN_<KEY>``, the shared variable ``NOGAT_<KEY>`` (shared keys only), the table
+``[retman]`` of ``nogat.toml``, the table ``[nogat]`` of it (shared keys only) and the
+built-in default (DEV-18.1, ECO-028). ``<KEY>`` is the
 dotted key in capitals with ``_`` for ``.``: ``decision.url`` is
 ``RETMAN_DECISION_URL``. An empty variable counts as unset. The shared keys are
 ``lang``, ``log_level``, ``data_dir`` and ``cache_dir``.
@@ -31,6 +32,8 @@ from typing import Any, Final, Literal, cast
 
 import platformdirs
 
+from retman.exceptions import UsageError
+
 logger = logging.getLogger(__name__)
 
 APP: Final = "nogat"
@@ -40,7 +43,7 @@ SHARED_PREFIX: Final = "NOGAT_"
 CONFIG_ENV: Final = "NOGAT_CONFIG"
 CONFIG_FILENAME: Final = "nogat.toml"
 
-SettingSource = Literal["default", "env", "file"]
+SettingSource = Literal["default", "env", "file", "option"]
 FileSource = Literal["default", "NOGAT_CONFIG", "option"]
 Kind = Literal[
     "choice",
@@ -68,7 +71,7 @@ TEXT_BACKENDS: Final[tuple[str, ...]] = ("none",)
 # update modes of a download ("check" never downloads, so it is not a setting)
 KARTOGRAF_UPDATE_MODES: Final[tuple[str, ...]] = ("local", "upgrade", "force")
 
-# Folder names of the two tool stores inside the folder chosen in ``retman init``
+# Folder names of the two tool stores inside the folder chosen in ``config init``
 KARTOGRAF_STORE_NAME: Final = "kartograf"
 IMGWTOOLS_STORE_NAME: Final = "imgw"
 
@@ -183,13 +186,13 @@ class ConfigFile:
 class Found:
     """A setting found outside the built-in default.
 
-    ``value`` is the raw value (the text of a variable, the TOML value of a file),
-    ``name`` the variable (``RETMAN_DECISION_URL``) or the table
-    (``[retman.decision]``).
+    ``value`` is the raw value (the text of a variable, the TOML value of a file, the
+    value of an option), ``name`` the option (``--lang``), the variable
+    (``RETMAN_DECISION_URL``) or the table (``[retman.decision]``).
     """
 
     value: Any
-    source: Literal["env", "file"]
+    source: Literal["env", "file", "option"]
     name: str
 
 
@@ -209,6 +212,14 @@ class Setting:
     name: str | None
     error: str | None = None
     given: Found | None = None
+
+
+@dataclass(frozen=True)
+class OptionValue:
+    """The value of a setting given by a command-line option, and the option's name."""
+
+    value: Any
+    flag: str
 
 
 def read_config_file(
@@ -369,14 +380,22 @@ def _coerce(key: Key, raw: object, *, parse: bool) -> object:
 
 
 class Environment:
-    """The sources of the settings: ``nogat.toml`` and the process environment.
+    """The sources of the settings: options, ``nogat.toml`` and the environment.
 
     :meth:`setting` resolves one key by the order of DEV-18.1 and remembers it.
+    ``options`` maps a key to the value of the command-line option that sets it
+    (:func:`cli_options`).
     """
 
-    def __init__(self, file: ConfigFile, environ: Mapping[str, str]) -> None:
+    def __init__(
+        self,
+        file: ConfigFile,
+        environ: Mapping[str, str],
+        options: Mapping[str, OptionValue] | None = None,
+    ) -> None:
         self.file = file
         self._environ = environ
+        self._options = options or {}
         self._settings: dict[str, Setting] = {}
 
     @property
@@ -395,7 +414,7 @@ class Environment:
         return cast(Path, self.setting("cache_dir").value)
 
     def lookup(self, key: Key) -> Found | None:
-        """Find ``key`` in the variables and in the file, in the order of DEV-18.1.
+        """Find ``key`` in the options, variables and file, in the order of DEV-18.1.
 
         Returns
         -------
@@ -403,6 +422,8 @@ class Environment:
             The first layer that holds a non-empty value, or ``None`` for the
             built-in default.
         """
+        if (option := self._options.get(key.name)) is not None:
+            return Found(option.value, "option", option.flag)
         variables = [key.variable]
         if key.shared:
             variables.append(SHARED_PREFIX + key.name.upper())
@@ -446,14 +467,57 @@ class Environment:
                 result = Setting(value, found.source, found.name)
             except _Invalid as why:
                 short = name.rpartition(".")[2]
-                label = found.name if found.source == "env" else f"{found.name} {short}"
+                label = (
+                    found.name if found.source != "file" else f"{found.name} {short}"
+                )
                 result = Setting(default, "default", None, f"{label}: {why}", found)
         self._settings[name] = result
         return result
 
 
+def cli_options(
+    *, lang: str | None = None, verbose: bool = False, quiet: bool = False
+) -> dict[str, OptionValue]:
+    """Return the settings that the options of a command line give (DEV-18.1).
+
+    Parameters
+    ----------
+    lang : str, optional
+        ``--lang``: the language of the human-readable output (``pl`` or ``en``).
+    verbose, quiet : bool, optional
+        ``--verbose`` sets ``log_level`` to ``debug``, ``--quiet`` to ``error``;
+        they exclude each other.
+
+    Returns
+    -------
+    dict
+        ``lang`` and ``log_level`` by the options that were given.
+
+    Raises
+    ------
+    UsageError
+        Both ``verbose`` and ``quiet`` are given.
+    """
+    if verbose and quiet:
+        raise UsageError(
+            "--verbose and --quiet exclude each other",
+            details={"reason": "exclusive_options", "options": ["verbose", "quiet"]},
+            hint="Give --verbose or --quiet, not both.",
+        )
+    options: dict[str, OptionValue] = {}
+    if lang is not None:
+        options["lang"] = OptionValue(lang, "--lang")
+    if verbose:
+        options["log_level"] = OptionValue("debug", "--verbose")
+    if quiet:
+        options["log_level"] = OptionValue("error", "--quiet")
+    return options
+
+
 def environment(
-    path: Path | None = None, environ: Mapping[str, str] | None = None
+    path: Path | None = None,
+    environ: Mapping[str, str] | None = None,
+    options: Mapping[str, OptionValue] | None = None,
 ) -> Environment:
     """Read the file and the environment once; see :class:`Environment`.
 
@@ -464,6 +528,8 @@ def environment(
         configuration folder of ``nogat``.
     environ : Mapping[str, str], optional
         The process environment; ``os.environ`` by default.
+    options : Mapping[str, OptionValue], optional
+        The settings given by command-line options (:func:`cli_options`).
     """
     variables = os.environ if environ is None else environ
-    return Environment(read_config_file(path, variables), variables)
+    return Environment(read_config_file(path, variables), variables, options)

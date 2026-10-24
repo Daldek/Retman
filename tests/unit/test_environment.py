@@ -8,9 +8,12 @@ from retman.environment import (
     BY_NAME,
     KEYS,
     ConfigFile,
+    OptionValue,
+    cli_options,
     environment,
     read_config_file,
 )
+from retman.exceptions import UsageError
 
 
 def write(folder: Path, text: str, name: str = "nogat.toml") -> Path:
@@ -79,6 +82,42 @@ def test_only_the_shared_keys_are_read_from_nogat_variables_and_table(
     assert env.setting("data_dir").value == Path("/shared/data")
     assert env.setting("log_level").value == "error"
     assert env.setting("decision.url").value is None
+
+
+def test_an_option_beats_every_other_layer_and_names_its_flag(tmp_path: Path) -> None:
+    file = write(tmp_path, '[retman]\nlog_level = "info"\n')
+    environ = {"RETMAN_LOG_LEVEL": "warning", "NOGAT_LOG_LEVEL": "error"}
+
+    setting = environment(file, environ, cli_options(verbose=True)).setting("log_level")
+
+    assert (setting.value, setting.source, setting.name) == (
+        "debug",
+        "option",
+        "--verbose",
+    )
+
+
+def test_the_log_options_and_the_language_option_give_their_settings() -> None:
+    assert cli_options() == {}
+    assert cli_options(verbose=True)["log_level"] == OptionValue("debug", "--verbose")
+    assert cli_options(quiet=True)["log_level"] == OptionValue("error", "--quiet")
+    assert cli_options(lang="en")["lang"] == OptionValue("en", "--lang")
+
+
+def test_verbose_and_quiet_exclude_each_other() -> None:
+    with pytest.raises(UsageError) as caught:
+        cli_options(verbose=True, quiet=True)
+
+    assert caught.value.details["reason"] == "exclusive_options"
+
+
+def test_an_option_value_that_cannot_be_used_is_explained_with_its_flag() -> None:
+    options = {"lang": OptionValue("de", "--lang")}
+
+    setting = environment(environ={}, options=options).setting("lang")
+
+    assert setting.source == "default" and setting.value == "pl"
+    assert setting.error is not None and setting.error.startswith("--lang:")
 
 
 def test_an_empty_variable_counts_as_unset(tmp_path: Path) -> None:

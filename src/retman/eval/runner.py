@@ -1,48 +1,24 @@
-"""Isolated plan-only evaluation and the retman-eval command-line entry point."""
+"""Isolated evaluation that plans without effects: the engine of ``retman eval run``."""
 
-import argparse
-import json
-import sys
 from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import monotonic
-from typing import Any, NoReturn
+from typing import Any
 
 from retman import __version__
 from retman.backends import build_decision_backend
 from retman.backends.base import Decision, DecisionBackend
 from retman.backends.openai_compatible import OpenAICompatibleBackend
-from retman.config import Config, load_config
+from retman.config import Config
 from retman.core.pipeline import Retman
-from retman.eval.dataset import (
-    DEFAULT_COMMANDS,
-    EvalCommand,
-    load_commands,
-    validate_commands,
-)
+from retman.eval.dataset import EvalCommand
 from retman.eval.metrics import EvalRecord, EvaluationSummary, summarize
 from retman.eval.offline import offline_clients
 from retman.eval.placeholders import create_geometry_files
-from retman.eval.report import render_report
-from retman.exceptions import (
-    BackendError,
-    ConfigError,
-    EvalDatasetError,
-    OutOfScopeError,
-    RetmanError,
-    Terminated,
-    UsageError,
-)
+from retman.exceptions import BackendError, OutOfScopeError, RetmanError, UsageError
 from retman.i18n.loader import load_core_texts
-from retman.outcomes import (
-    EXIT_CANCELLED,
-    EXIT_OK,
-    EXIT_PARTIAL,
-    report_error,
-    sigterm_as_exception,
-)
 from retman.registry.loader import load_operations
 from retman.registry.operation import Operation
 
@@ -347,141 +323,30 @@ def run_evaluation(
             close()
 
 
-class _Parser(argparse.ArgumentParser):
-    def error(self, message: str) -> NoReturn:
-        raise UsageError(message, hint="Run `retman-eval --help` for the options.")
-
-
-def _filter_commands(
-    commands: list[EvalCommand], operations: str | None, tags: str | None
+def filter_commands(
+    commands: Sequence[EvalCommand],
+    operations: Sequence[str] | None = None,
+    tags: Sequence[str] | None = None,
 ) -> list[EvalCommand]:
-    requested_ops = set(operations.split(",")) if operations is not None else None
-    requested_tags = set(tags.split(",")) if tags is not None else None
-    if requested_ops is not None:
-        requested_ops = {item.strip() for item in requested_ops}
-    if requested_tags is not None:
-        requested_tags = {item.strip() for item in requested_tags}
-    if "" in (requested_ops or set()) | (requested_tags or set()):
-        raise UsageError(
-            "A selection of operations or tags must not be empty",
-            details={"reason": "empty_selection"},
-        )
+    """Keep the commands that expect one of ``operations`` and carry one of ``tags``.
+
+    Parameters
+    ----------
+    commands : sequence of EvalCommand
+        The validated command set.
+    operations, tags : sequence of str, optional
+        The operations and the tags to keep; a filter that is absent keeps all.
+
+    Returns
+    -------
+    list of EvalCommand
+        The selection, in the order of the set.
+    """
+    requested_ops = set(operations) if operations is not None else None
+    requested_tags = set(tags) if tags is not None else None
     return [
         command
         for command in commands
         if (requested_ops is None or command.operation in requested_ops)
         and (requested_tags is None or requested_tags.intersection(command.tags))
     ]
-
-
-def main(
-    argv: list[str] | None = None,
-    *,
-    backend: DecisionBackend | None = None,
-    operations: dict[str, Operation] | None = None,
-) -> int:
-    """Evaluate a dataset without executing any operation.
-
-    Returns
-    -------
-    int
-        ``0``; ``10`` (``partial``) when a command that must be refused (W-03) was
-        planned; ``130`` when interrupted; else the exit code of the registry code
-        of the error, whose document is the last line of stderr.
-    """
-    with sigterm_as_exception():
-        return _evaluate(argv, backend=backend, operations=operations)
-
-
-def _evaluate(
-    argv: list[str] | None,
-    *,
-    backend: DecisionBackend | None,
-    operations: dict[str, Operation] | None,
-) -> int:
-    """Parse the arguments, evaluate and report; see :func:`main`."""
-    texts = load_core_texts("pl")
-    parser = _Parser(prog="retman-eval", description=texts.get("eval.cli_description"))
-    parser.add_argument("--config", type=Path, help=texts.get("eval.help_config"))
-    parser.add_argument("--commands", type=Path, help=texts.get("eval.help_commands"))
-    parser.add_argument("--operations", help=texts.get("eval.help_operations"))
-    parser.add_argument("--tags", help=texts.get("eval.help_tags"))
-    parser.add_argument(
-        "--repeat", type=int, default=1, help=texts.get("eval.help_repeat")
-    )
-    parser.add_argument(
-        "--target-error", type=float, help=texts.get("eval.help_target")
-    )
-    parser.add_argument("--output", type=Path, help=texts.get("eval.help_output"))
-    parser.add_argument("--report", type=Path, help=texts.get("eval.help_report"))
-    try:
-        args = parser.parse_args(argv)
-        if (
-            args.repeat < 1
-            or args.target_error is not None
-            and not 0 < args.target_error <= 1
-        ):
-            raise UsageError(
-                "--repeat must be positive and --target-error in (0, 1]",
-                details={"reason": "out_of_range", "option": "repeat"},
-                text=texts.get("eval.invalid_arguments"),
-            )
-        config = load_config(args.config)
-        texts = load_core_texts(config.language)
-        commands = load_commands(args.commands or DEFAULT_COMMANDS)
-        validate_commands(commands)
-        commands = _filter_commands(commands, args.operations, args.tags)
-        if not commands:
-            raise UsageError(
-                "The filters selected no command",
-                details={"reason": "empty_selection"},
-                text=texts.get("eval.empty_selection"),
-            )
-        records, summary = run_evaluation(
-            commands,
-            config,
-            backend=backend,
-            operations=operations,
-            repeat=args.repeat,
-            target_error=args.target_error,
-        )
-        report = render_report(summary, records, texts, target_error=args.target_error)
-        raw = "".join(
-            json.dumps(record, ensure_ascii=False) + "\n" for record in records
-        )
-        if args.output:
-            args.output.write_text(raw, encoding="utf-8", newline="\n")
-        if args.report:
-            args.report.write_text(report, encoding="utf-8", newline="\n")
-        else:
-            print(report, end="")
-        return EXIT_PARTIAL if summary.overall.w03.count else EXIT_OK
-    except (KeyboardInterrupt, EOFError):
-        print(texts.get("eval.interrupted"), file=sys.stderr)
-        return EXIT_CANCELLED
-    except Terminated as err:
-        return report_error(err)
-    except ConfigError as err:
-        lines = [
-            texts.get(
-                f"config.{problem}",
-                path=err.path,
-                keys=err.problem_details.get(problem, ""),
-                error=err.problem_details.get("error", ""),
-                backend=err.problem_details.get("backend", ""),
-            )
-            for problem in err.problems
-        ]
-        return report_error(err, text="\n".join(lines))
-    except BackendError as err:
-        return report_error(err, text=texts.get("eval.backend_error"))
-    except (EvalDatasetError, UsageError) as err:
-        return report_error(
-            err, text=texts.get("eval.invalid_dataset", error=err.text or err)
-        )
-    except (RetmanError, OSError) as err:
-        return report_error(err, text=texts.get("eval.failure", error=err))
-
-
-if __name__ == "__main__":
-    sys.exit(main())

@@ -24,7 +24,7 @@ EXCLUDED_COMMANDS: Final[dict[str, str]] = {
         "file-producing path is export_station_series"
     ),
     "commands schema": (
-        "describes the catalog itself; used by retman-scaffold and the drift tests, "
+        "describes the catalog itself; used by `scaffold` and the drift tests, "
         "not an operation on data"
     ),
     "commands guide": "a guide for AI agents generated from the catalog, not data",

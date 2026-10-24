@@ -1,6 +1,6 @@
-"""The light drift check that ``retman doctor`` shows for the tools in use.
+"""The light drift check that ``retman doctor check`` shows for the tools in use.
 
-It is the part of ``retman-scaffold --check`` that a user with a newer tool in the
+It is the part of ``retman scaffold check`` that a user with a newer tool in the
 supported range needs: the manifest's commands exist in the installed catalog and
 the tool offers no value the manifest neither offers nor excludes ("coverage gap:
 kartograf 0.8.1 offers 0.3m"). It runs on a grid varied one choice at a time, with
@@ -36,7 +36,7 @@ class Line:
 def packaged_check(
     manifest: ManifestSpec, directory: Path, version: str
 ) -> list[Finding] | None:
-    """Run the light check against the ``retman-eval`` dataset shipped with Retman."""
+    """Run the light check against the eval command set shipped with Retman."""
     return light_findings(
         manifest, directory, version, commands=load_commands(DEFAULT_COMMANDS)
     )

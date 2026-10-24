@@ -1,4 +1,4 @@
-"""Offline tool clients for an evaluation run (``retman-eval``).
+"""Offline tool clients for an evaluation run (``retman eval run``).
 
 Planning calls the tool offline: it validates every call, looks up a station
 catalog or what a store holds, and previews. An evaluation must not depend on

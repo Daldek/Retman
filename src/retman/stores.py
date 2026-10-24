@@ -1,4 +1,4 @@
-"""Tool stores on disk: checks for ``retman doctor``, set-up for ``retman init``.
+"""Tool stores on disk: checks of ``retman doctor check``, set-up by ``config init``.
 
 The tools keep their data in stores outside the project (ARCHITECTURE 9.1). This
 module only looks at folders and files; IMGWTools is imported lazily, and only

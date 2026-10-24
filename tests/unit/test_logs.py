@@ -4,26 +4,25 @@ import io
 import logging
 from pathlib import Path
 
-import pytest
-
-from retman.environment import environment
-from retman.exceptions import UsageError
-from retman.logs import configure_logging, resolve_level
+from retman.environment import cli_options, environment
+from retman.logs import configure_logging
 
 
-def test_resolve_level_without_a_source_is_warning() -> None:
-    assert resolve_level(verbose=False, quiet=False) == "warning"
+def test_the_level_without_a_source_is_warning() -> None:
+    assert environment(environ={}).setting("log_level").value == "warning"
 
 
-def test_the_options_win_over_the_configured_level() -> None:
-    assert resolve_level(verbose=True, quiet=False, configured="warning") == "debug"
-    assert resolve_level(verbose=False, quiet=True, configured="debug") == "error"
-    assert resolve_level(verbose=False, quiet=False, configured="info") == "info"
+def test_the_options_win_over_the_configured_level(tmp_path: Path) -> None:
+    file = tmp_path / "nogat.toml"
+    file.write_text('[retman]\nlog_level = "warning"\n', encoding="utf-8")
 
+    def level(*, verbose: bool = False, quiet: bool = False) -> str:
+        options = cli_options(verbose=verbose, quiet=quiet)
+        return str(environment(file, {}, options).setting("log_level").value)
 
-def test_resolve_level_rejects_both_options() -> None:
-    with pytest.raises(UsageError, match="--verbose"):
-        resolve_level(verbose=True, quiet=True)
+    assert level(verbose=True) == "debug"
+    assert level(quiet=True) == "error"
+    assert level() == "warning"
 
 
 def test_the_configured_level_is_the_setting_of_the_environment(tmp_path: Path) -> None:

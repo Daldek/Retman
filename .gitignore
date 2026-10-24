@@ -35,7 +35,7 @@ htmlcov/
 # Logs
 *.log
 
-# Drafts of retman-scaffold (ARCHITECTURE 3.2.3): never reviewed, never committed
+# Drafts of `retman scaffold draft` (ARCHITECTURE 3.2.3): never reviewed, never committed
 src/retman/tools/*/_drafts/
 
 # Secrets (DEV-13.1)

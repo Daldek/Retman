@@ -27,7 +27,7 @@ W v0.1 działa 30 operacji (4 Kartografa i 26 IMGWTools); ich opis: [docs/USAGE.
 ## Jak to wygląda
 
 ```
-$ retman "Pobierz NMT 1 m dla arkusza N-34-130-D-d-2-4"
+$ retman plan run --text "Pobierz NMT 1 m dla arkusza N-34-130-D-d-2-4"
 ? W którym układzie wysokościowym pobrać NMT: EVRF2007 czy KRON86?
   1) EVRF2007
   2) KRON86 (tylko 0,5 m i 1 m)
@@ -58,8 +58,8 @@ uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169" \
     --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@0d98f3babeeeee49b2146a977b62bfa92114beea"
 
-retman init     # dopisuje tabele [retman] do nogat.toml i tworzy foldery magazynów narzędzi
-retman doctor   # sprawdza środowisko i podpowiada, co naprawić
+retman config init    # dopisuje tabele [retman] do nogat.toml i tworzy foldery magazynów narzędzi
+retman doctor check   # sprawdza środowisko i podpowiada, co naprawić
 ```
 
 ## Ustawienia
@@ -134,7 +134,7 @@ W budowie (przed v0.1.0): działają cztery operacje Kartografa 0.8.0 (NMT dla a
 arkusze potomne z ortofotomapą w trzech kolorach, wycinek NMT/NMPT, BDOT10k) i 26 operacji IMGWTools 3.0.0
 (rozpoznawanie dwustopniowe: grupa, potem operacja) z CLI i z Pythona, z modelem decyzyjnym zgodnym
 z API OpenAI (np. Bielik 11B w LM Studio); jest podgląd planu offline, sprawdzenie dostępności danych
-na życzenie, `retman doctor`, `retman-eval` i `retman-scaffold`; backend basal jeszcze nie powstał.
+na życzenie, `retman doctor check`, `retman eval run` i `retman scaffold`; backend basal jeszcze nie powstał.
 Sposób pracy z przykładami: [docs/USAGE.md](docs/USAGE.md).
 Wersje 0.x są publicznie dostępne, ale nie są rekomendowane do wdrożeń produkcyjnych przed
 wersją 1.0.0.

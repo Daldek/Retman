@@ -112,7 +112,7 @@ class ManifestSpec(TypedDict):
 
     tool: str
     distribution: str
-    # Requirement for ``uv tool install … --with`` shown by ``retman doctor``
+    # Requirement for ``uv tool install … --with`` shown by ``retman doctor check``
     source: str
     supported_versions: str
     translations: dict[str, str]

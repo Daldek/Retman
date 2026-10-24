@@ -1,4 +1,4 @@
-"""The settings of Retman: defaults, the model server, ``retman init``, checks."""
+"""The settings of Retman: defaults, the model server, ``config init``, checks."""
 
 import tomllib
 from pathlib import Path

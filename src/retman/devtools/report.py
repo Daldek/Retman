@@ -1,16 +1,13 @@
-"""Rendering of the drift check: the report for the terminal and its JSON form."""
+"""Rendering of the drift check: the report for the terminal and its document."""
 
-import json
 from collections.abc import Sequence
+from typing import Any
 
-from retman import __version__
+from retman.catalog.envelope import Item
 from retman.devtools.drift import Finding, ToolReport, count_problems
 from retman.exceptions import TranslationError
 from retman.i18n.loader import Texts
-from retman.outcomes import EXIT_FAILED, EXIT_OK, EXIT_PARTIAL
 
-# Document schema of ``retman-scaffold --check --json``
-JSON_SCHEMA = "retman-scaffold-check/1"
 _SEVERITY_ORDER = {"error": 0, "warning": 1, "info": 2}
 
 
@@ -42,20 +39,40 @@ def _order(finding: Finding) -> tuple[int, str, str, str]:
     )
 
 
-def exit_code(reports: Sequence[ToolReport]) -> int:
-    """``0`` when no finding is an error, else ``10`` (``partial``).
+def check_items(reports: Sequence[ToolReport]) -> list[Item]:
+    """Return one unit per checked tool: ``failed`` when a finding is an error.
 
-    ``11`` (``failed``) when every tool report holds an error (usage errors are
-    ``2``, as the registry says).
+    A tool that is not installed (an error only with ``--require-tools``) fails with
+    ``missing_dependency``; any other error is a difference between the description
+    and the installed tool (``internal_error``, reason ``tool_drift``).
     """
-    failing = [
-        report
-        for report in reports
-        if any(finding.severity == "error" for finding in report.findings)
-    ]
-    if not failing:
-        return EXIT_OK
-    return EXIT_FAILED if len(failing) == len(reports) else EXIT_PARTIAL
+    items: list[Item] = []
+    for report in reports:
+        errors = report.count("error")
+        if not errors:
+            items.append(Item(report.tool, "ok"))
+        elif report.status == "missing":
+            items.append(
+                Item(
+                    report.tool,
+                    "failed",
+                    "missing_dependency",
+                    "tool_not_installed",
+                    f"{report.tool} is not installed",
+                )
+            )
+        else:
+            items.append(
+                Item(
+                    report.tool,
+                    "failed",
+                    "internal_error",
+                    "tool_drift",
+                    f"{errors} error(s) between the description of {report.tool} "
+                    "and the installed tool",
+                )
+            )
+    return items
 
 
 def render_check(
@@ -106,12 +123,9 @@ def render_check(
     return "\n".join(lines) + "\n"
 
 
-def check_json(reports: Sequence[ToolReport], texts: Texts) -> str:
-    """Render the same report as a JSON document (``retman-scaffold-check/1``)."""
-    document = {
-        "schema": JSON_SCHEMA,
-        "retman": __version__,
-        "exit_code": exit_code(reports),
+def check_document(reports: Sequence[ToolReport], texts: Texts) -> dict[str, Any]:
+    """Return the document ``retman-scaffold-check/1`` (without its ``schema``)."""
+    return {
         "tools": [
             {
                 "tool": report.tool,
@@ -134,6 +148,5 @@ def check_json(reports: Sequence[ToolReport], texts: Texts) -> str:
                 ],
             }
             for report in reports
-        ],
+        ]
     }
-    return json.dumps(document, ensure_ascii=False, indent=2) + "\n"

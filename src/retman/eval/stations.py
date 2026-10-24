@@ -1,6 +1,6 @@
 """A synthetic station catalog for offline evaluation of station-name commands.
 
-``retman-eval`` plans commands without a tool store, so a name such as "Poznań"
+``retman eval run`` plans commands without a tool store, so a name such as "Poznań"
 has no real catalog to be matched against. This module is that catalog: real
 place and river names (so commands read naturally and inflection, ambiguity and
 typos are exercised), invented codes (they only follow the shape of the real

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-doctor-1.schema.json",
+  "title": "retman-doctor/1",
+  "description": "The report of `doctor check`: sections of numbered checks; the envelope lists each check as a unit. It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "sections"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-doctor/1"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "title",
+          "checks"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "status",
+                "text",
+                "hint",
+                "blocking"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "ok",
+                    "warning",
+                    "error",
+                    "off"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                },
+                "hint": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "blocking": {
+                  "type": "boolean"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

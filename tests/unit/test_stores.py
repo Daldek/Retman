@@ -1,4 +1,4 @@
-"""Folders of the tool stores: checks for ``retman doctor`` and IMGWTools set-up."""
+"""Folders of the tool stores: ``retman doctor check`` and IMGWTools set-up."""
 
 import errno
 import os

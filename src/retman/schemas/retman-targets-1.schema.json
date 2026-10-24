@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-targets-1.schema.json",
+  "title": "retman-targets/1",
+  "description": "The plan of a `check` run that writes files: each target with its action (DEV-19.10). A plan that lists a conflict is a successful result. It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "targets"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-targets/1"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "option",
+          "path",
+          "action"
+        ],
+        "properties": {
+          "option": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "write",
+              "replace",
+              "conflict"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

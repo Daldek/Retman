@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-journal-1.schema.json",
+  "title": "retman-journal/1",
+  "description": "The events of the journal of the project folder, oldest first. It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "file",
+    "events"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-journal/1"
+    },
+    "file": {
+      "type": "string"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "time",
+          "event"
+        ],
+        "properties": {
+          "time": {
+            "type": "string"
+          },
+          "event": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

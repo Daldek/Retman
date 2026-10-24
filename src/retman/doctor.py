@@ -1,11 +1,14 @@
-"""``retman doctor``: what works, what does not and how to fix it (ARCHITECTURE 7.2)."""
+"""``retman doctor check``: what works, what does not, how to fix it.
+
+See ARCHITECTURE 7.2.
+"""
 
 import importlib.metadata
 import json
 import os
 import tomllib
-from collections.abc import Callable, Iterable
-from dataclasses import asdict, dataclass, field
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -15,12 +18,14 @@ from retman import __version__
 from retman.backends import build_decision_backend
 from retman.backends.base import DecisionBackend
 from retman.backends.openai_compatible import OpenAICompatibleBackend
+from retman.catalog.envelope import Item, Notice, status_of
 from retman.config import Config, Settings, load_config, load_settings
-from retman.environment import environment
+from retman.environment import OptionValue, environment
 from retman.exceptions import (
     BackendConnectionError,
     BackendError,
     ConfigError,
+    ErrorCode,
     ManifestError,
     TranslationError,
 )
@@ -49,12 +54,24 @@ REPORT_LANGUAGE = "pl"
 
 @dataclass(frozen=True)
 class Check:
-    """One line of the report; ``blocking`` problems make the exit code 10 or 11."""
+    """One line of the report; ``blocking`` problems make the outcome partial or failed.
+
+    A blocking check names the registry ``code`` of its failure and, where the code
+    is coarser than the cause, the ``reason`` (ERR-1): it is a failed unit of the
+    result (AGI-4.2).
+    """
 
     status: Status
     text: str
     hint: str | None = None
     blocking: bool = False
+    code: ErrorCode | None = None
+    reason: str | None = None
+
+    def __post_init__(self) -> None:
+        """Require the registry code of a blocking check."""
+        if self.blocking and self.code is None:
+            raise ValueError("A blocking check names the registry code of its failure")
 
 
 @dataclass
@@ -68,10 +85,44 @@ class Section:
 
 @dataclass
 class DoctorReport:
-    """Result of all checks; ``exit_code`` is 10 or 11 when something blocks work."""
+    """Result of all checks: ``sections`` of checks, the units of ``items()``."""
 
     version: str
     sections: list[Section]
+
+    def _numbered(self) -> Iterable[tuple[str, Check]]:
+        for section in self.sections:
+            for number, check in enumerate(section.checks, 1):
+                yield f"{section.key}.{number}", check
+
+    def items(self) -> list[Item]:
+        """Return the units of the result: each passed check and each blocking one.
+
+        A passed check (status ``ok``) is an ``ok`` unit, a blocking one a ``failed``
+        unit with its registry code; warnings and problems that do not block work are
+        :meth:`notices`.
+        """
+        items: list[Item] = []
+        for ident, check in self._numbered():
+            if check.blocking:
+                items.append(
+                    Item(ident, "failed", check.code, check.reason, check.text)
+                )
+            elif check.status == "ok":
+                items.append(Item(ident, "ok", message=check.text))
+        return items
+
+    def notices(self) -> list[Notice]:
+        """Return the warnings and the non-blocking problems as notices."""
+        return [
+            Notice(
+                "warning",
+                f"check_{check.status}",
+                f"{check.text} {check.hint}" if check.hint else check.text,
+            )
+            for _, check in self._numbered()
+            if check.status in ("warning", "error") and not check.blocking
+        ]
 
     @property
     def exit_code(self) -> int:
@@ -79,11 +130,9 @@ class DoctorReport:
 
         ``11`` (``failed``) when no check passed at all.
         """
-        checks = [check for section in self.sections for check in section.checks]
-        if not any(check.blocking for check in checks):
-            return EXIT_OK
-        passed = any(check.status == "ok" for check in checks)
-        return EXIT_PARTIAL if passed else EXIT_FAILED
+        return {"ok": EXIT_OK, "partial": EXIT_PARTIAL, "failed": EXIT_FAILED}[
+            status_of(self.items())
+        ]
 
     def to_text(self, texts: Texts) -> str:
         """Terminal report as in ARCHITECTURE 7.2."""
@@ -101,20 +150,30 @@ class DoctorReport:
                 lines.append(line)
         return "\n".join(lines) + "\n"
 
-    def to_json(self) -> str:
-        """Render the same report for bug reports (``retman doctor --json``)."""
-        return (
-            json.dumps(
+    def document(self) -> dict[str, Any]:
+        """Return the document ``retman-doctor/1`` (without its ``schema``)."""
+        ids = {id(check): ident for ident, check in self._numbered()}
+        return {
+            "sections": [
                 {
-                    "retman": self.version,
-                    "exit_code": self.exit_code,
-                    "sections": [asdict(section) for section in self.sections],
-                },
-                ensure_ascii=False,
-                indent=2,
-            )
-            + "\n"
-        )
+                    "key": section.key,
+                    "title": section.title,
+                    "checks": [
+                        {
+                            "id": ids[id(check)],
+                            "status": check.status,
+                            "text": check.text,
+                            "hint": check.hint,
+                            "blocking": check.blocking,
+                            **({"code": check.code} if check.code else {}),
+                            **({"reason": check.reason} if check.reason else {}),
+                        }
+                        for check in section.checks
+                    ],
+                }
+                for section in self.sections
+            ]
+        }
 
 
 def _plural(texts: Texts, key: str, count: int) -> str:
@@ -129,20 +188,25 @@ def _plural(texts: Texts, key: str, count: int) -> str:
 
 
 def _config_problems(texts: Texts, error: ConfigError) -> list[Check]:
-    return [
-        Check(
-            "error",
-            texts.get(
-                f"config.{problem}",
-                path=error.path,
-                keys=error.problem_details.get(problem, ""),
-                error=error.problem_details.get("error", ""),
-                backend=error.problem_details.get("backend", ""),
-            ),
-            blocking=True,
+    checks: list[Check] = []
+    for problem in error.problems:
+        code, reason = ConfigError.classify(problem)
+        checks.append(
+            Check(
+                "error",
+                texts.get(
+                    f"config.{problem}",
+                    path=error.path,
+                    keys=error.problem_details.get(problem, ""),
+                    error=error.problem_details.get("error", ""),
+                    backend=error.problem_details.get("backend", ""),
+                ),
+                blocking=True,
+                code=code,
+                reason=reason,
+            )
         )
-        for problem in error.problems
-    ]
+    return checks
 
 
 def _project_checks(config: Settings, project_dir: Path, texts: Texts) -> list[Check]:
@@ -175,6 +239,8 @@ def _project_checks(config: Settings, project_dir: Path, texts: Texts) -> list[C
             ),
             None if writable else texts.get("doctor.hint_not_writable"),
             blocking=not writable,
+            code=None if writable else "io_error",
+            reason=None if writable else "project_not_writable",
         )
     )
     unreadable = []
@@ -247,6 +313,8 @@ def _decision_checks(
                 texts.get("doctor.no_response", url=decision.url),
                 texts.get("doctor.hint_no_response", path=config.path),
                 blocking=True,
+                code="source_unavailable",
+                reason="backend_connection",
             )
         ]
     if models is None:
@@ -284,6 +352,8 @@ def _decision_checks(
                 texts.get("doctor.no_response", url=decision.url),
                 texts.get("doctor.hint_no_response", path=config.path),
                 blocking=True,
+                code="source_unavailable",
+                reason="backend_connection",
             )
         )
         return checks
@@ -294,6 +364,8 @@ def _decision_checks(
                 texts.get("doctor.test_failed", error=err),
                 texts.get("doctor.hint_model", path=config.path),
                 blocking=True,
+                code="source_unavailable",
+                reason="backend_error",
             )
         )
         return checks
@@ -420,6 +492,8 @@ def _tool_checks(
                 texts.get("doctor.no_operations"),
                 texts.get("doctor.hint_no_operations"),
                 blocking=True,
+                code="missing_dependency",
+                reason="no_operations",
             )
         )
     return checks, active
@@ -449,6 +523,8 @@ def _store_folder(
                     config=config_path,
                 ),
                 blocking=symlinks_refused,
+                code="store_unavailable" if symlinks_refused else None,
+                reason="symlink_refused" if symlinks_refused else None,
             )
         )
     hint = texts.get("doctor.stores.hint_store_dir", tool=tool, config=config_path)
@@ -457,15 +533,42 @@ def _store_folder(
         if parent.is_dir() and os.access(parent, os.W_OK | os.X_OK):
             return checks, "missing"
         text = texts.get("doctor.stores.cannot_create", tool=tool, path=store)
-        checks.append(Check("error", text, hint, blocking=True))
+        checks.append(
+            Check(
+                "error",
+                text,
+                hint,
+                blocking=True,
+                code="store_unavailable",
+                reason="cannot_create",
+            )
+        )
         return checks, "broken"
     if not store.is_dir():
         text = texts.get("doctor.stores.not_a_directory", tool=tool, path=store)
-        checks.append(Check("error", text, hint, blocking=True))
+        checks.append(
+            Check(
+                "error",
+                text,
+                hint,
+                blocking=True,
+                code="store_unavailable",
+                reason="not_a_directory",
+            )
+        )
         return checks, "broken"
     if not os.access(store, os.W_OK | os.X_OK):
         text = texts.get("doctor.stores.not_writable", tool=tool, path=store)
-        checks.append(Check("error", text, hint, blocking=True))
+        checks.append(
+            Check(
+                "error",
+                text,
+                hint,
+                blocking=True,
+                code="store_unavailable",
+                reason="not_writable",
+            )
+        )
         return checks, "broken"
     return checks, "ok"
 
@@ -501,7 +604,16 @@ def _hardlink_checks(
     except OSError:
         text = texts.get("doctor.stores.not_writable", tool=tool, path=folder)
         hint = texts.get("doctor.stores.hint_store_dir", tool=tool, config=config_path)
-        return [Check("error", text, hint, blocking=True)]
+        return [
+            Check(
+                "error",
+                text,
+                hint,
+                blocking=True,
+                code="store_unavailable",
+                reason="not_writable",
+            )
+        ]
     if failure is None:
         return []
     reason = failure.strerror or str(failure)
@@ -509,7 +621,16 @@ def _hardlink_checks(
         "doctor.stores.no_hardlinks", tool=tool, path=folder, reason=reason
     )
     hint = texts.get("doctor.stores.hint_no_hardlinks", tool=tool, config=config_path)
-    return [Check("error", text, hint, blocking=True)]
+    return [
+        Check(
+            "error",
+            text,
+            hint,
+            blocking=True,
+            code="store_unavailable",
+            reason="no_hardlinks",
+        )
+    ]
 
 
 def _kartograf_checks(
@@ -562,11 +683,29 @@ def _imgw_store_checks(store: Path, texts: Texts, config_path: Path) -> list[Che
     elif found.state == "foreign":
         text = texts.get("doctor.stores.imgw_foreign", **args)
         hint = texts.get("doctor.stores.hint_imgw_foreign", **config)
-        checks.append(Check("error", text, hint, blocking=True))
+        checks.append(
+            Check(
+                "error",
+                text,
+                hint,
+                blocking=True,
+                code="store_unavailable",
+                reason="foreign_folder",
+            )
+        )
     elif found.state in ("unreadable", "unsupported"):
         text = texts.get(f"doctor.stores.imgw_{found.state}", **args)
         hint = texts.get("doctor.stores.hint_imgw_marker", **config)
-        checks.append(Check("error", text, hint, blocking=True))
+        checks.append(
+            Check(
+                "error",
+                text,
+                hint,
+                blocking=True,
+                code="store_unavailable",
+                reason=f"marker_{found.state}",
+            )
+        )
     if found.state in ("missing", "empty", "ready"):
         where = store if state == "ok" else nearest_existing(store)
         checks.extend(_hardlink_checks("imgwtools", where, texts, config_path))
@@ -623,6 +762,8 @@ def _probe_check(
         texts.get("doctor.stores.probe_failed", version=version, detail=outcome.detail),
         texts.get("doctor.stores.hint_probe_failed", source=source, config=config_path),
         blocking=True,
+        code="store_unavailable",
+        reason="probe_failed",
     )
 
 
@@ -712,6 +853,8 @@ def _translation_checks(
             texts.get("doctor.translations_problem", problem=problem),
             texts.get("doctor.hint_translations"),
             blocking=True,
+            code="internal_error",
+            reason="missing_translation",
         )
         for problem in problems
     ]
@@ -728,6 +871,7 @@ def run_doctor(
     deep: bool = False,
     probe: Callable[[], ToolOutcome] = probe_imgw_write,
     conformance: "LightCheck | None" = None,
+    options: Mapping[str, OptionValue] | None = None,
 ) -> tuple[DoctorReport, Texts]:
     """
     Check configuration, models, tools, translations and the project workspace.
@@ -749,6 +893,8 @@ def run_doctor(
         The light drift check of the tools in use; by default the one of
         ``retman.devtools`` on the discovered tools. With injected ``manifests``
         it runs only when given, so that a test never meets a real tool.
+    options : Mapping[str, OptionValue], optional
+        The settings given by command-line options (``--lang``, ``--verbose``).
 
     Returns
     -------
@@ -757,12 +903,12 @@ def run_doctor(
     """
     texts = load_core_texts(REPORT_LANGUAGE)
     tool_manifests = list(manifests if manifests is not None else discover_manifests())
-    file = environment(config_path).file
+    file = environment(config_path, options=options).file
     sections: list[Section] = []
     configuration = Section("configuration", texts.get("doctor.section_configuration"))
     sections.append(configuration)
     try:
-        settings: Settings | None = load_settings(config_path)
+        settings: Settings | None = load_settings(config_path, options=options)
     except ConfigError as err:
         settings = None
         configuration.checks.extend(_config_problems(texts, err))
@@ -779,7 +925,7 @@ def run_doctor(
         configuration.checks.extend(_project_checks(settings, project_dir, texts))
         # The model server has no default: without it only planning is blocked
         try:
-            config = load_config(config_path)
+            config = load_config(config_path, options=options)
         except ConfigError as err:
             configuration.checks.extend(_config_problems(texts, err))
     if config is not None:

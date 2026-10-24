@@ -221,8 +221,8 @@ class ToolError(RetmanError):
 class ToolDriftError(RetmanError):
     """The installed tool no longer accepts what the manifest asks of it.
 
-    A programmer-level error (run ``retman doctor`` / ``retman-scaffold
-    --check``): no Retman parameter can be named, so asking the user again
+    A programmer-level error (run ``retman doctor check`` / ``retman scaffold
+    check``): no Retman parameter can be named, so asking the user again
     would loop on the same rejection. Default code: ``internal_error``, reason
     ``tool_drift``; ``text`` is the translated text for the user.
     """
@@ -233,7 +233,7 @@ class ToolDriftError(RetmanError):
         super().__init__(
             f"The installed {tool} no longer accepts {operation}: {detail}",
             details={"tool": tool, "operation": operation},
-            hint="Run `retman-scaffold --check` to see where the manifest differs "
+            hint="Run `retman scaffold check` to see where the manifest differs "
             "from the installed tool.",
             text=text,
         )

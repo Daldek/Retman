@@ -1,10 +1,12 @@
-"""CLI conversation, non-interactive safety and project history."""
+"""``retman plan run``, ``results list`` and ``journal show``: the conversation in a
+terminal, non-interactive safety, the envelope of ``--json`` and the project history."""
 
 import io
 import json
 from pathlib import Path
 
 import pytest
+from document_schemas import violations
 from error_documents import last_line_document
 
 from retman import cli
@@ -40,6 +42,11 @@ def command_args(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     return ["--config", str(config_path)], tmp_path
 
 
+def plan_run(config_args: list[str], text: str, *flags: str) -> list[str]:
+    """Return the words of ``retman plan run --text <text>`` with more flags."""
+    return ["plan", "run", *config_args, *flags, "--text", text]
+
+
 def test_main_interactive_question_plan_confirm_result_and_audit(
     command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
@@ -47,7 +54,7 @@ def test_main_interactive_question_plan_confirm_result_and_audit(
     monkeypatch.setattr("sys.stdin", TerminalInput("1\nt\n"))
 
     status = cli.main(
-        [*config_args, f"Zrób NMT dla {SHEET}"],
+        plan_run(config_args, f"Zrób NMT dla {SHEET}"),
         backend=FakeDecisionBackend({"make_dem": "make_dem"}),
         project_dir=project,
     )
@@ -75,39 +82,155 @@ def test_main_interactive_question_plan_confirm_result_and_audit(
         "plan",
         "execution",
     ]
-    print("TRANSCRIPT:\n" + transcript)
-    print("RESULT_JSON:\n" + json.dumps(result, ensure_ascii=False, indent=2))
-    print(
-        "JOURNAL_JSONL:\n"
-        + "\n".join(json.dumps(event, ensure_ascii=False) for event in events)
-    )
 
 
-def test_main_noninteractive_prints_missing_and_never_executes(
+def test_main_noninteractive_never_asks_and_never_executes(
     command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     config_args, project = command_args
     monkeypatch.setattr("sys.stdin", io.StringIO("1\nt\n"))
 
     status = cli.main(
-        [*config_args, f"NMT dla {SHEET}"],
+        plan_run(config_args, f"NMT dla {SHEET}"),
         backend=FakeDecisionBackend({"make_dem": "make_dem"}),
         project_dir=project,
     )
+    captured = capsys.readouterr()
 
     assert status == 2
-    assert "Brakuje:" in capsys.readouterr().out
+    assert captured.out == ""
     assert not (project / "retman-output" / "001_make_dem").exists()
 
 
-def test_main_plan_only_shows_complete_plan_without_execution(
+def test_main_check_shows_the_incomplete_plan_and_exits_zero(
     command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     config_args, project = command_args
     monkeypatch.setattr("sys.stdin", io.StringIO())
 
     status = cli.main(
-        [*config_args, "--plan-only", f"NMT dla {SHEET}"],
+        plan_run(config_args, f"NMT dla {SHEET}", "--check", "--json"),
+        backend=FakeDecisionBackend({"make_dem": "make_dem"}),
+        project_dir=project,
+    )
+    captured = capsys.readouterr()
+    envelope = json.loads(captured.out)
+
+    assert status == 0 and captured.err == ""
+    assert (envelope["command"], envelope["check"], envelope["status"]) == (
+        "plan run",
+        True,
+        "ok",
+    )
+    assert envelope["result"]["schema"] == "retman-plan/1"
+    assert violations("retman-plan/1", envelope["result"]) == []
+    assert envelope["result"]["complete"] is False
+    assert [q["name"] for q in envelope["result"]["questions"]] == ["style"]
+    assert [n["code"] for n in envelope["notices"]] == ["questions_open"]
+    assert not (project / "retman-output" / "001_make_dem").exists()
+
+
+def test_main_yes_runs_a_complete_plan_and_prints_the_envelope(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", io.StringIO())
+
+    status = cli.main(
+        plan_run(
+            config_args, f"Zrób NMT dla {SHEET} w stylu gładkim", "--yes", "--json"
+        ),
+        backend=FakeDecisionBackend({"make_dem": "make_dem", "smooth": "smooth"}),
+        project_dir=project,
+    )
+    captured = capsys.readouterr()
+    envelope = json.loads(captured.out)
+
+    assert status == 0 and captured.err == ""
+    assert (envelope["check"], envelope["status"]) == (False, "ok")
+    assert envelope["result"]["confirmed"] is True
+    assert envelope["result"]["run"]["ok"] is True
+    assert (project / "retman-output" / "001_make_dem" / "dem.asc").exists()
+
+
+def test_main_a_complete_plan_without_yes_names_the_option(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", io.StringIO())
+
+    status = cli.main(
+        plan_run(config_args, f"Zrób NMT dla {SHEET} w stylu gładkim"),
+        backend=FakeDecisionBackend({"make_dem": "make_dem", "smooth": "smooth"}),
+        project_dir=project,
+    )
+
+    document = last_line_document(capsys.readouterr().err)
+    assert status == document["exit_code"] == 2
+    assert (document["code"], document["details"]["reason"]) == (
+        "validation_error",
+        "input_required",
+    )
+    assert document["details"]["option"] == "yes"
+    assert not (project / "retman-output" / "001_make_dem").exists()
+
+
+def test_main_check_and_yes_exclude_each_other(
+    command_args, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+
+    status = cli.main(
+        plan_run(config_args, f"NMT dla {SHEET}", "--check", "--yes"),
+        backend=FakeDecisionBackend({"make_dem": "make_dem"}),
+        project_dir=project,
+    )
+
+    document = last_line_document(capsys.readouterr().err)
+    assert status == document["exit_code"] == 2
+    assert document["details"]["reason"] == "one_of"
+    assert document["details"]["allowed"] == ["check", "yes"]
+
+
+def test_main_a_call_without_text_and_terminal_names_the_option(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", io.StringIO())
+
+    status = cli.main(["plan", "run", *config_args, "--json"], project_dir=project)
+
+    document = last_line_document(capsys.readouterr().err)
+    assert status == document["exit_code"] == 2
+    assert document["details"]["reason"] == "input_required"
+    assert document["details"]["option"] == "text"
+
+
+def test_main_json_never_prompts_even_in_a_terminal(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", TerminalInput("1\nt\n"))
+
+    status = cli.main(
+        plan_run(config_args, f"NMT dla {SHEET}", "--json"),
+        backend=FakeDecisionBackend({"make_dem": "make_dem"}),
+        project_dir=project,
+    )
+
+    captured = capsys.readouterr()
+    assert status == 2 and captured.out == ""
+    assert last_line_document(captured.err)["details"]["reason"] == "input_required"
+
+
+def test_main_check_shows_the_complete_plan_in_a_terminal_without_execution(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", TerminalInput())
+
+    status = cli.main(
+        plan_run(config_args, f"NMT dla {SHEET}", "--check"),
         backend=FakeDecisionBackend({"make_dem": "make_dem", "raw": "raw"}),
         project_dir=project,
     )
@@ -124,11 +247,11 @@ def test_main_reject_and_cancel_preserve_project_journal(
     monkeypatch.setattr("sys.stdin", TerminalInput("n\n"))
     backend = FakeDecisionBackend({"make_dem": "make_dem", "raw": "raw"})
     rejected = cli.main(
-        [*config_args, f"NMT dla {SHEET}"], backend=backend, project_dir=project
+        plan_run(config_args, f"NMT dla {SHEET}"), backend=backend, project_dir=project
     )
     monkeypatch.setattr("sys.stdin", TerminalInput("anuluj\n"))
     cancelled = cli.main(
-        [*config_args, f"NMT dla {SHEET}"],
+        plan_run(config_args, f"NMT dla {SHEET}"),
         backend=FakeDecisionBackend({"make_dem": "make_dem"}),
         project_dir=project,
     )
@@ -140,21 +263,47 @@ def test_main_reject_and_cancel_preserve_project_journal(
     assert not (project / "retman-output" / "001_make_dem").exists()
 
 
-def test_main_results_and_log_read_project_without_model(
+def test_main_cancelled_with_json_prints_the_cancelled_envelope(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+
+    class Interrupted(FakeDecisionBackend):
+        def choose(
+            self, state: str, question: str, options: dict[str, str]
+        ) -> Decision:
+            raise KeyboardInterrupt
+
+    status = cli.main(
+        plan_run(config_args, f"NMT dla {SHEET}", "--json"),
+        backend=Interrupted(),
+        project_dir=project,
+    )
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert status == 130
+    assert (envelope["command"], envelope["status"], envelope["result"]) == (
+        "plan run",
+        "cancelled",
+        None,
+    )
+
+
+def test_main_results_and_journal_read_project_without_model(
     command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     config_args, project = command_args
     monkeypatch.setattr("sys.stdin", TerminalInput("1\nt\n"))
     cli.main(
-        [*config_args, f"NMT dla {SHEET}"],
+        plan_run(config_args, f"NMT dla {SHEET}"),
         backend=FakeDecisionBackend({"make_dem": "make_dem"}),
         project_dir=project,
     )
     capsys.readouterr()
 
-    results_code = cli.main([*config_args, "results"], project_dir=project)
+    results_code = cli.main(["results", "list", *config_args], project_dir=project)
     listed = capsys.readouterr().out
-    log_code = cli.main([*config_args, "log"], project_dir=project)
+    log_code = cli.main(["journal", "show", *config_args], project_dir=project)
     events = capsys.readouterr().out
 
     assert results_code == log_code == 0
@@ -162,16 +311,47 @@ def test_main_results_and_log_read_project_without_model(
     assert "wykonanie" in events
 
 
+def test_main_results_and_journal_are_documents_with_a_page(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", TerminalInput("1\nt\n"))
+    cli.main(
+        plan_run(config_args, f"NMT dla {SHEET}"),
+        backend=FakeDecisionBackend({"make_dem": "make_dem"}),
+        project_dir=project,
+    )
+    capsys.readouterr()
+
+    cli.main(["results", "list", *config_args, "--json"], project_dir=project)
+    results = json.loads(capsys.readouterr().out)
+    cli.main(
+        ["journal", "show", *config_args, "--json", "--limit", "2"],
+        project_dir=project,
+    )
+    journal = json.loads(capsys.readouterr().out)
+
+    assert results["result"]["schema"] == "retman-results/1"
+    assert [r["number"] for r in results["result"]["results"]] == [1]
+    assert journal["result"]["schema"] == "retman-journal/1"
+    assert len(journal["result"]["events"]) == 2
+    assert journal["page"]["truncated"] is True and journal["page"]["next_cursor"]
+
+
 def test_main_init_and_missing_config_report_clear_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     config = tmp_path / "new.toml"
 
-    failure = cli.main(["--config", str(config), "results"], project_dir=tmp_path)
+    failure = cli.main(
+        ["results", "list", "--config", str(config)], project_dir=tmp_path
+    )
     missing = capsys.readouterr().err
-    created = cli.main(["--config", str(config), "init"], project_dir=tmp_path)
+    created = cli.main(
+        ["config", "init", "--config", str(config)], project_dir=tmp_path
+    )
 
-    assert failure == 3 and "retman init" in missing
+    assert failure == 3 and "retman config init" in missing
     document = last_line_document(missing)
     assert (document["code"], document["details"]["reason"]) == (
         "not_found",
@@ -187,7 +367,7 @@ def test_main_change_option_from_numbered_plan_list(
     monkeypatch.setattr("sys.stdin", TerminalInput("?\nz\n2\n2\nt\n"))
 
     status = cli.main(
-        [*config_args, f"NMT dla {SHEET}"],
+        plan_run(config_args, f"NMT dla {SHEET}"),
         backend=FakeDecisionBackend({"make_dem": "make_dem", "raw": "raw"}),
         project_dir=project,
     )
@@ -214,7 +394,7 @@ def test_main_session_exits_after_command_and_keeps_result(
     )
 
     status = cli.main(
-        config_args,
+        ["plan", "run", *config_args],
         backend=FakeDecisionBackend({"make_dem": "make_dem"}),
         project_dir=project,
     )
@@ -230,13 +410,28 @@ def test_main_explain_shows_actual_decisions_without_execution(
     monkeypatch.setattr("sys.stdin", io.StringIO())
 
     status = cli.main(
-        [*config_args, "--plan-only", "--explain", f"NMT dla {SHEET}"],
+        plan_run(config_args, f"NMT dla {SHEET}", "--check", "--explain"),
         backend=FakeDecisionBackend({"make_dem": "make_dem", "raw": "raw"}),
         project_dir=project,
     )
 
     assert status == 0
     assert "Decyzja style: raw, pewność 1.0" in capsys.readouterr().out
+
+
+def test_main_explain_adds_the_decisions_to_the_document(
+    command_args, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+
+    cli.main(
+        plan_run(config_args, f"NMT dla {SHEET}", "--check", "--explain", "--json"),
+        backend=FakeDecisionBackend({"make_dem": "make_dem", "raw": "raw"}),
+        project_dir=project,
+    )
+
+    decisions = json.loads(capsys.readouterr().out)["result"]["decisions"]
+    assert {"name": "style", "key": "raw"}.items() <= decisions[-1].items()
 
 
 def test_main_connection_error_suggests_doctor(
@@ -252,14 +447,14 @@ def test_main_connection_error_suggests_doctor(
             raise BackendConnectionError(self.url)
 
     status = cli.main(
-        [*config_args, f"NMT dla {SHEET}"],
+        plan_run(config_args, f"NMT dla {SHEET}"),
         backend=DisconnectedBackend(),
         project_dir=project,
     )
 
     assert status == 5
     stderr = capsys.readouterr().err
-    assert "retman doctor" in stderr
+    assert "retman doctor check" in stderr
     document = last_line_document(stderr)
     assert (document["code"], document["exit_code"]) == ("source_unavailable", 5)
     assert document["details"]["reason"] == "backend_connection"
@@ -288,7 +483,7 @@ def run_fetch(command_args, monkeypatch, keys: str, *flags: str) -> int:
     config_args, project = command_args
     monkeypatch.setattr("sys.stdin", TerminalInput(keys))
     return cli.main(
-        [*config_args, *flags, f"Pobierz NMT dla {SHEET} 1 m"],
+        plan_run(config_args, f"Pobierz NMT dla {SHEET} 1 m", *flags),
         backend=FakeDecisionBackend(FETCH_RULES),
         project_dir=project,
     )
@@ -307,7 +502,7 @@ def test_main_offers_the_check_only_for_operations_that_have_one(
     with_check = capsys.readouterr().out
     monkeypatch.setattr("sys.stdin", TerminalInput("n\n"))
     cli.main(
-        [*config_args, f"NMT dla {SHEET}"],
+        plan_run(config_args, f"NMT dla {SHEET}"),
         backend=FakeDecisionBackend({"make_dem": "make_dem", "raw": "raw"}),
         project_dir=project,
     )
@@ -372,10 +567,10 @@ def test_main_interrupting_the_check_cancels_and_keeps_the_record(
     assert check["status"] == "approved" and check["result"] is None
 
 
-def test_main_plan_only_never_takes_a_network_step(
+def test_main_check_never_takes_a_network_step(
     command_args, dummy_client, monkeypatch, capsys: pytest.CaptureFixture[str]
 ):
-    status = run_fetch(command_args, monkeypatch, "", "--plan-only")
+    status = run_fetch(command_args, monkeypatch, "", "--check")
     (client,) = dummy_client.CLIENTS
 
     assert status == 0 and "Plan:" in capsys.readouterr().out
@@ -390,7 +585,7 @@ def test_main_prints_the_warnings_of_a_result_after_its_summary(
     monkeypatch.setattr("sys.stdin", TerminalInput("t\n"))
 
     status = cli.main(
-        [*config_args, "Zrób NMT z ostrzeżeniami"],
+        plan_run(config_args, "Zrób NMT z ostrzeżeniami"),
         backend=FakeDecisionBackend({"noisy_dem": "noisy_dem"}),
         project_dir=project,
     )
@@ -404,14 +599,31 @@ def test_main_prints_the_warnings_of_a_result_after_its_summary(
     ]
 
 
-def test_main_log_names_the_checks_and_what_became_of_them(
+def test_main_warnings_of_a_result_are_notices_of_the_envelope(
+    command_args, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+
+    status = cli.main(
+        plan_run(config_args, "Zrób NMT z ostrzeżeniami", "--yes", "--json"),
+        backend=FakeDecisionBackend({"noisy_dem": "noisy_dem"}),
+        project_dir=project,
+    )
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert status == 0
+    assert {notice["code"] for notice in envelope["notices"]} == {"operation_warning"}
+    assert len(envelope["notices"]) == 2
+
+
+def test_main_journal_names_the_checks_and_what_became_of_them(
     command_args, dummy_client, monkeypatch, capsys: pytest.CaptureFixture[str]
 ):
     config_args, project = command_args
     run_fetch(command_args, monkeypatch, "s\nn\nn\n")
     capsys.readouterr()
 
-    cli.main([*config_args, "log"], project_dir=project)
+    cli.main(["journal", "show", *config_args], project_dir=project)
 
     assert "sprawdzenie dostępności: pominięte" in capsys.readouterr().out
 
@@ -423,7 +635,7 @@ def test_main_verbose_writes_the_technical_log_to_stderr_without_the_command(
     monkeypatch.setattr("sys.stdin", TerminalInput("1\nt\n"))
 
     status = cli.main(
-        [*config_args, "--verbose", f"Zrób NMT dla {SHEET}"],
+        plan_run(config_args, f"Zrób NMT dla {SHEET}", "--verbose"),
         backend=FakeDecisionBackend({"make_dem": "make_dem"}),
         project_dir=project,
     )
@@ -445,7 +657,7 @@ def test_main_logs_warnings_only_by_default(
     monkeypatch.setattr("sys.stdin", TerminalInput("1\nt\n"))
 
     cli.main(
-        [*config_args, f"Zrób NMT dla {SHEET}"],
+        plan_run(config_args, f"Zrób NMT dla {SHEET}"),
         backend=FakeDecisionBackend({"make_dem": "make_dem"}),
         project_dir=project,
     )
@@ -461,7 +673,7 @@ def test_main_reads_the_log_level_from_the_environment(
     monkeypatch.setenv("RETMAN_LOG_LEVEL", "info")
 
     cli.main(
-        [*config_args, f"Zrób NMT dla {SHEET}"],
+        plan_run(config_args, f"Zrób NMT dla {SHEET}"),
         backend=FakeDecisionBackend({"make_dem": "make_dem"}),
         project_dir=project,
     )
@@ -471,13 +683,29 @@ def test_main_reads_the_log_level_from_the_environment(
     assert "DEBUG" not in err
 
 
+def test_main_the_option_beats_the_environment_for_the_log_level(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", TerminalInput("1\nt\n"))
+    monkeypatch.setenv("RETMAN_LOG_LEVEL", "debug")
+
+    cli.main(
+        plan_run(config_args, f"Zrób NMT dla {SHEET}", "--quiet"),
+        backend=FakeDecisionBackend({"make_dem": "make_dem"}),
+        project_dir=project,
+    )
+
+    assert capsys.readouterr().err == ""
+
+
 def test_main_rejects_an_unknown_log_level_naming_the_variable(
     command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     config_args, project = command_args
     monkeypatch.setenv("RETMAN_LOG_LEVEL", "loud")
 
-    status = cli.main([*config_args, "results"], project_dir=project)
+    status = cli.main(["results", "list", *config_args], project_dir=project)
 
     assert status == 2
     document = last_line_document(capsys.readouterr().err)
@@ -494,7 +722,7 @@ def test_main_out_of_scope_is_unsupported_and_ends_with_the_error_document(
     config_args, project = command_args
 
     status = cli.main(
-        [*config_args, "Jaka będzie jutro pogoda w Poznaniu?"],
+        plan_run(config_args, "Jaka będzie jutro pogoda w Poznaniu?"),
         backend=FakeDecisionBackend({"out_of_scope": "out_of_scope"}),
         project_dir=project,
     )
@@ -517,7 +745,7 @@ def test_main_without_a_terminal_names_the_open_questions_in_the_error_document(
     monkeypatch.setattr("sys.stdin", io.StringIO())
 
     status = cli.main(
-        [*config_args, f"NMT dla {SHEET}"],
+        plan_run(config_args, f"NMT dla {SHEET}"),
         backend=FakeDecisionBackend({"make_dem": "make_dem"}),
         project_dir=project,
     )
@@ -539,7 +767,7 @@ def test_main_a_failed_operation_ends_with_the_document_of_its_error(
     monkeypatch.setattr("sys.stdin", TerminalInput("t\n"))
 
     status = cli.main(
-        [*config_args, "Uruchom błędne narzędzie"],
+        plan_run(config_args, "Uruchom błędne narzędzie"),
         backend=FakeDecisionBackend({"broken_dem": "broken_dem"}),
         project_dir=project,
     )
@@ -550,6 +778,23 @@ def test_main_a_failed_operation_ends_with_the_document_of_its_error(
         "internal_error",
         "RuntimeError",
     )
+
+
+def test_main_a_failed_run_without_a_terminal_is_an_error_and_no_envelope(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", io.StringIO())
+
+    status = cli.main(
+        plan_run(config_args, "Uruchom błędne narzędzie", "--yes", "--json"),
+        backend=FakeDecisionBackend({"broken_dem": "broken_dem"}),
+        project_dir=project,
+    )
+
+    captured = capsys.readouterr()
+    assert status == last_line_document(captured.err)["exit_code"] == 1
+    assert captured.out == ""
 
 
 def test_main_sigterm_ends_with_terminated(
@@ -564,7 +809,7 @@ def test_main_sigterm_ends_with_terminated(
             raise Terminated
 
     status = cli.main(
-        [*config_args, f"NMT dla {SHEET}"],
+        plan_run(config_args, f"NMT dla {SHEET}"),
         backend=Terminating(),
         project_dir=project,
     )
@@ -576,9 +821,15 @@ def test_main_sigterm_ends_with_terminated(
 
 @pytest.mark.parametrize(
     ("argv", "reason"),
-    [(["--bad-option"], "usage"), (["--verbose", "--quiet"], "exclusive_options")],
+    [
+        (["--bad-option"], "usage"),
+        (["results", "list", "--verbose", "--quiet"], "exclusive_options"),
+        (["config"], "usage"),
+        ([], "usage"),
+        (["results", "list", "--limit", "many"], "usage"),
+    ],
 )
-def test_main_a_mistake_in_the_options_is_a_validation_error(
+def test_main_a_mistake_in_the_call_is_a_validation_error(
     argv: list[str], reason: str, capsys: pytest.CaptureFixture[str]
 ):
     status = cli.main(argv)
@@ -591,17 +842,39 @@ def test_main_a_mistake_in_the_options_is_a_validation_error(
     )
 
 
-def test_config_show_json_prints_the_document_alone(
+def test_main_a_value_outside_the_bounds_is_a_validation_error_naming_the_option(
     command_args, capsys: pytest.CaptureFixture[str]
 ):
     config_args, project = command_args
 
-    status = cli.main([*config_args, "--json", "config", "show"], project_dir=project)
+    status = cli.main(
+        ["results", "list", *config_args, "--limit", "0"], project_dir=project
+    )
+
+    document = last_line_document(capsys.readouterr().err)
+    assert status == 2
+    assert (document["details"]["option"], document["details"]["reason"]) == (
+        "limit",
+        "minimum",
+    )
+
+
+def test_config_show_json_prints_the_envelope_alone(
+    command_args, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+
+    status = cli.main(["config", "show", *config_args, "--json"], project_dir=project)
 
     captured = capsys.readouterr()
-    document = json.loads(captured.out)
+    envelope = json.loads(captured.out)
+    document = envelope["result"]
     assert status == 0
     assert captured.err == ""
+    assert (envelope["schema"], envelope["command"]) == (
+        "retman-result/1",
+        "config show",
+    )
     assert document["schema"] == "retman-config/1"
     assert document["config_file"]["source"] == "option"
     assert document["keys"]["decision.backend"]["source"] == "file"
@@ -613,25 +886,30 @@ def test_config_show_still_works_when_the_file_cannot_be_used(
     broken = tmp_path / "nogat.toml"
     broken.write_text("[retman\n", encoding="utf-8")
 
-    status = cli.main(["--config", str(broken), "--json", "config", "show"])
+    status = cli.main(["config", "show", "--config", str(broken), "--json"])
 
-    document = json.loads(capsys.readouterr().out)
+    document = json.loads(capsys.readouterr().out)["result"]
     assert status == 0
     assert document["config_file"]["error"]
 
 
-def test_config_show_needs_its_subcommand(capsys: pytest.CaptureFixture[str]):
-    status = cli.main(["config"])
+def test_config_show_reports_an_option_as_the_source_of_the_language(
+    command_args, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
 
-    document = last_line_document(capsys.readouterr().err)
-    assert status == document["exit_code"] == 2
-    assert document["details"]["reason"] == "usage"
+    cli.main(
+        ["config", "show", *config_args, "--json", "--lang", "en"], project_dir=project
+    )
+
+    keys = json.loads(capsys.readouterr().out)["result"]["keys"]
+    assert (keys["lang"]["value"], keys["lang"]["source"]) == ("en", "option")
 
 
 def test_a_command_without_the_model_server_names_the_missing_settings(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    status = cli.main([f"NMT dla {SHEET}"], project_dir=tmp_path)
+    status = cli.main(plan_run([], f"NMT dla {SHEET}"), project_dir=tmp_path)
 
     document = last_line_document(capsys.readouterr().err)
     assert status == document["exit_code"] == 2
@@ -642,7 +920,7 @@ def test_a_command_without_the_model_server_names_the_missing_settings(
 def test_results_need_no_settings_file_and_no_model(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    status = cli.main(["results"], project_dir=tmp_path)
+    status = cli.main(["results", "list"], project_dir=tmp_path)
 
     assert status == 0
     assert "Brak wyników" in capsys.readouterr().out

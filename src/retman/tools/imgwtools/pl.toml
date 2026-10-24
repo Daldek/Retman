@@ -821,13 +821,13 @@ validation_error = "IMGWTools odrzuca ten wybór: {detail}"
 not_found = "IMGWTools nie znalazł danych: {detail}"
 conflict = "IMGWTools zgłasza konflikt w magazynie: {detail}"
 source_unavailable = "Serwer danych jest niedostępny: {detail}. Spróbuj ponownie później."
-missing_dependency = "Brakuje dodatku IMGWTools: {detail}. Sprawdź: retman doctor"
+missing_dependency = "Brakuje dodatku IMGWTools: {detail}. Sprawdź: retman doctor check"
 data_error = "Dane IMGWTools są nieprawidłowe lub niekompletne: {detail}"
-store_unavailable = "Magazyn IMGW jest niedostępny: {detail}. Sprawdź: retman doctor"
+store_unavailable = "Magazyn IMGW jest niedostępny: {detail}. Sprawdź: retman doctor check"
 io_error = "Błąd zapisu lub odczytu pliku: {detail}"
 cancelled = "Operację przerwano: {detail}"
 internal_error = "Błąd wewnętrzny IMGWTools: {detail}"
-store_write_unsupported = "Ten dysk nie pozwala IMGWTools zapisywać do magazynu ({detail}). Magazyn musi leżeć na systemie plików z dowiązaniami twardymi. Sprawdź: retman doctor"
+store_write_unsupported = "Ten dysk nie pozwala IMGWTools zapisywać do magazynu ({detail}). Magazyn musi leżeć na systemie plików z dowiązaniami twardymi. Sprawdź: retman doctor check"
 failed = "Operacja nie powiodła się: {detail}"
 
 # Ostrzeżenia operacji; uwagi o licencji (license_terms) narzędzia podajemy dosłownie.
@@ -844,7 +844,7 @@ arch_export_partial = "Magazyn ma tylko {found} z {total} plików archiwów wybr
 
 # Problemy planu wykryte offline: z parametrami — pytanie zadane ponownie, bez — plan się nie uda.
 [problems]
-store_missing = "Magazyn IMGW ({path}) nie jest jeszcze utworzony. Utwórz go poleceniem „Utwórz magazyn IMGW” albo przez „retman init”."
+store_missing = "Magazyn IMGW ({path}) nie jest jeszcze utworzony. Utwórz go poleceniem „Utwórz magazyn IMGW” albo przez „retman config init”."
 store_not_imgw = "Folder {path} zawiera inne pliki i nie jest magazynem IMGW. Wskaż pusty folder w ustawieniu store_dir tabeli [retman.tools.imgwtools] pliku nogat.toml."
 store_unsupported = "Magazyn IMGW w {path} ma nieobsługiwany schemat ({schema}). Zaktualizuj IMGWTools."
 pyarrow_missing = "Do szeregów w magazynie IMGW potrzebny jest pakiet pyarrow. Zainstaluj IMGWTools z dodatkiem store (imgwtools[store])."

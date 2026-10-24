@@ -2,8 +2,8 @@
 
 The report works with a settings file that cannot be used: it says so
 (``config_file.error``) instead of raising, so that it can be used to repair the
-file. It shows what the environment and ``nogat.toml`` give; the command-line options
-of a call apply to that call only. Credentials are reported as ``present`` or
+file. It shows what the options of the call (``--lang``, ``--verbose``), the
+environment and ``nogat.toml`` give. Credentials are reported as ``present`` or
 ``missing``, never by value (DEV-18.4).
 """
 
@@ -20,6 +20,7 @@ from retman.environment import (
     TOOL,
     Environment,
     FileSource,
+    OptionValue,
     Setting,
     SettingSource,
     environment,
@@ -178,7 +179,10 @@ def _store(env: Environment, key: str) -> StoreInfo:
 
 
 def get_config(
-    path: Path | None = None, *, environ: Mapping[str, str] | None = None
+    path: Path | None = None,
+    *,
+    environ: Mapping[str, str] | None = None,
+    options: Mapping[str, OptionValue] | None = None,
 ) -> ConfigReport:
     """Report the settings in force and where each comes from (DEV-18.6).
 
@@ -189,6 +193,8 @@ def get_config(
         configuration folder of ``nogat``.
     environ : Mapping[str, str], optional
         The process environment; ``os.environ`` by default.
+    options : Mapping[str, OptionValue], optional
+        The settings given by command-line options (``--lang``, ``--verbose``).
 
     Returns
     -------
@@ -197,7 +203,7 @@ def get_config(
         and the roots of the stores with their sizes. A file that cannot be used,
         or a value that cannot be used, is reported, not raised.
     """
-    env = environment(path, environ)
+    env = environment(path, environ, options)
     file = env.file
     key_name = env.setting("decision.api_key_env").value
     credentials: dict[str, Literal["present", "missing"]] = {}

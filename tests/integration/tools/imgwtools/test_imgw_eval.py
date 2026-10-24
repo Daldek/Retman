@@ -1,4 +1,4 @@
-"""The offline stand-in of IMGWTools used by ``retman-eval`` and its catalog."""
+"""The offline stand-in of IMGWTools used by ``retman eval run`` and its catalog."""
 
 from pathlib import Path
 

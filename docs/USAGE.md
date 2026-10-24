@@ -25,8 +25,8 @@ na pytania, zatwierdzać plany i odnajdywać wyniki — w terminalu i z Pythona.
 8. [Kody wyjścia](#8-kody-wyjścia)
 9. [Co Retman potrafi teraz](#9-co-retman-potrafi-teraz)
 10. [Retman w Pythonie](#10-retman-w-pythonie)
-11. [Diagnostyka: `retman doctor`](#11-diagnostyka-retman-doctor)
-12. [Dostrajanie progów: `retman-eval`](#12-dostrajanie-progów-retman-eval)
+11. [Diagnostyka: `retman doctor check`](#11-diagnostyka-retman-doctor-check)
+12. [Dostrajanie progów: `retman eval run`](#12-dostrajanie-progów-retman-eval-run)
 13. [Dobre praktyki i ograniczenia](#13-dobre-praktyki-i-ograniczenia)
 
 ---
@@ -50,7 +50,7 @@ uv tool install "git+https://github.com/Daldek/Retman@develop" \
 
 Dodatek `store` IMGWTools instaluje `pyarrow` (szeregi czasowe to pliki Parquet). Po wydaniu tagów
 polecenie dostanie wersje `@v0.8.0` i `@v3.0.0`. Narzędzie zainstalowane w innym środowisku jest dla
-Retmana niewidoczne; `retman doctor` (p. 11) podaje wtedy polecenie, które je doda.
+Retmana niewidoczne; `retman doctor check` (p. 11) podaje wtedy polecenie, które je doda.
 
 ### 1.2. Serwer modelu
 
@@ -88,17 +88,17 @@ zbiór poleceń w `<data_dir>/retman/collected.jsonl` (`data_dir` i `cache_dir` 
 użytkownika nogat; w Linuksie `~/.local/share/nogat` i `~/.cache/nogat`).
 
 ```bash
-retman init        # dopisuje tabele [retman] do nogat.toml i tworzy foldery magazynów narzędzi
+retman config init   # dopisuje tabele [retman] do nogat.toml i tworzy foldery magazynów narzędzi
 ```
 
-Wszystko to można zostawić domyślne, ale `retman init` zapisuje komplet ustawień w pliku, żeby nic
+Wszystko to można zostawić domyślne, ale `retman config init` zapisuje komplet ustawień w pliku, żeby nic
 nie było ukryte. W terminalu pyta o zbieranie poleceń (p. 6.4) i o folder na **magazyny danych
 narzędzi**, tworzy foldery, sprawdza, że dysk ma dowiązania twarde, zapisuje tabele, a na końcu — za
 Twoją zgodą — tworzy magazyn IMGWTools (bez sieci). Przebieg (Enter przyjmuje wartość domyślną; ścieżki
 skrócono):
 
 ```
-$ retman init
+$ retman config init
 Czy zbierać Twoje polecenia ze wszystkich projektów w jednym pliku (~/.local/share/nogat/retman/collected.jsonl)?
 Zapisywane są: polecenie, plan, Twoje odpowiedzi i decyzje modelu — do budowy i strojenia zbioru testowego.
 Plik zostaje na tym komputerze; nic nie jest nigdzie wysyłane. Ustawienie można zmienić w [retman.privacy] collect_commands.
@@ -118,13 +118,13 @@ Utworzyć magazyn IMGWTools? [t]ak / [N]ie: t
 Magazyn IMGWTools gotowy: ~/.local/share/nogat/imgw
 ```
 
-`retman init` wypisuje ścieżkę pliku, do którego zapisał tabele. Istniejący plik zostaje, jak był: tabele
+`retman config init` wypisuje ścieżkę pliku, do którego zapisał tabele. Istniejący plik zostaje, jak był: tabele
 `[retman]` są dopisywane na końcu, a inne tabele (`[nogat]`, tabele innych narzędzi) nie są ruszane.
-Jeśli plik ma już tabelę `[retman]`, `retman init` kończy się błędem `conflict` (kod 4) i niczego nie
+Jeśli plik ma już tabelę `[retman]`, `retman config init` kończy się błędem `conflict` (kod 4) i niczego nie
 zmienia. Bez terminala zapisuje tabele z widocznymi ścieżkami domyślnymi i niczego nie tworzy (Kartograf
 utworzy swój magazyn przy pierwszym pobraniu, a magazyn IMGWTools utworzysz poleceniem „Utwórz magazyn
 IMGW”). Jeśli dysk wybranego folderu **nie ma dowiązań twardych** (FAT/exFAT, część udziałów
-sieciowych), `retman init` kończy się błędem `store_unavailable` (kod 8) i nie zapisuje pliku — wskaż
+sieciowych), `retman config init` kończy się błędem `store_unavailable` (kod 8) i nie zapisuje pliku — wskaż
 folder na innym dysku.
 
 Tabele magazynów w pliku, ze ścieżkami bezwzględnymi (tu skrócono do `~`):
@@ -166,13 +166,13 @@ parameter = 0.90
 
 Progi `"auto"` działają tylko z basalem; z innym backendem trzeba wpisać liczby. Bez ustawień modelu
 polecenie z tekstem do rozpoznania kończy się błędem `validation_error` (powód `invalid_config`, kod 2) z listą
-brakujących kluczy, a `retman results`, `retman log`, `retman config show` i `retman init` działają bez nich.
+brakujących kluczy, a `retman results list`, `retman journal show`, `retman config show` i `retman config init` działają bez nich.
 Wszystkie ustawienia opisuje ARCHITECTURE 9.1 i ADR-021.
 
 ### 1.4. Sprawdzenie
 
 ```bash
-retman doctor
+retman doctor check
 ```
 
 Gdy wszystko jest w porządku, kończy się kodem 0; szczegóły w p. 11.
@@ -209,7 +209,7 @@ Uruchamiaj Retmana w folderze projektu, nie w katalogu domowym ani w repozytoriu
 Polecenie to zwykłe zdanie po polsku, w cudzysłowie:
 
 ```
-$ retman "Pobierz NMT 1 m dla arkusza N-34-130-D-d-2-4"
+$ retman plan run --text "Pobierz NMT 1 m dla arkusza N-34-130-D-d-2-4"
 ? W którym układzie wysokościowym pobrać NMT: EVRF2007 czy KRON86?
   1) EVRF2007
   2) KRON86 (tylko 0,5 m i 1 m)
@@ -241,7 +241,7 @@ Co się stało:
 Im pełniejsze polecenie, tym mniej pytań:
 
 ```
-$ retman "ściągnij bdot dla powiatu 2264 w gpkg"
+$ retman plan run --text "ściągnij bdot dla powiatu 2264 w gpkg"
 Plan:
 Operacja: Pobranie BDOT10k (bieżące paczki powiatów)
 Obszar BDOT10k: powiat o kodzie TERYT 2264
@@ -269,7 +269,7 @@ Zapis o kilku możliwych odczytach zawsze kończy się pytaniem. Przykład: wsp�
 bez wskazania kolejności osi — Retman pokazuje oba odczyty i podpowiada format:
 
 ```
-$ retman --plan-only "Wytnij NMT 530000,382000,530100,382100 EPSG:2180 w EVRF2007, wynik w PL-1992"
+$ retman plan run --check --text "Wytnij NMT 530000,382000,530100,382100 EPSG:2180 w EVRF2007, wynik w PL-1992"
 ? Jaki prostokąt współrzędnych albo plik geometrii wyciąć z danych wysokościowych?
   1) prostokąt w PL-1992 (kolejność E, N): E 530000–530100, N 382000–382100
   2) prostokąt w PL-1992 (zamieniona kolejność N, E): E 382000–382100, N 530000–530100
@@ -287,7 +287,7 @@ Tak samo pytanie dostaje zapis prawdopodobieństwa, który ma dwa odczyty („Q5
 powtarzalności 50 lat?). Wartość podana bez znaku, jak „dla 1”, też zawsze kończy się pytaniem:
 
 ```
-$ retman --plan-only "Opady maksymalne PMAXTP dla punktu 52.23, 21.01 metodą POT dla Q50"
+$ retman plan run --check --text "Opady maksymalne PMAXTP dla punktu 52.23, 21.01 metodą POT dla Q50"
 ? Dla jakiego prawdopodobieństwa przewyższenia zawęzić tabelę (np. 1%, 2%, 10%)?
   1) p = 50%
   2) okres powtarzalności T = 50 lat (p = 2%)
@@ -317,7 +317,7 @@ Retman pyta zawsze, gdy wartość mogłaby zmienić wynik, a polecenie jej nie r
 - **warstwa pliku geometrii** (GeoPackage z kilkoma warstwami):
 
 ```
-$ retman "Pobierz NMT 1 m w EVRF2007 dla obszaru z pliku zlewnie.gpkg"
+$ retman plan run --text "Pobierz NMT 1 m w EVRF2007 dla obszaru z pliku zlewnie.gpkg"
 ? Która warstwa pliku zlewnie.gpkg wyznacza obszar?
   1) zlewnie
   2) dzialki
@@ -344,7 +344,7 @@ w EVRF2007 razem z KRON86), Retman nie ufa już tej wartości i **pyta ponownie*
 wskazało, z powodem w pytaniu (tekst narzędzia jest w nim cytatem):
 
 ```
-$ retman "Pobierz NMT 5 m w układzie KRON86 dla arkusza N-34-130-D-d-2-4"
+$ retman plan run --text "Pobierz NMT 5 m w układzie KRON86 dla arkusza N-34-130-D-d-2-4"
 ? W jakiej rozdzielczości pobrać NMT: 0,15 m, 0,5 m, 0,6 m, 1 m, 5 m, 10 m czy 100 m?
   1) 0,15 m (tylko EVRF2007)
   2) 0,5 m
@@ -418,7 +418,7 @@ Przykład z magazynu testowego IMGWTools (fikcyjna stacja „Raba Górna”, bez
 rodzaju roku, więc Retman pyta; źródło danych (magazyn) wybrał model:
 
 ```
-$ retman "Pobierz dobowe przepływy ze stacji Raba Górna z lat 2023–2024"
+$ retman plan run --text "Pobierz dobowe przepływy ze stacji Raba Górna z lat 2023–2024"
 ? Czy podane lata to lata kalendarzowe (1 I – 31 XII) czy hydrologiczne (1 XI – 31 X)?
   1) Hydrologiczne (1 XI – 31 X)
   2) Kalendarzowe (1 I – 31 XII)
@@ -503,7 +503,7 @@ Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
   „Sprawdzenie dostępności: …”.
 - Wysyłane są wyłącznie wartości z planu (obszar, produkt, lata…) — nigdy treść polecenia ani plik.
 - Sprawdzenie nie zajmuje numeru wyniku. Jest w dzienniku projektu także wtedy, gdy je odrzucisz (p. 6.3).
-- Bez terminala i z `--plan-only` Retman nigdy nie sprawdza (p. 7).
+- Bez terminala i z `--check` Retman nigdy nie sprawdza (p. 7).
 
 Sprawdzenie oferują m.in. cztery operacje Kartografa (lata, rozdzielczości i kompletność pokrycia; dla
 BDOT10k — powiaty obszaru i paczki już w magazynie) oraz budowa katalogu stacji, eksport szeregu ze źródła
@@ -516,7 +516,7 @@ BDOT10k — powiaty obszaru i paczki już w magazynie) oraz budowa katalogu stac
 ### 6.1. Lista wyników
 
 ```
-$ retman results
+$ retman results list
 Gotowe. Wynik #1: szereg stacji 149190310 (91 wierszy, 2023-12-01 – 2024-02-29) zapisany w pliku CSV.
 ```
 
@@ -571,7 +571,7 @@ narzędzia i sumą kontrolną, a nie kopią:
 ### 6.3. Dziennik projektu
 
 ```
-$ retman log
+$ retman journal show
 2026-10-19T20:11:10.307989+00:00 polecenie: Pobierz dobowe przepływy ze stacji Raba Górna z lat 2023–2024
 2026-10-19T20:11:10.484466+00:00 pytanie: Czy podane lata to lata kalendarzowe (1 I – 31 XII) czy hydrologiczne (1 XI – 31 X)?
 2026-10-19T20:11:10.484568+00:00 odpowiedź: 1
@@ -590,12 +590,12 @@ zdarzenie z decyzją modelu. Treść poleceń i odpowiedzi zapisuje się przy `[
 
 ### 6.4. Zbiór poleceń (opcjonalny)
 
-Po zgodzie w `retman init` (`[retman.privacy] collect_commands = true`) Retman dopisuje wynik
+Po zgodzie w `retman config init` (`[retman.privacy] collect_commands = true`) Retman dopisuje wynik
 każdego planowania ze wszystkich projektów do jednego pliku (`[retman.privacy] collect_path`):
 polecenie, Twoje odpowiedzi, wartości ze źródłami, decyzje modelu, status (zatwierdzony
 z wynikiem wykonania, odrzucony, zmieniony, anulowany, poza zakresem), wersje i nazwę modelu
 — bez adresu serwera i bez ścieżek lokalnych (z pliku geometrii zostaje nazwa). Plik zostaje na Twoim
-komputerze; służy do budowy zbioru testowego `retman-eval` z prawdziwej pracy. Wyłączenie:
+komputerze; służy do budowy zbioru testowego `retman eval run` z prawdziwej pracy. Wyłączenie:
 `collect_commands = false`.
 
 ---
@@ -604,22 +604,26 @@ komputerze; służy do budowy zbioru testowego `retman-eval` z prawdziwej pracy.
 
 ### 7.1. Sesja
 
-`retman` bez polecenia otwiera sesję: kolejne polecenia wpisuje się po znaku `>`.
-`koniec` zamyka sesję (kod 0), `anuluj` przerywa (kod 3).
+`retman plan run` bez `--text` w terminalu otwiera sesję: kolejne polecenia wpisuje się po znaku `>`.
+`koniec` zamyka sesję (kod 0), `anuluj` przerywa (kod 130). Każda komenda `retman` to grupa i czasownik
+(`retman commands list` wypisuje wszystkie); opcje poleceń opisuje `retman <grupa> <czasownik> --help`.
 
 ### 7.2. Opcje
 
 | Opcja | Działanie |
 | --- | --- |
-| `--plan-only` | zadaje pytania i pokazuje plan (z podglądem offline), ale go nie wykonuje i nie sprawdza dostępności (kod 0) |
+| `--text TEKST` | polecenie po polsku (`plan run`); bez niego terminal otwiera sesję |
+| `--check` | zadaje pytania i pokazuje plan (z podglądem offline), ale go nie wykonuje i nie sprawdza dostępności (kod 0); z `--json` otwarte pytania są w `result.questions`, a nie błędem |
+| `--yes` | potwierdza kompletny plan bez pytania i go wykonuje; wyklucza się z `--check` |
 | `--explain` | pod planem wypisuje decyzje modelu: wybór, pewność, metodę i prawdopodobieństwa opcji |
 | `--config PATH` | inny plik `nogat.toml` niż domyślny (p. 1.3) |
+| `--json` | w każdym poleceniu: jedna koperta `retman-result/1` na stdout i nic więcej; nigdy nie pyta |
+| `--lang pl\|en` | język tekstów dla człowieka (teksty istnieją po polsku); dokumenty `--json` nie zależą od niego |
 | `--verbose`, `--quiet` | poziom logu technicznego na stderr: `debug` albo tylko błędy; bez opcji decyduje `RETMAN_LOG_LEVEL`, potem `NOGAT_LOG_LEVEL`, potem `log_level` w `[retman]` i `[nogat]` (domyślnie `warning`); log nie zawiera poleceń ani odpowiedzi |
-| `--json` | z `retman doctor`: raport w JSON |
-| `--deep` | z `retman doctor`: także wolniejsze sprawdzenia (próbny zapis do magazynu IMGWTools) |
+| `--deep` | z `doctor check`: także wolniejsze sprawdzenia (próbny zapis do magazynu IMGWTools) |
 
 ```
-$ retman --plan-only "Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4"
+$ retman plan run --check --text "Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4"
 Plan:
 Operacja: Pobranie NMT dla arkusza lub obszaru
 Godło arkusza lub obszar NMT: godło arkusza N-34-130-D-d-2-4
@@ -630,24 +634,26 @@ Liczba arkuszy: 1 × 1:10000 (PL-1992) ← podgląd, bez sieci
 
 ### 7.3. Bez terminala (skrypty, potoki, CI)
 
-Gdy wejście nie jest terminalem, Retman nie zadaje pytań, niczego nie wykonuje i nie sprawdza dostępności
-— wypisuje, czego brakuje, i kończy kodem 2:
+Gdy wejście nie jest terminalem albo jest `--json`, Retman nie zadaje pytań, niczego nie wykonuje bez
+`--yes` i nie sprawdza dostępności. Plan z otwartymi pytaniami pokazuje `--check`; bez `--check` i `--yes`
+(albo z otwartym pytaniem) polecenie kończy się błędem `validation_error` (powód `input_required`, kod 2;
+`details.questions` wymienia pytania, `details.option` — brakującą opcję):
 
 ```
-$ retman "Pobierz NMT dla arkusza N-34-130-D-d-2-4" < /dev/null
+$ retman plan run --text "Pobierz NMT dla arkusza N-34-130-D-d-2-4" --check < /dev/null
 Plan:
 Operacja: Pobranie NMT dla arkusza lub obszaru
 Godło arkusza lub obszar NMT: godło arkusza N-34-130-D-d-2-4
 Brakuje: W jakiej rozdzielczości pobrać NMT: 0,15 m, 0,5 m, 0,6 m, 1 m, 5 m, 10 m czy 100 m?
 ```
 
-Pełny plan bez terminala sprawdza się przez `--plan-only`; wykonanie zawsze wymaga
-potwierdzenia — w terminalu albo z Pythona (p. 10).
+Pełny plan wykonuje się z `--yes` dopiero po tym, jak człowiek go zobaczył (`--check`); w terminalu
+wykonanie wymaga potwierdzenia, z Pythona — p. 10.
 
 ### 7.4. Polecenie spoza zakresu
 
 ```
-$ retman "Jaka będzie jutro pogoda?"
+$ retman plan run --text "Jaka będzie jutro pogoda?"
 Błąd: Polecenie nie dotyczy dostępnych operacji: Stacje i rejestr danych IMGW, Dane bieżące i ostrzeżenia IMGW, Opady maksymalne PMAXTP, Szeregi czasowe stacji IMGW i ČHMÚ, Archiwa i magazyn danych IMGW, Projekty danych IMGW, Dane przestrzenne GUGiK
 ```
 
@@ -673,10 +679,10 @@ Przerwanie przez użytkownika nie jest błędem i nie drukuje dokumentu.
 | 4 | `conflict` | plik ustawień ma już tabelę `[retman]` (`output_exists`), plan niepotwierdzony lub zmieniony |
 | 5 | `source_unavailable` | model nie odpowiada (`backend_connection`) albo źródło danych narzędzia zawiodło |
 | 6 | `missing_dependency` | narzędzie nie jest zainstalowane (`tool_not_installed`) albo brak operacji (`no_operations`) |
-| 7 | `data_error` | plik niezgodny ze swoim rodzajem, zły zbiór poleceń `retman-eval` |
+| 7 | `data_error` | plik niezgodny ze swoim rodzajem, zły zbiór poleceń `eval run` |
 | 8 | `store_unavailable` | magazyn narzędzia nie działa (np. dysk bez dowiązań twardych) |
 | 9 | `io_error` | zapis lub odczyt pliku nie powiódł się |
-| 10 | `partial` | `retman doctor`: coś blokuje pracę, a część kontroli przeszła; `retman-eval`: naruszenie W-03; `retman-scaffold --check`: błędy w części narzędzi |
+| 10 | `partial` | wynik wydrukowany, a część jednostek `items` nie przeszła: `doctor check` (coś blokuje pracę, część kontroli przeszła), `eval run` (część poleceń do odrzucenia zaplanowano), `scaffold check` (błędy w części narzędzi) |
 | 11 | `failed` | to samo, gdy żadna kontrola ani narzędzie nie przeszło |
 | 13 | `calculation_error` | narzędzie nie potrafi policzyć wyniku z poprawnych danych |
 | 14 | `no_data` | źródło nie ma danych dla obszaru lub okresu (np. `no_coverage` Kartografa) |
@@ -685,7 +691,7 @@ Przerwanie przez użytkownika nie jest błędem i nie drukuje dokumentu.
 | 143 | `terminated` | proces dostał SIGTERM |
 
 Kody 10 i 11 nie oznaczają błędu: wynik został wydrukowany, a kod mówi, czy każda jednostka przeszła.
-`retman-eval` i `retman-scaffold` mają te same kody; opcje i miary eval: p. 12.
+`eval run` i `scaffold check` mają te same kody; opcje i miary eval: p. 12.
 
 ---
 
@@ -728,7 +734,7 @@ z serwerem (dopiero po `t`):
 | Archiwa i magazyn danych IMGW | pobranie archiwów hydrologicznych albo meteorologicznych do folderu wyniku; sprawdzenie archiwów względem magazynu (plan); pobranie archiwów do magazynu (`s`), także według planu z wcześniejszego wyniku (np. „#5”); eksport zapisanych archiwów do CSV albo JSON Lines; utworzenie magazynu; opis magazynu | pobrania i sprawdzenie tak |
 | Projekty danych IMGW | utworzenie projektu; dodanie i usunięcie zadania; wskazanie magazynu; pobranie i przypięcie danych (`s`); sprawdzenie aktualności; weryfikacja przypiętych danych | pobranie i sprawdzenie tak |
 
-Przykładowe polecenia (poglądowe; nie wszystkie są jeszcze w zbiorze `retman-eval`): „Znajdź stacje hydrologiczne na Wiśle”,
+Przykładowe polecenia (poglądowe; nie wszystkie są jeszcze w zbiorze `retman eval run`): „Znajdź stacje hydrologiczne na Wiśle”,
 „Zbuduj katalog stacji IMGW”, „Jakie dane ma ČHMÚ?”, „Aktualny stan wody na stacji Poznań-Bogdanka”,
 „Jakie są ostrzeżenia hydrologiczne?”, „Opady maksymalne PMAXTP dla punktu 52.23, 21.01 metodą POT”,
 „Pobierz dobowe opady ze stacji Poznań z lat 2000–2020”, „Za jakie lata mam dane stacji Poznań-Ławica?”,
@@ -815,16 +821,16 @@ Pełny opis API: ARCHITECTURE 7.1 i 7.3.
 
 ---
 
-## 11. Diagnostyka: `retman doctor`
+## 11. Diagnostyka: `retman doctor check`
 
-`retman doctor` w jednym miejscu pokazuje, co działa, co nie i jak to naprawić:
+`retman doctor check` w jednym miejscu pokazuje, co działa, co nie i jak to naprawić:
 plik konfiguracji, folder projektu i zapis wyników, adres serwera modelu (zawsze pokazany,
 bez oceniania), czy model jest na serwerze, pytanie testowe z oczywistą odpowiedzią, metodę
 pewności i progi, zainstalowane narzędzia na tle obsługiwanych wersji, **magazyny danych narzędzi**,
 zgodność opisów z narzędziami i komplet tłumaczeń.
 
 ```
-$ retman doctor
+$ retman doctor check
 Retman 0.1.0.dev0
 
 Konfiguracja
@@ -848,7 +854,7 @@ Magazyny danych narzędzi
   ✓ imgwtools: pyarrow 26.0.0 (szeregi czasowe)
   ✓ imgwtools: dane referencyjne ~/.cache/nogat/imgw/reference (hydro_stations_locations.csv: brak)
 
-Zgodność opisów z narzędziami (retman-scaffold --check)
+Zgodność opisów z narzędziami (retman scaffold check)
   ✓ imgwtools 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
   ✓ kartograf 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
 
@@ -862,11 +868,11 @@ Model tekstowy
 (Układ raportu; wartości adresów, wersji i ścieżek zależą od środowiska.) Sekcja „Magazyny” sprawdza
 ścieżki (bez dowiązań symbolicznych), prawo zapisu, **dowiązania twarde w obu magazynach**, cache Kartografa,
 znacznik magazynu IMGWTools, `pyarrow` i folder danych referencyjnych. Brak magazynu IMGW to ostrzeżenie
-z podpowiedzią „utwórz go: retman init”; dysk bez dowiązań twardych albo obcy folder w miejscu magazynu to
-problem blokujący. Sekcja „Zgodność” to lekka wersja `retman-scaffold --check`: ostrzega, gdy zainstalowane
+z podpowiedzią „utwórz go: retman config init”; dysk bez dowiązań twardych albo obcy folder w miejscu magazynu to
+problem blokujący. Sekcja „Zgodność” to lekka wersja `retman scaffold check`: ostrzega, gdy zainstalowane
 narzędzie przyjmuje wartość, której opisy ani nie oferują, ani nie wyłączają; nie blokuje pracy.
 
-`retman doctor --deep` dodaje wolniejsze sprawdzenie: próbny zapis do magazynu IMGWTools na wbudowanych
+`retman doctor check --deep` dodaje wolniejsze sprawdzenie: próbny zapis do magazynu IMGWTools na wbudowanych
 danych testowych narzędzia, w katalogu tymczasowym i bez sieci:
 
 ```
@@ -881,22 +887,23 @@ Model decyzyjny
 ```
 
 Oznaczenia: `✓` działa, `!` ostrzeżenie (da się pracować), `✗` problem, `–` wyłączone.
-Kod wyjścia 1 oznacza problem blokujący pracę. `retman doctor --json` wypisuje ten sam raport
-w JSON — do wklejenia w zgłoszeniu błędu. Gdy zwykłe polecenie nie może połączyć się
-z modelem, komunikat błędu też podpowiada `retman doctor`.
+Kod wyjścia 10 (`partial`) oznacza problem blokujący pracę przy części kontroli, które przeszły, a 11
+(`failed`) — że żadna nie przeszła; raport jest wtedy wydrukowany. `retman doctor check --json` wypisuje
+ten sam raport w kopercie `retman-result/1` (każda kontrola to jednostka `items`) — do wklejenia w zgłoszeniu
+błędu. Gdy zwykłe polecenie nie może połączyć się z modelem, komunikat błędu też podpowiada `retman doctor check`.
 
 ---
 
-## 12. Dostrajanie progów: `retman-eval`
+## 12. Dostrajanie progów: `retman eval run`
 
 Progi pewności decydują, kiedy Retman przyjmuje wybór modelu, a kiedy dopytuje. Dla modelu
 innego niż basal trzeba je dostroić na zbiorze poleceń testowych:
 
 ```bash
-retman-eval --config nogat.toml --target-error 0.01 --report raport.md --output rekordy.jsonl
+retman eval run --config nogat.toml --target-error 0.01 --report raport.md --output rekordy.jsonl
 ```
 
-`retman-eval` planuje każde polecenie ze zbioru (bez wykonywania operacji i bez sieci narzędzi) i raportuje
+`retman eval run` planuje każde polecenie ze zbioru (bez wykonywania operacji i bez sieci narzędzi) i raportuje
 trafność operacji i parametrów, błędy przyjęte bez pytania (W-02), ciche zgadywanie,
 naruszenia W-03, czasy oraz **zalecane progi** dla zadanego odsetka błędów. Przy rozpoznawaniu
 dwustopniowym pytanie o grupę operacji liczy się jako dopytanie użytkownika. Zalecanych progów

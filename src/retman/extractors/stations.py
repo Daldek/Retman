@@ -22,7 +22,7 @@ from retman.extractors.text import Word, fold, words
 MAX_CANDIDATES = 9
 
 # Key of ``ExtractionContext.memo`` under which the loaded ``StationIndex`` is kept.
-# A test or ``retman-eval`` may put a prepared index there instead of serving a
+# A test or ``retman eval run`` may put a prepared index there instead of serving a
 # ``stations find`` document through ``ctx.lookup``.
 STATION_INDEX_KEY = "imgw_station_index"
 # Tool error codes meaning "there is no station catalog (yet)", as opposed to

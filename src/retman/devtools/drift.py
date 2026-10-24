@@ -28,7 +28,7 @@ X7      the client's ``lookup`` takes a command with effects, the       error
 X8      an error code without ``[errors.<code>]`` text; a document      error
         schema the client does not know
 X9      catalog data commands no operation uses                         info
-X10     no complete ``retman-eval`` row with free values for the        warning
+X10     no complete eval-command row with free values for the           warning
         operation, so its grid could not be built
 ======  =============================================================  ========
 """
@@ -65,7 +65,7 @@ from retman.registry.manifest import ManifestSpec, OperationSpec, ParamSpec
 Severity = Literal["error", "warning", "info"]
 ToolStatus = Literal["checked", "skipped", "missing", "unsupported", "failed"]
 
-# Checks that run in the light form shown by ``retman doctor``; X10 so that an
+# Checks that run in the light form shown by ``retman doctor check``; X10 so that an
 # operation that could not be checked says so instead of looking fine
 LIGHT_CHECKS = frozenset({"X1", "X4", "X7", "X10"})
 # Longest detail quoted from a tool's message in a finding
@@ -827,14 +827,14 @@ def check_tool(
     reader : Reader
         Reads the tool's catalog and names the settings for its client.
     commands : Sequence[EvalCommand]
-        The ``retman-eval`` rows; their complete rows give the free values.
+        The eval command set; its complete rows give the free values.
     client : PlanClient, optional
         The offline client; by default built by the manifest's ``client`` factory
         from scratch settings.
     operations : Collection[str], optional
         Only these operations (and no tool-wide checks unless ``tool_level``).
     light : bool, optional
-        The form of ``retman doctor``: X1, X4 and the offline guard, on a grid
+        The form of ``retman doctor check``: X1, X4 and the offline guard, on a grid
         varied one choice at a time and a single sample.
     tool_level : bool, optional
         Run X7 (``lookup``), X8 and X9; by default when no operation filter is set
@@ -968,7 +968,7 @@ def check_tools(
     manifests : Iterable[tuple[ManifestSpec, Path]]
         Tool manifests with the folders of their translations.
     commands : Sequence[EvalCommand]
-        The ``retman-eval`` rows (free values of the complete rows).
+        The eval command set (free values of the complete rows).
     version_lookup : Callable[[str], str], optional
         Installed version of a distribution; an injection for offline tests.
     readers, clients : Mapping[str, ...], optional
@@ -979,7 +979,7 @@ def check_tools(
     require_tools : bool, optional
         Missing or unsupported tools are errors.
     light : bool, optional
-        The light form of ``retman doctor`` (see ``check_tool``).
+        The light form of ``retman doctor check`` (see ``check_tool``).
     tool_level : bool, optional
         Run the tool-wide checks (X7 ``lookup``, X8, X9) even with an operation
         filter; see ``check_tool``.
@@ -1065,7 +1065,7 @@ def light_findings(
     reader: Reader | None = None,
     client: PlanClient | None = None,
 ) -> list[Finding] | None:
-    """Return the findings of the light check shown by ``retman doctor`` (X1, X4).
+    """Return the findings of the light check shown by ``doctor check`` (X1, X4).
 
     Returns
     -------

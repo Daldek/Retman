@@ -21,6 +21,13 @@ def test_config_template_is_package_data() -> None:
     assert "[retman.decision]" in text
 
 
+def test_agent_guide_templates_are_package_data() -> None:
+    folder = resources.files("retman").joinpath("_data", "agents")
+
+    for name in ("agents.md", "llms.md", "agents-md-block.md"):
+        assert folder.joinpath(name).read_text("utf-8").startswith(("#", "<!--"))
+
+
 def test_core_translations_are_package_data() -> None:
     text = resources.files("retman.i18n").joinpath("pl.toml").read_text("utf-8")
 

@@ -38,8 +38,6 @@ dependencies = ["httpx>=0.27", "platformdirs>=4"]
 
 [project.scripts]
 retman = "retman.cli:main"
-retman-eval = "retman.eval.runner:main"
-retman-scaffold = "retman.devtools.scaffold:main"
 
 [project.urls]
 Homepage = "https://github.com/Daldek/Retman"

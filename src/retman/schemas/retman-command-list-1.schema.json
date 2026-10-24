@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-command-list-1.schema.json",
+  "title": "retman-command-list/1",
+  "description": "The summary of the catalog commands (`commands list`). It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "tool",
+    "version",
+    "commands"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-command-list/1"
+    },
+    "tool": {
+      "const": "retman"
+    },
+    "version": {
+      "type": "string"
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "operation_id",
+          "summary",
+          "read_only"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "operation_id": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "read_only": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

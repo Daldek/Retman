@@ -51,7 +51,7 @@ class CommandInfo:
     ``network`` and ``writes`` are the effects of a run; ``data`` tells whether
     ``validate_command``/``run_command`` take it (a command of the catalog such
     as a source listing is not a data command). ``examples`` are option sets the
-    tool itself documents (seeds for ``retman-scaffold draft``).
+    tool itself documents (seeds for ``retman scaffold draft``).
     """
 
     id: str
@@ -99,7 +99,7 @@ class ToolCatalog:
 
 @dataclass(frozen=True)
 class Verdict:
-    """The tool's offline verdict on a command, for ``retman-scaffold draft``.
+    """The tool's offline verdict on a command, for ``retman scaffold draft``.
 
     ``option``/``options`` name the options at fault, ``allowed`` what the tool
     would accept there (as in ``ToolError``).

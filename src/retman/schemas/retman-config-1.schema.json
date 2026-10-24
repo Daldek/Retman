@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-config-1.schema.json",
+  "title": "retman-config/1",
+  "description": "Every setting with its value and source, the credentials and the stores (DEV-18.6). It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "tool",
+    "version",
+    "config_file",
+    "keys",
+    "credentials",
+    "store",
+    "stores"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-config/1"
+    },
+    "tool": {
+      "const": "retman"
+    },
+    "version": {
+      "type": "string"
+    },
+    "config_file": {
+      "type": "object",
+      "required": [
+        "path",
+        "source",
+        "exists",
+        "error",
+        "ignored"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "default",
+            "NOGAT_CONFIG",
+            "option"
+          ]
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ignored": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "key",
+              "reason"
+            ],
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "keys": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "value",
+          "source",
+          "name",
+          "error"
+        ],
+        "properties": {
+          "value": {},
+          "source": {
+            "enum": [
+              "default",
+              "env",
+              "file",
+              "option"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "credentials": {
+      "type": "object"
+    },
+    "store": {
+      "type": "object"
+    },
+    "stores": {
+      "type": "object"
+    }
+  }
+}
