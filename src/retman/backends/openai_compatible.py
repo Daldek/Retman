@@ -1,9 +1,11 @@
 """Decision backend for servers implementing the OpenAI chat completions API."""
 
 import json
+import logging
 import math
 import os
 from collections import Counter
+from time import monotonic
 from typing import Any
 
 import httpx
@@ -16,6 +18,8 @@ from retman.exceptions import (
     InvalidModelAnswerError,
 )
 from retman.i18n.loader import Texts
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAICompatibleBackend:
@@ -196,6 +200,7 @@ class OpenAICompatibleBackend:
                 if api_key:
                     headers["Authorization"] = f"Bearer {api_key}"
             endpoint = f"{self.url.rstrip('/')}/chat/completions"
+            started_s = monotonic()
             try:
                 response = self._client.post(
                     endpoint,
@@ -204,16 +209,24 @@ class OpenAICompatibleBackend:
                     timeout=self._config.timeout_s,
                 )
             except httpx.RequestError as err:
+                logger.warning("Model server request failed: %s", type(err).__name__)
                 raise BackendConnectionError(self.url) from err
+            logger.debug(
+                "Model server answered HTTP %d in %.2f s",
+                response.status_code,
+                monotonic() - started_s,
+            )
             if response.status_code in (400, 422):
                 if use_schema and _unsupported_field(
                     response, "response_format", "json_schema"
                 ):
                     self._schema_supported = False
+                    logger.info("Model server has no json_schema: asking without it")
                     use_schema = False
                     continue
                 if use_logprobs and _unsupported_field(response, "logprobs"):
                     self._logprobs_supported = False
+                    logger.info("Model server has no logprobs: asking without them")
                     if self._config.confidence == "logprobs":
                         raise BackendError(self.url, "server does not support logprobs")
                     use_logprobs = False

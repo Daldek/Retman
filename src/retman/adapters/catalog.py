@@ -14,6 +14,7 @@ This module is standard library only and imports no tool.
 import hashlib
 import importlib
 import json
+import logging
 import re
 from collections import Counter
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
@@ -31,6 +32,8 @@ from retman.registry.manifest import (
     ToolAuditCall,
 )
 from retman.registry.operation import Operation
+
+logger = logging.getLogger(__name__)
 
 ToolDocument = Mapping[str, Any]
 RunStatus = Literal["ok", "partial", "failed", "cancelled"]
@@ -523,6 +526,7 @@ def run_calls(
     runs: list[tuple[CatalogCall, ToolRun]] = []
     saved: list[tuple[str, str]] = []
     for index, call in enumerate(builder(params, ctx), 1):
+        logger.debug("Running %s for operation %s", call.command, operation.id)
         try:
             run = client.run(call)
         except ToolError as err:
@@ -530,6 +534,7 @@ def run_calls(
                 err.call = call
             raise
         runs.append((call, run))
+        logger.debug("%s finished: %s", call.command, run.status)
         saved.append(_save_document(output_dir, index, run))
         if run.status in ("failed", "cancelled"):
             first = run.failed[0] if run.failed else None

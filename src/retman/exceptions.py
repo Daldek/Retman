@@ -8,6 +8,10 @@ class RetmanError(Exception):
     """Base class of all Retman errors."""
 
 
+class UsageError(RetmanError):
+    """A command-line option or an environment variable has a wrong value."""
+
+
 class ConfigError(RetmanError):
     """The central config file is missing or invalid.
 

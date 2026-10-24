@@ -53,7 +53,7 @@ reference_data_dir = @IMGWTOOLS_REFERENCE_DIR@
 
 [log]
 journal_commands = true    # store command texts and answers in the project journal
-diagnostic_level = "info"  # technical log in the user's log directory: "debug" | "info" | "warning"
+diagnostic_level = "warning"  # technical log on stderr: "debug" | "info" | "warning" | "error"
 
 [privacy]
 # Collect planning outcomes (command, plan, answers, model decisions) from ALL projects

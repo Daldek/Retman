@@ -404,3 +404,70 @@ def test_main_log_names_the_checks_and_what_became_of_them(
     cli.main([*config_args, "log"], project_dir=project)
 
     assert "sprawdzenie dostępności: pominięte" in capsys.readouterr().out
+
+
+def test_main_verbose_writes_the_technical_log_to_stderr_without_the_command(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", TerminalInput("1\nt\n"))
+
+    status = cli.main(
+        [*config_args, "--verbose", f"Zrób NMT dla {SHEET}"],
+        backend=FakeDecisionBackend({"make_dem": "make_dem"}),
+        project_dir=project,
+    )
+    captured = capsys.readouterr()
+
+    assert status == 0
+    assert "DEBUG retman.core.pipeline" in captured.err
+    assert "finished as result #1" in captured.err
+    assert "DEBUG" not in captured.out
+    # ARCHITECTURE 5.4: the technical log never holds the command or an answer
+    assert SHEET not in captured.err
+    assert "Zrób" not in captured.err
+
+
+def test_main_logs_warnings_only_by_default(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", TerminalInput("1\nt\n"))
+
+    cli.main(
+        [*config_args, f"Zrób NMT dla {SHEET}"],
+        backend=FakeDecisionBackend({"make_dem": "make_dem"}),
+        project_dir=project,
+    )
+
+    assert capsys.readouterr().err == ""
+
+
+def test_main_reads_the_log_level_from_the_environment(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", TerminalInput("1\nt\n"))
+    monkeypatch.setenv("RETMAN_LOG_LEVEL", "info")
+
+    cli.main(
+        [*config_args, f"Zrób NMT dla {SHEET}"],
+        backend=FakeDecisionBackend({"make_dem": "make_dem"}),
+        project_dir=project,
+    )
+    err = capsys.readouterr().err
+
+    assert "INFO retman.core.pipeline" in err
+    assert "DEBUG" not in err
+
+
+def test_main_rejects_an_unknown_log_level_naming_the_variable(
+    command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    config_args, project = command_args
+    monkeypatch.setenv("RETMAN_LOG_LEVEL", "loud")
+
+    status = cli.main([*config_args, "results"], project_dir=project)
+
+    assert status == 1
+    assert "RETMAN_LOG_LEVEL" in capsys.readouterr().err

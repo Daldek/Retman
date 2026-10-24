@@ -1,6 +1,7 @@
 """Shared fixtures: network isolation for offline tests (STANDARDS 10.4)."""
 
 import ipaddress
+import logging
 import socket
 import sqlite3
 from collections.abc import Callable, Iterator, Mapping
@@ -75,6 +76,17 @@ def _block_network(
     monkeypatch.setattr(socket.socket, "connect", guarded_connect)
     monkeypatch.setattr(socket, "getaddrinfo", guarded_getaddrinfo)
     yield
+
+
+@pytest.fixture(autouse=True)
+def _isolate_logger() -> Iterator[None]:
+    """Undo the handler the command line puts on the logger of Retman (DEV-12.1)."""
+    logger = logging.getLogger("retman")
+    handlers, level, propagate = list(logger.handlers), logger.level, logger.propagate
+    yield
+    logger.handlers[:] = handlers
+    logger.setLevel(level)
+    logger.propagate = propagate
 
 
 # --- The dummy tool (tests/fixtures/dummy_tool) for core, adapter and CLI tests.

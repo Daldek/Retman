@@ -1,5 +1,6 @@
 """Six-step pipeline: recognize, extract, ask, confirm, execute, audit."""
 
+import logging
 import platform
 import sys
 import uuid
@@ -64,6 +65,8 @@ from retman.registry.operation import (
     two_stage,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class Retman:
     """Plan and execute tool operations in a project-local workspace.
@@ -123,7 +126,16 @@ class Retman:
         )
 
     def _choose(self, state: str, question: str, options: dict[str, str]) -> Decision:
+        started_s = monotonic()
         decision = self.backend.choose(state, question, options)
+        # The state is the user's command: the technical log never holds it
+        logger.debug(
+            "Model chose %s among %d options in %.2f s (confidence %s)",
+            decision.key,
+            len(options),
+            monotonic() - started_s,
+            decision.confidence,
+        )
         if decision.key not in options:
             raise InvalidModelAnswerError(self.backend.url, decision.key)
         return decision
@@ -1404,9 +1416,17 @@ class Retman:
                     inputs=self._plan_inputs(plan),
                 )
             except (OSError, ImportError, RetmanError) as err:
+                logger.warning(
+                    "Availability check of %s could not run: %s",
+                    operation.id,
+                    type(err).__name__,
+                )
                 report = failed_check(operation, self.texts, str(err))
             else:
                 report = run_check(operation, params, context, self.texts)
+                logger.info(
+                    "Availability check of %s finished: %s", operation.id, report.status
+                )
         finally:
             self.journal.append(
                 "check",
@@ -1503,6 +1523,7 @@ class Retman:
                 context,
             )
         except (OSError, ImportError, RetmanError) as err:
+            logger.warning("Operation %s failed: %s", operation.id, type(err).__name__)
             result = Result(
                 False,
                 number,
@@ -1513,6 +1534,13 @@ class Retman:
                 summary=self.texts.get("results.failure", number=number, error=err),
             )
         finished_at = utc_now()
+        logger.info(
+            "Operation %s finished as result #%d (ok=%s) in %.2f s",
+            operation.id,
+            number,
+            result.ok,
+            monotonic() - start_s,
+        )
         record = result.to_dict()
         record["files"] = {
             kind: [self._file_record(operation, path) for path in paths]

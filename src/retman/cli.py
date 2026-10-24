@@ -1,6 +1,7 @@
 """Standard-library command-line conversation over the public Retman API."""
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from retman.doctor import run_doctor
 from retman.exceptions import BackendConnectionError, ConfigError, RetmanError
 from retman.i18n.loader import Texts, load_core_texts
 from retman.initialize import run_init
+from retman.logs import configure_logging, resolve_level
 
 
 def _config_error(texts: Texts, error: ConfigError) -> None:
@@ -179,10 +181,15 @@ def main(
     parser.add_argument("--explain", action="store_true")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--deep", action="store_true")
+    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--quiet", action="store_true")
     parser.add_argument("command", nargs="?")
     args = parser.parse_args(argv)
     texts = load_core_texts("pl")
     try:
+        configure_logging(
+            resolve_level(verbose=args.verbose, quiet=args.quiet, environ=os.environ)
+        )
         if args.command == "init":
             return run_init(args.config, texts)
         if args.command == "doctor":
@@ -198,6 +205,14 @@ def main(
             )
             return report.exit_code
         config = load_config(args.config)
+        configure_logging(
+            resolve_level(
+                verbose=args.verbose,
+                quiet=args.quiet,
+                environ=os.environ,
+                configured=config.diagnostic_level,
+            )
+        )
         texts = load_core_texts(config.language)
         folder = project_dir if project_dir is not None else Path.cwd()
         if args.command in ("results", "log"):

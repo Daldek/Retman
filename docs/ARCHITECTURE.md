@@ -1329,9 +1329,10 @@ $ retman log
 albo „pominięte”.
 
 **3. Log techniczny** — osobny, do diagnozowania problemów Retmana (połączenia, czasy odpowiedzi,
-błędy), w katalogu logów użytkownika: Linux `~/.local/state/retman/`, macOS
-`~/Library/Logs/retman/`, Windows `%LOCALAPPDATA%\retman\Logs\`. **Bez treści poleceń.**
-Poziom szczegółowości ustawia plik centralny (`diagnostic_level`, p. 9.1).
+błędy); biblioteka loguje przez `logging`, a CLI wypisuje log na stderr (DEV-12). **Bez treści
+poleceń i odpowiedzi.** Poziom: `--verbose` (debug) albo `--quiet` (tylko błędy), potem
+`RETMAN_LOG_LEVEL`, `NOGAT_LOG_LEVEL` i plik centralny (`diagnostic_level`, p. 9.1); domyślnie
+`warning`.
 
 **4. Zbiór poleceń** (opcjonalny, ADR-010) — jeden plik ze **wszystkich** projektów, do budowy
 i strojenia zbioru testowego (`retman-eval`). Każdy wiersz to wynik planowania: status
@@ -1350,7 +1351,7 @@ domyślnie Linux `~/.local/share/retman/collected.jsonl`, macOS
 | Co | Gdzie | Treść poleceń |
 | --- | --- | --- |
 | dziennik projektu + dane audytowe | folder projektu | **tak** — to zapis pracy użytkownika; można wyłączyć (`journal_commands`) |
-| log techniczny | katalog logów użytkownika | nie |
+| log techniczny | stderr (CLI) | nie |
 | zbiór poleceń | jeden plik użytkownika (`collect_path`) | **tak**, tylko po wyraźnej zgodzie (`collect_commands`, rozdz. 10) |
 
 ### 5.5. Później (v0.2+)
@@ -2104,7 +2105,7 @@ reference_data_dir = '/home/<user>/.local/share/retman/imgw-reference'
 
 [log]
 journal_commands = true    # store command texts and answers in the project journal
-diagnostic_level = "info"  # technical log in the user's log directory: "debug" | "info" | "warning"
+diagnostic_level = "warning"  # technical log on stderr: "debug" | "info" | "warning" | "error"
 
 [privacy]
 # Collect planning outcomes (command, plan, answers, model decisions) from ALL projects

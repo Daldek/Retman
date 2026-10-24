@@ -1,6 +1,7 @@
 """Central config file ``retman.toml``: location, loading, ``retman init``."""
 
 import json
+import logging
 import os
 import sys
 import tomllib
@@ -11,16 +12,18 @@ from typing import Any, Literal, cast
 
 from retman.exceptions import ConfigError
 
+logger = logging.getLogger(__name__)
+
 CONFIG_FILENAME = "retman.toml"
 
 DecisionBackendName = Literal["basal", "openai_compatible"]
 ConfidenceSetting = Literal["auto", "logprobs", "consistency", "none"]
-DiagnosticLevel = Literal["debug", "info", "warning"]
+DiagnosticLevel = Literal["debug", "info", "warning", "error"]
 
 _DECISION_BACKENDS: tuple[str, ...] = ("basal", "openai_compatible")
 _CONFIDENCE_SETTINGS: tuple[str, ...] = ("auto", "logprobs", "consistency", "none")
 _TEXT_BACKENDS: tuple[str, ...] = ("none",)
-_DIAGNOSTIC_LEVELS: tuple[str, ...] = ("debug", "info", "warning")
+_DIAGNOSTIC_LEVELS: tuple[str, ...] = ("debug", "info", "warning", "error")
 # "local" keeps stored versions and asks no source; the others are Kartograf's
 # update modes of a download ("check" never downloads, so it is not a setting)
 _KARTOGRAF_UPDATE_MODES: tuple[str, ...] = ("local", "upgrade", "force")
@@ -98,18 +101,6 @@ def default_config_path() -> Path:
         xdg = os.environ.get("XDG_CONFIG_HOME")
         base = Path(xdg) if xdg else Path.home() / ".config"
     return base / "retman" / CONFIG_FILENAME
-
-
-def default_log_dir() -> Path:
-    """Directory of the technical log for the current system (ARCHITECTURE 5.4)."""
-    if sys.platform == "win32":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-        return base / "retman" / "Logs"
-    if sys.platform == "darwin":
-        return Path.home() / "Library" / "Logs" / "retman"
-    xdg = os.environ.get("XDG_STATE_HOME")
-    base = Path(xdg) if xdg else Path.home() / ".local" / "state"
-    return base / "retman"
 
 
 def default_data_dir() -> Path:
@@ -306,6 +297,7 @@ def load_config(path: Path | None = None) -> Config:
             data = tomllib.load(handle)
     except tomllib.TOMLDecodeError as err:
         raise ConfigError(target, ["invalid_toml"], {"error": str(err)}) from err
+    logger.debug("Read the config file %s", target)
     return _parse(target, data)
 
 

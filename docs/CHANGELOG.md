@@ -123,11 +123,17 @@ Linki porównań na końcu pliku, od najnowszego:
 - Raporty badań z 2026-10-19 w `docs/research/` (wpływ wydań narzędzi, integracja,
   sprawdzanie dostępności, plik geometrii, migracja Kartografa, operacje IMGWTools, MCP)
   i ADR-012–019.
+- Log techniczny na stderr: biblioteka loguje przez `logging`, a CLI ustawia poziom opcjami
+  `--verbose` i `--quiet`, zmiennymi `RETMAN_LOG_LEVEL` i `NOGAT_LOG_LEVEL` oraz `[log]
+  diagnostic_level`; log nie zawiera poleceń ani odpowiedzi (DEV-12, ARCHITECTURE 5.4).
+  `.env.example` wymienia zmienne środowiskowe.
 
 ### Zmienione
 
 - Operacje Kartografa nie mają wartości domyślnych: Retman dopytuje o rozdzielczość,
   układ wysokościowy i format, jeśli polecenie ich nie podaje (ADR-006).
+- `[log] diagnostic_level` dotyczy stderr, domyślnie `warning`, dopuszcza też `error`; plik
+  logu w katalogu logów użytkownika nigdy nie powstawał i go nie ma (ARCHITECTURE 5.4).
 - Opcje parametrów mają osobną etykietę dla użytkownika i opis dla modelu, jak operacje:
   plan i pytania pokazują krótkie nazwy („NMT (numeryczny model terenu)”, „1 m”), a model
   dopasowuje polecenie i odpowiedzi do opisów z synonymami i nazwami angielskimi (DEM, DTM,

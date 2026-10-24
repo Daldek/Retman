@@ -580,6 +580,7 @@ komputerze; służy do budowy zbioru testowego `retman-eval` z prawdziwej pracy.
 | `--plan-only` | zadaje pytania i pokazuje plan (z podglądem offline), ale go nie wykonuje i nie sprawdza dostępności (kod 0) |
 | `--explain` | pod planem wypisuje decyzje modelu: wybór, pewność, metodę i prawdopodobieństwa opcji |
 | `--config PATH` | inny plik konfiguracji niż domyślny |
+| `--verbose`, `--quiet` | poziom logu technicznego na stderr: `debug` albo tylko błędy; bez opcji decyduje `RETMAN_LOG_LEVEL`, potem `NOGAT_LOG_LEVEL`, potem `[log] diagnostic_level` (domyślnie `warning`); log nie zawiera poleceń ani odpowiedzi |
 | `--json` | z `retman doctor`: raport w JSON |
 | `--deep` | z `retman doctor`: także wolniejsze sprawdzenia (próbny zapis do magazynu IMGWTools) |
 

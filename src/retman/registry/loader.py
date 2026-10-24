@@ -2,6 +2,7 @@
 
 import importlib
 import importlib.metadata
+import logging
 import re
 import tomllib
 from collections.abc import Callable, Iterable
@@ -17,6 +18,8 @@ from retman.registry.operation import (
     category_text,
     two_stage,
 )
+
+logger = logging.getLogger(__name__)
 
 _VERSION = re.compile(r"(>=|<=|==|!=|>|<)\s*(\d+(?:\.\d+)*)\Z")
 _RELEASE = re.compile(r"\d+(?:\.\d+)*")
@@ -91,8 +94,16 @@ def load_operations(
         try:
             version = version_lookup(manifest["distribution"])
         except importlib.metadata.PackageNotFoundError:
+            logger.debug("Tool %s is not installed", tool)
             continue
         if not version_matches(version, manifest["supported_versions"]):
+            logger.warning(
+                "Tool %s %s is outside the supported range %s; its operations are "
+                "not offered",
+                tool,
+                version,
+                manifest["supported_versions"],
+            )
             continue
         for spec in manifest["operations"]:
             op = Operation(
