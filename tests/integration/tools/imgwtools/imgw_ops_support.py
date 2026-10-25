@@ -15,6 +15,7 @@ from retman.testing import tool_context
 from retman.tools.imgwtools.manifest import MANIFEST
 
 STORE = Path("/stores/imgw")
+PROJECT = Path("/projects/imgw")
 TEXTS = load_core_texts("pl")
 YEARS = {"type": "years", "first": 2000, "last": 2002}
 
@@ -58,7 +59,7 @@ def context(
         operations()[operation],
         client=client,
         settings=settings if settings is not None else {"store_dir": str(STORE)},
-        project_dir=project_dir or Path("/projects/imgw"),
+        project_dir=project_dir or PROJECT,
         output_dir=output_dir,
         inputs=inputs,
     )

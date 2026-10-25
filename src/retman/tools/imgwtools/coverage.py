@@ -23,6 +23,10 @@ EXCLUDED_COMMANDS: Final[dict[str, str]] = {
         "the records of series export as paged JSON for interactive clients; the "
         "file-producing path is export_station_series"
     ),
+    "commands list": (
+        "the one-line summary of every catalog command, the first look of an "
+        "agent at the tool; not an operation on data"
+    ),
     "commands schema": (
         "describes the catalog itself; used by `scaffold` and the drift tests, "
         "not an operation on data"

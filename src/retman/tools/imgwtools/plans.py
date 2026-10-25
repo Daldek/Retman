@@ -14,7 +14,7 @@ from retman.registry.manifest import CheckItem, CheckOutput
 
 # The ``error`` of a plan item that the server does not publish
 # (``imgwtools.fetch.UNPUBLISHED``; a test compares it with the installed tool)
-UNPUBLISHED: Final = "nieopublikowany"
+UNPUBLISHED: Final = "not published"
 PLAN_STATUSES: Final = ("current", "newer", "missing", "unverifiable", "check_failed")
 # The states of a series in ``series_state`` that need a (re)build
 _SERIES_TO_BUILD: Final = ("outdated", "missing")

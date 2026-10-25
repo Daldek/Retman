@@ -18,9 +18,8 @@ from retman.tools.imgwtools.calls import (
     build_imgw_station_catalog,
     export_station_series,
 )
+from retman.tools.imgwtools.plans import UNPUBLISHED
 
-# A file the server does not publish (a year without an archive) is not an error
-_UNPUBLISHED = "nieopublikowany"
 _MEGABYTE = 1_000_000
 
 
@@ -51,7 +50,7 @@ def summarize_plan(document: Mapping[str, Any]) -> PlanSummary:
     unpublished = sum(
         1
         for item in items
-        if item.get("status") == "unverifiable" and item.get("error") == _UNPUBLISHED
+        if item.get("status") == "unverifiable" and item.get("error") == UNPUBLISHED
     )
     sizes = [
         item["content_length"]

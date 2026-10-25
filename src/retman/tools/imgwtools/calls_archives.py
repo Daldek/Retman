@@ -2,11 +2,12 @@
 
 A builder is ``calls(params, ctx) -> list[CatalogCall]``: pure, with the options
 taken from the parameters and the manifest's ``tool_values``. ``root`` is never
-given here, the client adds it from ``[retman.tools.imgwtools] store_dir``. Files the
-tool writes (downloads, plans, exports) get a target in the result folder only
-once it exists, i.e. when the operation runs; while planning the commands are
-validated without them. The offline lookups feed the previews and, for the
-export, the list of calls.
+given here, the client adds it from ``[retman.tools.imgwtools] store_dir`` (to every
+call but a download of plain files). Files the tool writes (downloads, plans,
+exports) get a target in the result folder only once it exists, i.e. when the
+operation runs; while planning the commands are validated without it, and a
+download with the project folder in its place. The offline lookups feed the
+previews and, for the export, the list of calls.
 """
 
 from collections import Counter
@@ -87,8 +88,13 @@ def archive_files_call(params: Mapping[str, Any], ctx: ToolContext) -> CatalogCa
 
 def _download(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
     options = _download_selection(params, ctx)
-    if ctx.output_dir is not None:
-        options["output"] = str(ctx.output_dir)
+    # Plain files in the result folder. A download without ``output_dir`` goes to the
+    # store, which holds only some datasets: the tool refuses the others. While
+    # planning there is no result folder yet, so the project folder stands in for it
+    # (the tool only validates the option; nothing is written there)
+    options["output_dir"] = str(
+        ctx.output_dir if ctx.output_dir is not None else ctx.project_dir
+    )
     return [
         CatalogCall(
             "datasets download",
@@ -269,7 +275,7 @@ def export_imgw_archive(params: dict[str, Any], ctx: ToolContext) -> list[Catalo
             "format": extension,
         }
         if ctx.output_dir is not None:
-            options["path"] = str(ctx.output_dir / name)
+            options["output"] = str(ctx.output_dir / name)
         calls.append(
             CatalogCall(
                 "store export",

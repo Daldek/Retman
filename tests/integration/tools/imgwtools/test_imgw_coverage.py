@@ -23,6 +23,6 @@ def test_every_command_of_the_catalog_is_offered_or_excluded_with_a_reason():
     assert all(reason.strip() for reason in EXCLUDED_COMMANDS.values())
 
 
-def test_the_catalog_still_has_the_37_commands_the_adapter_was_designed_for():
+def test_the_catalog_still_has_the_38_commands_the_adapter_was_designed_for():
     # A release that adds or drops a command must make someone decide about it
-    assert len(imgwtools.data_commands()) == 37
+    assert len(imgwtools.data_commands()) == 38

@@ -1,5 +1,6 @@
 """Archive operations: plan-time review, no network before consent, results."""
 
+import hashlib
 import json
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -9,7 +10,7 @@ from typing import Any
 import pytest
 from imgw_ops_support import TEXTS, YEARS, context, execute, operations, station
 from imgw_support import fixture_store, real_client, settings_for, synthetic_run
-from imgwtools import CommandResult, archive_files
+from imgwtools import CommandResult, FileResult, archive_files
 from imgwtools.store.types import (
     DownloadItem,
     DownloadReport,
@@ -45,7 +46,7 @@ def envelope(command: str, result: object, *, check: bool = False) -> dict[str, 
 def make_plan(root: Path, statuses: list[str]) -> StorePlan:
     """A real ``imgw-plan/1`` object over the first archives of hydro daily 2020."""
     archives = archive_files("pl.imgw.hydro_daily", years=[2020])
-    errors = {"unverifiable": "nieopublikowany", "check_failed": "Błąd HTTP 500"}
+    errors = {"unverifiable": "not published", "check_failed": "HTTP error 500"}
     items = tuple(
         PlanItem(
             archive,
@@ -286,13 +287,17 @@ def test_download_reports_files_size_and_what_the_server_does_not_publish(
 ) -> None:
     out = tmp_path / "out"
     out.mkdir()
+    content = b"PK\x03\x04" + b"0" * 2000
+    digest = hashlib.sha256(content).hexdigest()
 
     def download(call: CatalogCall) -> ToolRun:
-        target = Path(str(call.options["output"])) / "dane" / "codz.zip"
+        target = Path(str(call.options["output_dir"])) / "dane" / "codz.zip"
         target.parent.mkdir(parents=True)
-        target.write_bytes(b"PK\x03\x04" + b"0" * 2000)
+        target.write_bytes(content)
         report = DownloadReport(
+            "plain",
             out,
+            None,
             (
                 DownloadItem(
                     "archive:cz.chmi.hydro_daily:a",
@@ -307,10 +312,11 @@ def test_download_reports_files_size_and_what_the_server_does_not_publish(
                     "https://x/b",
                     "not_published",
                     None,
-                    "nieopublikowany",
+                    "not published",
                     None,
                 ),
             ),
+            (FileResult(target, len(content), digest, "written"),),
             False,
         )
         return synthetic_run("datasets download", report)
@@ -333,6 +339,16 @@ def test_download_reports_files_size_and_what_the_server_does_not_publish(
     assert result.values["files"] == 1 and result.values["not_published"] == 1
     assert result.values["size"] == "2.0 kB"
     assert "Serwer nie publikuje 1 z 2 żądanych plików" in result.warnings[0]
+    # The audit keeps the checksum the tool computed while it wrote the file
+    assert result.tool is not None
+    assert result.tool["calls"][0]["files"] == [
+        {
+            "path": str(out / "dane" / "codz.zip"),
+            "sha256": digest,
+            "version": None,
+            "status": "written",
+        }
+    ]
 
 
 def test_a_check_saves_the_tools_plan_and_counts_it(tmp_path: Path) -> None:
@@ -384,7 +400,7 @@ def test_sync_reports_new_versions_and_series_and_by_plan_uses_the_saved_plan(
         (
             OperationResult(
                 "archive:pl.imgw.hydro_daily:2020/a.zip",
-                "created",
+                "new",
                 store / relative,
                 None,
             ),
@@ -395,10 +411,10 @@ def test_sync_reports_new_versions_and_series_and_by_plan_uses_the_saved_plan(
                 "archive:pl.imgw.hydro_daily:2020/c.zip",
                 "stale_plan",
                 None,
-                "zmieniony",
+                "changed",
             ),
         ),
-        (SeriesReport("created", store / "series" / "s.json", 3, (), ()),),
+        (SeriesReport("new", store / "series" / "s.json", 3, (), ()),),
         False,
     )
     run = synthetic_run("store sync", report, status="partial")
@@ -426,12 +442,13 @@ def test_sync_reports_new_versions_and_series_and_by_plan_uses_the_saved_plan(
         "run",
         CatalogCall("store sync", {"plan": str(plan_file)}),
     )
-    assert (result.values["created"], result.values["series_created"]) == (1, 1)
-    assert result.values["items"] == {"created": 1, "unchanged": 1, "stale_plan": 1}
+    assert (result.values["new_versions"], result.values["new_series"]) == (1, 1)
+    assert result.values["items"] == {"new": 1, "unchanged": 1, "stale_plan": 1}
+    assert result.values["series"] == {"new": 1, "unchanged": 0, "failed": 0}
     assert result.values["bytes"] == 104
     assert [item["status"] for item in result.values["store_versions"]] == [
-        "created",
-        "created",
+        "new",
+        "new",
     ]
 
 

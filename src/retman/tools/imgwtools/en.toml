@@ -501,7 +501,7 @@ help = "ČHMÚ files are separate for each station, so stations are required."
 [operations.sync_imgw_store]
 label = "Download archives to the store"
 description = "Download new and missing archives of the chosen dataset and years to the local IMGW store, then build time series: update the store, synchronise, top up local data, fetch precipitation, flows or water levels into the store (magazyn); writes to the store, requires network access."
-summary = "Done. Result #{number}: IMGW store updated — new archive versions: {created}, series built: {series_created}."
+summary = "Done. Result #{number}: IMGW store updated — new archive versions: {new_versions}, series built: {new_series}."
 
 [operations.sync_imgw_store.check]
 notice = "I will query the IMGW-PIB or ČHMÚ servers (file lists and HEAD headers) about the archives in the plan: how many are newer or missing and how much data that is."
@@ -542,7 +542,7 @@ help = "ČHMÚ files are separate for each station, so stations are required."
 [operations.sync_imgw_store_by_plan]
 label = "Download to the store according to a plan"
 description = "Download to the local IMGW store exactly what a saved archive-check plan lists (the result of the “Check archives against the store” operation): synchronise according to the plan, run the plan, plan #5, download according to the saved plan; writes to the store, requires network."
-summary = "Done. Result #{number}: the IMGW store has been updated according to the plan — new archive versions: {created}, series built: {series_created}."
+summary = "Done. Result #{number}: the IMGW store has been updated according to the plan — new archive versions: {new_versions}, series built: {new_series}."
 
 [operations.export_imgw_archive]
 label = "Export stored archives from the store"
@@ -819,7 +819,8 @@ summary = "Done. Result #{number}: the IMGW project now points to store {store}.
 [errors]
 validation_error = "IMGWTools rejects this choice: {detail}"
 not_found = "IMGWTools did not find the data: {detail}"
-conflict = "IMGWTools reports a conflict in the store: {detail}"
+conflict = "IMGWTools reports a conflict: {detail}"
+forbidden = "IMGWTools refuses to write there: {detail}"
 source_unavailable = "The data server is unavailable: {detail}. Try again later."
 missing_dependency = "An IMGWTools add-on is missing: {detail}. Check: retman doctor check"
 data_error = "The IMGWTools data is invalid or incomplete: {detail}"

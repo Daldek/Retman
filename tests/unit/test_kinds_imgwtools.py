@@ -44,7 +44,7 @@ def test_series_export_files_are_valid_series(
 ) -> None:
     target = tmp_path / "series.csv"
 
-    _run("series export", store, dataset=dataset, station=station, path=str(target))
+    _run("series export", store, dataset=dataset, station=station, output=str(target))
 
     validate_file(kind, target)
 
@@ -60,7 +60,11 @@ def test_archive_export_files_are_valid_archive_records(
     for suffix, format_name in ((".csv", "csv"), (".jsonl", "jsonl")):
         target = tmp_path / f"records{suffix}"
         _run(
-            "store export", store, version=version, format=format_name, path=str(target)
+            "store export",
+            store,
+            version=version,
+            format=format_name,
+            output=str(target),
         )
         validate_file("archive_records", target)
 

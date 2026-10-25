@@ -45,11 +45,7 @@ def describe_download_archives(
     (_, run) = runs[0]
     items = items_of(run)
     status = Counter(str(item.get("status")) for item in items)
-    paths = [
-        Path(str(item["path"]))
-        for item in items
-        if item.get("status") == "downloaded" and item.get("path")
-    ]
+    paths = [file.path for file in run.files]
     output["files"] = {"imgw_archive": paths}
     total = sum(_size(path) for path in paths)
     output["values"].update(
@@ -93,7 +89,7 @@ def describe_sync_store(
     """Describe what the synchronisation did in the store: items, series, new versions.
 
     The store is not a result file (the audit keeps the paths); ``store_versions``
-    lists the versions the run created, relative to the store.
+    lists the versions the run made (``new`` and ``relabeled``), relative to the store.
     """
     output = base_output(operation, params, runs, ctx)
     (_, run) = runs[0]
@@ -101,28 +97,28 @@ def describe_sync_store(
     items = [item for item in result.get("items", ()) if isinstance(item, Mapping)]
     series = [item for item in result.get("series", ()) if isinstance(item, Mapping)]
     by_status = Counter(str(item.get("status")) for item in items)
-    made = [item for item in items if item.get("status") in ("created", "relabeled")]
+    made = [item for item in items if item.get("status") in ("new", "relabeled")]
     versions = [
         {"slot": item.get("slot"), "status": item["status"], "path": item["version"]}
         for item in made
         if item.get("version")
     ] + [
-        {"slot": "series", "status": "created", "path": item["version"]}
+        {"slot": "series", "status": "new", "path": item["version"]}
         for item in series
-        if item.get("status") == "created" and item.get("version")
+        if item.get("status") == "new" and item.get("version")
     ]
-    created = [item for item in made if item["status"] == "created"]
+    new = [item for item in made if item["status"] == "new"]
     series_by_status = Counter(str(item.get("status")) for item in series)
     output["values"].update(
         items=dict(by_status),
         series={
-            state: series_by_status[state] for state in ("created", "reused", "failed")
+            state: series_by_status[state] for state in ("new", "unchanged", "failed")
         },
-        created=len(created),
-        series_created=series_by_status["created"],
+        new_versions=len(new),
+        new_series=series_by_status["new"],
         bytes=sum(
             _size(ctx.store_dir / str(item["version"]))
-            for item in created
+            for item in new
             if item.get("version")
         ),
         store_versions=versions,
@@ -150,7 +146,7 @@ def describe_export_archive(
             ctx.tool, "not_found", "the store holds no archive of the selection"
         )
     output = base_output(operation, params, runs, ctx)
-    paths = [Path(str(call.options["path"])) for call, _ in runs]
+    paths = [file.path for _, run in runs for file in run.files]
     output["files"] = {"archive_records": paths}
     output["values"].update(
         files=len(paths),

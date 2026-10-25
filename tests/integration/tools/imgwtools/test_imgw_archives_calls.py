@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from imgw_ops_support import STORE, YEARS, context, operations, station
+from imgw_ops_support import PROJECT, STORE, YEARS, context, operations, station
 from imgw_support import fixture_store, real_client
 
 from retman.adapters.catalog import CatalogCall, ToolError, route_error
@@ -62,12 +62,14 @@ def test_hydro_download_names_the_dataset_years_and_parameters_as_the_tool_does(
 
     assert planned == CatalogCall(
         "datasets download",
-        {"dataset": tool_key, **options},
+        {"dataset": tool_key, **options, "output_dir": str(PROJECT)},
         kind="imgw_archive",
         params={"params": "hydro_params"},
     )
-    # The target folder exists only while the operation runs
-    assert running.options == {**planned.options, "output": str(tmp_path)}
+    # The result folder exists only while the operation runs; until then the project
+    # folder stands in, so that the tool validates a download of plain files (given
+    # no directory it writes the store, which takes only some of the datasets)
+    assert running.options == {**planned.options, "output_dir": str(tmp_path)}
 
 
 def test_the_whole_history_dataset_of_czechia_takes_stations_and_no_years() -> None:
@@ -78,6 +80,7 @@ def test_the_whole_history_dataset_of_czechia_takes_stations_and_no_years() -> N
     assert call.options == {
         "dataset": "cz.chmi.meteo_daily",
         "stations": ["0-203-0-11514"],
+        "output_dir": str(PROJECT),
     }
 
 
@@ -297,7 +300,7 @@ def test_export_makes_one_call_per_stored_archive(tmp_path: Path) -> None:
         {"version": "v/1", "format": "jsonl"},
         {"version": "v/2", "format": "jsonl"},
     ]
-    assert [call.options["path"] for call in running] == [
+    assert [call.options["output"] for call in running] == [
         str(tmp_path / "codz_2020_01.jsonl"),
         str(tmp_path / "codz_2020_02.jsonl"),
     ]

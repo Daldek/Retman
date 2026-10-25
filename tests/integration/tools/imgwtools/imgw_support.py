@@ -95,7 +95,7 @@ def recorded_answers() -> dict[str, dict[str, Any]]:
 
 @contextmanager
 def replay_http(*answers: Mapping[str, Any]) -> Iterator[list[str]]:
-    """Answer ``httpx`` requests from ``answers`` (method, url, status, json).
+    """Answer ``httpx`` requests from ``answers`` (method, url, status, json, content).
 
     Every answer serves one request; a request without an answer is a connection
     error, as in the tool's own fixtures. Yields the list of the URLs requested.
@@ -116,7 +116,10 @@ def replay_http(*answers: Mapping[str, Any]) -> Iterator[list[str]]:
             )
         answer = queue.pop(0)
         return httpx.Response(
-            answer.get("status", 200), json=answer.get("json"), request=request
+            answer.get("status", 200),
+            json=answer.get("json"),
+            content=answer.get("content"),
+            request=request,
         )
 
     with patch.object(httpx.HTTPTransport, "handle_request", handle):
@@ -124,8 +127,8 @@ def replay_http(*answers: Mapping[str, Any]) -> Iterator[list[str]]:
 
 
 def isolate_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Restore ``IMGW_DATA_DIR`` after the test: the client exports it once."""
-    monkeypatch.setenv("IMGW_DATA_DIR", "unset-by-test")
+    """Restore ``IMGW_REFERENCE_DIR`` after the test: the client exports it once."""
+    monkeypatch.setenv("IMGW_REFERENCE_DIR", "unset-by-test")
 
 
 def settings_for(tmp_path: Path, store: Path | None = None) -> dict[str, Any]:
@@ -164,7 +167,7 @@ def synthetic_run(
     return ToolRun(
         command,
         status,  # type: ignore[arg-type]
-        files=(),
+        files=IMGWToolsClient._files(command, {}, document),
         failed=IMGWToolsClient._failures(command, status, document),
         notices=notices,
         document=document,

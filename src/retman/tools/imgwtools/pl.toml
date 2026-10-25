@@ -501,7 +501,7 @@ help = "Pliki ČHMÚ są osobne dla każdej stacji, więc stacje są wymagane."
 [operations.sync_imgw_store]
 label = "Pobranie archiwów do magazynu"
 description = "Pobierz do lokalnego magazynu IMGW nowe i brakujące archiwa wybranego zbioru i lat, a potem zbuduj szeregi czasowe: aktualizacja magazynu, synchronizacja, uzupełnienie lokalnych danych, ściągnięcie opadów, przepływów albo stanów wody do magazynu; zapisuje w magazynie, wymaga sieci."
-summary = "Gotowe. Wynik #{number}: magazyn IMGW zaktualizowany — nowych wersji archiwów: {created}, szeregów zbudowanych: {series_created}."
+summary = "Gotowe. Wynik #{number}: magazyn IMGW zaktualizowany — nowych wersji archiwów: {new_versions}, szeregów zbudowanych: {new_series}."
 
 [operations.sync_imgw_store.check]
 notice = "Zapytam serwery IMGW-PIB albo ČHMÚ (listy plików i nagłówki HEAD) o archiwa z planu: ile jest nowszych albo brakujących i ile to danych."
@@ -542,7 +542,7 @@ help = "Pliki ČHMÚ są osobne dla każdej stacji, więc stacje są wymagane."
 [operations.sync_imgw_store_by_plan]
 label = "Pobranie do magazynu według planu"
 description = "Pobierz do lokalnego magazynu IMGW dokładnie to, co wymienia zapisany plan sprawdzenia archiwów (wynik operacji „Sprawdź archiwa”): synchronizacja według planu, wykonaj plan, plan #5, pobierz według zapisanego planu; zapisuje w magazynie, wymaga sieci."
-summary = "Gotowe. Wynik #{number}: magazyn IMGW zaktualizowany według planu — nowych wersji archiwów: {created}, szeregów zbudowanych: {series_created}."
+summary = "Gotowe. Wynik #{number}: magazyn IMGW zaktualizowany według planu — nowych wersji archiwów: {new_versions}, szeregów zbudowanych: {new_series}."
 
 [operations.export_imgw_archive]
 label = "Eksport zapisanych archiwów z magazynu"
@@ -819,7 +819,8 @@ summary = "Gotowe. Wynik #{number}: projekt IMGW wskazuje teraz magazyn {store}.
 [errors]
 validation_error = "IMGWTools odrzuca ten wybór: {detail}"
 not_found = "IMGWTools nie znalazł danych: {detail}"
-conflict = "IMGWTools zgłasza konflikt w magazynie: {detail}"
+conflict = "IMGWTools zgłasza konflikt: {detail}"
+forbidden = "IMGWTools odmawia zapisu w tym miejscu: {detail}"
 source_unavailable = "Serwer danych jest niedostępny: {detail}. Spróbuj ponownie później."
 missing_dependency = "Brakuje dodatku IMGWTools: {detail}. Sprawdź: retman doctor check"
 data_error = "Dane IMGWTools są nieprawidłowe lub niekompletne: {detail}"

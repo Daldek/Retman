@@ -22,6 +22,7 @@ from retman.registry.loader import load_operations
 from retman.registry.operation import Operation
 from retman.testing import FakeToolClient, tool_context
 from retman.tools.imgwtools import manifest as imgw_manifest
+from retman.tools.imgwtools import plans
 from retman.tools.imgwtools.calls import export_station_series
 from retman.tools.imgwtools.check import summarize_plan
 
@@ -137,8 +138,8 @@ def test_files_the_server_does_not_publish_make_the_answer_partial(
 ):
     items = [
         plan_item(1, "current"),
-        plan_item(2, "unverifiable", error="nieopublikowany"),
-        plan_item(3, "unverifiable", error="brak sygnału"),
+        plan_item(2, "unverifiable", error="not published"),
+        plan_item(3, "unverifiable", error="no signal from the server"),
     ]
     client = FakeToolClient(documents={"check:store sync": plan_document(items)})
 
@@ -274,9 +275,9 @@ def test_the_summary_of_a_plan_counts_what_the_checks_need():
         plan_item(2, "missing", 20),
         plan_item(3, "missing"),
         plan_item(4, "current", 99),
-        plan_item(5, "unverifiable", error="nieopublikowany"),
+        plan_item(5, "unverifiable", error="not published"),
     ]
-    action = imgwtools.PlanAction("series build", "missing", "brak szeregu")
+    action = imgwtools.PlanAction("series build", "missing", "no series")
 
     summary = summarize_plan(plan_document(items, (action,)))
 
@@ -286,3 +287,11 @@ def test_the_summary_of_a_plan_counts_what_the_checks_need():
     assert summary.size_bytes == 30
     assert summary.actions == {"series build": "missing"}
     assert summarize_plan({}).total == 0
+
+
+def test_the_text_of_an_unpublished_file_is_the_one_of_the_installed_tool():
+    # The adapter compares the text of a plan item's error: a tool that words it
+    # differently makes every unpublished file a failure
+    from imgwtools.fetch import UNPUBLISHED
+
+    assert plans.UNPUBLISHED == UNPUBLISHED

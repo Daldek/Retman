@@ -225,7 +225,7 @@ def export_station_series(
         selection["variables"] = list(params["variables"])
     if ctx.output_dir is not None:
         name = f"{meta['slug']}_{code}_{start.isoformat()}_{end.isoformat()}.csv"
-        export["path"] = str(Path(ctx.output_dir) / name)
+        export["output"] = str(Path(ctx.output_dir) / name)
     routes = {
         "dataset": "dataset",
         "station": "station",

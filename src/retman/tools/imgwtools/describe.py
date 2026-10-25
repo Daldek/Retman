@@ -714,7 +714,7 @@ def describe_export_station_series(
             "planned": len(sync["items"]),
             **{
                 status: archives.get(status, 0)
-                for status in ("created", "unchanged", "relabeled", "failed")
+                for status in ("new", "unchanged", "relabeled", "failed")
             },
         }
     return output

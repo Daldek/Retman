@@ -39,8 +39,10 @@ STORE_WRITE_UNSUPPORTED = "store_write_unsupported"
 TASK_OPTIONS = "options"
 # Item states that are failures of a unit (sync, download, plan, project)
 _FAILED_STATES = ("failed", "stale_plan", "check_failed")
-# Commands whose result is the file given as ``path``
-_FILE_COMMANDS = ("series export", "store export")
+# Commands whose result lists the plain files they wrote as ``files[]`` (``path``,
+# ``size_bytes``, ``sha256``, ``status``): the exports to the one file ``output`` and
+# the download to ``output_dir``
+_WRITING_COMMANDS = ("series export", "store export", "datasets download")
 # Commands that may write the freshness plan given as ``plan``
 _PLAN_COMMANDS = ("store check", "project check")
 
@@ -58,17 +60,18 @@ class IMGWToolsClient:
     """A ``RunClient`` over the command catalog of IMGWTools 3.x.
 
     ``settings`` is the ``[retman.tools.imgwtools]`` table: ``store_dir`` is added as
-    ``root`` to every command that has that option and the call omits it;
-    ``reference_data_dir`` is exported as ``IMGW_DATA_DIR`` once, before the tool
-    is imported, so that ``store catalog`` reads its static station locations
-    from there and never from the working directory.
+    ``root`` to every command that has that option and the call omits it, except where
+    the call names plain files (``output_dir``), which the tool does not combine with
+    a store; ``reference_data_dir`` is exported as ``IMGW_REFERENCE_DIR`` once, before
+    the tool is imported, so that ``store catalog`` reads its static station locations
+    from there and not from the tool's own default (``<cache_dir>/imgw/reference``).
     """
 
     def __init__(self, settings: Mapping[str, Any]) -> None:
         reference = settings.get("reference_data_dir")
         if not reference:
             raise RetmanError(f"[retman.tools.{TOOL}] has no reference_data_dir")
-        os.environ["IMGW_DATA_DIR"] = str(reference)
+        os.environ["IMGW_REFERENCE_DIR"] = str(reference)
         self._settings = settings
         self._imgw: Any = importlib.import_module("imgwtools")
         self._exceptions: Any = importlib.import_module("imgwtools.exceptions")
@@ -87,6 +90,8 @@ class IMGWToolsClient:
 
         ``stations find`` takes a root only for ``source="store"`` and refuses it
         for the live source; the catalog names such conditions in ``env_root_when``.
+        A command that writes plain files (``output_dir``) refuses a root beside
+        them: the catalog names the options that exclude each other in ``exclusive``.
         """
         options = dict(call.options)
         spec = self._commands.get(call.command)
@@ -96,6 +101,10 @@ class IMGWToolsClient:
             and any(option.name == "root" for option in spec.options)
             and all(
                 options.get(name) == value for name, value in spec.env_root_when.items()
+            )
+            and not any(
+                "root" in group and any(name in options for name in group)
+                for group in spec.exclusive
             )
         ):
             options["root"] = str(self._store_root())
@@ -206,7 +215,7 @@ class IMGWToolsClient:
     def run(self, call: CatalogCall) -> ToolRun:
         """Run a data command (network, store writes); the envelope as a ``ToolRun``.
 
-        A command whose result is a stream of lines needs the ``path`` option:
+        A command whose result is a stream of lines needs the ``output`` option:
         Retman never reads a stream into memory.
         """
         return self._execute(call)
@@ -232,12 +241,12 @@ class IMGWToolsClient:
     def _execute(self, call: CatalogCall) -> ToolRun:
         options = self._normalize(call)
         spec = self._commands[call.command]
-        if spec.result == "stream" and "path" not in options:
+        if spec.result == "stream" and "output" not in options:
             raise ToolError(
                 TOOL,
                 "validation_error",
                 f"{call.command} needs a target file",
-                option="path",
+                option="output",
                 call=call,
             )
         try:
@@ -266,21 +275,20 @@ class IMGWToolsClient:
     def _files(
         command: str, options: Mapping[str, object], document: ToolDocument
     ) -> tuple[ToolFile, ...]:
-        """Return the files the tool itself wrote: an export, a plan, archives."""
+        """Return the files the tool itself wrote: an export, a plan, archives.
+
+        A writing command reports each plain file it wrote with the checksum it
+        computed while writing it, which is used as it is.
+        """
         result = document.get("result")
-        if command in _FILE_COMMANDS:
-            target = result if isinstance(result, str) else options.get("path")
-            return (_tool_file(Path(str(target))),) if target else ()
         if command in _PLAN_COMMANDS:
             plan = options.get("plan")
             return (_tool_file(Path(str(plan))),) if plan else ()
-        if command == "datasets download" and isinstance(result, dict):
+        if command in _WRITING_COMMANDS and isinstance(result, dict):
             return tuple(
-                _tool_file(Path(item["path"]), "downloaded")
-                for item in result.get("items", ())
+                ToolFile(Path(item["path"]), item["sha256"], None, item["status"])
+                for item in result.get("files") or ()
                 if isinstance(item, dict)
-                and item.get("status") == "downloaded"
-                and item.get("path")
             )
         return ()
 

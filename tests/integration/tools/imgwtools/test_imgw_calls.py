@@ -382,8 +382,8 @@ def test_the_store_as_the_source_skips_the_sync_and_names_a_file_in_the_result(
 
     assert [call.command for call in running] == ["series export", "series select"]
     # Planning validates the stream form; only a running call has a target
-    assert "path" not in planning[0].options
-    assert running[0].options["path"] == str(
+    assert "output" not in planning[0].options
+    assert running[0].options["output"] == str(
         folder / "meteo_precip_daily_123750000_2001-01-01_2001-01-31.csv"
     )
     assert running[0].options["variables"] == ["P", "snow_cover"]

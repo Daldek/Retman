@@ -44,7 +44,7 @@ TEXTS = load_core_texts("pl")
 FROZEN = datetime(2026, 10, 19, 12, 30, 5, tzinfo=UTC)
 STAMP = "20261019T123005Z"
 IMGW_LICENSE_START = "Źródłem pochodzenia danych jest Instytut Meteorologii"
-IMGW_LICENSE_END = "także wyjątków dla danych o wysokiej wartości."
+IMGW_LICENSE_END = "including the exceptions for high-value data."
 PRECIP = "pl.imgw.meteo_precip_daily"
 MISSING_PROBABILITY = (
     "W tabeli PMAXTP nie ma prawdopodobieństwa 30 %; dostępne: 1, 2, 5, 10, 20, 50 %."
@@ -205,14 +205,14 @@ def catalog_report(**changes: Any) -> Any:
     from imgwtools import CatalogReport
 
     fields: dict[str, Any] = {
-        "status": "created",
+        "status": "new",
         "version": Path(
             "/store/stations/versions/2026-10-19_ab12cd34/stations.geojson"
         ),
         "station_count": 812,
         "without_location": 7,
         "from_series": 3,
-        "problems": ("Lista meteo niedostępna",),
+        "problems": ("The meteo list is unavailable",),
         "provider": "IMGW-PIB",
     }
     return CatalogReport(**{**fields, **changes})
@@ -222,8 +222,8 @@ def test_a_built_catalog_reports_what_it_holds_and_what_is_missing(
     operations, tmp_path
 ):
     # The tool reports each catalog problem in the report AND as a notice
-    problem = ToolNotice("warning", "catalog_problem", "Lista meteo niedostępna")
-    notice = ToolNotice("info", "license_terms", "Warunki użycia danych IMGW.")
+    problem = ToolNotice("warning", "catalog_problem", "The meteo list is unavailable")
+    notice = ToolNotice("info", "license_terms", "Terms of use of the IMGW data.")
     client = HybridClient(
         real_client(tmp_path),
         {
@@ -247,14 +247,14 @@ def test_a_built_catalog_reports_what_it_holds_and_what_is_missing(
     assert result.values["catalog_version"].endswith("stations.geojson")
     assert result.summary == (
         "Gotowe. Wynik #1: katalog stacji IMGW-PIB w magazynie "
-        "(812 stacji, bez położenia: 7, stan: created)."
+        "(812 stacji, bez położenia: 7, stan: new)."
     )
     # ... and the result shows it once
     assert result.warnings == [
-        "Narzędzie imgwtools: Lista meteo niedostępna",
+        "Narzędzie imgwtools: The meteo list is unavailable",
         "7 stacji katalogu nie ma położenia (współrzędnych); można je uzupełnić "
         "plikiem z położeniami stacji.",
-        "Warunki użycia danych IMGW.",
+        "Terms of use of the IMGW data.",
     ]
 
 
@@ -539,7 +539,7 @@ def test_an_empty_range_is_the_tools_error_with_its_code(operations, tmp_path):
     assert result.error_code == "data_error"
     assert result.error is not None
     assert result.error.startswith("Dane IMGWTools są nieprawidłowe lub niekompletne:")
-    assert "jest pusty w wybranym zakresie" in result.error
+    assert "is empty in the chosen range" in result.error
     assert result.files == {}
 
 
@@ -553,16 +553,16 @@ def test_a_series_from_the_server_counts_the_archives_and_reports_the_failed_one
     report = SyncReport(
         items=(
             OperationResult(f"{base}/2001_01_o.zip", "unchanged", None, None),
-            OperationResult(f"{base}/2001_02_o.zip", "created", None, None),
+            OperationResult(f"{base}/2001_02_o.zip", "new", None, None),
             OperationResult(
                 f"{base}/2001_03_o.zip",
                 "failed",
                 None,
-                "HTTP 503",
+                "HTTP error 503",
                 error_code="source_unavailable",
             ),
         ),
-        series=(SeriesReport("created", None, 2, (), ()),),
+        series=(SeriesReport("new", None, 2, (), ()),),
         cancelled=False,
     )
     client = HybridClient(
@@ -581,7 +581,7 @@ def test_a_series_from_the_server_counts_the_archives_and_reports_the_failed_one
     assert result.ok, result.error
     assert result.values["archives"] == {
         "planned": 3,
-        "created": 1,
+        "new": 1,
         "unchanged": 1,
         "relabeled": 0,
         "failed": 1,
@@ -592,7 +592,7 @@ def test_a_series_from_the_server_counts_the_archives_and_reports_the_failed_one
     )
     assert result.warnings[1] == (
         "Nie wszystko się udało "
-        "(archive:pl.imgw.meteo_precip_daily:2001/2001_03_o.zip): HTTP 503"
+        "(archive:pl.imgw.meteo_precip_daily:2001/2001_03_o.zip): HTTP error 503"
     )
     assert audit_commands(result) == ["store sync", "series export", "series select"]
 
@@ -624,19 +624,19 @@ def test_the_coverage_of_a_station_is_kept_as_the_tools_document(operations, tmp
     )
 
 
-def test_building_a_series_names_the_version_and_says_when_it_was_reused(
+def test_building_a_series_names_the_version_and_says_when_it_was_unchanged(
     operations, tmp_path
 ):
     store = build_store(tmp_path / "store")
 
-    reused = execute(
+    unchanged = execute(
         operations,
         "build_imgw_series",
         {"dataset": "pl_hydro_daily"},
         tmp_path,
         store=store,
     )
-    created = execute(
+    new = execute(
         operations,
         "build_imgw_series",
         {"dataset": "pl_meteo_precip_daily"},
@@ -644,21 +644,21 @@ def test_building_a_series_names_the_version_and_says_when_it_was_reused(
         store=store,
     )
 
-    assert reused.ok, reused.error
-    assert reused.values["status"] == "reused"
-    assert reused.values["dataset"] == "pl.imgw.hydro_daily"
-    assert reused.values["stations"] == 2
-    assert reused.warnings == []
-    assert reused.summary == (
-        "Gotowe. Wynik #1: szereg zbioru pl.imgw.hydro_daily w magazynie: reused, "
+    assert unchanged.ok, unchanged.error
+    assert unchanged.values["status"] == "unchanged"
+    assert unchanged.values["dataset"] == "pl.imgw.hydro_daily"
+    assert unchanged.values["stations"] == 2
+    assert unchanged.warnings == []
+    assert unchanged.summary == (
+        "Gotowe. Wynik #1: szereg zbioru pl.imgw.hydro_daily w magazynie: unchanged, "
         "stacji: 2."
     )
     # A new series version brings the provider's terms
-    assert created.ok, created.error
-    assert created.values["status"] == "created"
-    assert created.values["series_version"].endswith("series.json")
-    assert len(created.warnings) == 1
-    assert created.warnings[0].startswith(IMGW_LICENSE_START)
+    assert new.ok, new.error
+    assert new.values["status"] == "new"
+    assert new.values["series_version"].endswith("series.json")
+    assert len(new.warnings) == 1
+    assert new.warnings[0].startswith(IMGW_LICENSE_START)
 
 
 def test_a_disk_without_hard_links_is_explained_not_quoted(
