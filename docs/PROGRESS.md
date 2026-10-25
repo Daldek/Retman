@@ -11,11 +11,11 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-024) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
-| Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins `8a36e977` (Kartograf) and `7b11755` (IMGWTools): the heads of their `feature/data-output`, **not pushed**, so the author pushes both first, Next 2) until the tags `v0.8.0` and `v3.0.0` exist; the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
+| Kartograf 0.8.0 adapter (5 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins `8a36e977` (Kartograf) and `7b11755` (IMGWTools): the heads of their `feature/data-output`, **not pushed**, so the author pushes both first, Next 2) until the tags `v0.8.0` and `v3.0.0` exist; the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
 | Extractors | in progress | missing: numbers with units; the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
-| `retman eval run` and the 614-command set | in progress | code done; the last run was on the old 83-command set |
+| `retman eval run` and the 630-command set | in progress | code done; the last run was on the old 83-command set |
 | Nogat standard 2.1, structure and tooling | done | branch `chore/nogat-2.1`: gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
 | Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
 | Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
@@ -67,9 +67,9 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      (decided, ADR-024, USAGE 13). Not part of the migration: the fixture store of the IMGW tests
      (`imgw_support.fixture_store`) leaves a `retman-imgw-test-*` folder in `TMPDIR` per run, and
      `docs/research/` still names the old variables, which is history.
-   - **Kartograf: the calls and the marker states are migrated on the branch
-     `feature/kartograf-data-output`; the operation that writes the marker, the user documents
-     and ADR-025 are open.** The `tools` group pins
+   - **Kartograf: the calls, the marker states and the operation that writes the marker are
+     migrated on the branch `feature/kartograf-data-output`; the user documents and ADR-025
+     are open.** The `tools` group pins
      `8a36e977d607192b11c66f44f318f2e7676b60d1`, the head of Kartograf `feature/data-output`,
      **not pushed** (fetched into the database of the Kartograf URL below
      `~/.cache/uv/git-v1/db/` as `local-feature-data-output`, the way the IMGWTools pin is; the
@@ -89,15 +89,21 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      `test_a_run_into_a_store_kartograf_refuses_is_an_error_with_its_registry_code`
      (`test_kartograf_client.py`) is written against the fixed behaviour and is
      `xfail(strict=True)`: when the pin has the fix it fails as unexpectedly passing, and the
-     marker is dropped. Open: (1) the operation `init_kartograf_store` ("Utwórz magazyn
-     Kartografa", `store init`); (2) USAGE, ARCHITECTURE (3.2.4, 3.2.10, 7.2, 9.1, the old codes
-     in 6.x), the pin note of USAGE 1, README and ADR-025 (an erratum of ADR-024 names the
-     Kartograf pin).
+     marker is dropped. The operation `init_kartograf_store` ("Utwórz magazyn Kartografa") is
+     a handler that calls `kartograf.init_store`, because the command layer of Kartograf takes
+     the data commands only; its 16 eval rows are written, but `retman eval run` has not run
+     on them (it needs a model server), and the ambiguous rows `imgw-init-store-014` and
+     `-015` now expect IMGW after a question about the operation. Open: USAGE (the pin note of
+     section 1, 9.1, the codes and texts of the old errors such as `no_coverage`), ARCHITECTURE
+     (3.2.4, the old codes in 6.x, 9.1), the README line on the catalog schema of Kartograf,
+     `docs/DECISIONS.md` (it still says `kartograf@8e9bcbb0`), ADR-025 with its row in the
+     index, an erratum of ADR-024 (it says Kartograf stays at `8e9bcbb`) and the number of
+     ADRs in the first row of the status table.
 3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
    `v3.0.0` once they exist (REL-5.3), and in the same change narrow the `supported_versions` of
    both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test of the IMGWTools manifest
    pins the string), run `uv lock` and the gate.
-4. Review `src/retman/eval/commands.jsonl` (614 commands, an agent draft), run `retman-eval`
+4. Review `src/retman/eval/commands.jsonl` (630 commands, an agent draft), run `retman-eval`
    with Bielik 11B on it (two-stage recognition, `0_5m` against `5m`), then set the confidence
    thresholds.
 5. Live tests of IMGWTools (none in the `live` set), a smoke run of the CLI on Windows and

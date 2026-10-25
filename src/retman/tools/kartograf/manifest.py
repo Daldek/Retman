@@ -241,5 +241,19 @@ MANIFEST: ManifestSpec = {
                 },
             ],
         },
+        {
+            "id": "init_kartograf_store",
+            "category": "spatial_data",
+            "description": "Write the marker of the Kartograf store in the configured "
+            "folder",
+            "inputs": [],
+            "outputs": [],
+            "params": [],
+            # Not a data command: the command layer of Kartograf (validate_command,
+            # run_command) takes the twelve data commands only, so `store init` is the
+            # function `init_store` and the handler calls it
+            "handler": "retman.tools.kartograf.handlers:init_kartograf_store",
+            "preview": "retman.tools.kartograf.preview:init_kartograf_store",
+        },
     ],
 }

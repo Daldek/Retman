@@ -517,7 +517,7 @@ _EVAL_RUN: Final = Command(
         "io_error",
     ),
     examples=({"target_error": 0.01, "output": "records.jsonl"},),
-    example_results=({"commands": 614, "runs": 614},),
+    example_results=({"commands": 630, "runs": 630},),
 )
 
 _SCAFFOLD_CHECK: Final = Command(

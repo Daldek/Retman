@@ -1,6 +1,6 @@
 [categories.spatial_data]
 label = "GUGiK spatial data"
-description = "Downloading spatial data from GUGiK: the DEM (NMT, numeryczny model terenu), the DSM (NMPT, numeryczny model pokrycia terenu), orthophoto (ortofotomapa), elevation cutouts (wycinki wysokościowe) and BDOT10k (topographic vector data)"
+description = "Downloading spatial data from GUGiK: the DEM (NMT, numeryczny model terenu), the DSM (NMPT, numeryczny model pokrycia terenu), orthophoto (ortofotomapa), elevation cutouts (wycinki wysokościowe) and BDOT10k (topographic vector data); creating the Kartograf store (the store marker)"
 
 [operations.download_dem_sheet]
 label = "Download DEM (NMT) for a map sheet or area"
@@ -217,6 +217,11 @@ options.shp.label = "Shapefile (.shp)"
 options.shp.description = "Shapefile (.shp, SHP) — all layers from the ZIP package together with .dbf/.shx/.prj"
 options.unspecified.description = "No format given — ask about GeoPackage or Shapefile"
 
+[operations.init_kartograf_store]
+label = "Create the Kartograf store"
+description = "Create (initialise) the Kartograf store in the folder from the configuration: write the store marker kartograf-store.json into a new or empty folder, or into a folder that has the layout of a store but no marker (the tool checks the layout first); the first step when Kartograf refuses to write into a store without its marker, setting up the data store (magazyn danych) for GUGiK spatial data, a new Kartograf store; does not download data and does not change an existing store."
+summary = "Done. Result #{number}: the Kartograf store is ready: {store}."
+
 # Result warnings. Keys equal to Kartograf note codes replace its text
 # (English, with command-line flag names); other warning notes are
 # shown verbatim (core: warnings.tool_notice).
@@ -261,7 +266,7 @@ no_descendants = "Map sheet {code} (PL-2000) has no child sheets in the scales I
 no_sheets = "The geometry file does not intersect any map sheet in the selected scale."
 orthophoto_needs_sheet = "I download the orthophoto only for a sheet code, not for a geometry file. Give a sheet code or choose other data."
 outside_poland = "The area from the file lies outside Poland, and BDOT10k covers only Poland."
-store_no_marker = "The folder {path} has the layout of a Kartograf store but no marker. Write the marker with the command kartograf store init --root {path}; Kartograf checks the layout first."
+store_no_marker = "The folder {path} has the layout of a Kartograf store but no marker. Write the marker with the command “Create the Kartograf store” (or kartograf store init --root {path}); the tool checks the layout first."
 store_not_kartograf = "{path} is not a Kartograf store: it is a file or a folder with other files. Specify an empty folder in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
 store_marker_unreadable = "The marker kartograf-store.json in {path} is unreadable. The store is damaged or comes from a different version of Kartograf; specify another folder in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
 store_unsupported = "The Kartograf store in {path} has an unsupported marker schema ({schema}). Update Kartograf."
@@ -279,6 +284,26 @@ value = "{count} × {scale} (PL-{system})"
 [preview.province_files]
 label = "Data scope"
 value = "voivodeship files (DEM (NMT) 100 m is not divided into map sheets)"
+
+[preview.store]
+label = "Kartograf store"
+value = "{path} (from configuration)"
+
+[preview.store_missing]
+label = "Store state"
+value = "folder does not exist — it will be created and marked"
+
+[preview.store_empty]
+label = "Store state"
+value = "empty folder — it will be marked"
+
+[preview.store_no_marker]
+label = "Store state"
+value = "the folder has the layout of a store but no marker — the layout will be checked and the marker written"
+
+[preview.store_ready]
+label = "Store state"
+value = "the store already has its marker — the operation will change nothing"
 
 # Availability check rows (separate step with network)
 [check]

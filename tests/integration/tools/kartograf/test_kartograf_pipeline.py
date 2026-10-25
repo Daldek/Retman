@@ -11,12 +11,21 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+import pytest
 from kartograf_offline import GugikIndex, flight, gugik_index
-from kartograf_support import CHILDREN, NEWEST, OfflineClient, geometry, operations
+from kartograf_support import (
+    CHILDREN,
+    NEWEST,
+    OfflineClient,
+    built_store,
+    geometry,
+    operations,
+)
 
 from retman.config import init_config, load_config
 from retman.core.pipeline import Retman
 from retman.core.plan import Plan
+from retman.exceptions import RetmanError
 from retman.testing import FakeDecisionBackend
 
 AVAILABILITY = Path(__file__).resolve().parents[3] / "fixtures" / "kartograf"
@@ -246,3 +255,49 @@ def test_an_orthophoto_runs_through_the_provider_and_lands_in_the_store(
     assert (store / "kartograf-store.json").is_file()
     assert record["tool"]["calls"][0]["options"]["color"] == "CIR"
     assert record["params"]["color"]["value"] == "cir"
+
+
+def test_creating_the_store_is_planned_without_a_write_and_made_after_confirmation(
+    tmp_path: Path,
+) -> None:
+    app, client = make_app(tmp_path, {"init_kartograf_store": "init_kartograf_store"})
+    store = tmp_path / "stores" / "kartograf"
+
+    plan = app.plan("Utwórz magazyn Kartografa")
+
+    assert plan.questions == []
+    assert dict(plan.preview_rows)["Stan magazynu"].startswith("folder nie istnieje")
+    assert not store.exists()
+    result = app.execute(plan.confirm())
+
+    assert result.ok, result.error
+    assert (store / "kartograf-store.json").is_file()
+    assert result.values["store"] == str(store)
+    assert "magazyn Kartografa jest gotowy" in result.summary
+    _, record = _only_result(app)
+    assert record["tool"]["calls"][0]["command"] == "store init"
+    # The function of the tool writes the marker, not the command client
+    assert client.network == []
+
+
+def test_a_plan_into_a_store_kartograf_refuses_stops_with_the_way_out(
+    tmp_path: Path,
+) -> None:
+    app, client = make_app(
+        tmp_path,
+        {
+            "download_dem_sheet": "download_dem_sheet",
+            "1m": "1m",
+            "evrf2007": "evrf2007",
+        },
+    )
+    store = built_store(tmp_path / "stores" / "kartograf").root
+    (store / "kartograf-store.json").unlink()
+
+    with pytest.raises(RetmanError) as caught:
+        app.plan("Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4")
+
+    assert caught.value.code == "validation_error"
+    assert "Utwórz magazyn Kartografa" in (caught.value.text or "")
+    assert client.network == []
+    assert not (store / "kartograf-store.json").exists()

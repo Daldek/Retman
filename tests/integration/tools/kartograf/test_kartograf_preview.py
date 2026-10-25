@@ -489,3 +489,45 @@ def test_a_store_kartograf_writes_into_does_not_block_a_plan(
 
     assert result.problems == []
     assert result.rows == [sheets_row(1, "1:10000", "1992")]
+
+
+INIT_STATES = [
+    ("missing", "folder nie istnieje"),
+    ("empty", "pusty folder"),
+    ("no_marker", "folder ma układ magazynu"),
+    ("ready", "magazyn ma już znacznik"),
+]
+
+
+@pytest.mark.parametrize(
+    ("kind", "text"), INIT_STATES, ids=[kind for kind, _ in INIT_STATES]
+)
+def test_the_plan_of_creating_the_store_says_what_will_happen_to_the_folder(
+    tmp_path: Path, kind: str, text: str
+) -> None:
+    make_store(kind, tmp_path)
+
+    result = preview("init_kartograf_store", {}, FakeToolClient(), tmp_path)
+
+    assert result.problems == []
+    (store_row, state_row) = result.rows
+    assert store_row[1].startswith(str(tmp_path / "store"))
+    assert state_row[0] == "Stan magazynu" and state_row[1].startswith(text)
+    assert result.values["store_state"] == kind
+
+
+@pytest.mark.parametrize(
+    ("refusal", "text"),
+    [(kind, text) for kind, text in REFUSED_STORES if kind != "no_marker"],
+    ids=[kind for kind, _ in REFUSED_STORES if kind != "no_marker"],
+)
+def test_a_folder_kartograf_would_not_mark_blocks_the_plan_of_creating_the_store(
+    tmp_path: Path, refusal: str, text: str
+) -> None:
+    make_store(refusal, tmp_path)
+
+    result = preview("init_kartograf_store", {}, FakeToolClient(), tmp_path)
+
+    (problem,) = result.problems
+    assert problem.params == () and text in problem.text
+    assert result.rows == []

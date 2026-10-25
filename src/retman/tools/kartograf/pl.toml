@@ -1,6 +1,6 @@
 [categories.spatial_data]
 label = "Dane przestrzenne GUGiK"
-description = "Pobieranie danych przestrzennych z GUGiK: numeryczny model terenu NMT, numeryczny model pokrycia terenu NMPT, ortofotomapa, wycinki wysokościowe i BDOT10k (wektory topograficzne)"
+description = "Pobieranie danych przestrzennych z GUGiK: numeryczny model terenu NMT, numeryczny model pokrycia terenu NMPT, ortofotomapa, wycinki wysokościowe i BDOT10k (wektory topograficzne); założenie magazynu Kartografa (znacznik magazynu)"
 
 [operations.download_dem_sheet]
 label = "Pobranie NMT dla arkusza lub obszaru"
@@ -217,6 +217,11 @@ options.shp.label = "Shapefile (.shp)"
 options.shp.description = "Shapefile (.shp, SHP) — wszystkie warstwy z pakietu ZIP wraz z .dbf/.shx/.prj"
 options.unspecified.description = "Nie podano formatu — dopytaj o GeoPackage albo Shapefile"
 
+[operations.init_kartograf_store]
+label = "Utworzenie magazynu Kartografa"
+description = "Utwórz (zainicjuj) magazyn Kartografa w folderze z konfiguracji: zapisz znacznik magazynu kartograf-store.json w nowym albo pustym folderze albo w folderze z układem magazynu bez znacznika (narzędzie najpierw sprawdza układ); pierwszy krok, gdy Kartograf odmawia zapisu w magazynie bez znacznika, założenie magazynu danych przestrzennych GUGiK, nowy magazyn Kartografa; nie pobiera danych, nie zmienia istniejącego magazynu."
+summary = "Gotowe. Wynik #{number}: magazyn Kartografa jest gotowy: {store}."
+
 # Ostrzeżenia wyniku. Klucze równe kodom uwag Kartografa zastępują jego tekst
 # (angielski, z nazwami flag wiersza poleceń); pozostałe uwagi ostrzegawcze są
 # pokazywane dosłownie (core: warnings.tool_notice).
@@ -261,7 +266,7 @@ no_descendants = "Arkusz {code} (PL-2000) nie ma arkuszy potomnych w skalach, kt
 no_sheets = "Plik geometrii nie przecina żadnego arkusza w wybranej skali."
 orthophoto_needs_sheet = "Ortofotomapę pobieram tylko dla godła arkusza, nie dla pliku geometrii. Podaj godło albo wybierz inne dane."
 outside_poland = "Obszar z pliku leży poza Polską, a BDOT10k obejmuje tylko Polskę."
-store_no_marker = "Folder {path} ma układ magazynu Kartografa, ale nie ma znacznika. Zapisz znacznik poleceniem kartograf store init --root {path}; Kartograf najpierw sprawdzi układ."
+store_no_marker = "Folder {path} ma układ magazynu Kartografa, ale nie ma znacznika. Zapisz znacznik poleceniem „Utwórz magazyn Kartografa” (albo kartograf store init --root {path}); narzędzie najpierw sprawdzi układ."
 store_not_kartograf = "{path} nie jest magazynem Kartografa: to plik albo folder z innymi plikami. Wskaż pusty folder w ustawieniu store_dir tabeli [retman.tools.kartograf] pliku nogat.toml."
 store_marker_unreadable = "Znacznik kartograf-store.json w {path} jest nieczytelny. Magazyn jest uszkodzony albo pochodzi z innej wersji Kartografa; wskaż inny folder w ustawieniu store_dir tabeli [retman.tools.kartograf] pliku nogat.toml."
 store_unsupported = "Magazyn Kartografa w {path} ma nieobsługiwany schemat znacznika ({schema}). Zaktualizuj Kartografa."
@@ -279,6 +284,26 @@ value = "{count} × {scale} (PL-{system})"
 [preview.province_files]
 label = "Zakres danych"
 value = "pliki województw (NMT 100 m nie dzieli się na arkusze)"
+
+[preview.store]
+label = "Magazyn Kartografa"
+value = "{path} (z konfiguracji)"
+
+[preview.store_missing]
+label = "Stan magazynu"
+value = "folder nie istnieje — zostanie utworzony i oznaczony znacznikiem"
+
+[preview.store_empty]
+label = "Stan magazynu"
+value = "pusty folder — zostanie oznaczony znacznikiem"
+
+[preview.store_no_marker]
+label = "Stan magazynu"
+value = "folder ma układ magazynu, ale nie ma znacznika — układ zostanie sprawdzony i zapisany zostanie znacznik"
+
+[preview.store_ready]
+label = "Stan magazynu"
+value = "magazyn ma już znacznik — operacja niczego nie zmieni"
 
 # Wiersze sprawdzenia dostępności (osobny krok z siecią)
 [check]

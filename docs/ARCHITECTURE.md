@@ -584,9 +584,10 @@ a description, builders or handlers, and a client in `src/retman/tools/`.
 
 #### 3.2.10. Kartograf 0.8.0 operations
 
-Four operations (ADR-001, ADR-012, ADR-016) in one category, `spatial_data` ("GUGiK spatial
-data"). All go through the command layer (`calls`), have an offline preview and an availability
-check (`check`):
+Five operations (ADR-001, ADR-012, ADR-016) in one category, `spatial_data` ("GUGiK spatial
+data"). The four data operations go through the command layer (`calls`) and have an offline
+preview and an availability check (`check`); the fifth writes the store marker (below the
+table):
 
 | Operation (`id`) | Catalog commands | Area (`accepts`) | Parameters Retman asks about | Output kinds |
 | --- | --- | --- | --- | --- |
@@ -594,6 +595,17 @@ check (`check`):
 | `download_sheet_hierarchy` — child map sheets: DEM (NMT), DSM (NMPT) or orthophoto | `elevation download`, `imagery download` | `sheet`, `geometry` (orthophoto only `sheet`) | product; target scale (1:10000 in PL-1992; 1:5000, 1:2000, 1:1000, 1:500 in PL-2000); DEM resolution (0.15–10 m) or DSM resolution (0.5; 0.6; 1 m); vertical datum; orthophoto color (RGB, CIR, B/W) | `dem`, `dsm`, `orthophoto` |
 | `download_elevation_cutout` — DEM or DSM 1 m cutout | `elevation download` | `bbox`, `geometry` | product; result CRS (EPSG:2180, 5514, 3045 — read by code, not the model, ADR-009); vertical datum | `dem`, `dsm` |
 | `download_bdot10k` — BDOT10k (current county packages) | `landcover download` | `teryt`, `bbox`, `sheet`, `geometry` | format (GeoPackage or Shapefile) | `topographic_vector` |
+| `init_kartograf_store` — create the store: write its marker | — (the function `init_store`, no data command) | — | — | — |
+
+`init_kartograf_store` has no parameters and no `calls`. `store init` is no data command: the
+command layer of Kartograf (`validate_command`, `run_command`) takes the twelve data commands
+only, so the operation is a handler (`retman.tools.kartograf.handlers`) that calls the function
+`kartograf.init_store`. Its offline preview says what will happen to the folder (missing or
+empty: marked; a layout without its marker: checked and marked; a store with its marker:
+nothing) or why Kartograf refuses it. The run is offline and idempotent, saves the document of
+the tool as `tool_1_store_init.json` and names the call in the audit; it is the way out of the
+`no_marker` that `retman doctor check` and the plans report (the command "Utwórz magazyn
+Kartografa").
 
 Kartograf operations have no default values (ADR-006): Retman asks about resolution, vertical
 datum, scale, color and format when the command does not include them. All ASC grid resolutions
@@ -1856,7 +1868,7 @@ The source of each value in the plan: `command` (from the command), `default` (d
 | Decision model | **server address**; whether it responds; which model is loaded; a **test question** with an obvious answer (whether the model answers sensibly); where the confidence comes from (`basal`, `logprobs`, agreement, unavailable) and the thresholds (`"auto"` with a backend other than `basal` is a configuration error, section 6.2) |
 | Text model | whether it is enabled; **server address**; whether it responds |
 | Tools | which are installed; whether their versions fall within the supported range; number of available operations |
-| Tool data stores | for tools in use (installed, in a supported version, not disabled): store path without symbolic links (IMGWTools does not accept one: error; Kartograf: warning), the folder exists or can be created and is writable, **hard links work in both stores** (attempted in the store or in the nearest existing folder on the same disk); Kartograf: the `kartograf-store.json` marker and its schema (a missing or an empty folder is only not marked yet, the first write marks it; a folder with the layout of a store, that is files in a product tree such as `nmt/`, but no marker (reason `no_marker`; the hint is `kartograf store init --root <folder>`), a folder with other files (`foreign_folder`), a marker that is corrupted or has another schema (`marker_unreadable`, `marker_unsupported`) and a folder that lies in, is or holds the store of another tool or place (`nested_store`) are errors), metadata cache (missing is a warning — Kartograf runs slower); IMGWTools: the `imgw-store.json` marker and its schema (a missing store, or a folder that holds only the `api_keys.json` of the tool's server, is a warning with a hint; a folder with the layout of a store but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn IMGW", which runs `store init`), a foreign folder or a corrupted marker is an error), `pyarrow` (time series), reference data folder; with `--deep` also a trial write to the IMGWTools store |
+| Tool data stores | for tools in use (installed, in a supported version, not disabled): store path without symbolic links (IMGWTools does not accept one: error; Kartograf: warning), the folder exists or can be created and is writable, **hard links work in both stores** (attempted in the store or in the nearest existing folder on the same disk); Kartograf: the `kartograf-store.json` marker and its schema (a missing or an empty folder is only not marked yet, the first write marks it; a folder with the layout of a store, that is files in a product tree such as `nmt/`, but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn Kartografa", which runs `store init`), a folder with other files (`foreign_folder`), a marker that is corrupted or has another schema (`marker_unreadable`, `marker_unsupported`) and a folder that lies in, is or holds the store of another tool or place (`nested_store`) are errors), metadata cache (missing is a warning — Kartograf runs slower); IMGWTools: the `imgw-store.json` marker and its schema (a missing store, or a folder that holds only the `api_keys.json` of the tool's server, is a warning with a hint; a folder with the layout of a store but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn IMGW", which runs `store init`), a foreign folder or a corrupted marker is an error), `pyarrow` (time series), reference data folder; with `--deep` also a trial write to the IMGWTools store |
 | Conformance of descriptions with tools | a light version of `retman scaffold check` (section 3.2.3) for tools in use: the commands from the manifest are in the installed tool's catalog, and the tool does not offer a value that the manifest neither offers nor disables (e.g. "kartograf 0.8.1 accepts a resolution of 0.3 m"); operations without a row in the `retman eval run` set are reported as unchecked. These lines warn but do not block work (exit code unchanged) |
 | Translations | complete set of texts for the language from the `lang` setting |
 | Workspace | results folder of the current project; number of results; whether the `result.json` files can be read |
@@ -1879,7 +1891,7 @@ Model decyzyjny
 
 Narzędzia
   ✓ imgwtools 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
-  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 4 operacje
+  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 5 operacji
 
 Magazyny danych narzędzi
   ✓ kartograf: magazyn /dane/retman/stores/kartograf (zapis możliwy, dowiązania twarde działają)

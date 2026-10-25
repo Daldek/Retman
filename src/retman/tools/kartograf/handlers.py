@@ -1,16 +1,21 @@
 """Operations whose run needs more than the generic catalog runner.
 
-``download_sheet_hierarchy`` is the only one: NMT and NMPT sheets are plain
-``elevation download`` calls, but an orthophoto comes in three colour variants
-(RGB, CIR, B/W) that Kartograf's ``imagery download`` cannot choose between (it is
-RGB only). The colour exists only on the provider class, so the orthophoto is
-downloaded through ``GugikOrtoProvider`` and ``DownloadManager`` into the same
-store, with the same environment (store, cache, workers, update mode) as every
-other call.
+``download_sheet_hierarchy``: NMT and NMPT sheets are plain ``elevation download``
+calls, but an orthophoto comes in three colour variants (RGB, CIR, B/W) that
+Kartograf's ``imagery download`` cannot choose between (it is RGB only). The colour
+exists only on the provider class, so the orthophoto is downloaded through
+``GugikOrtoProvider`` and ``DownloadManager`` into the same store, with the same
+environment (store, cache, workers, update mode) as every other call.
+
+``init_kartograf_store``: ``store init`` is no data command, so the command layer
+(``validate_command``, ``run_command``) does not take it and the generic runner cannot
+run it; the handler calls the function ``init_store`` the command is made of.
 """
 
 import hashlib
 import json
+import shlex
+from collections.abc import Mapping
 from contextlib import closing
 from pathlib import Path
 from typing import Any
@@ -18,6 +23,7 @@ from typing import Any
 import kartograf
 
 from retman.adapters.catalog import (
+    CatalogCall,
     ToolContext,
     ToolError,
     ToolNotice,
@@ -172,8 +178,7 @@ def _download_orthophoto(
             {"level": n.level, "code": n.code, "message": n.text} for n in notices
         ],
     }
-    data = (json.dumps(document, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
-    (output_dir / _DOCUMENT).write_bytes(data)
+    sha256 = _save(output_dir, _DOCUMENT, document)
     audit_call: ToolAuditCall = {
         "command": call.command,
         "options": {**call.options, "color": color},
@@ -190,7 +195,7 @@ def _download_orthophoto(
             for item in delivered
         ],
         "document_file": _DOCUMENT,
-        "sha256": hashlib.sha256(data).hexdigest(),
+        "sha256": sha256,
     }
     audit: ToolAudit = {
         "tool": ctx.tool,
@@ -227,3 +232,56 @@ def _incomplete(paths: list[Path]) -> bool:
         except kartograf.InvalidSidecarError:
             continue
     return False
+
+
+def _save(output_dir: Path, name: str, document: Mapping[str, Any]) -> str:
+    """Write the tool's document into the result folder; return its SHA-256."""
+    data = (json.dumps(document, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    (output_dir / name).write_bytes(data)
+    return hashlib.sha256(data).hexdigest()
+
+
+def init_kartograf_store(
+    params: dict[str, Any], inputs: dict[str, Path], output_dir: Path, ctx: ToolContext
+) -> HandlerOutput:
+    """Write the marker of the configured store: ``kartograf store init``.
+
+    Offline and idempotent: a missing or an empty folder gets its marker, a folder with
+    the layout of a store gets it once the tool has verified that layout, and a store
+    that has its marker is left as it is. Kartograf refuses a folder with other files, a
+    layout that is not that of its store and a place inside another store (``conflict``,
+    ``data_error``); the refusal is a ``ToolError``.
+    """
+    call = CatalogCall("store init", {})
+    with translated(call):
+        marker = kartograf.init_store(ctx.store_dir)
+    document = marker.to_dict()
+    name = "tool_1_store_init.json"
+    audit_call: ToolAuditCall = {
+        "command": call.command,
+        "options": {},
+        "command_line": f"kartograf store init --root {shlex.quote(str(marker.root))}",
+        "schema": str(document["schema"]),
+        "status": "ok",
+        "files": [],
+        "document_file": name,
+        "sha256": _save(output_dir, name, document),
+    }
+    operation = ctx.operation
+    audit: ToolAudit = {
+        "tool": ctx.tool,
+        "version": operation.version
+        if operation is not None
+        else kartograf.__version__,
+        "calls": [audit_call],
+    }
+    return {
+        "values": {
+            "store": str(marker.root),
+            "marker": str(marker.marker),
+            "created": marker.created,
+        },
+        "files": {},
+        "warnings": [],
+        "tool": audit,
+    }

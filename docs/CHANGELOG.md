@@ -20,12 +20,14 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 - Settings with a commented template written by `retman config init`, validation of all
   settings at once, and thresholds `"auto"` that are rejected outside the basal backend
   (ARCHITECTURE 6.2, 9.1).
-- Four Kartograf 0.8.0 operations (ADR-001, ADR-012, ADR-013): DEM for a map sheet or a
+- Five Kartograf 0.8.0 operations (ADR-001, ADR-012, ADR-013): DEM for a map sheet or a
   geometry file (all ASC grids: 0.15, 0.5, 0.6, 1, 5 and 10 m, and 100 m as a ZIP per
   voivodeship); child sheets of DEM, DSM and orthophoto (DSM at 0.5, 0.6 and 1 m with a
   vertical datum; orthophoto in RGB, CIR or B-W); a 1 m DEM or DSM cutout for a rectangle or a
   geometry file; BDOT10k for a county, a sheet, a rectangle or a geometry file, as GeoPackage
-  or Shapefile.
+  or Shapefile; and the creation of the store ("Utwórz magazyn Kartografa", `kartograf store
+  init`: it writes the store marker into a new or an empty folder, or into a layout that has
+  lost it, after the tool has checked the layout; ECO-051).
 - All IMGWTools 3.0.0 operations, ČHMÚ included: 26 operations in 6 categories (station
   search and catalog, current data and warnings, PMAXTP, station series, archives and the
   store, data projects; ADR-017, PRD 7.2).
@@ -60,7 +62,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 - `retman scaffold list|draft|check`: drafts of manifests from the catalogs of the tools and a
   drift check through the offline validation of the tool, with a coverage check of the options
   (ADR-019).
-- The command set `src/retman/eval/commands.jsonl`: 614 commands (Kartograf, IMGWTools,
+- The command set `src/retman/eval/commands.jsonl`: 630 commands (Kartograf, IMGWTools,
   out of scope and close to the scope), validated by the same extractor code as planning;
   placeholder geometry files and an offline station catalog when the set is planned
   (ARCHITECTURE 8.1).
@@ -239,7 +241,8 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `marker_unsupported`, `nested_store`), and the plan of every Kartograf operation that writes
   names it before you confirm; Kartograf itself reports such a store only after its work has
   begun, as the failure of every sheet. A missing or an empty folder stays fine: the first
-  write marks it (ARCHITECTURE 3.2.10, 7.2; USAGE 11).
+  write marks it, and the command "Utwórz magazyn Kartografa" marks a layout that has lost its
+  marker (ARCHITECTURE 3.2.10, 7.2; USAGE 11).
 - The supported ranges admit the development versions of the pending releases while the
   `tools` group pins commits: Kartograf `>=0.8.0.dev0,<0.9` and IMGWTools `>=3.0.0.dev0,<4`
   (REL-5.6, ADR-024 erratum 1). The version check of the loader, `retman doctor check` and

@@ -733,8 +733,8 @@ operation.
 
 ### 9.1. Kartograf 0.8.0 — GUGiK spatial data (ADR-001, ADR-012, ADR-016)
 
-All of them download data from GUGiK into the Kartograf store; they have an offline preview and an
-availability check:
+Five operations. Four of them download data from GUGiK into the Kartograf store and have an
+offline preview and an availability check; the fifth writes the marker of the store:
 
 | Operation | Area | Parameters (Retman asks about missing ones) | Example command |
 | --- | --- | --- | --- |
@@ -742,6 +742,7 @@ availability check:
 | Download child map sheets | parent sheet code (godło); geometry file (not for orthophoto) | product DEM (NMT) / DSM (NMPT) / orthophoto; target scale 1:10000–1:500 (finer than 1:10000 only in PL-2000); for DEM resolution 0.15–10 m, for DSM 0.5 / 0.6 / 1 m; vertical datum; for orthophoto colour RGB / CIR / B-W | `Rozwiń N-34-130-D-d-2 do 1:10000, ściągnij DSM z arkuszy potomnych` |
 | Cutout of DEM (NMT) or DSM (NMPT) 1 m | rectangle in PL-1992 (EPSG:2180) or WGS84 (EPSG:4326); geometry file | product DEM (NMT) / DSM (NMPT); result CRS EPSG:2180 / 5514 / 3045 (code with the `EPSG:` prefix, the bare number or a name, e.g. `wynik w 2180`, `do S-JTSK`); vertical datum | `wytnij dsm z prostokąta 52.40 16.90 52.41 16.91 do 3045` |
 | Download BDOT10k | county (TERYT, 4 digits), sheet code (godło), rectangle or geometry file | format GeoPackage / Shapefile | `ściągnij bdot dla powiatu 2264 w gpkg` |
+| Create the Kartograf store | the folder `store_dir` of the settings | none; it writes the store marker `kartograf-store.json` (nothing is downloaded, no check), into a new or an empty folder or into a layout that has lost its marker, after Kartograf has checked the layout; a folder with other files or a store inside another store is refused in the plan | `Utwórz magazyn Kartografa` |
 
 Ways of writing the area:
 
@@ -915,9 +916,9 @@ init"; a missing or empty Kartograf store is fine, because Kartograf marks it by
 first download. A disk without hard links, a foreign folder in the store's place, a marker that
 the tool cannot read, a store inside another store and a folder with the layout of a store but no
 marker are blocking problems: for IMGWTools the hint is the command "Utwórz magazyn IMGW", for
-Kartograf `kartograf store init --root <folder>`, and either makes the tool check the layout and
-write the marker. The plan of a Kartograf operation names the same folder problems before you
-confirm anything.
+Kartograf the command "Utwórz magazyn Kartografa" (or `kartograf store init --root <folder>`),
+and either makes the tool check the layout and write the marker. The plan of a Kartograf
+operation names the same folder problems before you confirm anything.
 The "Conformance" section is a lightweight version of `retman scaffold check`: it warns when an
 installed tool accepts a value that the descriptions neither offer nor exclude; it does not block
 work.

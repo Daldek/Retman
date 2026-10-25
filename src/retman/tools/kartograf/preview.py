@@ -233,3 +233,27 @@ def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
             {"params": ["area"], "key": "outside_poland", "args": {}}
         )
     return output
+
+
+def init_kartograf_store(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Preview what ``store init`` does to the folder; a folder it refuses blocks.
+
+    The tool marks a missing or an empty folder, marks a folder with the layout of a
+    store once it has verified that layout (a layout that is not its store's is refused
+    when it runs) and leaves a store that has its marker as it is. It marks neither a
+    folder with other files nor a store inside another. A layout without its marker is
+    no problem here: it is what the operation is for.
+    """
+    folder = str(ctx.store_dir)
+    found = kartograf_store_state(ctx.store_dir)
+    problems = [] if found.state == "no_marker" else store_problems(ctx, found)
+    if problems:
+        return {"values": {}, "rows": [], "problems": problems}
+    return {
+        "values": {"store": folder, "store_state": found.state},
+        "rows": [
+            {"key": "store", "args": {"path": folder}},
+            {"key": f"store_{found.state}", "args": {}},
+        ],
+        "problems": [],
+    }

@@ -160,7 +160,7 @@ Varied — Retman must support **two paths**:
 
 ### 7.1. In scope for v0.1
 
-- Single operations (no chains) of two tools: Kartograf 0.8.0 (four operations on spatial data)
+- Single operations (no chains) of two tools: Kartograf 0.8.0 (five operations: four on spatial data and the creation of its store)
   and the whole of IMGWTools 3.0.0 (all user-facing capabilities, including ČHMÚ data;
   26 operations in 6 categories) — section 7.2, ADR-012, ADR-017.
 - Scenarios S-01 to S-04.
@@ -168,7 +168,7 @@ Varied — Retman must support **two paths**:
 
 ### 7.2. Operations in v0.1
 
-Selection criteria: Kartograf — four operations from ADR-001, carried over to version 0.8.0 (ADR-012);
+Selection criteria: Kartograf — four operations from ADR-001, carried over to version 0.8.0 (ADR-012), and the creation of the store (the marker `store init` writes, ECO-051);
 IMGWTools — all user-facing capabilities of the tool's command catalog (ADR-017; author: "all of IMGW
 goes into v0.1"), with justified exclusions. There are more than 9 operations, so recognition
 is two-stage: category, then operation (ARCHITECTURE section 3.4).
