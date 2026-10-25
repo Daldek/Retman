@@ -15,10 +15,11 @@ from retman.devtools.model import (
     Verdict,
 )
 
-# Document schemas the Kartograf client of Retman understands: the domain document of
-# the download commands, which ``run_command`` wraps in the ``kartograf-result/1``
-# envelope, and the plan ``check_command`` puts into it
-KNOWN_SCHEMAS = ("kartograf-download/1", "kartograf-plan/1")
+# Document schemas the Kartograf client of Retman understands: the domain documents of
+# the commands its operations run, which ``run_command`` wraps in the
+# ``kartograf-result/1`` envelope (a download and the marker ``store init`` writes),
+# and the plan ``check_command`` puts into it
+KNOWN_SCHEMAS = ("kartograf-download/1", "kartograf-store-init/1", "kartograf-plan/1")
 
 # Error codes of the registry that a library client never meets
 UNREACHABLE_ERRORS = {
@@ -57,7 +58,7 @@ def _kind(prop: Mapping[str, Any]) -> str:
 
 
 def _example_options(kartograf: ModuleType, call: str) -> Mapping[str, object] | None:
-    """Return the options of an example command line; ``None`` if it is no data call."""
+    """Return the options of an example command line; ``None`` if it does not parse."""
     try:
         options: Mapping[str, object] = kartograf.parse_command(call).options
     except kartograf.KartografError:
@@ -66,25 +67,23 @@ def _example_options(kartograf: ModuleType, call: str) -> Mapping[str, object] |
 
 
 def read_catalog() -> ToolCatalog:
-    """Kartograf's catalog: every command with its task options and effects."""
+    """Kartograf's catalog: every command with its task options and effects.
+
+    The command layer (``validate_command``, ``run_command``, ``check_command``) takes
+    every command of the catalog, so every command is ``data`` for the scaffold. The
+    check of a project is the report of its tasks, every other check a plan.
+    """
     kartograf = importlib.import_module("kartograf")
     listed = kartograf.list_commands().to_dict()
     entries = {
         row["name"]: kartograf.command_schema(row["name"]).to_dict()["commands"][0]
         for row in listed["commands"]
     }
-    # The twelve data commands (``validate_command`` takes them) are the values of the
-    # option ``command`` of ``project add``
-    task = next(
-        option
-        for option in entries["project add"]["options"]
-        if option["name"] == "command"
-    )
-    data = {str(item["value"]) for item in task["enum"]}
     run_options = _run_options(kartograf)
     commands: dict[str, CommandInfo] = {}
     for name, entry in entries.items():
         effects = entry["effects"]
+        has_plan = bool(entry["check"]) and "project" not in entry["families"]
         commands[name] = CommandInfo(
             id=name,
             group=name.split()[0],
@@ -101,19 +100,17 @@ def read_catalog() -> ToolCatalog:
                     description=str(prop["description"]),
                 )
                 for prop in entry["options"]
-                if name not in data or prop["name"] not in run_options
+                if prop["name"] not in run_options
             ),
             network=bool(effects["network"]),
             writes=effects["writes"] != "none",
-            data=name in data,
+            data=True,
             result_schema=str(entry["result"]["schema"]),
-            check_schema="kartograf-plan/1" if name in data and entry["check"] else "",
+            check_schema="kartograf-plan/1" if has_plan else "",
             examples=tuple(
                 options
                 for example in entry["examples"]
-                if name in data
-                and (options := _example_options(kartograf, example["call"]))
-                is not None
+                if (options := _example_options(kartograf, example["call"])) is not None
             ),
         )
     return ToolCatalog(

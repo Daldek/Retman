@@ -268,6 +268,7 @@ def test_creating_the_store_is_planned_without_a_write_and_made_after_confirmati
     assert plan.questions == []
     assert dict(plan.preview_rows)["Stan magazynu"].startswith("folder nie istnieje")
     assert not store.exists()
+    assert client.network == []  # the plan and its preview are offline (N-12)
     result = app.execute(plan.confirm())
 
     assert result.ok, result.error
@@ -276,8 +277,10 @@ def test_creating_the_store_is_planned_without_a_write_and_made_after_confirmati
     assert "magazyn Kartografa jest gotowy" in result.summary
     _, record = _only_result(app)
     assert record["tool"]["calls"][0]["command"] == "store init"
-    # The function of the tool writes the marker, not the command client
-    assert client.network == []
+    # The shared executor runs the call through the command client, once
+    assert [(kind, call.command) for kind, call in client.network] == [
+        ("run", "store init")
+    ]
 
 
 def test_a_plan_into_a_store_kartograf_refuses_stops_with_the_way_out(

@@ -1,10 +1,10 @@
-"""Retman results of Kartograf's data commands (``kartograf-download/1`` documents).
+"""Retman results of Kartograf's commands: ``kartograf-download/1`` and ``store init``.
 
 The mappers turn the runs of an operation's call builder into a ``HandlerOutput``:
 the files (by data kind), a few values, and warnings. Kartograf's warning notices
 are shown with Retman's text where ``[warnings.<code>]`` exists in ``pl.toml``
 (its own wording names command-line flags), otherwise verbatim; info notices stay
-in the audit document.
+in the audit document. The document of ``store init`` is ``kartograf-store-init/1``.
 """
 
 import re
@@ -258,4 +258,25 @@ def download_bdot10k(
         },
         "files": {_kind(call): files},
         "warnings": warnings,
+    }
+
+
+def init_kartograf_store(
+    operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
+) -> HandlerOutput:
+    """Say which folder the tool marked as its store and whether it did so now.
+
+    ``store init`` is idempotent: ``created`` is false when the store had its marker.
+    It writes no file of data, so there are no files.
+    """
+    ((_, run),) = runs
+    marker = run.document["result"]
+    return {
+        "values": {
+            "store": marker["root"],
+            "marker": marker["marker"],
+            "created": marker["created"],
+        },
+        "files": {},
+        "warnings": notice_warnings(operation, ctx.tool, run.notices),
     }

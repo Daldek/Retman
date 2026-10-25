@@ -36,7 +36,10 @@ from retman.adapters.catalog import (  # noqa: E402
     ToolError,
     ToolRun,
 )
+from retman.adapters.manifest_adapter import execute_operation  # noqa: E402
+from retman.core.result import Result  # noqa: E402
 from retman.eval.placeholders import write_geopackage, write_shapefile  # noqa: E402
+from retman.i18n.loader import load_core_texts  # noqa: E402
 from retman.registry.loader import load_operations  # noqa: E402
 from retman.registry.operation import Operation  # noqa: E402
 from retman.testing import tool_context  # noqa: E402
@@ -49,6 +52,7 @@ from retman.tools.kartograf.manifest import MANIFEST  # noqa: E402
 
 TOOL_DIR = Path(kartograf_client.__file__).parent
 FIXTURES = Path(__file__).resolve().parents[3] / "fixtures" / "kartograf"
+TEXTS = load_core_texts("pl")
 
 SHEET = {"type": "sheet", "code": "N-34-130-D-d-2-4"}
 PARENT = {"type": "sheet", "code": "N-34-130-D-d-2"}
@@ -129,6 +133,16 @@ def geometry(folder: Path, name: str = "granica.shp") -> dict[str, Any]:
 def built_store(root: Path) -> FixtureStore:
     """A store as ``kartograf.testing`` builds it (DEV-10.6): marker, versions, links"""
     return build_fixture_store(root)
+
+
+def execute(name: str, ctx: ToolContext) -> Result:
+    """Run an operation without parameters the way ``Retman.execute`` does.
+
+    The files of a result go into ``ctx.output_dir``, which must exist.
+    """
+    folder = ctx.output_dir
+    assert folder is not None
+    return execute_operation(operations()[name], {}, {}, folder, 1, {}, {}, TEXTS, ctx)
 
 
 # --- documents of the real Kartograf, offline ---------------------------------------

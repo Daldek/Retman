@@ -1,5 +1,5 @@
-"""The handlers: the hierarchy (DEM/DSM through the command layer, the orthophoto by
-colour) and the creation of the store (``store init``).
+"""The handler of the hierarchy: DEM/DSM through the command layer, the orthophoto by
+colour.
 
 Kartograf's network classes are replaced by recorders that answer with real
 ``DownloadResult``/``VersionedFile`` objects; what is tested is what Retman asks of
@@ -14,10 +14,8 @@ from typing import Any
 import kartograf
 import pytest
 from kartograf.testing import make_sidecar
-from kartograf_store_files import write_marker
 from kartograf_support import (
     OfflineClient,
-    built_store,
     context,
     geometry,
     settings,
@@ -28,7 +26,6 @@ from retman.adapters.catalog import ToolError
 from retman.testing import FakeToolClient
 from retman.tools.kartograf.handlers import (
     download_sheet_hierarchy,
-    init_kartograf_store,
 )
 
 PARENT_1992 = {"type": "sheet", "code": "N-34-130-D-d-2"}
@@ -320,99 +317,3 @@ def test_an_orthophoto_is_not_made_of_a_geometry_file(
 
     assert caught.value.tool_code == "orthophoto_needs_sheet"
     assert recorder.requests == []
-
-
-# --- init_kartograf_store: `store init` through the function of the tool ------------
-
-
-def init(tmp_path: Path) -> Any:
-    """Run the handler on the store folder of ``settings(tmp_path)``."""
-    output_dir = tmp_path / "result"
-    output_dir.mkdir(exist_ok=True)
-    ctx = context(
-        "init_kartograf_store",
-        FakeToolClient(),
-        root=tmp_path,
-        output_dir=output_dir,
-    )
-    return init_kartograf_store({}, {}, output_dir, ctx)
-
-
-def test_init_marks_a_new_folder_and_a_second_run_leaves_it_as_it_is(
-    tmp_path: Path,
-) -> None:
-    store = tmp_path / "store"
-
-    first = init(tmp_path)
-    marker = json.loads((store / "kartograf-store.json").read_text("utf-8"))
-    second = init(tmp_path)
-
-    assert marker["schema"] == "kartograf-store/1" and marker["tool"] == "kartograf"
-    assert first["values"] == {
-        "store": str(store),
-        "marker": str(store / "kartograf-store.json"),
-        "created": True,
-    }
-    assert second["values"]["created"] is False
-    assert json.loads((store / "kartograf-store.json").read_text("utf-8")) == marker
-    # It writes the marker and no file of data, and says nothing that needs a warning
-    assert first["files"] == {} and first["warnings"] == []
-
-
-def test_init_keeps_the_document_of_the_tool_and_names_the_call_in_the_audit(
-    tmp_path: Path,
-) -> None:
-    store = tmp_path / "store"
-
-    output = init(tmp_path)
-
-    (call,) = output["tool"]["calls"]
-    saved = tmp_path / "result" / call["document_file"]
-    assert (call["command"], call["status"], call["files"]) == ("store init", "ok", [])
-    assert call["schema"] == "kartograf-store-init/1"
-    assert call["command_line"] == f"kartograf store init --root {store}"
-    assert hashlib.sha256(saved.read_bytes()).hexdigest() == call["sha256"]
-    assert json.loads(saved.read_text("utf-8"))["marker"] == str(
-        store / "kartograf-store.json"
-    )
-
-
-def test_init_marks_a_layout_whose_marker_is_gone_and_keeps_its_files(
-    tmp_path: Path,
-) -> None:
-    store = built_store(tmp_path / "store").root
-    (store / "kartograf-store.json").unlink()
-    held = set(store.rglob("*"))
-
-    init(tmp_path)
-
-    assert set(store.rglob("*")) == held | {store / "kartograf-store.json"}
-
-
-@pytest.mark.parametrize(
-    ("setup", "code", "reason"),
-    [
-        ("foreign_files", "conflict", "not_empty"),
-        ("layout_with_a_foreign_file", "data_error", "invalid_layout"),
-        ("inside_a_store", "conflict", "nested_store"),
-    ],
-)
-def test_init_is_refused_by_the_tool_for_a_folder_that_is_not_its_store(
-    tmp_path: Path, setup: str, code: str, reason: str
-) -> None:
-    store = tmp_path / "store"
-    if setup == "foreign_files":
-        store.mkdir()
-        (store / "notes.txt").write_text("not a store", encoding="utf-8")
-    elif setup == "layout_with_a_foreign_file":
-        built_store(store)
-        (store / "kartograf-store.json").unlink()
-        (store / "notes.txt").write_text("not a store", encoding="utf-8")
-    else:
-        write_marker(tmp_path)
-
-    with pytest.raises(ToolError) as caught:
-        init(tmp_path)
-
-    assert (caught.value.code, caught.value.details["reason"]) == (code, reason)
-    assert not (store / "kartograf-store.json").exists()

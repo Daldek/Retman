@@ -150,3 +150,8 @@ def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCa
         "format": ctx.tool_value("format", params["format"]),
     }
     return [CatalogCall("landcover download", options, "topographic_vector", routing)]
+
+
+def init_kartograf_store(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
+    """``store init`` of the configured store folder (idempotent, refuses others)."""
+    return [CatalogCall("store init", {})]

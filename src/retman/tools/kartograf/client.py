@@ -11,9 +11,12 @@ The environment of every call comes from ``[retman.tools.kartograf]`` and nowher
 projects), the number of workers, the update mode and an explicit metadata cache.
 Kartograf's own defaults are never used: not its default store (``KARTOGRAF_ROOT``,
 ``nogat.toml``, ``<data_dir>/kartograf``) and not ``cache=True``, which would open the
-default cache of the user instead of the one the settings name.
+default cache of the user instead of the one the settings name. A call gets the
+workers and the update mode only if its command declares them (``store init`` does
+not): the command layer refuses an option that does not belong to the command.
 """
 
+import functools
 from collections.abc import Iterator, Mapping
 from contextlib import closing, contextmanager
 from pathlib import Path
@@ -73,6 +76,18 @@ def metadata_cache(settings: Mapping[str, Any]) -> kartograf.MetadataCache:
     Creates nothing by itself: the file appears with the first write.
     """
     return kartograf.MetadataCache(db_path=_required(settings, "cache_file"))
+
+
+@functools.cache
+def declared_options(command: str) -> frozenset[str]:
+    """Return the names of the options a command of Kartograf's catalog declares.
+
+    The catalog says which of the environment of a call a command takes: ``root``,
+    ``workers`` and ``update`` belong to a download, ``root`` alone to ``store init``.
+    The catalog of an installed tool does not change while the process runs.
+    """
+    document: Any = kartograf.command_schema(command).to_dict()
+    return frozenset(option["name"] for option in document["commands"][0]["options"])
 
 
 def to_tool_error(err: Exception, call: CatalogCall | None = None) -> ToolError:
@@ -203,12 +218,13 @@ class KartografClient:
         flags: dict[str, object] = {}
         if "store_dir" in self.settings:
             flags["root"] = str(self.settings["store_dir"])
-        if "workers" in self.settings:
-            flags["workers"] = self.settings["workers"]
-        mode = self.settings.get("update", "local")
-        if mode != "local":
-            flags[mode] = True
         with translated(call):
+            declared = declared_options(call.command)
+            if "workers" in declared and "workers" in self.settings:
+                flags["workers"] = self.settings["workers"]
+            mode = self.settings.get("update", "local")
+            if "update" in declared and mode != "local":
+                flags[mode] = True
             return kartograf.format_command(call.command, call.options, run=flags)
 
     def lookup(self, call: CatalogCall) -> ToolDocument:
@@ -262,17 +278,29 @@ class KartografClient:
 
     # --- what exists only after consent: network and store writes -------------
 
+    def _run_arguments(self, command: str) -> dict[str, Any]:
+        """Return the workers and the update mode of a run, if the command has them."""
+        declared = declared_options(command)
+        arguments: dict[str, Any] = {}
+        if "update" in declared:
+            arguments["update"] = update_mode(self.settings)
+        if "workers" in declared:
+            arguments["workers"] = _required(self.settings, "workers")
+        return arguments
+
     def run(self, call: CatalogCall) -> ToolRun:
-        """Run a data command into the store; a Kartograf error is a ``ToolError``."""
+        """Run a command of the catalog into the store; an error is a ``ToolError``.
+
+        ``store init`` is such a command: it writes the marker of the store.
+        """
         store = _required(self.settings, "store_dir")
         with translated(call), closing(metadata_cache(self.settings)) as cache:
             result = kartograf.run_command(
                 call.command,
                 call.options,
                 root=store,
-                update=update_mode(self.settings),
-                workers=_required(self.settings, "workers"),
                 cache=cache,
+                **self._run_arguments(call.command),
             )
         return run_from_document(call, result.to_dict(), self.command_line(call))
 

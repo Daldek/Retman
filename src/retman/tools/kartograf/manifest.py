@@ -249,10 +249,9 @@ MANIFEST: ManifestSpec = {
             "inputs": [],
             "outputs": [],
             "params": [],
-            # Not a data command: the command layer of Kartograf (validate_command,
-            # run_command) takes the twelve data commands only, so `store init` is the
-            # function `init_store` and the handler calls it
-            "handler": "retman.tools.kartograf.handlers:init_kartograf_store",
+            "calls": "retman.tools.kartograf.calls:init_kartograf_store",
+            "commands": ["store init"],
+            "describe": "retman.tools.kartograf.describe:init_kartograf_store",
             "preview": "retman.tools.kartograf.preview:init_kartograf_store",
         },
     ],
