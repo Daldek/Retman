@@ -12,9 +12,9 @@ from typing import Any
 
 import imgwtools
 import pytest
-from imgw_support import settings_for
+from imgw_support import PlanStatus, settings_for
 
-from retman.adapters.catalog import PlanView
+from retman.adapters.catalog import PlanView, RunStatus
 from retman.adapters.manifest_adapter import run_check
 from retman.core.check import CheckReport
 from retman.i18n.loader import load_core_texts
@@ -41,7 +41,7 @@ def operations() -> dict[str, Operation]:
 
 
 def plan_item(
-    month: int, status: str, size: int | None = None, error: str | None = None
+    month: int, status: PlanStatus, size: int | None = None, error: str | None = None
 ):
     (archive,) = imgwtools.archive_files(
         "pl.imgw.meteo_precip_daily", years=(2001,), months=(month,)
@@ -54,7 +54,7 @@ def plan_document(
     actions: tuple[Any, ...] = (),
     *,
     command: str = "store sync",
-    status: str = "ok",
+    status: RunStatus = "ok",
 ) -> dict[str, Any]:
     plan = imgwtools.StorePlan(
         "imgw-plan/1", Path("/store"), NOON, tuple(items), {}, actions

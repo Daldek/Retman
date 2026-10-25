@@ -49,7 +49,7 @@ in `pyproject.toml`; the IMGWTools one is the head of its branch `feature/data-o
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@a30452182b01f47cc18e48466da4edf4d0c8cb6a"
+    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@7b117550103a3d8d46afc97043b90f0e93314c8b"
 ```
 
 The IMGWTools `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are

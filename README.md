@@ -26,7 +26,7 @@ Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras:
 # CLI
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@a30452182b01f47cc18e48466da4edf4d0c8cb6a"
+    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@7b117550103a3d8d46afc97043b90f0e93314c8b"
 
 # Python library (name the same tools in the project's own dependencies)
 uv add "retman @ git+https://github.com/Daldek/Retman@develop"

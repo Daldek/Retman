@@ -92,3 +92,16 @@ The texts of the tool, which are English strings in its documents:
   (`output_dir=` becomes `root=`) and its error codes wait for it (PROGRESS Next 2). The pins
   become tags once they exist (PROGRESS Next 3).
 - Polish output can show English text of the tool (item 4); a machine document is English anyway.
+
+## Errata
+
+**Erratum 1 (2026-10-25, REL-5.6, ECO-053):** the pin of item 1 is now IMGWTools `7b11755`, the
+head of the same branch (it ships `py.typed` and refuses a nested store in the plan of every store
+write), and it is still not pushed. While a commit is pinned, the supported range admits the
+development versions of the pending release: the manifests say `>=0.8.0.dev0,<0.9` (Kartograf)
+and `>=3.0.0.dev0,<4` (IMGWTools), and `retman.registry.loader.version_matches` tests the declared
+range itself with `packaging` (`SpecifierSet(range).contains(version, prereleases=True)`), the
+one check that the loader, `doctor check`, `scaffold check` and the conformance tests use. The
+release change that replaces the commits by tags narrows the ranges to `>=0.8.0,<0.9` and
+`>=3.0.0,<4`. The mypy ignore of `imgwtools` is removed (the tool ships `py.typed`), and the tests
+that need a ready IMGW store use `imgwtools.testing` (DEV-10.6).

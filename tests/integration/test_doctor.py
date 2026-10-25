@@ -3,6 +3,7 @@
 import errno
 import importlib.metadata
 import json
+import shutil
 import sys
 from copy import deepcopy
 from pathlib import Path
@@ -11,7 +12,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from document_schemas import violations
-from imgw_store_files import write_layout, write_marker, write_server_state
+from imgw_store_files import write_server_state
 
 from retman import cli
 from retman.backends.base import Decision
@@ -317,8 +318,13 @@ def pyarrow(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "pyarrow", SimpleNamespace(__version__="26.0.0"))
 
 
-def _make_stores(tmp_path: Path, **skip: bool) -> dict[str, Path]:
-    """Create the folders a healthy installation has; ``skip`` leaves one out."""
+def _make_stores(
+    tmp_path: Path, imgw_store_template: Path, **skip: bool
+) -> dict[str, Path]:
+    """Create the folders a healthy installation has; ``skip`` leaves one out.
+
+    The IMGWTools store is a copy of the fixture store the tool builds itself.
+    """
     paths = {
         "kartograf": tmp_path / "stores" / "kartograf",
         "cache": tmp_path / "cache" / "kartograf" / "metadata.db",
@@ -331,7 +337,7 @@ def _make_stores(tmp_path: Path, **skip: bool) -> dict[str, Path]:
         folder = path.parent if name == "cache" else path
         folder.mkdir(parents=True)
     if not skip.get("imgwtools"):
-        write_marker(paths["imgwtools"])
+        shutil.copytree(imgw_store_template, paths["imgwtools"], dirs_exist_ok=True)
     return paths
 
 
@@ -378,9 +384,9 @@ def _run_stores(
 
 
 def test_healthy_stores_are_listed_and_the_slow_probe_is_not_run(
-    tmp_path: Path, store_tools, pyarrow
+    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
 ):
-    paths = _make_stores(tmp_path)
+    paths = _make_stores(tmp_path, imgw_store_template)
     calls: list[str] = []
 
     report, _ = _run_stores(tmp_path, store_tools, probe=_probe(calls))
@@ -432,12 +438,18 @@ def test_stores_not_created_yet_warn_with_a_hint_and_do_not_block(
     ids=["foreign_files", "unsupported_schema", "unreadable_marker"],
 )
 def test_imgw_folder_that_is_not_a_usable_store_blocks_work(
-    tmp_path: Path, store_tools, pyarrow, marker: str | None, expected: str
+    tmp_path: Path,
+    imgw_store_template: Path,
+    store_tools,
+    pyarrow,
+    marker: str | None,
+    expected: str,
 ):
-    paths = _make_stores(tmp_path)
+    paths = _make_stores(tmp_path, imgw_store_template)
     store = paths["imgwtools"]
     if marker is None:
-        (store / "imgw-store.json").unlink()
+        shutil.rmtree(store)
+        store.mkdir()
         (store / "notes.txt").write_text("not a store", encoding="utf-8")
     else:
         (store / "imgw-store.json").write_text(marker, encoding="utf-8")
@@ -450,11 +462,10 @@ def test_imgw_folder_that_is_not_a_usable_store_blocks_work(
 
 
 def test_imgw_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
-    tmp_path: Path, store_tools, pyarrow
+    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
 ):
-    store = _make_stores(tmp_path)["imgwtools"]
+    store = _make_stores(tmp_path, imgw_store_template)["imgwtools"]
     (store / "imgw-store.json").unlink()
-    write_layout(store, "series")
 
     report, texts = _run_stores(tmp_path, store_tools)
     (problem,) = [
@@ -475,14 +486,20 @@ def test_imgw_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
     assert "ma układ magazynu IMGWTools, ale nie ma znacznika imgw-store.json" in text
     assert "zapisz znacznik poleceniem „Utwórz magazyn IMGW”" in text
     # Looking changes nothing in a folder that may hold data: no probe, no marker
-    assert [path.name for path in store.iterdir()] == ["series"]
+    assert {path.name for path in store.iterdir()} == {
+        ".incoming",
+        "archives",
+        "series",
+        "stations",
+    }
 
 
 def test_imgw_folder_with_only_the_key_file_of_the_server_is_not_created_yet(
-    tmp_path: Path, store_tools, pyarrow
+    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
 ):
-    store = _make_stores(tmp_path)["imgwtools"]
-    (store / "imgw-store.json").unlink()
+    store = _make_stores(tmp_path, imgw_store_template)["imgwtools"]
+    shutil.rmtree(store)
+    store.mkdir()
     write_server_state(store)
 
     report, _ = _run_stores(tmp_path, store_tools)
@@ -498,8 +515,10 @@ def test_imgw_folder_with_only_the_key_file_of_the_server_is_not_created_yet(
     assert [path.name for path in store.iterdir()] == ["api_keys.json"]
 
 
-def test_store_path_that_is_a_file_blocks_work(tmp_path: Path, store_tools, pyarrow):
-    paths = _make_stores(tmp_path, kartograf=True)
+def test_store_path_that_is_a_file_blocks_work(
+    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
+):
+    paths = _make_stores(tmp_path, imgw_store_template, kartograf=True)
     paths["kartograf"].write_text("a file", encoding="utf-8")
 
     report, _ = _run_stores(tmp_path, store_tools)
@@ -512,7 +531,7 @@ def test_store_path_that_is_a_file_blocks_work(tmp_path: Path, store_tools, pyar
 
 
 def test_symlink_in_a_store_path_is_refused_by_imgwtools_but_tolerated_by_kartograf(
-    tmp_path: Path, store_tools, pyarrow
+    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
 ):
     real = tmp_path / "real"
     real.mkdir()
@@ -520,7 +539,7 @@ def test_symlink_in_a_store_path_is_refused_by_imgwtools_but_tolerated_by_kartog
         (tmp_path / "stores").symlink_to(real, target_is_directory=True)
     except OSError:
         pytest.skip("symbolic links are not available")
-    _make_stores(tmp_path)
+    _make_stores(tmp_path, imgw_store_template)
 
     # init writes resolved paths, so the symlink comes from a hand-edited config
     rewrite = (str(real), str(tmp_path / "stores"))
@@ -537,9 +556,13 @@ def test_symlink_in_a_store_path_is_refused_by_imgwtools_but_tolerated_by_kartog
 
 
 def test_a_file_system_without_hard_links_blocks_both_stores(
-    tmp_path: Path, store_tools, pyarrow, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    imgw_store_template: Path,
+    store_tools,
+    pyarrow,
+    monkeypatch: pytest.MonkeyPatch,
 ):
-    _make_stores(tmp_path)
+    _make_stores(tmp_path, imgw_store_template)
     refusal = OSError(errno.EPERM, "Operation not permitted")
     monkeypatch.setattr("retman.doctor.hardlink_error", lambda folder: refusal)
 
@@ -565,9 +588,13 @@ def test_a_file_system_without_hard_links_blocks_both_stores(
 
 
 def test_hard_links_are_tried_where_a_missing_imgw_store_will_be_created(
-    tmp_path: Path, store_tools, pyarrow, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    imgw_store_template: Path,
+    store_tools,
+    pyarrow,
+    monkeypatch: pytest.MonkeyPatch,
 ):
-    paths = _make_stores(tmp_path, imgwtools=True)
+    paths = _make_stores(tmp_path, imgw_store_template, imgwtools=True)
     tried: list[Path] = []
 
     def record(folder: Path) -> None:
@@ -584,9 +611,12 @@ def test_hard_links_are_tried_where_a_missing_imgw_store_will_be_created(
 
 
 def test_missing_pyarrow_disables_series_and_skips_the_probe(
-    tmp_path: Path, store_tools, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    imgw_store_template: Path,
+    store_tools,
+    monkeypatch: pytest.MonkeyPatch,
 ):
-    _make_stores(tmp_path)
+    _make_stores(tmp_path, imgw_store_template)
     monkeypatch.setitem(sys.modules, "pyarrow", None)
     calls: list[str] = []
 
@@ -606,9 +636,9 @@ def test_missing_pyarrow_disables_series_and_skips_the_probe(
 
 @pytest.mark.parametrize("deep", [False, True])
 def test_imgwtools_write_probe_runs_only_with_deep(
-    tmp_path: Path, store_tools, pyarrow, deep: bool
+    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow, deep: bool
 ):
-    _make_stores(tmp_path)
+    _make_stores(tmp_path, imgw_store_template)
     calls: list[str] = []
 
     report, _ = _run_stores(tmp_path, store_tools, probe=_probe(calls), deep=deep)
@@ -621,9 +651,9 @@ def test_imgwtools_write_probe_runs_only_with_deep(
 
 
 def test_failed_write_probe_blocks_work_and_quotes_the_tool(
-    tmp_path: Path, store_tools, pyarrow
+    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
 ):
-    _make_stores(tmp_path)
+    _make_stores(tmp_path, imgw_store_template)
     refusal = ToolOutcome("refused", "System plików nie zapewnia atomowego zapisu")
 
     report, texts = _run_stores(

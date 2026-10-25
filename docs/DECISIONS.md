@@ -49,7 +49,7 @@ ADR-x`); each relation is recorded on both sides.
 | [ADR-021](decisions/0021-user-environment.md) | User environment: `[retman]` in `nogat.toml`, variables and user directories | accepted; amends ADR-010, ADR-015 | 2026-10-24 |
 | [ADR-022](decisions/0022-agent-interfaces.md) | Agent interfaces: one command catalog, one `retman` executable | accepted; amends ADR-011, ADR-019 | 2026-10-24 |
 | [ADR-023](decisions/0023-structure-gate-ci-and-log.md) | Repository structure, quality gate, CI, test tree and technical log | accepted | 2026-10-24 |
-| [ADR-024](decisions/0024-imgwtools-data-output.md) | IMGWTools data output: plain files or a store, called as the tool defines them | accepted; amends ADR-012 | 2026-10-25 |
+| [ADR-024](decisions/0024-imgwtools-data-output.md) | IMGWTools data output: plain files or a store, called as the tool defines them | accepted; amends ADR-012; erratum 1 (REL-5.6 ranges, pin `7b11755`) | 2026-10-25 |
 
 ---
 
@@ -409,6 +409,12 @@ Completeness of the resolutions is guarded by the coverage check (ADR-019). Deta
 `0d98f3b` (`origin/slave`), is replaced by `a304521`, the head of the IMGWTools branch
 `feature/data-output`. That commit is not pushed, so the rule "pin the pushed commits" holds for
 Kartograf only, until the author pushes IMGWTools. The ranges and the other decisions stand.
+
+**Erratum 2 (2026-10-25, REL-5.6, ADR-024 erratum 1):** while the `tools` group pins commits, the
+ranges admit the development versions of the pending releases: Kartograf `>=0.8.0.dev0,<0.9` and
+IMGWTools `>=3.0.0.dev0,<4`, tested with `packaging` and `prereleases=True`; the release change
+that puts the tags in place of the commits narrows them to `>=0.8.0,<0.9` and `>=3.0.0,<4`. The
+IMGWTools pin is `7b11755` now.
 
 ---
 

@@ -13,7 +13,7 @@ from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from functools import cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from unittest.mock import patch
 
 import httpx
@@ -21,11 +21,15 @@ import pytest
 
 from retman.adapters.catalog import (
     CatalogCall,
+    RunStatus,
     ToolDocument,
     ToolNotice,
     ToolRun,
 )
 from retman.tools.imgwtools.client import IMGWToolsClient
+
+# The statuses of a plan item of the tool (``PlanItem.status``)
+PlanStatus = Literal["current", "newer", "missing", "unverifiable", "check_failed"]
 
 # A synthetic PMAXTP answer (the real endpoint's structure, invented numbers):
 # 7 durations x 6 probabilities in each of the tables ks, sg and rb
@@ -150,7 +154,7 @@ def synthetic_run(
     command: str,
     result: object,
     *,
-    status: str = "ok",
+    status: RunStatus = "ok",
     notices: tuple[ToolNotice, ...] = (),
 ) -> ToolRun:
     """A run whose document is the tool's own envelope around ``result``.
@@ -166,7 +170,7 @@ def synthetic_run(
     document = envelope.to_json()
     return ToolRun(
         command,
-        status,  # type: ignore[arg-type]
+        status,
         files=IMGWToolsClient._files(command, {}, document),
         failed=IMGWToolsClient._failures(command, status, document),
         notices=notices,

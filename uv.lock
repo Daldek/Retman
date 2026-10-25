@@ -567,7 +567,7 @@ wheels = [
 [[package]]
 name = "imgwtools"
 version = "3.0.0"
-source = { git = "https://github.com/Daldek/IMGWTools?rev=a30452182b01f47cc18e48466da4edf4d0c8cb6a#a30452182b01f47cc18e48466da4edf4d0c8cb6a" }
+source = { git = "https://github.com/Daldek/IMGWTools?rev=7b117550103a3d8d46afc97043b90f0e93314c8b#7b117550103a3d8d46afc97043b90f0e93314c8b" }
 dependencies = [
     { name = "httpx" },
     { name = "platformdirs" },
@@ -1388,7 +1388,7 @@ dev = [
     { name = "ruff", specifier = ">=0.6" },
 ]
 tools = [
-    { name = "imgwtools", extras = ["store"], git = "https://github.com/Daldek/IMGWTools?rev=a30452182b01f47cc18e48466da4edf4d0c8cb6a" },
+    { name = "imgwtools", extras = ["store"], git = "https://github.com/Daldek/IMGWTools?rev=7b117550103a3d8d46afc97043b90f0e93314c8b" },
     { name = "kartograf", git = "https://github.com/Daldek/Kartograf?rev=8e9bcbb058d11f06afae5a65e62f31870f69d169" },
 ]
 

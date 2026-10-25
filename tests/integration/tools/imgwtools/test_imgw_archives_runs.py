@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import shutil
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -9,8 +10,14 @@ from typing import Any
 
 import pytest
 from imgw_ops_support import TEXTS, YEARS, context, execute, operations, station
-from imgw_store_files import write_layout, write_marker, write_server_state
-from imgw_support import fixture_store, real_client, settings_for, synthetic_run
+from imgw_store_files import write_layout, write_server_state
+from imgw_support import (
+    PlanStatus,
+    fixture_store,
+    real_client,
+    settings_for,
+    synthetic_run,
+)
 from imgwtools import CommandResult, FileResult, archive_files
 from imgwtools.store.types import (
     DownloadItem,
@@ -22,7 +29,7 @@ from imgwtools.store.types import (
     SyncReport,
 )
 
-from retman.adapters.catalog import CatalogCall, PlanView, ToolRun
+from retman.adapters.catalog import CatalogCall, PlanView, RunStatus, ToolRun
 from retman.adapters.manifest_adapter import preview_operation, run_check
 from retman.backends.base import Decision
 from retman.config import init_config, load_config
@@ -40,11 +47,11 @@ def preview(operation: str, params: dict[str, Any], client: Any, **kw: Any) -> A
 
 
 def envelope(command: str, result: object, *, check: bool = False) -> dict[str, Any]:
-    status = "ok"
+    status: RunStatus = "ok"
     return CommandResult(command, check, status, result, ()).to_json()
 
 
-def make_plan(root: Path, statuses: list[str]) -> StorePlan:
+def make_plan(root: Path, statuses: list[PlanStatus]) -> StorePlan:
     """A real ``imgw-plan/1`` object over the first archives of hydro daily 2020."""
     archives = archive_files("pl.imgw.hydro_daily", years=[2020])
     errors = {"unverifiable": "not published", "check_failed": "HTTP error 500"}
@@ -67,7 +74,13 @@ def make_plan(root: Path, statuses: list[str]) -> StorePlan:
     return StorePlan("imgw-plan/1", root, moment, items, {"hydro_daily": "outdated"})
 
 
-STATUSES = ["current", "newer", "missing", "unverifiable", "check_failed"]
+STATUSES: list[PlanStatus] = [
+    "current",
+    "newer",
+    "missing",
+    "unverifiable",
+    "check_failed",
+]
 
 
 # --- plan-time review ---------------------------------------------------------------
@@ -200,7 +213,8 @@ def test_init_preview_says_what_will_happen_and_refuses_foreign_data(
     for folder in (empty, foreign, marked, unmarked, keys):
         folder.mkdir()
     (foreign / "data.txt").write_text("x")
-    write_marker(marked)
+    # A store the tool built, not a marker written by hand (DEV-10.6)
+    shutil.copytree(fixture_store(), marked, dirs_exist_ok=True)
     write_layout(unmarked, "series")
     write_server_state(keys)
 

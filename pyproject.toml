@@ -63,7 +63,7 @@ dev = [
 # their development versions while the commits are pinned (REL-5.6).
 tools = [
     "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169",
-    "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@a30452182b01f47cc18e48466da4edf4d0c8cb6a",
+    "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@7b117550103a3d8d46afc97043b90f0e93314c8b",
 ]
 
 [tool.uv]
@@ -103,19 +103,17 @@ python_version = "3.12"
 strict = true
 files = ["src", "tests"]
 # Folders without __init__.py are no packages: tests/integration/tools/<tool>/
-# carries the tool's name, and as a PEP 420 namespace package it would shadow an
-# installed tool that ships no py.typed (imgwtools), so `import imgwtools` in a test
-# would resolve to the test folder and every attribute of the tool would be "missing"
+# carries the tool's name, and as a PEP 420 namespace package it would shadow the
+# installed tool, so `import imgwtools` in a test would resolve to the test folder
+# and every attribute of the tool would be "missing"
 namespace_packages = false
 
 [[tool.mypy.overrides]]
-# The tools Retman adapts and jsonschema (contract tests) ship no usable type
-# information; their imports are not checked
+# Kartograf and jsonschema (contract tests) ship no usable type information; their
+# imports are not checked. IMGWTools ships py.typed and is checked like Retman's own code
 module = [
     "kartograf",
     "kartograf.*",
-    "imgwtools",
-    "imgwtools.*",
     "jsonschema",
     "jsonschema.*",
 ]

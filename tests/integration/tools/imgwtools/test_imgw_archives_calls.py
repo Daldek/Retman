@@ -201,8 +201,9 @@ def test_the_current_version_is_the_one_the_tool_calls_current() -> None:
             for archive in calls.current_archive_versions(items, dataset, years)
             if archive.slot == slot
         ]
-        expected = current_version(store, slot=slot).version
-        assert (store / mine.version).resolve() == expected.resolve()
+        expected = current_version(store, slot=slot)
+        assert expected is not None and expected.version is not None
+        assert (store / mine.version).resolve() == expected.version.resolve()
 
 
 def _entry(slot: str, version: str, **meta: Any) -> dict[str, Any]:

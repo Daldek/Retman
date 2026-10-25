@@ -1,26 +1,13 @@
-"""Folders in the states of an IMGWTools store, for the tests of the store checks.
+"""Folders in the states of an IMGWTools store that the tool never writes itself.
 
-The marker is the document ``imgw store init`` writes, field for field, and the
-names are the tool's own, spelled out here and not taken from ``retman.stores``: a
-drift of the constants of Retman must break a test, not follow the code.
+A ready store comes from ``imgwtools.testing`` (the ``imgw_store_template`` fixture,
+DEV-10.6); what is hand-made here is a layout without its marker and the key file of
+the REST server. The names are the tool's own, spelled out here and not taken from
+``retman.stores``: a drift of the constants of Retman must break a test, not follow
+the code.
 """
 
-import json
 from pathlib import Path
-
-MARKER = {
-    "schema": "imgw-store/1",
-    "tool": "imgw",
-    "created_at": "2026-10-24T10:00:00Z",
-    "producer_version": "3.0.0",
-    "created_by": "imgwtools 3.0.0",
-}
-
-
-def write_marker(folder: Path, **changes: object) -> None:
-    """Write ``imgw-store.json`` as the tool writes it; ``changes`` replace fields."""
-    document = json.dumps({**MARKER, **changes})
-    (folder / "imgw-store.json").write_text(document, encoding="utf-8")
 
 
 def write_layout(folder: Path, tree: str = "archives") -> None:

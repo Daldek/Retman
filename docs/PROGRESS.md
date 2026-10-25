@@ -11,7 +11,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-024) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
-| Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins `8e9bcbb` (Kartograf) and `a304521` (IMGWTools: the head of its `feature/data-output`, **not pushed**, so the author pushes IMGWTools first, Next 2) until the tags `v0.8.0` and `v3.0.0` exist |
+| Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins `8e9bcbb` (Kartograf) and `7b11755` (IMGWTools: the head of its `feature/data-output`, **not pushed**, so the author pushes IMGWTools first, Next 2) until the tags `v0.8.0` and `v3.0.0` exist; the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
 | Extractors | in progress | missing: numbers with units; the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
@@ -33,7 +33,7 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 | Rulesets for `main`, `develop` and `v*` tags, private vulnerability reporting, Dependabot security updates, default branch (DEV-3.6, DEV-13.6, DEV-13.7) | GitHub settings |
 | `docs/CLA.md` | the author's legal text; `CONTRIBUTING.md` and the pull request template already refer to it |
 | Tags, releases, replacing the commit pins of the `tools` group by tags, PyPI name `nogat-retman` (phases 5 and 6) | need the producers' tags and the author's approval |
-| Push of IMGWTools `feature/data-output` (the commit `a304521` that the `tools` group pins) | a push is the author's step (DEV-3.3); until then a pushed Retman has no green CI |
+| Push of IMGWTools `feature/data-output` (the commit `7b11755` that the `tools` group pins) | a push is the author's step (DEV-3.3); until then a pushed Retman has no green CI |
 | Push of `chore/nogat-2.1` and `feature/imgwtools-data-output`, pull request, merge into `develop` | approvals (DEV-3.3) |
 
 ## Next
@@ -55,7 +55,7 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 2. **Migrate the calls to the changing producer APIs** (ECO-051, data-output plan step 5).
    - **IMGWTools: done on the branch `feature/imgwtools-data-output` (the calls, the marker
      states, the documents, ADR-024); the push of the pin is the open point.** The `tools` group
-     pins `a30452182b01f47cc18e48466da4edf4d0c8cb6a`, the head of IMGWTools `feature/data-output`
+     pins `7b117550103a3d8d46afc97043b90f0e93314c8b`, the head of IMGWTools `feature/data-output`
      (`pydantic-settings` is a core dependency there, so no workaround is needed). **That commit
      is not pushed**: GitHub has no such commit, so `uv lock` and `uv sync` resolve the pin only
      on a machine whose uv git cache holds it (a `git fetch` of `~/workspace/IMGWTools`
@@ -82,7 +82,9 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      `<data_dir>/kartograf`, ADR-021). Then USAGE, ARCHITECTURE, CHANGELOG, and an ADR or an
      erratum of ADR-024 for the Kartograf side.
 3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
-   `v3.0.0` once they exist (REL-5.3), run `uv lock` and the gate.
+   `v3.0.0` once they exist (REL-5.3), and in the same change narrow the `supported_versions` of
+   both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test of the IMGWTools manifest
+   pins the string), run `uv lock` and the gate.
 4. Review `src/retman/eval/commands.jsonl` (614 commands, an agent draft), run `retman-eval`
    with Bielik 11B on it (two-stage recognition, `0_5m` against `5m`), then set the confidence
    thresholds.

@@ -2,12 +2,13 @@
 
 import errno
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
 
 import pytest
-from imgw_store_files import write_layout, write_marker, write_server_state
+from imgw_store_files import write_layout, write_server_state
 
 from retman.stores import (
     IMGW_MARKER,
@@ -49,7 +50,6 @@ def test_symlink_component_finds_a_link_in_any_part_of_the_path(tmp_path: Path):
         # A layout is a store that lost its marker (or never had one): `store init`
         ("layout", ImgwStore("no_marker")),
         ("layout_and_notes", ImgwStore("no_marker")),
-        ("marked_layout", ImgwStore("ready", "imgw-store/1")),
         ("tree_is_a_file", ImgwStore("foreign")),
         # The key file of the REST server lives in the default store folder
         ("server_state", ImgwStore("empty")),
@@ -57,7 +57,10 @@ def test_symlink_component_finds_a_link_in_any_part_of_the_path(tmp_path: Path):
     ],
 )
 def test_imgw_store_state_tells_what_the_folder_holds(
-    tmp_path: Path, setup: str, expected: ImgwStore
+    tmp_path: Path,
+    setup: str,
+    expected: ImgwStore,
+    request: pytest.FixtureRequest,
 ):
     folder = tmp_path / "store"
     raw_markers = {
@@ -65,15 +68,17 @@ def test_imgw_store_state_tells_what_the_folder_holds(
         "no_schema": '{"created_by": "imgwtools 3.0.0"}',
         "newer": '{"schema": "imgw-store/2"}',
     }
-    if setup == "file":
+    if setup == "ready":
+        # The store as the tool builds it, not a marker written by hand
+        template = request.getfixturevalue("imgw_store_template")
+        shutil.copytree(template, folder)
+    elif setup == "file":
         folder.write_text("x", encoding="utf-8")
     elif setup != "missing":
         folder.mkdir()
     if setup in raw_markers:
         (folder / IMGW_MARKER).write_text(raw_markers[setup], encoding="utf-8")
-    if setup in ("ready", "marked_layout"):
-        write_marker(folder)
-    if setup in ("layout", "layout_and_notes", "marked_layout"):
+    if setup in ("layout", "layout_and_notes"):
         write_layout(folder, "series")
     if setup in ("server_state", "server_state_and_notes"):
         write_server_state(folder)
