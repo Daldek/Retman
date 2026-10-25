@@ -267,6 +267,10 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   cannot be read is named so in the plan; the tool raises `data_error` (`invalid_marker`) for
   it, and `tests/unit/test_stores.py` holds `imgw_store_state` against the check of the tool
   (ADR-024 erratum 3, ADR-025 erratum 1).
+- `retman scaffold check --tool kartograf`: X9 lists only the data commands no operation uses.
+  A command whose run is read-only in `command_schema` (the source listings, the availability
+  reports, `store overview`, `sheet`, `config show`) is no data command for the scaffold; the
+  list went from 41 to 14 commands (ADR-025 erratum 2).
 
 ### Removed
 

@@ -70,8 +70,11 @@ def read_catalog() -> ToolCatalog:
     """Kartograf's catalog: every command with its task options and effects.
 
     The command layer (``validate_command``, ``run_command``, ``check_command``) takes
-    every command of the catalog, so every command is ``data`` for the scaffold. The
-    check of a project is the report of its tasks, every other check a plan.
+    every command of the catalog; a command is ``data`` for the scaffold when its run
+    has effects (``effects.read_only`` is false in ``command_schema``), so the source
+    listings, the store reads, ``sheet`` and ``config show`` are not unused data
+    commands. The check of a project is the report of its tasks, every other check a
+    plan.
     """
     kartograf = importlib.import_module("kartograf")
     listed = kartograf.list_commands().to_dict()
@@ -104,7 +107,7 @@ def read_catalog() -> ToolCatalog:
             ),
             network=bool(effects["network"]),
             writes=effects["writes"] != "none",
-            data=True,
+            data=not effects["read_only"],
             result_schema=str(entry["result"]["schema"]),
             check_schema="kartograf-plan/1" if has_plan else "",
             examples=tuple(

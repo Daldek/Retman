@@ -300,7 +300,7 @@ true by construction: a new tool value does not appear unnoticed.
 | X6 | a default value on an option required by the tool, or an optional parameter after such an option (ADR-006) | warning |
 | X7 | the client's `lookup` accepts a command with side effects; the offline check touched the network or wrote a file; an operation with a network and writing command without `check` and without a justified `no_check`; `no_check` on an operation none of whose commands needs it | error; warning |
 | X8 | a tool error code without a `[errors.<code>]` text; a document schema unknown to the client | error |
-| X9 | data commands of the catalog that no operation exposes | info |
+| X9 | data commands of the catalog that no operation exposes (Kartograf: commands that are not read-only) | info |
 | X10 | no complete `retman eval run` row with free values for the operation (the grid was not built) | warning |
 
 The check runs in pytest and in Retman's CI (section 3.2.7).

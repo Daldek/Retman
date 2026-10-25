@@ -62,10 +62,11 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      refusals of that head are read (ADR-024 erratum 3): the availability checks report a root
      that the tool turns away (`not_empty`, `nested_store`) as `store_refused`, the plans name a
      marker that cannot be read (`data_error`, `invalid_marker`), and `tests/unit/test_stores.py`
-     holds `imgw_store_state` against the check of the tool. Not part of the migration: the
-     fixture store of the IMGW tests (`imgw_support.fixture_store`) leaves a
-     `retman-imgw-test-*` folder in `TMPDIR` per run, and `docs/research/` still names the old
-     variables, which is history.
+     holds `imgw_store_state` against the check of the tool. Not part of the migration:
+     `docs/research/` still names the old variables, which is history. The fixture store of the
+     IMGW tests is removed when the test session ends; the tool's `project init` refuses a
+     damaged marker as `store_unavailable` (`unsupported`), `store init` as `data_error`
+     (`invalid_marker`); the plans and the project run are tested.
    - **Kartograf: done (the calls, the marker states, the operation that writes the marker, the
      documents, ADR-025); the pin is the final head.** The `tools` group pins
      `b73aad3327cf6faf7ec7d15fe47e9a897f21954a`, the head of Kartograf `feature/data-output`,

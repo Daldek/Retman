@@ -149,3 +149,9 @@ them (`store init` declares `root` and `check`). The operation declares no `chec
 network, and the preview judges the folder by the same rules. The reader of `retman scaffold`
 takes every command as one the layer accepts (`data` is true for all, so X9 lists the commands
 no operation uses) and knows the document `kartograf-store-init/1`.
+
+**Erratum 2 (2026-10-25):** the reader of `retman scaffold` no longer takes every command as
+data: `data` is `not effects.read_only` of `command_schema`, so X9 lists the 14 commands that
+download, write or delete (the downloads, `soil hsg`, `project *`, `cache clear`) and not the
+source listings, the availability reports, the store reads, `sheet` and `config show`. This
+replaces the sentence of erratum 1 that `data` is true for all.

@@ -145,3 +145,23 @@ def test_committed_translations_hold_no_draft_markers() -> None:
 
     # ``retman scaffold draft`` leaves TODO markers: nobody reviewed that text yet
     assert marked == []
+
+
+def test_kartograf_unexposed_commands_are_the_ones_whose_run_has_effects(
+    rows: list[EvalCommand],
+) -> None:
+    # X9 lists data commands only: a source listing, a store read, `sheet` or
+    # `config show` (read-only in `command_schema`) is no unused data command
+    report = check("kartograf", rows, operations=[], tool_level=True)
+
+    (finding,) = [f for f in report.findings if f.check == "X9"]
+    unexposed = finding.args["commands"].split(", ")
+    assert "soil hsg" in unexposed and "project init" in unexposed
+    assert not {
+        "elevation list-sources",
+        "elevation availability",
+        "store overview",
+        "sheet find",
+        "config show",
+        "commands list",
+    } & set(unexposed)
