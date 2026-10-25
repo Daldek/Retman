@@ -8,7 +8,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 
 | Component | State | Note |
 |---|---|---|
-| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-023) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
+| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-024) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
 | Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins `8e9bcbb` (Kartograf) and `a304521` (IMGWTools: the head of its `feature/data-output`, **not pushed**, so the author pushes IMGWTools first, Next 2) until the tags `v0.8.0` and `v3.0.0` exist |
@@ -33,7 +33,8 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 | Rulesets for `main`, `develop` and `v*` tags, private vulnerability reporting, Dependabot security updates, default branch (DEV-3.6, DEV-13.6, DEV-13.7) | GitHub settings |
 | `docs/CLA.md` | the author's legal text; `CONTRIBUTING.md` and the pull request template already refer to it |
 | Tags, releases, replacing the commit pins of the `tools` group by tags, PyPI name `nogat-retman` (phases 5 and 6) | need the producers' tags and the author's approval |
-| Push of `chore/nogat-2.1`, pull request, merge into `develop` | approvals (DEV-3.3) |
+| Push of IMGWTools `feature/data-output` (the commit `a304521` that the `tools` group pins) | a push is the author's step (DEV-3.3); until then a pushed Retman has no green CI |
+| Push of `chore/nogat-2.1` and `feature/imgwtools-data-output`, pull request, merge into `develop` | approvals (DEV-3.3) |
 
 ## Next
 
@@ -52,49 +53,34 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
       ARCHITECTURE are English; PRD N-09 follows the Nogat plan (`nogat-retman` on PyPI in
       phase 6, with the author's approval).
 2. **Migrate the calls to the changing producer APIs** (ECO-051, data-output plan step 5).
-   - **IMGWTools: the calls and the marker states are migrated (commit `f550502` and the
-     `fix(stores)` commit after it, on the branch `feature/imgwtools-data-output`); the documents
-     remain.** The `tools` group pins `a30452182b01f47cc18e48466da4edf4d0c8cb6a`, the head of
-     IMGWTools `feature/data-output` (`pydantic-settings` is a core dependency there, so no
-     workaround is needed). **That commit is not pushed**: GitHub has no such commit, so `uv lock`
-     and `uv sync` resolve the pin only on a machine whose uv git cache holds it (a `git fetch` of
-     `~/workspace/IMGWTools` `feature/data-output` into the database of the IMGWTools URL below
-     `~/.cache/uv/git-v1/db/`; done on this machine). The author pushes IMGWTools first; until
-     then Retman cannot be pushed with a green CI. Done: `IMGW_REFERENCE_DIR`, no `root` beside
-     `output_dir` (the `exclusive` options of the catalog), `output` for the exports, the `files[]`
-     of the tool for exports and downloads, `new` and `unchanged` (the sync values are
-     `new_versions` and `new_series`), `not published` as one constant held against
-     `imgwtools.fetch.UNPUBLISHED`, `[errors.forbidden]`, the download to `output_dir` (the
-     project folder stands in while planning), 38 catalog commands, the state `no_marker` of a
-     store folder (a layout without `imgw-store.json`; a folder with only `api_keys.json` is
-     empty); the gate passes on the pin. Retman sets no `IMGW_STORE_ROOT` or `IMGW_ROOT` and uses
-     no `imgw_*` operation id of the MCP and REST surfaces: it calls the command layer by command
-     name and passes `root` from `store_dir`. Remaining:
-     1. **Documents** (one commit): README 27 to 29 and USAGE 49 to 51 (the `--with` pin),
-        ARCHITECTURE 2264 to 2266 (pin), 670 to 673 (`IMGW_REFERENCE_DIR`) and 3.2.11 (plain
-        download, `output`, statuses), DECISIONS 395 to 397 (the pin in ADR-012) and an ADR or
-        erratum for this migration (the stand-in, the English texts taken as they come, the
-        renamed result values), the CHANGELOG [Unreleased] (the renamed values are breaking),
-        PRD 260 ("pushed commits"). `docs/research/` still names the old variables; it is
-        history.
-     2. Ideas, not decided: the tool's texts are English, so a Polish sentence carries an English
-        `{detail}` and the licence notice is the Polish attribution followed by the English
-        notice; `Message.localized("pl")` of IMGWTools can write them in Polish (the saved
-        documents must stay English: Retman compares `not published`). The fixture store of the
-        IMGW tests (`imgw_support.fixture_store`) leaves a `retman-imgw-test-*` folder in `TMPDIR`
-        per run.
+   - **IMGWTools: done on the branch `feature/imgwtools-data-output` (the calls, the marker
+     states, the documents, ADR-024); the push of the pin is the open point.** The `tools` group
+     pins `a30452182b01f47cc18e48466da4edf4d0c8cb6a`, the head of IMGWTools `feature/data-output`
+     (`pydantic-settings` is a core dependency there, so no workaround is needed). **That commit
+     is not pushed**: GitHub has no such commit, so `uv lock` and `uv sync` resolve the pin only
+     on a machine whose uv git cache holds it (a `git fetch` of `~/workspace/IMGWTools`
+     `feature/data-output` into the database of the IMGWTools URL below `~/.cache/uv/git-v1/db/`;
+     done on this machine). The author pushes IMGWTools first; until then Retman cannot be pushed
+     with a green CI. Retman sets no `IMGW_STORE_ROOT` or `IMGW_ROOT` and uses no `imgw_*`
+     operation id of the MCP and REST surfaces: it calls the command layer by command name and
+     passes `root` from `store_dir`. The texts of the tool stay English inside Polish messages
+     (decided, ADR-024, USAGE 13). Not part of the migration: the fixture store of the IMGW tests
+     (`imgw_support.fixture_store`) leaves a `retman-imgw-test-*` folder in `TMPDIR` per run, and
+     `docs/research/` still names the old variables, which is history.
    - **Kartograf: waits for its `feature/data-output`.** Call sites, in
      `src/retman/tools/kartograf/client.py`: lines 9, 188, 195, 258, 273 (`output_dir=` to
      `validate_command`, `run_command`, `check_command` and on the command line becomes `root=`,
-     `--root`) and, in `handlers.py`, lines
-     84 and 137 (`DownloadManager(output_dir=...)` becomes `root=`). Error codes: the Kartograf
-     rows of `_TOOL_CODES` in `src/retman/adapters/catalog.py` (`no_coverage` to `no_data`,
-     `download_failed` to `source_unavailable`, and so on, ERR §4) go, and so do the
-     `[errors]` texts keyed by them in `src/retman/tools/kartograf/pl.toml` and `en.toml` (from
-     line 243), the exemptions in `src/retman/devtools/readers/kartograf.py`, and the tests under
-     `tests/integration/tools/kartograf/` and `tests/contract/test_tool_conformance.py`.
-     `store_dir` of `[retman.tools.kartograf]` keeps meaning the store root (default
-     `<data_dir>/kartograf`, ADR-021). Then USAGE, ARCHITECTURE, CHANGELOG.
+     `--root`) and, in `handlers.py`, lines 84 and 137 (`DownloadManager(output_dir=...)` becomes
+     `root=`). Error codes: the Kartograf rows of `_TOOL_CODES` in
+     `src/retman/adapters/catalog.py` (lines 114 to 129: `no_coverage` to `no_data`,
+     `download_failed` to `source_unavailable`, and so on, ERR §4) go, and so do the `[errors]`
+     texts keyed by them in `src/retman/tools/kartograf/pl.toml` and `en.toml` (the table starts
+     at line 239). Check `UNREACHABLE_ERRORS` and `KNOWN_SCHEMAS` of
+     `src/retman/devtools/readers/kartograf.py` (lines 16 to 25) against the new catalog; the
+     tests under `tests/integration/tools/kartograf/` and `tests/contract/test_tool_conformance.py`
+     follow. `store_dir` of `[retman.tools.kartograf]` keeps meaning the store root (default
+     `<data_dir>/kartograf`, ADR-021). Then USAGE, ARCHITECTURE, CHANGELOG, and an ADR or an
+     erratum of ADR-024 for the Kartograf side.
 3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
    `v3.0.0` once they exist (REL-5.3), run `uv lock` and the gate.
 4. Review `src/retman/eval/commands.jsonl` (614 commands, an agent draft), run `retman-eval`

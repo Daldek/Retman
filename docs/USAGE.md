@@ -43,12 +43,13 @@ in **one** environment, a running model server, settings and the tools' data sto
 Installation is described in ARCHITECTURE 9.4. Until v0.1.0 is released there is no release tag, and
 the Kartograf `v0.8.0` and IMGWTools `v3.0.0` tags have not been pushed yet, so you install Retman from
 the `develop` branch and the tools from pinned commits (the same ones the tests use, the `tools` group
-in `pyproject.toml`):
+in `pyproject.toml`; the IMGWTools one is the head of its branch `feature/data-output`, and
+`docs/PROGRESS.md` says whether it is pushed):
 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@0d98f3babeeeee49b2146a977b62bfa92114beea"
+    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@a30452182b01f47cc18e48466da4edf4d0c8cb6a"
 ```
 
 The IMGWTools `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are
@@ -451,7 +452,7 @@ Okres w magazynie: magazyn pokrywa tylko część wybranego okresu (2024-02-29 �
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 > t
 Gotowe. Wynik #1: szereg stacji 149190310 (91 wierszy, 2023-12-01 – 2024-02-29) zapisany w pliku CSV.
-Uwaga: Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wodnej – Państwowy Instytut Badawczy. Dane Instytutu Meteorologii i Gospodarki Wodnej – Państwowego Instytutu Badawczego zostały przetworzone. Do użytku prywatnego i badawczego; inne zastosowania wymagają sprawdzenia warunków IMGW-PIB, także wyjątków dla danych o wysokiej wartości.
+Uwaga: Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wodnej – Państwowy Instytut Badawczy. Dane Instytutu Meteorologii i Gospodarki Wodnej – Państwowego Instytutu Badawczego zostały przetworzone. For private and research use; other uses require checking the IMGW-PIB terms, including the exceptions for high-value data.
 ```
 
 After the summary Retman prints the operation's **warnings**, each on its own line "Uwaga: …" (Notice: …):
@@ -460,6 +461,10 @@ verbatim, and a partial result is a result with a warning. A failed result also 
 the exit code, section 8); Retman chooses the message based on the tool's stable error code, and the tool's text is only
 a quotation (e.g. "GUGiK nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: …"
 — GUGiK has no data for the given area and selected product parameters. Details: …).
+IMGWTools writes its texts in English and Retman shows them as they come, so a Polish message can quote
+an English detail, and the licence notice of an IMGW result is the provider's attribution (Polish, in
+the wording IMGW-PIB requires) followed by the English notice of the tool (as in the example above;
+ADR-024).
 A download from GUGiK via Kartograf looks the same: the files go to Kartograf's store, and the summary
 says where they are ("Pliki w magazynie narzędzia: …" — Files in the tool's store: …).
 
@@ -982,6 +987,9 @@ list in section 8. Options and metrics: `docs/specs/2026-10-11-retman-eval.md`.
   folder; they require a disk with hard links (not FAT/exFAT), and the Kartograf cache — a local disk.
   A project folder on a network share (e.g. CIFS) is no longer a problem for the cache (the cache is
   outside the project).
+- **Texts of IMGWTools are English**: the part of a message that quotes the tool (the detail of an
+  error, the data-quality and licence notices) is not translated, whatever `lang` says; the documents
+  saved with the result (`tool_<n>_<command>.json`) keep the tool's own words.
 - The latest available GUGiK material is downloaded; selecting a year and campaign is not yet available.
   Kartograf in `update = "local"` mode uses saved versions and does not ask the sources for newer ones.
 - Retman does not send commands anywhere other than the configured model; tools connect to data services

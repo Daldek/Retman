@@ -37,7 +37,7 @@ ADR-x`); each relation is recorded on both sides.
 | [ADR-009](#adr-009-cutout-result-crs-recognised-in-code) | Cutout result CRS recognised in code | accepted | 2026-10-12 |
 | [ADR-010](#adr-010-command-set-from-all-projects) | Command set from all projects | accepted; amended by ADR-011, ADR-021 | 2026-10-12 |
 | [ADR-011](#adr-011-exporting-the-command-set-and-drafting-retman-eval-entries) | Exporting the command set and drafting `retman-eval` entries | accepted; amends ADR-010; amended by ADR-022 | 2026-10-12 |
-| [ADR-012](#adr-012-kartograf-080-and-imgwtools-300) | Kartograf 0.8.0 and IMGWTools 3.0.0 | accepted; amends ADR-003, ADR-006 | 2026-10-19 |
+| [ADR-012](#adr-012-kartograf-080-and-imgwtools-300) | Kartograf 0.8.0 and IMGWTools 3.0.0 | accepted; amends ADR-003, ADR-006; amended by ADR-024 | 2026-10-19 |
 | [ADR-013](#adr-013-tools-called-through-the-command-layer) | Tools called through the command layer | accepted | 2026-10-19 |
 | [ADR-014](#adr-014-no-network-before-confirmation-preview-and-check) | No network before confirmation: preview and check | accepted | 2026-10-19 |
 | [ADR-015](#adr-015-tool-stores-outside-results-folders) | Tool stores outside results folders | accepted; amended by ADR-021 | 2026-10-19 |
@@ -49,6 +49,7 @@ ADR-x`); each relation is recorded on both sides.
 | [ADR-021](decisions/0021-user-environment.md) | User environment: `[retman]` in `nogat.toml`, variables and user directories | accepted; amends ADR-010, ADR-015 | 2026-10-24 |
 | [ADR-022](decisions/0022-agent-interfaces.md) | Agent interfaces: one command catalog, one `retman` executable | accepted; amends ADR-011, ADR-019 | 2026-10-24 |
 | [ADR-023](decisions/0023-structure-gate-ci-and-log.md) | Repository structure, quality gate, CI, test tree and technical log | accepted | 2026-10-24 |
+| [ADR-024](decisions/0024-imgwtools-data-output.md) | IMGWTools data output: plain files or a store, called as the tool defines them | accepted; amends ADR-012 | 2026-10-25 |
 
 ---
 
@@ -381,7 +382,7 @@ ones), given that coordinates are needed for the tests.
 ## ADR-012: Kartograf 0.8.0 and IMGWTools 3.0.0
 
 **Date:** 2026-10-19
-**Status:** accepted; amends ADR-003 (version ranges, pinning) and ADR-006
+**Status:** accepted; amends ADR-003 (version ranges, pinning) and ADR-006; amended by ADR-024 (2026-10-25, the IMGWTools pin)
 
 **Context:** The author releases Kartograf 0.8.0 and IMGWTools 3.0.0 with breaking API changes
 (`docs/research/2026-10-19-kartograf-0.8.0-imgwtools-3.0.0-wplyw.md`). On Kartograf 0.8.0
@@ -403,6 +404,11 @@ required value (author): DSM (NMPT) resolution and vertical reference system, or
 **Consequences:** once the `v0.8.0` and `v3.0.0` tags are pushed, the `tools` group switches to tags.
 Completeness of the resolutions is guarded by the coverage check (ADR-019). Details:
 `docs/research/2026-10-19-kartograf-0.8.0-migracja.md`, `…-imgwtools-3.0.0-operacje.md`.
+
+**Erratum 1 (2026-10-25, IMGWTools data output, ADR-024):** the IMGWTools pin of the decision,
+`0d98f3b` (`origin/slave`), is replaced by `a304521`, the head of the IMGWTools branch
+`feature/data-output`. That commit is not pushed, so the rule "pin the pushed commits" holds for
+Kartograf only, until the author pushes IMGWTools. The ranges and the other decisions stand.
 
 ---
 

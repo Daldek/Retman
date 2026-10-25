@@ -20,13 +20,13 @@ Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial
 
 ## Install
 
-Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf) and `v3.0.0` (IMGWTools) exist, the pushed commits are named:
+Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf) and `v3.0.0` (IMGWTools) exist, the commits that Retman is tested with are named (the IMGWTools one is the head of its branch `feature/data-output`, [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) says whether it is pushed):
 
 ```sh
 # CLI
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@0d98f3babeeeee49b2146a977b62bfa92114beea"
+    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@a30452182b01f47cc18e48466da4edf4d0c8cb6a"
 
 # Python library (name the same tools in the project's own dependencies)
 uv add "retman @ git+https://github.com/Daldek/Retman@develop"

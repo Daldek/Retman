@@ -406,10 +406,15 @@ section 3.2.6); a file must lie in `output_dir` **or in the tool's store**
 referenced in the result by absolute path and SHA-256 checksum, without copying anything.
 
 **Messages.** The user sees Retman's own text, selected by the tool's stable error code
-(`[errors.<code>]`, section 4.2), and the tool's text — often in Polish without diacritics and
-with command-line flags — only as a quotation (`{detail}`). Notices about data quality and
-licensing are shown verbatim, because tool documents do not provide structured numbers or legal
-wording for them; `info` notices remain in the audit trail.
+(`[errors.<code>]`, section 4.2), and the tool's text only as a quotation (`{detail}`): Kartograf's
+is often Polish without diacritics and with command-line flags, IMGWTools' is English. Notices about
+data quality and licensing are shown verbatim, because tool documents do not provide structured
+numbers or legal wording for them; `info` notices remain in the audit trail. Retman does not
+translate the tool's texts: a tool document carries the text, and no message key crosses the
+process boundary, so a Polish sentence can quote an English detail, and the licence notice of an
+IMGW result is the provider's attribution (Polish, in the wording the terms of use prescribe)
+followed by the tool's English notice (ADR-024). The documents saved with the result keep the
+originals; the one text that Retman compares is `not published` (section 3.2.11).
 
 Example handler (a tool without a catalog):
 
@@ -537,7 +542,7 @@ and Retman adapts to them:
 - Each tool has a **supported version range** in its manifest: Kartograf `>=0.8.0,<0.9`
   (0.x releases may break compatibility), IMGWTools `>=3.0.0,<4` (semantic versioning and `/1`
   document contracts; ADR-012). The range corresponds to release tags in the tool's repository on
-  GitHub; until the `v0.8.0` and `v3.0.0` tags are pushed, the `tools` dependency group pins pushed
+  GitHub; until the `v0.8.0` and `v3.0.0` tags are pushed, the `tools` dependency group pins
   commits (section 9.3). Retman checks the installed tool's version at startup (section 3.2.5); it
   does not install tools on its own (sections 9.3, 9.4).
 - **Retman's CI** runs the handler tests and the conformance check (`retman scaffold check`,
@@ -645,7 +650,7 @@ offer an availability check (section 6.5).
 | `imgw_series` — station time series | `export_station_series` — station series (dataset, period, year type, variables) to CSV; `check` | `hydro_series`, `meteo_series` | from the store without network; from the server download of archives to the store (network, writes) |
 | | `show_station_coverage` — data coverage of a station in the store (years, gaps) | `imgw_report` | no network |
 | | `build_imgw_series` — build dataset series from archives in the store | — | writes to the store |
-| `imgw_archives` — archives and store | `download_hydro_archives`, `download_meteo_archives` — download archives to the results folder, without the store | `imgw_archive` | network |
+| `imgw_archives` — archives and store | `download_hydro_archives`, `download_meteo_archives` — download archives as plain files to the results folder (`output_dir`), without the store | `imgw_archive` | network |
 | | `check_imgw_archives` — plan: what needs to be downloaded relative to the store | `imgw_plan` | network |
 | | `sync_imgw_store` — download archives to the store; `check` | — | network; writes to the store |
 | | `sync_imgw_store_by_plan` — download per a plan from the result of `check_imgw_archives` (input `imgw_plan`, e.g. "#5") | — | network; writes to the store |
@@ -664,16 +669,36 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
 
 **Rules common to IMGWTools operations:**
 
-- **Store** (`[retman.tools.imgwtools] store_dir`, section 9.1) is the `root` option of every command,
-  added by the client. A missing store, a folder with the layout of a store but no marker, a foreign
-  folder or a store with an unsupported schema is a **preview problem**; the problem of a missing store
-  and of a layout without a marker comes with the repair command ("Utwórz magazyn IMGW" (create the
-  IMGW store), `retman config init`: the tool checks the layout and writes the marker), and a folder
-  that holds only the `api_keys.json` of the tool's server counts as a missing store, not as a foreign
-  folder; no operation creates a store silently. The client exports `reference_data_dir`
-  once as the `IMGW_DATA_DIR` variable before the first import of the tool — the only exception to
-  the "no environment variables" rule, because the tool has no option for the static station
-  positions file; the value comes from the settings, not from the environment.
+- **Store** (`[retman.tools.imgwtools] store_dir`, section 9.1) is the `root` option of the commands
+  that read or write it; the client adds it unless the call names plain files (the next rule). A
+  missing store, a folder with the layout of a store but no marker, a foreign folder or a store with
+  an unsupported schema is a **preview problem**; the problem of a missing store and of a layout
+  without a marker comes with the repair command ("Utwórz magazyn IMGW" (create the IMGW store),
+  `retman config init`: the tool checks the layout and writes the marker), and a folder that holds
+  only the `api_keys.json` of the tool's server counts as a missing store, not as a foreign folder;
+  no operation creates a store silently. The client exports `reference_data_dir` once as the
+  `IMGW_REFERENCE_DIR` variable before the first import of the tool — the only exception to the "no
+  environment variables" rule, because the tool has no option for the static station positions file;
+  the value comes from the settings, not from the environment.
+- **Output: plain files or the store** (the data output convention ECO-051, ADR-024). IMGWTools
+  writes either plain files into a directory (`output_dir`) or a versioned store (`root`), never
+  both: its catalog declares such options `exclusive`, and the client adds `root` only to a call that
+  names none of the options of a group that holds it. The two download operations pass the **results
+  folder** as `output_dir`: the tool stages the files, verifies them and moves them into place
+  atomically, and the audit block `tool` of the result carries the `files[]` it reports (path,
+  SHA-256 computed while writing, status) as they are. While a plan is built there is no results
+  folder yet, and a download without `output_dir` would write the store and be refused for a
+  dataset the store does not hold (`retman scaffold check` reports such a dataset as a dead option,
+  X3, section 3.2.3), so the **project folder stands in** for `output_dir` in the offline validation;
+  the tool only validates the option and writes nothing there. The exports (`export_station_series`,
+  `export_imgw_archive`) pass the file as `output` (it was `path`) and take it from `files[]` in the
+  same way. The store operations keep `root`. Their results use the statuses of the tool, `new`,
+  `unchanged`, `relabeled` and `failed`, and the synchronisation counts `new_versions` and
+  `new_series` (they were `created`, `series_created`; CHANGELOG).
+- **Not published.** A file that the server does not publish (a year without an archive) is an item
+  of the plan with the status `unverifiable` and the error `not published`, the English text of the
+  tool; Retman compares it with one constant (`plans.UNPUBLISHED`), and a test holds that constant
+  against `imgwtools.fetch.UNPUBLISHED`.
 - **Stations** are read by the `station` extractor **offline from the catalog in the store** (codes:
   9 IMGW-PIB digits, ČHMÚ WIGOS identifier; names with Polish inflection, an inflected name requires
   confirmation, section 6.1). Without a catalog Retman reads only codes and points to the
@@ -715,13 +740,13 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
   `check_imgw_project`) have no `check`: the check would say nothing that the execution itself would not
   say, and the result of these operations is a plan (`imgw_plan`) that the user confirms and executes
   (`sync_imgw_store_by_plan`).
-- **Excluded catalog commands** (7 of 37, each reachable through the IMGWTools CLI and API): `datasets
+- **Excluded catalog commands** (8 of 38, each reachable through the IMGWTools CLI and API): `datasets
   files`, `pmaxtp url`, `pmaxtp check` and `series select` are offline lookups used by previews and
   mappers, not separate operations; `series read` yields the same records as the series export (and a
-  file with license columns is produced by `export_station_series`); `commands schema` and `commands guide`
-  describe the catalog itself (Retman reads schemas only in `retman scaffold`). The `project add` command
-  is exposed for `series select` and `pmaxtp sync` tasks; the other task types have nothing to pin or
-  are covered by the series task.
+  file with license columns is produced by `export_station_series`); `commands list`, `commands schema`
+  and `commands guide` describe the catalog itself (Retman reads schemas only in `retman scaffold`).
+  The `project add` command is exposed for `series select` and `pmaxtp sync` tasks; the other task
+  types have nothing to pin or are covered by the series task.
 
 ### 3.3. Models: Retman contains no model [N-01], [N-02], [N-10]
 
@@ -2265,9 +2290,11 @@ a GPU. The results go into the documentation as guidance for model selection (PR
   nor `mypy src tests` depends on what is installed.
 - The `tools` dependency group in `pyproject.toml` serves tests and manual runs; it is not
   a dependency of the user's environment. Until the tags `v0.8.0` (Kartograf) and `v3.0.0`
-  (IMGWTools) it pins pushed commits: Kartograf `8e9bcbb0` (`origin/develop`) and IMGWTools with
-  the `store` extra (`0d98f3b`, `origin/slave`); after release it switches to tags (ADR-012). The
-  IMGWTools `store` extra installs `pyarrow` (time series are Parquet files).
+  (IMGWTools) it pins commits: Kartograf `8e9bcbb0` (`origin/develop`, pushed) and IMGWTools with
+  the `store` extra (`a304521`, the head of its branch `feature/data-output`, not pushed yet:
+  `uv lock` resolves it only where the git cache holds it, until the author pushes IMGWTools;
+  PROGRESS Next 2); after release it switches to tags (ADR-012, ADR-024). The IMGWTools `store`
+  extra installs `pyarrow` (time series are Parquet files).
 - Retman **has no extras that install tools** (`retman[hydrograf]` etc.). Dependencies pointing
   directly to Git repositories would force fixed versions instead of ranges and would block any
   later publication on PyPI.

@@ -198,12 +198,25 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   Migration: match the English text, or `code` and `reason` of the check; the terminal still
   shows the report in the language of `lang`. `help_language` reads the real command line, so
   `--lang` decides the language of `--help`.
+- **Breaking: IMGWTools data output** (ECO-051, ADR-024). Retman calls IMGWTools as its branch
+  `feature/data-output` defines it: archive downloads write plain files into the results folder
+  (`output_dir`; the tool stages, verifies and checksums them), exports write the one file given
+  as `output`, the store operations keep `root`, and `reference_data_dir` reaches the tool as
+  `IMGW_REFERENCE_DIR` (it was `IMGW_DATA_DIR`). The values of a result follow the tool: the
+  synchronisation reports `values.new_versions` and `values.new_series` (they were `created` and
+  `series_created`), and the statuses in `values.series`, `values.archives` and
+  `values.store_versions` are `new` and `unchanged` (they were `created` and `reused`).
+  Migration: read the new names in `result.json`; the plan and the settings do not change. The
+  texts of the tool are English and are shown as they come, so a Polish message can quote an
+  English detail, and the licence notice of an IMGW result ends with an English notice. The `tools`
+  group pins IMGWTools `a304521`, the head of its branch `feature/data-output`, which is not pushed
+  yet (ARCHITECTURE 3.2.11, 9.3; USAGE 5.2).
 - An IMGW store folder can be a layout of a store without its marker (`archives/`, `series/`,
   `stations/` or `pmaxtp/` and no `imgw-store.json`): `retman doctor check` reports it as
   `store_unavailable`, reason `no_marker`, and the plan names it and points to "Utwórz magazyn
   IMGW" or `retman config init`, where IMGWTools checks the layout and writes the marker. A
   folder that holds only the `api_keys.json` of the IMGWTools server counts as empty, no longer
-  as foreign (ARCHITECTURE 7.2, 9.1).
+  as foreign (ARCHITECTURE 7.2, 9.1; ADR-024).
 
 ### Removed
 
