@@ -3,7 +3,7 @@
 A user guide: how to set up Retman, how to issue commands, answer questions, approve plans and
 find results — in the terminal and from Python.
 
-**Status:** before v0.1.0. Four Kartograf 0.8.0 operations and 26 IMGWTools 3.0.0 operations work
+**Status:** before v0.1.0. Five Kartograf 0.8.0 operations and 26 IMGWTools 3.0.0 operations work
 (section 9) with a decision model compatible with the OpenAI API (e.g. LM Studio); the basal backend
 does not exist yet.
 
@@ -43,8 +43,8 @@ in **one** environment, a running model server, settings and the tools' data sto
 Installation is described in ARCHITECTURE 9.4. Until v0.1.0 is released there is no release tag, and
 the Kartograf `v0.8.0` and IMGWTools `v3.0.0` tags have not been pushed yet, so you install Retman from
 the `develop` branch and the tools from pinned commits (the same ones the tests use, the `tools` group
-in `pyproject.toml`; the IMGWTools one is the head of its branch `feature/data-output`, and
-`docs/PROGRESS.md` says whether it is pushed):
+in `pyproject.toml`; both are the heads of the branches `feature/data-output` of the tools, and
+`docs/PROGRESS.md` says whether they are pushed):
 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
@@ -129,8 +129,8 @@ Magazyn IMGWTools gotowy: ~/.local/share/nogat/imgw
 the `[retman]` tables are appended at the end, and other tables (`[nogat]`, tables of other tools) are not
 touched. If the file already has a `[retman]` table, `retman config init` ends with a `conflict` error
 (code 4) and changes nothing. Without a terminal it writes the tables with the visible default paths and
-creates nothing (Kartograf creates its store on the first download, and you create the IMGWTools store with
-the command "Utwórz magazyn IMGW" (create the IMGW store)). If the disk of the chosen folder **has no hard
+creates nothing (Kartograf writes the marker of its store on the first download, and you create the
+IMGWTools store with the command "Utwórz magazyn IMGW" (create the IMGW store)). If the disk of the chosen folder **has no hard
 links** (FAT/exFAT, some network shares), `retman config init` ends with a `store_unavailable` error
 (code 8) and does not write the file — point to a folder on another disk.
 
@@ -465,8 +465,12 @@ IMGWTools writes its texts in English and Retman shows them as they come, so a P
 an English detail, and the licence notice of an IMGW result is the provider's attribution (Polish, in
 the wording IMGW-PIB requires) followed by the English notice of the tool (as in the example above;
 ADR-024).
-A download from GUGiK via Kartograf looks the same: the files go to Kartograf's store, and the summary
-says where they are ("Pliki w magazynie narzędzia: …" — Files in the tool's store: …).
+A download from GUGiK via Kartograf looks the same: the files go to Kartograf's store (`store_dir`;
+Retman always calls Kartograf with the store, which all projects share, never with a plain
+folder for its files), and the summary says where they are ("Pliki w magazynie
+narzędzia: …" — Files in the tool's store: …). The error codes of Kartograf are the codes of
+the registry (section 8): GUGiK having no data for the area is `no_data`, and a failed transfer
+is `source_unavailable`.
 
 ### 5.3. Plan preview (offline)
 
@@ -716,7 +720,7 @@ Interruption by the user is not an error and prints no document.
 | 10 | `partial` | result printed, but some of the `items` units did not pass: `doctor check` (something blocks work, some checks passed), `eval run` (some commands to be rejected were planned), `scaffold check` (errors in some tools) |
 | 11 | `failed` | the same, when no check or tool passed |
 | 13 | `calculation_error` | tool cannot compute a result from valid data |
-| 14 | `no_data` | source has no data for the area or period (e.g. Kartograf's `no_coverage`) |
+| 14 | `no_data` | source has no data for the area or period (e.g. GUGiK has none for the area; the `result.json` of a failed result keeps the tool's precision, e.g. `no_coverage`, as the `reason` of its failure) |
 | 15 | `unsupported` | command out of scope (`out_of_scope`) or no availability check (`no_check`) |
 | 130 | `cancelled` | interrupted by the user (`anuluj`, `n`, Ctrl+C — also during an availability check) |
 | 143 | `terminated` | process received SIGTERM |
@@ -733,8 +737,9 @@ operation.
 
 ### 9.1. Kartograf 0.8.0 — GUGiK spatial data (ADR-001, ADR-012, ADR-016)
 
-Five operations. Four of them download data from GUGiK into the Kartograf store and have an
-offline preview and an availability check; the fifth writes the marker of the store:
+Five operations. Four of them download data from GUGiK into the Kartograf store (always the
+store, never plain files in the results folder) and have an offline preview and an availability
+check; the fifth writes the marker of the store:
 
 | Operation | Area | Parameters (Retman asks about missing ones) | Example command |
 | --- | --- | --- | --- |
@@ -887,7 +892,7 @@ Model decyzyjny
 
 Narzędzia
   ✓ imgwtools 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
-  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 4 operacje
+  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 5 operacji
 
 Magazyny danych narzędzi
   ✓ kartograf: magazyn ~/.local/share/nogat/kartograf (zapis możliwy, dowiązania twarde działają)

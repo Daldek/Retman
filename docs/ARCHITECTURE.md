@@ -252,7 +252,7 @@ and checks the conformance of its descriptions**. They are not read at runtime, 
 
 **The developer tool `retman scaffold`** (package `retman.devtools`, for the author, not for
 the end user; a command group of the `retman` executable, with no dependencies of its own) reads the machine
-catalogs of the tools (Kartograf's `get_catalog` and `list_sources`, IMGWTools' `command_schema`) through
+catalogs of the tools (Kartograf's and IMGWTools' `list_commands` and `command_schema`) through
 small readers in `src/retman/devtools/readers/` — with no network access:
 
 ```bash
@@ -405,8 +405,9 @@ section 3.2.6); a file must lie in `output_dir` **or in the tool's store**
 (`[retman.tools.<tool>] store_dir`) — anywhere else is an error. Files from the store are
 referenced in the result by absolute path and SHA-256 checksum, without copying anything.
 
-**Messages.** The user sees Retman's own text, selected by the tool's stable error code
-(`[errors.<code>]`, section 4.2), and the tool's text only as a quotation (`{detail}`): Kartograf's
+**Messages.** The user sees Retman's own text, selected by the tool's error code, a code of the
+shared registry (`[errors.<code>]`, section 4.2; the tool's precision is its `details.reason`, which
+stays in the `failure` of the result, ADR-025), and the tool's text only as a quotation (`{detail}`): Kartograf's
 is often Polish without diacritics and with command-line flags, IMGWTools' is English. Notices about
 data quality and licensing are shown verbatim, because tool documents do not provide structured
 numbers or legal wording for them; `info` notices remain in the audit trail. Retman does not
@@ -607,6 +608,10 @@ the tool as `tool_1_store_init.json` and names the call in the audit; it is the 
 `no_marker` that `retman doctor check` and the plans report (the command "Utwórz magazyn
 Kartografa").
 
+Kartograf is making `store init` reachable through `run_command` (AGI-2.1; in progress, not in
+the pinned commit). When the pin has it, this operation becomes a catalog call like the others,
+run by the generic executor, and `handlers.init_kartograf_store` goes (ADR-025).
+
 Kartograf operations have no default values (ADR-006): Retman asks about resolution, vertical
 datum, scale, color and format when the command does not include them. All ASC grid resolutions
 of Kartograf are supported (ADR-012); whatever the tool nevertheless does not accept is listed
@@ -628,7 +633,7 @@ file means is stated by the plan (`geometry_note`):
 | orthophoto (child map sheets) | the file is not accepted — the tool's provider class takes sheet codes (godło) only | preview problem: Retman asks again for the product and the area |
 
 **Result and store.** Kartograf saves downloaded files in its store (`[retman.tools.kartograf]
-store_dir`) as immutable versions; the result points to them by absolute path and SHA-256 checksum
+store_dir`, always passed as `root`; Retman offers no plain mode of Kartograf, ADR-025) as immutable versions; the result points to them by absolute path and SHA-256 checksum
 (section 5.4) and contains the tool document (`tool_<n>_<command>.json`). Exception: for BDOT10k in
 Shapefile Kartograf returns ZIP archives in the store, and the mapper unpacks all `.shp` files
 together with their companion files into the results folder (rejecting unsafe paths in the archive).
@@ -1952,7 +1957,7 @@ Rules:
 | `files` | paths to saved files, by data kind: in the result folder or in the tool's store (section 3.2.4) |
 | `warnings` | translated warnings: partial result, tool notices about data quality and licence (verbatim; purely informational notices stay in the audit trail). The caller must show them — the CLI prints them after the summary |
 | `error` | error description when `ok = False`; for a tool error — Retman's text selected by the stable error code, with the tool's text only as a quote |
-| `error_code` | stable tool error code (e.g. `no_coverage`) when the operation failed because of it; otherwise `None` |
+| `error_code` | the tool's error code, a code of the registry (e.g. `no_data`), when the operation failed because of it; otherwise `None`; the tool's precision (e.g. `no_coverage`) is the `details.reason` of the `failure` document |
 | `tool` | audit block of the tool's catalog calls (section 5.4); `None` for operations without such calls |
 | `summary` | short description in the user's language (operation template, generic template or `TextBackend`) |
 

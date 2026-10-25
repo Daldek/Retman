@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-25
 **Status:** accepted; amends ADR-012 (2026-10-25, the IMGWTools pin is a commit that is not
-pushed)
+pushed); amended by ADR-025 (2026-10-25, the Kartograf pin)
 
 ## Context
 
@@ -105,3 +105,10 @@ one check that the loader, `doctor check`, `scaffold check` and the conformance 
 release change that replaces the commits by tags narrows the ranges to `>=0.8.0,<0.9` and
 `>=3.0.0,<4`. The mypy ignore of `imgwtools` is removed (the tool ships `py.typed`), and the tests
 that need a ready IMGW store use `imgwtools.testing` (DEV-10.6).
+
+**Erratum 2 (2026-10-25, Kartograf data output, ADR-025):** item 1 says that Kartograf stays at
+`8e9bcbb` until its own `feature/data-output` is pushed, and a consequence says that its
+calls and error codes wait for the tool. Neither holds any longer: the `tools` group pins
+Kartograf `8a36e977`, the head of that branch, which is not pushed either, and the Kartograf
+calls (`root` in place of `output_dir`) and error codes (the registry) are migrated (ADR-025).
+Both pins wait for the author's push (PROGRESS Next 2).

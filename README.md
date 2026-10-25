@@ -192,7 +192,7 @@ Retman is built to be driven by agents as well as by people. [llms.txt](https://
 
 ## Related tools
 
-- [Kartograf](https://github.com/Daldek/Kartograf) downloads Polish and Czech geodata into a versioned store; Retman calls its Python library (command catalog `kartograf-catalog/1`).
+- [Kartograf](https://github.com/Daldek/Kartograf) downloads Polish and Czech geodata into a versioned store; Retman calls its Python library (command lists `kartograf-command-list/1` and `kartograf-commands/1`).
 - [IMGWTools](https://github.com/Daldek/IMGWTools) provides IMGW-PIB and ČHMÚ hydro-meteorological data, PMAXTP and a versioned store; Retman calls its Python library.
 - [Hydrolog](https://github.com/Daldek/Hydrolog) (hydrological calculations) and [Hydrograf](https://github.com/Daldek/Hydrograf) (watershed delineation and design hydrographs) are planned Retman tools.
 - [Archiwista](https://github.com/Daldek/Archiwista) browses and manages the stores of Kartograf and IMGWTools.

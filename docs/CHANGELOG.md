@@ -219,7 +219,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   magazyn IMGW", where IMGWTools checks the layout and writes the marker. A folder that holds only
   the `api_keys.json` of the IMGWTools server counts as empty, no longer as foreign
   (ARCHITECTURE 7.2, 9.1; ADR-024).
-- **Breaking: Kartograf data output** (ECO-051). Retman calls Kartograf as its branch
+- **Breaking: Kartograf data output** (ECO-051, ADR-025). Retman calls Kartograf as its branch
   `feature/data-output` defines it: the folder `[retman.tools.kartograf] store_dir` is the store
   `root` of every call (it was `output_dir`, `--output-dir` on the command line of the audit and
   `DownloadManager(output_dir=...)` of the orthophoto), a run is read from the
@@ -231,9 +231,10 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `validation_error` (`invalid_input`) and so on, and the precision is the `details.reason` of
   the `failure` of the result; the `[errors]` texts of the tool are keyed by the codes.
   Migration: read the new codes in `result.json`; the plan and the settings do not change. The
-  first write into a new folder writes the store marker `kartograf-store.json`. The `tools` group
-  pins Kartograf `8a36e977`, the head of its branch `feature/data-output`, which is not pushed
-  yet.
+  first write into a new folder writes the store marker `kartograf-store.json`. Retman always
+  writes to the store (`root`) and offers no plain mode of Kartograf. The `tools` group pins
+  Kartograf `8a36e977`, the head of its branch `feature/data-output`, which is not pushed yet
+  (ARCHITECTURE 3.2.4, 3.2.10; USAGE 5.2, 9.1; ADR-012 erratum 3).
 - A Kartograf store folder can be the layout of a store without its marker (files in a product
   tree such as `nmt/` and no `kartograf-store.json`), a folder with other files, a folder whose
   marker Kartograf cannot read, or a folder inside another store: `retman doctor check` reports
@@ -242,7 +243,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   names it before you confirm; Kartograf itself reports such a store only after its work has
   begun, as the failure of every sheet. A missing or an empty folder stays fine: the first
   write marks it, and the command "Utwórz magazyn Kartografa" marks a layout that has lost its
-  marker (ARCHITECTURE 3.2.10, 7.2; USAGE 11).
+  marker (ARCHITECTURE 3.2.10, 7.2; USAGE 11; ADR-025).
 - The supported ranges admit the development versions of the pending releases while the
   `tools` group pins commits: Kartograf `>=0.8.0.dev0,<0.9` and IMGWTools `>=3.0.0.dev0,<4`
   (REL-5.6, ADR-024 erratum 1). The version check of the loader, `retman doctor check` and
