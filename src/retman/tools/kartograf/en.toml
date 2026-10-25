@@ -321,3 +321,4 @@ orthophoto_variant = "  The orthophoto sheet index knows only the RGB variant; C
 in_store = "  {count} of them are already in the store."
 counties = "  Counties in the area: {count} ({units})"
 no_counties = "  The area does not intersect any county."
+store_refused = "  Kartograf will refuse to write into this store, so nothing will be downloaded: {detail}"

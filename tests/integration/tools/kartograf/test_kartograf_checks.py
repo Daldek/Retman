@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
 from kartograf_support import (
     BBOX,
     FIXTURES,
@@ -592,3 +593,30 @@ def test_partial_index_answer_is_flagged_incomplete_and_unknown(tmp_path: Path) 
     assert report.status == "unknown"
     assert report.items == [{"key": "incomplete", "args": {}}]
     assert "niepełny" in report.lines[0]
+
+
+@pytest.mark.parametrize(
+    ("name", "params"),
+    [
+        ("download_bdot10k", {"area": TERYT, "format": "gpkg"}),
+        ("download_sheet_hierarchy", HIERARCHY_ORTHO),
+    ],
+)
+def test_a_store_kartograf_refuses_is_the_whole_answer_of_the_check(
+    tmp_path: Path, name: str, params: dict[str, Any]
+) -> None:
+    store = tmp_path / "other-files"
+    store.mkdir()
+    (store / "notes.txt").write_text("not a store", encoding="utf-8")
+    client = OfflineClient({**settings(tmp_path), "store_dir": str(store)})
+
+    # Kartograf plans the refusal of the root as its one position and asks the source
+    # for nothing: no county or sheet is there to count
+    report = run_check(
+        operations()[name], params, context(name, client), load_core_texts("pl")
+    )
+
+    assert report.status == "unavailable"
+    (item,) = report.items
+    assert item["key"] == "store_refused"
+    assert "odmówi zapisu" in report.lines[0] and str(store) in report.lines[0]

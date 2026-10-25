@@ -3,7 +3,9 @@
 A plan is what ``store check``, ``project check`` and the check twins of
 ``store sync`` and ``project download`` return: the freshness of each archive
 file (``current``, ``newer``, ``missing``, ``unverifiable``, ``check_failed``)
-with the size the server reports. Everything here is plain data handling.
+with the size the server reports. The plan of a store write that the tool will
+refuse lists that refusal as its one action and no archive. Everything here is
+plain data handling.
 """
 
 from collections import Counter
@@ -75,13 +77,43 @@ def plan_summary(plan: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def plan_refusal(plan: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """Return the action of a plan that says the write will be refused, or ``None``.
+
+    A store write turns a root away with ``conflict`` when the root lies in, holds or
+    nests a store of any tool (``nested_store``) or holds other files and is no store
+    (``not_empty``). The plan of such a write does not fail: it lists one action with
+    ``action`` ``conflict``, the ``reason``, the root as ``path`` and the tool's own
+    wording as ``detail``, lists no archive and asks the server for nothing; the run
+    raises the same ``conflict``.
+    """
+    for action in plan.get("actions") or ():
+        if isinstance(action, Mapping) and action.get("action") == "conflict":
+            return action
+    return None
+
+
+def refusal_check_output(action: Mapping[str, Any]) -> CheckOutput:
+    """Report a plan whose write the tool will refuse: nothing can be served."""
+    return {
+        "status": "unavailable",
+        "items": [
+            {"key": "store_refused", "args": {"detail": str(action.get("detail", ""))}}
+        ],
+    }
+
+
 def plan_check_output(plan: Mapping[str, Any]) -> CheckOutput:
     """Build the availability report of a freshness plan of an archive selection.
 
     ``available``: every file is on the server and can be served; ``partial``: some
     are not published, cannot be compared or could not be checked; ``unavailable``:
-    none is published; ``unknown``: no check succeeded.
+    none is published, or the tool will refuse to write the store; ``unknown``: no
+    check succeeded.
     """
+    refusal = plan_refusal(plan)
+    if refusal is not None:
+        return refusal_check_output(refusal)
     summary = plan_summary(plan)
     by_status: dict[str, int] = summary["by_status"]
     total = summary["items"]

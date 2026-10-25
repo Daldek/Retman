@@ -321,3 +321,4 @@ orthophoto_variant = "  Skorowidz ortofotomapy zna tylko wariant RGB; CIR i czar
 in_store = "  {count} z nich jest już w magazynie."
 counties = "  Powiaty obszaru: {count} ({units})"
 no_counties = "  Obszar nie przecina żadnego powiatu."
+store_refused = "  Kartograf odmówi zapisu w tym magazynie, więc nic nie zostanie pobrane: {detail}"

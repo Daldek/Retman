@@ -49,33 +49,41 @@ def test_symlink_component_finds_a_link_in_any_part_of_the_path(tmp_path: Path):
     assert symlink_component(link / "new" / "store") == link
 
 
-@pytest.mark.parametrize(
-    ("setup", "expected"),
-    [
-        ("missing", ImgwStore("missing")),
-        ("file", ImgwStore("not_a_directory")),
-        ("empty", ImgwStore("empty")),
-        ("ready", ImgwStore("ready", "imgw-store/1")),
-        ("foreign", ImgwStore("foreign")),
-        ("unreadable", ImgwStore("unreadable")),
-        ("no_schema", ImgwStore("unreadable")),
-        ("newer", ImgwStore("unsupported", "imgw-store/2")),
-        # A layout is a store that lost its marker (or never had one): `store init`
-        ("layout", ImgwStore("no_marker")),
-        ("layout_and_notes", ImgwStore("no_marker")),
-        ("tree_is_a_file", ImgwStore("foreign")),
-        # The key file of the REST server lives in the default store folder
-        ("server_state", ImgwStore("empty")),
-        ("server_state_and_notes", ImgwStore("foreign")),
-    ],
-)
-def test_imgw_store_state_tells_what_the_folder_holds(
-    tmp_path: Path,
-    setup: str,
-    expected: ImgwStore,
-    request: pytest.FixtureRequest,
-):
-    folder = tmp_path / "store"
+IMGW_STATES = [
+    ("missing", ImgwStore("missing")),
+    ("file", ImgwStore("not_a_directory")),
+    ("empty", ImgwStore("empty")),
+    ("ready", ImgwStore("ready", "imgw-store/1")),
+    ("foreign", ImgwStore("foreign")),
+    ("unreadable", ImgwStore("unreadable")),
+    ("no_schema", ImgwStore("unreadable")),
+    ("newer", ImgwStore("unsupported", "imgw-store/2")),
+    # A layout is a store that lost its marker (or never had one): `store init`
+    ("layout", ImgwStore("no_marker")),
+    ("layout_and_notes", ImgwStore("no_marker")),
+    ("tree_is_a_file", ImgwStore("foreign")),
+    # The key file of the REST server lives in the default store folder
+    ("server_state", ImgwStore("empty")),
+    ("server_state_and_notes", ImgwStore("foreign")),
+]
+
+# What the check of a write into a store says of a folder in each state, by the tool:
+# the ``code/reason`` of the error it raises or of the one conflict it plans (DEV-19.10)
+IMGW_VERDICTS = {
+    "missing": "ok",
+    "empty": "ok",
+    "ready": "ok",
+    "no_marker": "store_unavailable/no_marker",
+    "foreign": "conflict/not_empty",
+    "not_a_directory": "conflict/not_empty",
+    "unreadable": "data_error/invalid_marker",
+    "unsupported": "store_unavailable/unsupported",
+}
+
+
+def make_imgw_folder(setup: str, root: Path, request: pytest.FixtureRequest) -> Path:
+    """Build the scenario ``setup`` as the folder ``root/store``; return it."""
+    folder = root / "store"
     raw_markers = {
         "unreadable": "{",
         "no_schema": '{"created_by": "imgwtools 3.0.0"}',
@@ -99,8 +107,43 @@ def test_imgw_store_state_tells_what_the_folder_holds(
         (folder / "notes.txt").write_text("x", encoding="utf-8")
     if setup == "tree_is_a_file":
         (folder / "archives").write_text("x", encoding="utf-8")
+    return folder
+
+
+@pytest.mark.parametrize(
+    ("setup", "expected"), IMGW_STATES, ids=[setup for setup, _ in IMGW_STATES]
+)
+def test_imgw_store_state_tells_what_the_folder_holds(
+    tmp_path: Path,
+    setup: str,
+    expected: ImgwStore,
+    request: pytest.FixtureRequest,
+):
+    folder = make_imgw_folder(setup, tmp_path, request)
 
     assert imgw_store_state(folder) == expected
+
+
+@pytest.mark.parametrize("setup", [setup for setup, _ in IMGW_STATES])
+def test_imgw_store_state_agrees_with_the_check_of_a_write_by_the_tool(
+    tmp_path: Path, request: pytest.FixtureRequest, setup: str
+):
+    imgwtools = pytest.importorskip("imgwtools")
+    folder = make_imgw_folder(setup, tmp_path, request)
+    options = imgwtools.validate_command(
+        "series build", options={"root": str(folder), "dataset": "pl.imgw.hydro_daily"}
+    )
+
+    # The plan of a series build reads the store only: no request, whatever the folder
+    try:
+        plan = imgwtools.check_command("series build", options=options)
+        actions = plan.to_json(root=folder)["result"].get("actions", [])
+        refusals = [item for item in actions if item.get("action") == "conflict"]
+        verdict = f"conflict/{refusals[0]['reason']}" if refusals else "ok"
+    except imgwtools.IMGWError as error:
+        verdict = f"{error.code}/{error.details.get('reason')}"
+
+    assert verdict == IMGW_VERDICTS[imgw_store_state(folder).state]
 
 
 @pytest.mark.parametrize("tree", ["archives", "series", "stations", "pmaxtp"])

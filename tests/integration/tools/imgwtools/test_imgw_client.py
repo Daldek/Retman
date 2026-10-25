@@ -19,6 +19,7 @@ import imgwtools
 import pytest
 from imgw_support import (
     PMAXTP_URL,
+    copy_store,
     fixture_store,
     isolate_environment,
     pmaxtp_payload,
@@ -441,6 +442,31 @@ def test_a_download_writes_plain_files_and_reports_them_with_the_tools_checksums
     assert "--root" not in run.command_line
     # The tool's staging folder is removed after the run
     assert [path.name for path in out.iterdir()] == ["dane_hydrologiczne"]
+
+
+def test_a_download_into_a_store_is_refused_by_its_directory_before_any_request(
+    client, tmp_path
+):
+    folder = copy_store(tmp_path) / "results" / "1_download"
+    call = CatalogCall(
+        "datasets download",
+        {
+            "dataset": "pl.imgw.hydro_phenomena",
+            "years": [2020],
+            "output_dir": str(folder),
+        },
+    )
+
+    with replay_http() as requested, pytest.raises(ToolError) as caught:
+        client.run(call)
+
+    assert (caught.value.code, caught.value.details["reason"]) == (
+        "conflict",
+        "output_in_store",
+    )
+    # The directory is named once, not each file that the download would have written
+    assert caught.value.details["tool_details"]["paths"] == [str(folder)]
+    assert requested == [] and not folder.exists()
 
 
 def test_the_reference_directory_is_exported_before_the_tool_is_imported(tmp_path):

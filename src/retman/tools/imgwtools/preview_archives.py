@@ -239,13 +239,17 @@ def preview_init_imgw_store(params: dict[str, Any], ctx: ToolContext) -> Preview
     The tool writes the marker into a missing or empty folder and into one that has
     the layout of a store (after verifying it; a layout that is not a store's is
     refused when it runs), or finds its own marker. It never takes over a folder
-    with other files.
+    with other files, nor one whose marker it cannot read (``data_error``).
     """
     folder = str(ctx.store_dir)
     state = imgw_store_state(ctx.store_dir)
-    if state.state in ("foreign", "not_a_directory", "unreadable"):
+    if state.state in ("foreign", "not_a_directory"):
         return _blocked(
             [{"params": [], "key": "store_not_imgw", "args": {"path": folder}}]
+        )
+    if state.state == "unreadable":
+        return _blocked(
+            [{"params": [], "key": "store_marker_unreadable", "args": {"path": folder}}]
         )
     if state.state == "unsupported":
         return _blocked(

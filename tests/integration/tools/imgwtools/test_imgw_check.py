@@ -12,9 +12,9 @@ from typing import Any
 
 import imgwtools
 import pytest
-from imgw_support import PlanStatus, settings_for
+from imgw_support import PlanStatus, real_client, replay_http, settings_for
 
-from retman.adapters.catalog import PlanView, RunStatus
+from retman.adapters.catalog import PlanClient, PlanView, RunStatus
 from retman.adapters.manifest_adapter import run_check
 from retman.core.check import CheckReport
 from retman.i18n.loader import load_core_texts
@@ -87,12 +87,13 @@ def check(
     operation: str,
     params: dict[str, Any],
     tmp_path: Path,
-    client: FakeToolClient,
+    client: PlanClient,
+    store: Path | None = None,
 ) -> CheckReport:
     context = tool_context(
         operations[operation],
         client=client,
-        settings=settings_for(tmp_path),
+        settings=settings_for(tmp_path, store),
         project_dir=tmp_path,
     )
     return run_check(operations[operation], params, context, TEXTS)
@@ -267,6 +268,41 @@ def test_a_check_given_only_the_planning_client_cannot_use_the_network(
 
     assert report.status == "unknown"
     assert client.calls == []
+
+
+@pytest.mark.parametrize(
+    ("operation", "params"),
+    [
+        ("export_station_series", series()),
+        ("build_imgw_station_catalog", {"provider": "imgw_pib"}),
+        (
+            "sync_imgw_store",
+            {
+                "dataset": PRECIP,
+                "years": {"type": "years", "first": 2001, "last": 2001},
+            },
+        ),
+    ],
+)
+def test_a_store_the_tool_refuses_is_the_whole_answer_of_the_check(
+    operations, tmp_path, operation, params
+):
+    store = tmp_path / "other-files"
+    store.mkdir()
+    (store / "notes.txt").write_text("not a store", encoding="utf-8")
+
+    # The real tool plans the refusal of the root as its one action (conflict,
+    # not_empty), asks the servers for nothing and calls the plan ok
+    with replay_http() as requested:
+        report = check(
+            operations, operation, params, tmp_path, real_client(tmp_path, store), store
+        )
+
+    assert requested == []
+    assert report.status == "unavailable"
+    (item,) = report.items
+    assert item["key"] == "store_refused"
+    assert "odmówi zapisu" in report.lines[0] and str(store) in report.lines[0]
 
 
 def test_the_summary_of_a_plan_counts_what_the_checks_need():

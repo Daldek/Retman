@@ -79,12 +79,14 @@ def store_problems(ctx: ToolContext, *, write: bool) -> list[PreviewProblem]:
             )
         else:
             # An empty folder is only not initialised and a layout without its marker
-            # waits for ``store init``; any other file means a folder the tool
-            # refuses to turn into a store
+            # waits for ``store init``; a marker that cannot be read is named as such;
+            # any other file means a folder the tool refuses to turn into a store
             state = imgw_store_state(ctx.store_dir).state
-            key = {"empty": "store_missing", "no_marker": "store_no_marker"}.get(
-                state, "store_not_imgw"
-            )
+            key = {
+                "empty": "store_missing",
+                "no_marker": "store_no_marker",
+                "unreadable": "store_marker_unreadable",
+            }.get(state, "store_not_imgw")
             problems.append(_problem(key, [], path=folder))
     if write and not problems and not tool_installed("pyarrow"):
         problems.append(_problem("pyarrow_missing", []))

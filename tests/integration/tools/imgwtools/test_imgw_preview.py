@@ -177,6 +177,30 @@ def test_a_layout_without_a_marker_is_named_and_a_key_file_is_not_content(
     assert "nie jest jeszcze utworzony" in problem(keys)
 
 
+def test_a_marker_the_tool_cannot_read_is_named_and_not_taken_for_other_files(
+    operations, tmp_path
+):
+    damaged = tmp_path / "damaged"
+    damaged.mkdir()
+    (damaged / "imgw-store.json").write_text("{", encoding="utf-8")
+    client = fake_store({"exists": True, "supported": False, "schema": None})
+
+    result = review(
+        operations,
+        "build_imgw_series",
+        {"dataset": PRECIP},
+        tmp_path,
+        client=client,
+        store=damaged,
+    )
+
+    # The tool raises data_error (invalid_marker) for it in a plan and in a run
+    (problem,) = result.problems
+    assert problem.params == ()
+    assert "imgw-store.json" in problem.text and "jest nieczytelny" in problem.text
+    assert "inne pliki" not in problem.text
+
+
 def test_a_store_of_another_schema_is_named(operations, tmp_path):
     client = fake_store({"exists": True, "supported": False, "schema": "imgw-store/9"})
 

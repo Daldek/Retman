@@ -9,6 +9,7 @@ freshness plans (``check_command``) are read instead.
 """
 
 from collections import Counter
+from collections.abc import Mapping
 from typing import Any
 
 from retman.adapters.catalog import CatalogCall, ToolContext, ToolError
@@ -149,6 +150,25 @@ def download_dem_sheet(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
     return _elevation(call, ctx)
 
 
+def _refused(plan: Mapping[str, Any]) -> CheckOutput | None:
+    """Return the report of a plan that lists the refusal of the store, else ``None``.
+
+    A root that a write turns away with ``conflict`` (``nested_store``, ``not_empty``)
+    is the one position of the plan: the track ``store``, the action ``conflict`` and
+    the text of the refusal as its ``error``. The plan is ok and asks nothing of the
+    source, so there are no sheets or counties to count; the run raises the same
+    ``conflict``.
+    """
+    for item in plan["items"]:
+        if item.get("track") == "store" and item.get("action") == "conflict":
+            detail = str(item.get("error") or "")
+            return {
+                "status": "unavailable",
+                "items": [{"key": "store_refused", "args": {"detail": detail}}],
+            }
+    return None
+
+
 def _orthophoto(call: CatalogCall, ctx: ToolContext) -> CheckOutput:
     """Check the newest RGB flight GUGiK's index lists for each requested sheet."""
     try:
@@ -160,6 +180,8 @@ def _orthophoto(call: CatalogCall, ctx: ToolContext) -> CheckOutput:
             "status": "unavailable",
             "items": [{"key": "orthophoto_none", "args": {"detail": err.detail}}],
         }
+    if (refused := _refused(plan)) is not None:
+        return refused
     items = plan["items"]
     statuses = Counter(item["status"] for item in items)
     published = sum(statuses[name] for name in _PUBLISHED)
@@ -216,7 +238,10 @@ def download_elevation_cutout(params: dict[str, Any], ctx: ToolContext) -> Check
 def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
     """Check the counties an area touches and whether their packages are stored."""
     (call,) = calls.download_bdot10k(params, ctx)
-    items = ctx.runner.check(call)["items"]
+    plan = ctx.runner.check(call)
+    if (refused := _refused(plan)) is not None:
+        return refused
+    items = plan["items"]
     if not items:
         return {"status": "unavailable", "items": [{"key": "no_counties", "args": {}}]}
     statuses = Counter(item["status"] for item in items)

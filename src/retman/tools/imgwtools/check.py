@@ -18,7 +18,11 @@ from retman.tools.imgwtools.calls import (
     build_imgw_station_catalog,
     export_station_series,
 )
-from retman.tools.imgwtools.plans import UNPUBLISHED
+from retman.tools.imgwtools.plans import (
+    UNPUBLISHED,
+    plan_refusal,
+    refusal_check_output,
+)
 
 _MEGABYTE = 1_000_000
 
@@ -74,6 +78,17 @@ def summarize_plan(document: Mapping[str, Any]) -> PlanSummary:
     )
 
 
+def _refusal(document: Mapping[str, Any]) -> CheckOutput | None:
+    """Return the report of a plan that lists the refusal of the store, else ``None``.
+
+    The plan of a write into a root the tool turns away has no item to count, and its
+    one action is no state of a catalog: the report says that the write is refused.
+    """
+    result = document.get("result")
+    refusal = plan_refusal(result) if isinstance(result, dict) else None
+    return None if refusal is None else refusal_check_output(refusal)
+
+
 def _status(
     summary: PlanSummary, document: Mapping[str, Any]
 ) -> Literal["available", "partial", "unavailable", "unknown"]:
@@ -92,6 +107,8 @@ def check_build_imgw_station_catalog(
     """Operation 2: are the station lists reachable and is the catalog out of date."""
     (call,) = build_imgw_station_catalog(params, ctx)
     document = ctx.runner.check(call)
+    if (refused := _refusal(document)) is not None:
+        return refused
     summary = summarize_plan(document)
     items: list[CheckItem] = []
     state = summary.actions.get("store catalog")
@@ -125,6 +142,8 @@ def check_export_station_series(
         if call.command == "store sync"
     )
     document = ctx.runner.check(sync)
+    if (refused := _refusal(document)) is not None:
+        return refused
     summary = summarize_plan(document)
     items: list[CheckItem] = []
     if summary.total:
