@@ -1,8 +1,8 @@
 # ADR-022: Agent interfaces: one command catalog, one `retman` executable
 
 **Date:** 2026-10-24
-**Status:** accepted; supersedes the command layout of ADR-019 (`retman-scaffold` is
-`retman scaffold`) and of ADR-011 (`retman-eval` is `retman eval run`)
+**Status:** accepted; amends ADR-019 (2026-10-24: `retman-scaffold` is `retman scaffold`) and
+ADR-011 (2026-10-24: `retman-eval` is `retman eval run`)
 
 ## Context
 

@@ -186,6 +186,7 @@ planned (PRD roadmap). No tool imports Retman. A change that spans projects is p
 
 - DEV-7.3: mypy runs in `strict` mode over `src/` and `tests/`, but 36 test modules (the list
   in `[[tool.mypy.overrides]]` of `pyproject.toml`) leave helpers and fixtures unannotated. A new
-  test module is strict; a module leaves the list when it is annotated.
+  test module is strict; a module leaves the list when it is annotated
+  ([ADR-023](docs/decisions/0023-structure-gate-ci-and-log.md)).
 - DEV-18.2: the journal and the results are written into the project folder, not under
   `data_dir` ([ADR-021](docs/decisions/0021-user-environment.md)).

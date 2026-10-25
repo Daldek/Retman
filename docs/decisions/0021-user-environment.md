@@ -1,9 +1,9 @@
 # ADR-021: User environment: `[retman]` in `nogat.toml`, variables and user directories
 
 **Date:** 2026-10-24
-**Status:** accepted; supersedes parts of ADR-010 (the `[privacy]` table is now
-`[retman.privacy]`, its default file is below `data_dir`) and ADR-015 (the settings file, the
-default store and cache paths)
+**Status:** accepted; amends ADR-010 (2026-10-24: the `[privacy]` table is now
+`[retman.privacy]`, its default file is below `data_dir`) and ADR-015 (2026-10-24: the settings
+file, the default store and cache paths)
 
 ## Context
 
