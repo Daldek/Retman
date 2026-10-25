@@ -18,6 +18,12 @@ from typing import Literal
 # IMGWTools marks a folder as its store with this file (schema ``imgw-store/1``)
 IMGW_MARKER = "imgw-store.json"
 IMGW_SCHEMA = "imgw-store/1"
+# The trees whose presence is the layout of a store, marked or not (the tool's
+# ``_LAYOUT_TREES``): ``store init`` verifies such a folder and writes its marker
+IMGW_LAYOUT_TREES = ("archives", "series", "stations", "pmaxtp")
+# State files of the tool's REST server, kept in the default store folder; they are
+# not store content, so a folder holding only them counts as empty
+IMGW_STATE_FILES = ("api_keys.json",)
 # The static station locations IMGWTools reads from ``reference_data_dir``
 IMGW_REFERENCE_FILE = "hydro_stations_locations.csv"
 
@@ -26,6 +32,7 @@ ImgwStoreState = Literal[
     "not_a_directory",
     "empty",
     "ready",
+    "no_marker",
     "foreign",
     "unreadable",
     "unsupported",
@@ -38,7 +45,9 @@ class ImgwStore:
     """What a configured IMGWTools store folder holds.
 
     ``detail`` is the schema named by the marker (``ready`` and ``unsupported``) and
-    empty otherwise.
+    empty otherwise. ``empty`` also covers a folder that holds only the state file of
+    the tool's REST server; ``no_marker`` is a folder with the layout of a store and
+    no marker (``store init`` verifies the layout and writes it).
     """
 
     state: ImgwStoreState
@@ -149,8 +158,11 @@ def hardlink_error(folder: Path) -> OSError | None:
 def imgw_store_state(folder: Path) -> ImgwStore:
     """Whether ``folder`` is an initialised IMGWTools store, judged without the tool.
 
-    IMGWTools creates a store only in an empty folder, so a non-empty folder
-    without the marker is ``foreign``.
+    The rules are those of ``store init`` (offline, in the tool): it writes the marker
+    into an empty folder, where the state files of its REST server do not count, and
+    into a folder with the layout of a store (``archives/``, ``series/``,
+    ``stations/`` or ``pmaxtp/``) after verifying that layout. Any other folder
+    without the marker is ``foreign``. The verification itself is left to the tool.
     """
     if not folder.exists():
         return ImgwStore("missing")
@@ -165,16 +177,19 @@ def imgw_store_state(folder: Path) -> ImgwStore:
         if schema != IMGW_SCHEMA:
             return ImgwStore("unsupported", str(schema))
         return ImgwStore("ready", IMGW_SCHEMA)
-    return ImgwStore("foreign" if any(folder.iterdir()) else "empty")
+    if any((folder / tree).is_dir() for tree in IMGW_LAYOUT_TREES):
+        return ImgwStore("no_marker")
+    content = any(entry.name not in IMGW_STATE_FILES for entry in folder.iterdir())
+    return ImgwStore("foreign" if content else "empty")
 
 
 def init_imgw_store(folder: Path) -> ToolOutcome:
     """Initialise an IMGWTools store in ``folder`` through the tool (``store init``).
 
     Offline and idempotent: an initialised store is left as it is. IMGWTools
-    refuses a folder with other files, a path with a symbolic link, a place
-    inside another store and a file system without hard links; the refusal is
-    returned, not raised.
+    refuses a folder with other files, a layout that is not that of its store, a
+    path with a symbolic link, a place inside another store and a file system
+    without hard links; the refusal is returned, not raised.
     """
     try:
         imgwtools = importlib.import_module("imgwtools")

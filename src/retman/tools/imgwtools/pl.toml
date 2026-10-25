@@ -847,6 +847,7 @@ arch_export_partial = "Magazyn ma tylko {found} z {total} plików archiwów wybr
 [problems]
 store_missing = "Magazyn IMGW ({path}) nie jest jeszcze utworzony. Utwórz go poleceniem „Utwórz magazyn IMGW” albo przez „retman config init”."
 store_not_imgw = "Folder {path} zawiera inne pliki i nie jest magazynem IMGW. Wskaż pusty folder w ustawieniu store_dir tabeli [retman.tools.imgwtools] pliku nogat.toml."
+store_no_marker = "Folder {path} ma układ magazynu IMGW, ale nie ma znacznika. Zapisz znacznik poleceniem „Utwórz magazyn IMGW” albo przez „retman config init”; narzędzie najpierw sprawdzi układ."
 store_unsupported = "Magazyn IMGW w {path} ma nieobsługiwany schemat ({schema}). Zaktualizuj IMGWTools."
 pyarrow_missing = "Do szeregów w magazynie IMGW potrzebny jest pakiet pyarrow. Zainstaluj IMGWTools z dodatkiem store (imgwtools[store])."
 station_catalog_missing = "Magazyn IMGW nie ma katalogu stacji. Wybierz źródło „serwer” albo najpierw zbuduj katalog („Zbuduj katalog stacji IMGW”)."
@@ -975,6 +976,10 @@ value = "folder nie istnieje — zostanie utworzony i zainicjowany"
 [preview.arch_store_empty]
 label = "Stan magazynu"
 value = "pusty folder — zostanie zainicjowany"
+
+[preview.arch_store_no_marker]
+label = "Stan magazynu"
+value = "folder ma układ magazynu, ale nie ma znacznika — układ zostanie sprawdzony i zapisany zostanie znacznik"
 
 [preview.arch_store_ready]
 label = "Stan magazynu"

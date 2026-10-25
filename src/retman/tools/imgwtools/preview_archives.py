@@ -236,8 +236,10 @@ def preview_export_imgw_archive(
 def preview_init_imgw_store(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
     """Preview what initialising would do to the folder; a foreign one is refused.
 
-    The tool creates a store only in a missing or empty folder (or finds its own):
-    it never takes over a folder with other files.
+    The tool writes the marker into a missing or empty folder and into one that has
+    the layout of a store (after verifying it; a layout that is not a store's is
+    refused when it runs), or finds its own marker. It never takes over a folder
+    with other files.
     """
     folder = str(ctx.store_dir)
     state = imgw_store_state(ctx.store_dir)

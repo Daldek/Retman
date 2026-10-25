@@ -676,7 +676,12 @@ def _kartograf_checks(
 
 
 def _imgw_store_checks(store: Path, texts: Texts, config_path: Path) -> list[Check]:
-    """IMGWTools creates a store in an empty folder and marks it with a file."""
+    """IMGWTools marks a store folder with a file, which ``store init`` writes.
+
+    An empty folder is only not created yet; a folder with the layout of a store and
+    no marker, and a folder with other files, are errors, because the tool refuses
+    to use them.
+    """
     checks, state = _store_folder(
         "imgwtools", store, texts, config_path, symlinks_refused=True
     )
@@ -704,6 +709,19 @@ def _imgw_store_checks(store: Path, texts: Texts, config_path: Path) -> list[Che
                 blocking=True,
                 code="store_unavailable",
                 reason="foreign_folder",
+            )
+        )
+    elif found.state == "no_marker":
+        text = texts.get("doctor.stores.imgw_no_marker", **args)
+        hint = texts.get("doctor.stores.hint_imgw_no_marker")
+        checks.append(
+            Check(
+                "error",
+                text,
+                hint,
+                blocking=True,
+                code="store_unavailable",
+                reason="no_marker",
             )
         )
     elif found.state in ("unreadable", "unsupported"):

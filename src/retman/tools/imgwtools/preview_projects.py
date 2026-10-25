@@ -135,13 +135,22 @@ def _other_store(ctx: ToolContext, manifest: Manifest) -> list[PreviewProblem]:
 
 
 def _refused_store(ctx: ToolContext) -> list[PreviewProblem]:
-    """Return a problem when the folder is one the tool will not use as a store."""
+    """Return a problem when the folder is one the tool will not use as a store.
+
+    A project takes a store, a missing folder and an empty one (the store is made
+    later). The tool refuses a layout without its marker and a folder that holds only
+    the state file of its REST server, which ``store init`` would turn into a store.
+    """
     folder = str(ctx.store_dir)
     state = imgw_store_state(ctx.store_dir)
     if state.state in ("foreign", "not_a_directory", "unreadable"):
         return [_problem("store_not_imgw", path=folder)]
     if state.state == "unsupported":
         return [_problem("store_unsupported", path=folder, schema=state.detail)]
+    if state.state == "no_marker":
+        return [_problem("store_no_marker", path=folder)]
+    if state.state == "empty" and any(ctx.store_dir.iterdir()):
+        return [_problem("store_missing", path=folder)]
     return []
 
 

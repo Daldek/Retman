@@ -45,7 +45,8 @@ def _create_folders(paths: ToolPaths, texts: Texts) -> int | None:
     """Create the folders the settings will name and check the disk for hard links.
 
     Both stores need hard links; the IMGWTools store itself is left to the tool,
-    which creates it only in an empty folder. Returns ``None`` when all is usable,
+    which writes its marker into an empty folder and into a folder that already has
+    the layout of a store (after verifying it). Returns ``None`` when all is usable,
     else the exit code of the error that was reported (``io_error`` for a folder
     that cannot be made, ``store_unavailable`` for a disk without hard links).
     """

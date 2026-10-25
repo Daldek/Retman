@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 from imgw_ops_support import TEXTS, YEARS, context, execute, operations, station
+from imgw_store_files import write_layout, write_marker, write_server_state
 from imgw_support import fixture_store, real_client, settings_for, synthetic_run
 from imgwtools import CommandResult, FileResult, archive_files
 from imgwtools.store.types import (
@@ -189,19 +190,26 @@ def test_init_preview_says_what_will_happen_and_refuses_foreign_data(
         settings = {"store_dir": str(folder)}
         return preview("init_imgw_store", {}, FakeToolClient(), settings=settings)
 
-    empty, foreign, marked = (
+    empty, foreign, marked, unmarked, keys = (
         tmp_path / "empty",
         tmp_path / "foreign",
         tmp_path / "marked",
+        tmp_path / "unmarked",
+        tmp_path / "keys",
     )
-    for folder in (empty, foreign, marked):
+    for folder in (empty, foreign, marked, unmarked, keys):
         folder.mkdir()
     (foreign / "data.txt").write_text("x")
-    (marked / "imgw-store.json").write_text('{"schema": "imgw-store/1"}')
+    write_marker(marked)
+    write_layout(unmarked, "series")
+    write_server_state(keys)
 
     assert state(tmp_path / "new").rows[1][1].startswith("folder nie istnieje")
     assert state(empty).rows[1][1].startswith("pusty folder")
     assert state(marked).rows[1][1].startswith("magazyn już istnieje")
+    assert state(unmarked).rows[1][1].startswith("folder ma układ magazynu")
+    # The key file of the REST server is not store content: the tool takes the folder
+    assert state(keys).rows[1][1].startswith("pusty folder")
     assert "nie jest magazynem IMGW" in state(foreign).problems[0].text
 
 

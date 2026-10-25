@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 from imgw_ops_support import TEXTS, YEARS, context, execute, operations, station
+from imgw_store_files import write_layout, write_server_state
 from imgw_support import (
     fixture_store,
     isolate_environment,
@@ -277,6 +278,69 @@ def test_init_refuses_a_project_inside_the_store_and_a_manifest_of_another_store
     assert any("leży w magazynie" in problem.text for problem in inside.problems)
     assert "elsewhere" in other.problems[0].text
     assert "Nie można odczytać manifestu" in broken.problems[0].text
+
+
+def store_folders(tmp_path: Path) -> dict[str, Path]:
+    """Store folders a project meets: empty, a layout without a marker, a key file."""
+    folders = {name: tmp_path / name for name in ("empty", "unmarked", "keys")}
+    for folder in folders.values():
+        folder.mkdir()
+    write_layout(folders["unmarked"])
+    write_server_state(folders["keys"])
+    return folders
+
+
+def test_the_plan_of_a_project_refuses_an_unmarked_layout_and_a_key_file_folder(
+    tmp_path: Path, project: Path
+) -> None:
+    folders = store_folders(tmp_path)
+    fresh = tmp_path / "fresh"
+    fresh.mkdir()
+    write_manifest(project, tmp_path / "elsewhere", {})
+
+    def problems(operation: str, folder: Path, where: Path) -> list[str]:
+        settings = {"store_dir": str(folder)}
+        found = preview(
+            operation, {}, FakeToolClient(), settings=settings, project_dir=where
+        )
+        return [problem.text for problem in found.problems]
+
+    # A project is created and moved with `init` and `set store`: the same refusals
+    for operation, where in (
+        ("init_imgw_project", fresh),
+        ("set_imgw_project_store", project),
+    ):
+        assert problems(operation, folders["empty"], where) == []
+        (unmarked,) = problems(operation, folders["unmarked"], where)
+        (keys,) = problems(operation, folders["keys"], where)
+        assert "ma układ magazynu IMGW, ale nie ma znacznika" in unmarked
+        assert "nie jest jeszcze utworzony" in keys
+
+
+def test_the_tool_refuses_the_store_folders_that_the_plan_of_a_project_refuses(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    isolate_environment(monkeypatch)
+    outcomes = {}
+    for name, folder in store_folders(tmp_path).items():
+        where, out = tmp_path / f"project-{name}", tmp_path / f"out-{name}"
+        where.mkdir()
+        out.mkdir()
+        ctx = context(
+            "init_imgw_project",
+            real_client(tmp_path, folder),
+            settings=settings_for(tmp_path, folder),
+            project_dir=where,
+            output_dir=out,
+        )
+        result = execute("init_imgw_project", {}, ctx)
+        outcomes[name] = (result.ok, result.error_code)
+
+    assert outcomes == {
+        "empty": (True, None),
+        "unmarked": (False, "store_unavailable"),
+        "keys": (False, "store_unavailable"),
+    }
 
 
 def test_an_area_selection_needs_a_geojson_inside_the_project_and_a_catalog(

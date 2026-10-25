@@ -11,6 +11,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from document_schemas import violations
+from imgw_store_files import write_layout, write_marker, write_server_state
 
 from retman import cli
 from retman.backends.base import Decision
@@ -330,8 +331,7 @@ def _make_stores(tmp_path: Path, **skip: bool) -> dict[str, Path]:
         folder = path.parent if name == "cache" else path
         folder.mkdir(parents=True)
     if not skip.get("imgwtools"):
-        marker = paths["imgwtools"] / "imgw-store.json"
-        marker.write_text('{"schema": "imgw-store/1"}', encoding="utf-8")
+        write_marker(paths["imgwtools"])
     return paths
 
 
@@ -447,6 +447,55 @@ def test_imgw_folder_that_is_not_a_usable_store_blocks_work(
 
     assert report.exit_code == 10
     assert len(problems) == 1 and expected in problems[0]
+
+
+def test_imgw_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
+    tmp_path: Path, store_tools, pyarrow
+):
+    store = _make_stores(tmp_path)["imgwtools"]
+    (store / "imgw-store.json").unlink()
+    write_layout(store, "series")
+
+    report, texts = _run_stores(tmp_path, store_tools)
+    (problem,) = [
+        check
+        for found in report.sections
+        if found.key == "stores"
+        for check in found.checks
+        if check.status == "error"
+    ]
+
+    assert report.exit_code == 10
+    assert (problem.blocking, problem.code, problem.reason) == (
+        True,
+        "store_unavailable",
+        "no_marker",
+    )
+    text = report.to_text(texts)
+    assert "ma układ magazynu IMGWTools, ale nie ma znacznika imgw-store.json" in text
+    assert "zapisz znacznik: retman config init" in text
+    # Looking changes nothing in a folder that may hold data: no probe, no marker
+    assert [path.name for path in store.iterdir()] == ["series"]
+
+
+def test_imgw_folder_with_only_the_key_file_of_the_server_is_not_created_yet(
+    tmp_path: Path, store_tools, pyarrow
+):
+    store = _make_stores(tmp_path)["imgwtools"]
+    (store / "imgw-store.json").unlink()
+    write_server_state(store)
+
+    report, _ = _run_stores(tmp_path, store_tools)
+    stores = _stores(report)
+
+    assert report.exit_code == 0
+    assert all(status != "error" for status, _ in stores)
+    assert [
+        status
+        for status, text in stores
+        if "imgwtools: magazyn" in text and "nie został jeszcze utworzony" in text
+    ] == ["warning"]
+    assert [path.name for path in store.iterdir()] == ["api_keys.json"]
 
 
 def test_store_path_that_is_a_file_blocks_work(tmp_path: Path, store_tools, pyarrow):

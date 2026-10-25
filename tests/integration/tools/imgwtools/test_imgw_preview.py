@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from imgw_store_files import write_layout, write_server_state
 from imgw_support import (
     build_store,
     fixture_store,
@@ -147,6 +148,33 @@ def test_an_empty_folder_is_not_initialised_but_a_foreign_one_is_refused(
 
     assert "nie jest jeszcze utworzony" in empty.problems[0].text
     assert "zawiera inne pliki i nie jest magazynem IMGW" in foreign.problems[0].text
+
+
+def test_a_layout_without_a_marker_is_named_and_a_key_file_is_not_content(
+    operations, tmp_path
+):
+    client = fake_store({"exists": True, "supported": False, "schema": None})
+    unmarked, keys = tmp_path / "unmarked", tmp_path / "keys"
+    unmarked.mkdir()
+    keys.mkdir()
+    write_layout(unmarked, "archives")
+    write_server_state(keys)
+
+    def problem(folder: Path) -> str:
+        result = review(
+            operations,
+            "build_imgw_series",
+            {"dataset": PRECIP},
+            tmp_path,
+            client=client,
+            store=folder,
+        )
+        (found,) = result.problems
+        assert found.params == ()
+        return found.text
+
+    assert "ma układ magazynu IMGW, ale nie ma znacznika" in problem(unmarked)
+    assert "nie jest jeszcze utworzony" in problem(keys)
 
 
 def test_a_store_of_another_schema_is_named(operations, tmp_path):
