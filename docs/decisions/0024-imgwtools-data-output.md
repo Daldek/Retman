@@ -112,3 +112,19 @@ calls and error codes wait for the tool. Neither holds any longer: the `tools` g
 Kartograf `8a36e977`, the head of that branch, which is not pushed either, and the Kartograf
 calls (`root` in place of `output_dir`) and error codes (the registry) are migrated (ADR-025).
 Both pins wait for the author's push (PROGRESS Next 2).
+
+**Erratum 3 (2026-10-25, IMGWTools `7e2114e`):** the pin of item 1 is now IMGWTools
+`7e2114e1424903f1fd8fc036a2cb7aa81df44287`, the head of the same branch, which is on GitHub.
+Two Nogat decisions (R1, R2) changed its refusals, and Retman reads them so. An `output_dir` that
+is or lies in a store is `conflict` (`output_in_store`) before any request and `details.paths`
+is the directory, not every target (it is kept in the `tool_details` of the failure). A store
+write into a root that holds other files (`not_empty`; also a file) is a `conflict` like
+`nested_store`: `--check` lists it as the one action `conflict` of the root, the plan is ok and
+asks no server, and every run refuses it before any request; the checks of Retman (the
+synchronisation, the catalog and the export) report it as `store_refused`, status `unavailable`,
+and no longer as 0 files. A root with the layout and no marker is `store_unavailable`
+(`no_marker`), a marker of another schema `store_unavailable`, and a marker that cannot be read
+(invalid JSON, no `schema`) `data_error` (`invalid_marker`; it was `store_unavailable`), in the
+plan and in the run; the plans of Retman name such a marker as unreadable instead of "other
+files". `tests/unit/test_stores.py` holds `imgw_store_state` against the check of `series build`
+of the tool for every state.

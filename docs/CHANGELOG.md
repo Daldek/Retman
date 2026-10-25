@@ -211,8 +211,8 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   Migration: read the new names in `result.json`; the plan and the settings do not change. The
   texts of the tool are English and are shown as they come, so a Polish message can quote an
   English detail, and the licence notice of an IMGW result ends with an English notice. The `tools`
-  group pins IMGWTools `7b11755`, the head of its branch `feature/data-output`, which is not pushed
-  yet (ARCHITECTURE 3.2.11, 9.3; USAGE 5.2).
+  group pins IMGWTools `7e2114e`, the head of its branch `feature/data-output`, which is on
+  GitHub (ARCHITECTURE 3.2.11, 9.3; USAGE 5.2; ADR-024 erratum 3).
 - An IMGW store folder can be a layout of a store without its marker (`archives/`, `series/`,
   `stations/` or `pmaxtp/` and no `imgw-store.json`): `retman doctor check` reports it as
   `store_unavailable`, reason `no_marker`, and the plan names it and points to the command "Utwórz
@@ -233,15 +233,15 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   Migration: read the new codes in `result.json`; the plan and the settings do not change. The
   first write into a new folder writes the store marker `kartograf-store.json`. Retman always
   writes to the store (`root`) and offers no plain mode of Kartograf. The `tools` group pins
-  Kartograf `8a36e977`, the head of its branch `feature/data-output`, which is not pushed yet
-  (ARCHITECTURE 3.2.4, 3.2.10; USAGE 5.2, 9.1; ADR-012 erratum 3).
+  Kartograf `b73aad33`, the head of its branch `feature/data-output`, which is on GitHub
+  (ARCHITECTURE 3.2.4, 3.2.10; USAGE 5.2, 9.1; ADR-012 erratum 3; ADR-025 erratum 1).
 - A Kartograf store folder can be the layout of a store without its marker (files in a product
   tree such as `nmt/` and no `kartograf-store.json`), a folder with other files, a folder whose
   marker Kartograf cannot read, or a folder inside another store: `retman doctor check` reports
   each as `store_unavailable` (reasons `no_marker`, `foreign_folder`, `marker_unreadable`,
   `marker_unsupported`, `nested_store`), and the plan of every Kartograf operation that writes
-  names it before you confirm; Kartograf itself reports such a store only after its work has
-  begun, as the failure of every sheet. A missing or an empty folder stays fine: the first
+  names it before you confirm (Kartograf itself ends a run into such a store with one error of
+  the command, before any request). A missing or an empty folder stays fine: the first
   write marks it, and the command "Utwórz magazyn Kartografa" marks a layout that has lost its
   marker (ARCHITECTURE 3.2.10, 7.2; USAGE 11; ADR-025).
 - The supported ranges admit the development versions of the pending releases while the
@@ -251,10 +251,22 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   (`packaging`, a new core dependency) instead of a comparison of numbers, so `~=` and the
   other PEP 440 forms are valid in a manifest. The release change that puts the tags in place of
   the commits narrows the ranges to `>=0.8.0,<0.9` and `>=3.0.0,<4`.
-- The `tools` group pins IMGWTools `7b11755`, which ships `py.typed`: mypy checks the calls and
+- The `tools` group pins IMGWTools `7e2114e`, which ships `py.typed`: mypy checks the calls and
   the tests against its types, and the ignore of `imgwtools` is gone from `pyproject.toml`. The
   tests that need a ready IMGW store use the fixture store of `imgwtools.testing`, not a marker
   written by hand (DEV-10.6).
+- The operation "Utwórz magazyn Kartografa" (`init_kartograf_store`) is a catalog call of the
+  shared executor: the command layer of Kartograf takes `store init` (AGI-2.1), so the handler
+  is gone. The document saved as `tool_1_store_init.json` is the envelope `kartograf-result/1`
+  with the marker as its `result` (it was the marker document), and a call gets the workers and
+  the update mode of the settings only when its command declares them (ADR-025 erratum 1).
+- The availability checks of Kartograf and of IMGWTools report a store that the tool turns away
+  (a folder with other files, a store inside another store: the plan of the tool lists the
+  refusal of the root as its one position) as "the tool will refuse to write into this store",
+  status `unavailable`, and no longer as "available" or as 0 files. An IMGW store whose marker
+  cannot be read is named so in the plan; the tool raises `data_error` (`invalid_marker`) for
+  it, and `tests/unit/test_stores.py` holds `imgw_store_state` against the check of the tool
+  (ADR-024 erratum 3, ADR-025 erratum 1).
 
 ### Removed
 

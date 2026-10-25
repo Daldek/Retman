@@ -596,21 +596,21 @@ table):
 | `download_sheet_hierarchy` — child map sheets: DEM (NMT), DSM (NMPT) or orthophoto | `elevation download`, `imagery download` | `sheet`, `geometry` (orthophoto only `sheet`) | product; target scale (1:10000 in PL-1992; 1:5000, 1:2000, 1:1000, 1:500 in PL-2000); DEM resolution (0.15–10 m) or DSM resolution (0.5; 0.6; 1 m); vertical datum; orthophoto color (RGB, CIR, B/W) | `dem`, `dsm`, `orthophoto` |
 | `download_elevation_cutout` — DEM or DSM 1 m cutout | `elevation download` | `bbox`, `geometry` | product; result CRS (EPSG:2180, 5514, 3045 — read by code, not the model, ADR-009); vertical datum | `dem`, `dsm` |
 | `download_bdot10k` — BDOT10k (current county packages) | `landcover download` | `teryt`, `bbox`, `sheet`, `geometry` | format (GeoPackage or Shapefile) | `topographic_vector` |
-| `init_kartograf_store` — create the store: write its marker | — (the function `init_store`, no data command) | — | — | — |
+| `init_kartograf_store` — create the store: write its marker | `store init` | — | — | — |
 
-`init_kartograf_store` has no parameters and no `calls`. `store init` is no data command: the
-command layer of Kartograf (`validate_command`, `run_command`) takes the twelve data commands
-only, so the operation is a handler (`retman.tools.kartograf.handlers`) that calls the function
-`kartograf.init_store`. Its offline preview says what will happen to the folder (missing or
-empty: marked; a layout without its marker: checked and marked; a store with its marker:
-nothing) or why Kartograf refuses it. The run is offline and idempotent, saves the document of
-the tool as `tool_1_store_init.json` and names the call in the audit; it is the way out of the
-`no_marker` that `retman doctor check` and the plans report (the command "Utwórz magazyn
-Kartografa").
-
-Kartograf is making `store init` reachable through `run_command` (AGI-2.1; in progress, not in
-the pinned commit). When the pin has it, this operation becomes a catalog call like the others,
-run by the generic executor, and `handlers.init_kartograf_store` goes (ADR-025).
+`init_kartograf_store` has no parameters. `store init` is a command of the catalog like the
+others (the command layer of Kartograf takes every command of it), so the operation is a `calls`
+builder run by the shared executor, with its own `describe` and `preview`. The client gives the
+call the store `root` only: it adds the workers and the update mode to a command only when
+`command_schema` declares them, and `store init` does not. The offline preview says what will
+happen to the folder (missing or empty: marked; a layout without its marker: checked and marked;
+a store with its marker: nothing) or why Kartograf refuses it. The run is offline and idempotent,
+saves the document of the tool (the envelope `kartograf-result/1`, whose `result` is the marker,
+`kartograf-store-init/1`) as `tool_1_store_init.json` and names the call in the audit like every
+other call; it is the way out of the `no_marker` that `retman doctor check` and the plans report
+(the command "Utwórz magazyn Kartografa"). It declares no `check`: the plan of `store init
+--check` is offline, so an availability step would be a consent notice without a network, and
+the preview judges the folder by the same rules (ADR-025 erratum 1).
 
 Kartograf operations have no default values (ADR-006): Retman asks about resolution, vertical
 datum, scale, color and format when the command does not include them. All ASC grid resolutions
@@ -650,9 +650,11 @@ refuses a folder with the layout of a store and no marker (`store_unavailable`, 
 `no_marker`; `store init` verifies the layout and writes the marker), a folder with other files
 (`conflict`, reason `not_empty`), a marker that is not a `kartograf-store/1` document
 (`data_error`) and a folder that lies in, is or holds the store of another tool or place
-(`conflict`, reason `nested_store`); but a run reports the refusal as the failure of every
-sheet (`source_unavailable`), and the plan of the tool judges the folder only after the
-network. Retman therefore judges the folder itself (`retman.stores.kartograf_store_state`: the
+(`conflict`, reason `nested_store`). A run into such a folder ends with that one error of the
+command, before the index of the sheets is asked, and `--check` lists a root that is a conflict
+(`nested_store`, `not_empty`) as the one position of its plan, which the availability check of
+Retman reports as `store_refused`. Retman still judges the folder itself, so that a plan that
+cannot run is never shown (`retman.stores.kartograf_store_state`: the
 rules of `kartograf.marker`, held against the tool by `tests/unit/test_stores.py`, with no
 import of the tool) in two places: `retman doctor check` (section 7.2) and the offline preview
 of every Kartograf operation that writes, where a folder the tool refuses is the one blocking

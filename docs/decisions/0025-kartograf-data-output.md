@@ -128,4 +128,24 @@ How the marker is written when the layout has lost it:
 
 ## Errata
 
-None yet.
+**Erratum 1 (2026-10-25, Kartograf `b73aad33`):** the pin of item 6 is now Kartograf
+`b73aad3327cf6faf7ec7d15fe47e9a897f21954a`, the head of `feature/data-output`, which is on
+GitHub (the departure from ADR-012 ends for Kartograf). It has what items 4 and 7 waited for.
+(a) A refused store is one error of the command with its registry code and reason, before any
+request: the test `test_a_run_into_a_store_kartograf_refuses_is_an_error_with_its_registry_code`
+lost its `xfail` and says as well that the index of the sheets is not asked and nothing is
+written (the separate test of "writes and fetches nothing" is merged into it). `--check` lists a
+root that is a conflict (`nested_store`, `not_empty`) as the one position of the plan (track
+`store`, action `conflict`) instead of raising; the availability checks of BDOT10k and of the
+orthophoto read it and report `store_refused` (status `unavailable`) instead of counting
+counties or sheets. (b) The command layer takes every command of the catalog, `store init`
+included (AGI-2.1), so item 4 is carried out: `init_kartograf_store` is a catalog call
+(`calls.init_kartograf_store`, `describe.init_kartograf_store`, `preview`, the saved document and
+the audit of the other operations; the document is the envelope `kartograf-result/1` and the
+marker is its `result`, `kartograf-store-init/1`), `handlers.init_kartograf_store` is removed, and
+the client gives a command the workers and the update mode only when `command_schema` declares
+them (`store init` declares `root` and `check`). The operation declares no `check`: the plan of
+`store init --check` is offline, so an availability step would be a consent notice without a
+network, and the preview judges the folder by the same rules. The reader of `retman scaffold`
+takes every command as one the layer accepts (`data` is true for all, so X9 lists the commands
+no operation uses) and knows the document `kartograf-store-init/1`.
