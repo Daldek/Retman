@@ -5,6 +5,7 @@ import logging
 import os
 import socket
 import sqlite3
+import sys
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import closing
 from dataclasses import replace
@@ -212,6 +213,15 @@ def create_app(
         )
 
     return create
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _remove_imgw_fixture_store() -> Iterator[None]:
+    """Delete the IMGWTools fixture store of ``imgw_support`` when the session ends."""
+    yield
+    support = sys.modules.get("imgw_support")
+    if support is not None:
+        support.discard_fixture_store()
 
 
 @pytest.fixture(scope="session")

@@ -65,11 +65,23 @@ def pmaxtp_payload(ind_x: int = 751, ind_y: int = 317) -> dict[str, Any]:
 def fixture_store() -> Path:
     """A read-only IMGWTools store with PL and CZ data (built once per process).
 
-    Tests that write a store build their own with ``build_store``.
+    Tests that write a store build their own with ``build_store``. The session removes
+    it at the end (``discard_fixture_store``).
     """
-    root = Path(tempfile.mkdtemp(prefix="retman-imgw-test-")) / "store"
-    build_store(root)
-    return root
+    folder = Path(tempfile.mkdtemp(prefix="retman-imgw-test-"))
+    try:
+        build_store(folder / "store")
+    except BaseException:
+        shutil.rmtree(folder, ignore_errors=True)
+        raise
+    return folder / "store"
+
+
+def discard_fixture_store() -> None:
+    """Delete the folder of ``fixture_store`` if it was built; a later call rebuilds."""
+    if fixture_store.cache_info().currsize:
+        shutil.rmtree(fixture_store().parent, ignore_errors=True)
+        fixture_store.cache_clear()
 
 
 def build_store(root: Path) -> Path:
