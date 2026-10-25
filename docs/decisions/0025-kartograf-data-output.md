@@ -160,3 +160,10 @@ replaces the sentence of erratum 1 that `data` is true for all.
 `45dedf4a155e2d2f7302459a8c383876fed98e98`, the head of `feature/data-output`, which is on
 GitHub. The head makes `store_root()` public; Retman does not use it, because it passes `root`
 from `[retman.tools.kartograf] store_dir` and resolves no default root of a tool.
+
+**Erratum 4 (2026-10-25, Kartograf `c31ca04c`):** the pin is now Kartograf
+`c31ca04c078ebbee36850d0aa4dcead59dd77a41`, the head of `feature/data-output`, which is on
+GitHub. The head keeps a position whose check failed as `check_failed` in a plain-mode plan and
+flushes stray stdout of the MCP server to stderr; Retman plans and writes only in the store
+(`root` from `[retman.tools.kartograf] store_dir`) and calls no MCP server, so nothing in Retman
+changes.

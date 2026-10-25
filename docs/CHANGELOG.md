@@ -267,10 +267,10 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   cannot be read is named so in the plan; the tool raises `data_error` (`invalid_marker`) for
   it, and `tests/unit/test_stores.py` holds `imgw_store_state` against the check of the tool
   (ADR-024 erratum 3, ADR-025 erratum 1).
-- The pins are the final heads of the producers: Kartograf `45dedf4a` and IMGWTools
-  `3f7de36`. The tool's `project init` refuses a store marker that cannot be read as
-  `data_error` (`invalid_marker`), like `store init` (it was `store_unavailable`)
-  (ADR-024 erratum 4, ADR-025 erratum 3).
+- The pins are the final heads of the producers: Kartograf `c31ca04c` and IMGWTools
+  `6bd35a49` (first `45dedf4a` and `3f7de36`). The tool's `project init` refuses a store marker
+  that cannot be read as `data_error` (`invalid_marker`), like `store init` (it was
+  `store_unavailable`) (ADR-024 errata 4 and 5, ADR-025 errata 3 and 4).
 - `retman scaffold check --tool kartograf`: X9 lists only the data commands no operation uses.
   A command whose run is read-only in `command_schema` (the source listings, the availability
   reports, `store overview`, `sheet`, `config show`) is no data command for the scaffold; the

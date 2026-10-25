@@ -136,3 +136,8 @@ there too (it was `store_unavailable`, `unsupported`), so the test of the store 
 project meets expects `data_error` for the damaged one. The tool has `store_root()` for its
 default root; Retman does not use it, because it passes `root` from `[retman.tools.imgwtools]
 store_dir` to every command and resolves no default root of a tool.
+
+**Erratum 5 (2026-10-25, IMGWTools `6bd35a49`):** the pin is now IMGWTools
+`6bd35a49b329f99b591ffdee39367daec0e75af7`, the head of the same branch, which is on GitHub. The
+head only flushes stray stdout to stderr before the MCP server leaves stdio; Retman calls the
+command layer, not the MCP server, so nothing in Retman changes.
