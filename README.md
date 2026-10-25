@@ -222,7 +222,7 @@ The settings are the `[retman]` tables of `nogat.toml`, which the Nogat tools sh
 | Variable | Meaning |
 |---|---|
 | `NOGAT_CONFIG` | the settings file `nogat.toml` (default: in the user configuration folder) |
-| `RETMAN_LANG`, `NOGAT_LANG` | language of questions and messages: `pl` or `en` (the texts exist in Polish only for now) |
+| `RETMAN_LANG`, `NOGAT_LANG` | language of the texts for people (questions, plan, messages, reports, `--help`): `pl` (default) or `en`; the texts inside `--json` documents are always English |
 | `RETMAN_LOG_LEVEL`, `NOGAT_LOG_LEVEL` | level of the technical log on stderr: `debug`, `info`, `warning` (default), `error` |
 | `RETMAN_DATA_DIR`, `NOGAT_DATA_DIR` | folder of the data stores and of the command collection (default: the user data folder of nogat) |
 | `RETMAN_CACHE_DIR`, `NOGAT_CACHE_DIR` | folder of the caches (default: the user cache folder of nogat) |

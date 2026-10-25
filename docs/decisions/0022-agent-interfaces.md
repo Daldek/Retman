@@ -90,3 +90,16 @@ v0.3). Release 0.1.0 is not tagged, so the change needs no migration path (ECO-0
   that the CLI passes through `cli.main(argv, backend=..., **injections)`; an injection never
   overrides an option.
 - English texts for the human-readable output and the machine documents stay open (Next 8).
+
+## Errata
+
+**Erratum 1 (2026-10-25, English texts, PROGRESS Next 8):** item 9 and the last consequence no
+longer hold. `src/retman/i18n/en.toml` and an `en.toml` next to the `pl.toml` of the Kartograf
+and the IMGWTools adapter exist, `lang = en` shows English texts, and `machine_texts()` returns
+them (`text_language` is removed). The documents of `doctor check` and `scaffold check` carry
+English texts whatever `lang` says: the texts of `doctor check` are `Message`s
+(`retman.i18n.loader`) that the terminal writes again from the file of its language, so
+`--lang pl` shows the same report in Polish. The `retman-eval/1` document has no texts; the
+Markdown report of `eval run` follows `lang`. The English texts of the catalog stay the
+declarations of `commands.py`, so `en.toml` has no `[catalog.*]` tables. The words that the
+terminal dialog accepts moved from the code to the `[answers]` table of each file.

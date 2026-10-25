@@ -98,6 +98,13 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   the public API, with the error classes and the registry (`retman.__all__`); `AGENTS.md` and
   `llms.txt` are generated from the catalog; the JSON Schemas of the documents are shipped in
   `retman/schemas/` (ADR-022).
+- English texts (`lang = en`, `--lang en`, DEV-2.2, AGI-9.2, ADR-022 erratum 1):
+  `src/retman/i18n/en.toml` and an `en.toml` for the Kartograf and the IMGWTools adapter
+  give the questions, the plan, the messages, the reports, `--help` and the prompts that go
+  to the model in English, with the Polish names and abbreviations beside the English words in
+  the descriptions that the model reads. The words that the terminal dialog accepts are the
+  `[answers]` table of each file (`y`, `n`, `c`, `a`, `cancel`, `end` in English). A float
+  that a template formats (`{value:.2f}`) takes the decimal mark of the language.
 
 ### Changed
 
@@ -186,6 +193,11 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   removed (DEV-1.3). The project rules are in `CLAUDE.md`, the checklists for a new operation,
   data kind, backend, extractor and command are `docs/ARCHITECTURE.md` 13, and the standard
   itself is the Nogat standard 2.1.
+- **Breaking:** the texts inside the `--json` document of `doctor check` (titles, checks and
+  hints) are English whatever `lang` says; they were in the language of the setting.
+  Migration: match the English text, or `code` and `reason` of the check; the terminal still
+  shows the report in the language of `lang`. `help_language` reads the real command line, so
+  `--lang` decides the language of `--help`.
 
 ### Removed
 

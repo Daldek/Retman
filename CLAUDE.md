@@ -134,7 +134,7 @@ src/retman/
 ├── tools/<tool>/   # kartograf, imgwtools: manifest, calls, client, preview, check, handlers, texts
 ├── backends/       # DecisionBackend and TextBackend; openai_compatible.py
 ├── extractors/     # numbers, dates, coordinates, areas, stations... (code, no model)
-├── i18n/           # translation loader, pl.toml; the tools carry their own texts
+├── i18n/           # translation loader, pl.toml and en.toml (core texts); the tools carry their own
 ├── eval/           # command set commands.jsonl, runner, metrics, offline clients
 ├── devtools/       # retman scaffold: list, draft, drift check, readers
 ├── environment.py config.py config_show.py initialize.py doctor.py stores.py logs.py

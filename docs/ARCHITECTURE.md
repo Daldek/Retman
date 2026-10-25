@@ -137,8 +137,9 @@ src/retman/
 ├── devtools/                # retman scaffold: readers of the tool catalogs, draft, drift check, the light check of doctor (section 3.2.3)
 ├── kinds.py                 # registry of data kinds and their file validators (section 3.2.6)
 ├── i18n/
-│   ├── loader.py            # loading translation files
-│   └── pl.toml              # Polish texts for core messages
+│   ├── loader.py            # loading translation files; Message: an English text that can be shown in Polish
+│   ├── pl.toml              # Polish texts for core messages, the answer words and the Polish catalog texts
+│   └── en.toml              # English texts for core messages and the answer words (the catalog texts are English in catalog/commands.py)
 ├── backends/                # connections to separately installed models (section 3.3)
 │   ├── base.py              # DecisionBackend and TextBackend interfaces
 │   ├── openai_compatible.py # any OpenAI-compatible API: LM Studio, Ollama, vLLM, providers
@@ -208,7 +209,8 @@ From the tools Retman expects only good practices that are beneficial regardless
 src/retman/tools/hydrolog/
 ├── manifest.py    # operations: params, inputs, outputs, supported versions (section 4.1)
 ├── handlers.py    # thin wrappers around the hydrolog public API (section 3.2.4)
-└── pl.toml        # Polish texts and synonyms (section 4.2)
+├── pl.toml        # Polish texts and synonyms (section 4.2)
+└── en.toml        # English texts, the same keys (section 4.2)
 ```
 
 A tool with a command catalog (Kartograf, IMGWTools) additionally has, in the same folder,
@@ -886,7 +888,7 @@ MANIFEST = {
     "distribution": "hydrolog",              # package name for the installed-version check
     "source": "git+https://github.com/Daldek/Hydrolog",  # for `--with` in retman doctor check hints (section 9.4)
     "supported_versions": ">=1.1,<2",        # checked at startup and in CI (section 3.2.7)
-    "translations": {"pl": "pl.toml"},       # relative to this package
+    "translations": {"pl": "pl.toml", "en": "en.toml"},  # relative to this package
     "operations": [
         {
             "id": "peak_flow",
@@ -930,7 +932,7 @@ MANIFEST = {
     "distribution": "kartograf",
     "source": "git+https://github.com/Daldek/Kartograf",
     "supported_versions": ">=0.8.0,<0.9",
-    "translations": {"pl": "pl.toml"},
+    "translations": {"pl": "pl.toml", "en": "en.toml"},
     "client": "retman.tools.kartograf.client:create",    # factory(settings) -> RunClient (section 3.2.4)
     "operations": [
         {
@@ -980,9 +982,19 @@ either offered or listed here.
 ### 4.2. Texts for the user and the model (translation files)
 
 Questions to the user, option descriptions and labels in the plan are in translation files, with keys
-matching the identifiers from the manifest. Each tool has its own file in Retman, and the core has
-its own (`src/retman/i18n/pl.toml`: plan, dialog, CLI, results, journal, errors, warnings,
-availability check, data kinds, `retman config init`, `retman doctor check`, extractors).
+matching the identifiers from the manifest. Each tool has one file per language in Retman (`pl.toml`,
+`en.toml`), and the core has its own pair (`src/retman/i18n/`: plan, dialog, CLI, results, journal,
+errors, warnings, availability check, data kinds, `retman config init`, `retman doctor check`,
+extractors, and the `[answers]` table with the words the terminal dialog accepts). The files of a pair
+have the same keys and the same placeholders (`tests/unit/test_i18n.py` compares them); the one
+difference is that the English texts of the command catalog are the declarations in
+`src/retman/catalog/commands.py`, so `en.toml` has no `[catalog.<operation_id>]` tables (AGI-9.1).
+The example below is the Polish file of a tool; its `en.toml` has the same keys with English texts,
+and its English `description` texts keep the Polish names and abbreviations beside the English words
+(NMT, godło, TERYT; DEV-2.4), because the commands are still typed in Polish. A machine document
+carries English texts whatever `lang` says (AGI-9.2); where the terminal shows the same report in
+Polish (`retman doctor check`), such a text is a `Message` that remembers its key and values and is
+written again from the Polish file (`retman.i18n.loader`).
 
 ```toml
 # src/retman/tools/hydrolog/pl.toml
@@ -1495,7 +1507,7 @@ terminal**.
 | Command | Mode |
 | --- | --- |
 | `retman plan run --text "…"` | **single command**: questions → plan → confirmation → result, then exit |
-| `retman plan run` (no `--text`, in a terminal) | **session**: many commands in one conversation (e.g. first a catchment, then a flow "for this catchment"); exit: `koniec` ("end") or Ctrl+D |
+| `retman plan run` (no `--text`, in a terminal) | **session**: many commands in one conversation (e.g. first a catchment, then a flow "for this catchment"); exit: `koniec` ("end"; `end` with `--lang en`) or Ctrl+D |
 
 **Example** (station names and numbers are illustrative):
 
@@ -1537,7 +1549,9 @@ Gotowe. Wynik #4: pobrano 4018 dni pomiarów. Pliki: retman-output/004_fetch_img
 - **`anuluj`** ("cancel") or Ctrl+C aborts without executing anything.
 - At the plan: **`t`** executes, **`n`** declines, **`z`** lets the user change a selected value
   (numbered list) without typing the command again; **`s`** — only when the operation offers an
-  availability check — runs a separate step with its own notice and consent (section 6.5).
+  availability check — runs a separate step with its own notice and consent (section 6.5). These are
+  the Polish words; with `--lang en` they are `y`, `n`, `c`, `a` and `cancel`, from the `[answers]`
+  table of the translation file.
 - After execution the CLI prints a summary of the result, then each tool warning on its own line
   "Uwaga: …" ("Note: …") (data quality and licensing notices).
 - Answers go into the plan with the source `user` (section 7.1).
@@ -2123,9 +2137,9 @@ named but does not exist ends every command with the same error.
   IMGWTools for this reason leaves the file in place and suggests changing both `store_dir`. From the
   easy release (0.5+) `retman config init` works as a wizard: it also asks where the model runs, checks the
   connection and writes the file (section 9.4).
-- **Language** (`lang`, `pl` or `en`): Retman's texts exist only in Polish, so `en` is accepted
-  and shown by `retman config show`, while the messages stay Polish until English texts exist
-  (a deviation from DEV-2.2 in `CLAUDE.md`). Machine-readable data is always in English.
+- **Language** (`lang`, `pl` or `en`): the language of the texts for people: questions, plan, messages,
+  reports, `--help` and the prompts that go to the model. Polish is the default, English comes from the
+  `en.toml` files. Machine-readable data is always in English (AGI-9.2).
 - The file contains no tool descriptions (manifests) nor texts (translations) — those are part of
   Retman's code, tested in CI (sections 3.2, 4.2). It contains no API keys either, only the names of
   environment variables (chapter 10). The `[retman.mcp]` section will appear only in v0.3 (without
@@ -2405,11 +2419,11 @@ in which version.
 
 | Version | Components |
 | --- | --- |
-| **0.1** | core pipeline, `basal` backend (default) and `openai_compatible` (alternative), extractors (including probability, stations, periods, points, geometry file), shared adapter with command layer (`calls`, tool clients, offline preview, availability check), adapters for Kartograf 0.8.0 and all of IMGWTools 3.0.0 with two-stage operation recognition, tool stores in the configuration, `retman scaffold` (`list`, `draft`, `check`), CI with tests on supported tool versions, translation files (PL), CLI and Python API (including the plan as data and `known`), `retman doctor check`, workspace in the project folder (numbered results, input selection without guessing, `retman results list`), central file and `retman config init`, project journal and audit trail (`retman journal show`), `retman eval run`, response time measurements (section 9.2), CI on Windows, Linux and macOS, including an installation test on clean systems (section 9.4) |
+| **0.1** | core pipeline, `basal` backend (default) and `openai_compatible` (alternative), extractors (including probability, stations, periods, points, geometry file), shared adapter with command layer (`calls`, tool clients, offline preview, availability check), adapters for Kartograf 0.8.0 and all of IMGWTools 3.0.0 with two-stage operation recognition, tool stores in the configuration, `retman scaffold` (`list`, `draft`, `check`), CI with tests on supported tool versions, translation files (PL, EN), CLI and Python API (including the plan as data and `known`), `retman doctor check`, workspace in the project folder (numbered results, input selection without guessing, `retman results list`), central file and `retman config init`, project journal and audit trail (`retman journal show`), `retman eval run`, response time measurements (section 9.2), CI on Windows, Linux and macOS, including an installation test on clean systems (section 9.4) |
 | 0.2 | chain resolver, sanity checks between steps, chain resumption, named results, result descriptions by the text model, native provider APIs (optional), descriptions and handlers for the remaining ecosystem tools (Hydrolog, Hydrograf, BasicHydraulics) |
 | 0.3 | MCP server (`retman[mcp]`, stdio, confirmation via elicitation, `channel` field in the audit trail; section 7.5.1) |
 | 0.4 | HTTP API |
-| 0.5+ | chat window for the simple path, installation scripts (`install.sh`, `install.ps1`), `retman config init` wizard, `retman add-tool`, GUI integration (section 7.4), `en.toml` files |
+| 0.5+ | chat window for the simple path, installation scripts (`install.sh`, `install.ps1`), `retman config init` wizard, `retman add-tool`, GUI integration (section 7.4), measured recognition of commands in English |
 
 ---
 

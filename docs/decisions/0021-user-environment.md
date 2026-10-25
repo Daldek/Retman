@@ -93,3 +93,9 @@ change needs no migration path (ECO-020).
 - `retman-eval --config` is optional.
 - The tests run with the user environment isolated (`tests/conftest.py::user_environment`).
 - Next: the agent interfaces put `config show` and `config init` in the command catalog (ADR-022).
+
+## Errata
+
+**Erratum 1 (2026-10-25, English texts, ADR-022 erratum 1):** item 6 no longer holds: the
+English texts exist, so `Settings.language` is `lang` as given and `en` shows English; the
+deviation from DEV-2.2 is gone.

@@ -19,8 +19,9 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Nogat standard 2.1, structure and tooling | done | branch `chore/nogat-2.1`: gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
 | Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
 | Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
-| Nogat standard 2.1, agent interfaces | done | ADR-022: catalog, `retman.operations`, the CLI generated from the catalog, `retman-result/1`, schemas in `src/retman/schemas/`, generated `AGENTS.md` and `llms.txt`; the English texts of the machine documents are Next 8 |
-| Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13), the CHANGELOG, the decision log, README, USAGE, PRD and ARCHITECTURE in English (the README examples run by `tests/contract/test_readme_examples.py`, DOC-2.1, DOC-2.6); open: Next 1.5 (`docs/research/`, `docs/specs/`) and Next 8 |
+| Nogat standard 2.1, agent interfaces | done | ADR-022: catalog, `retman.operations`, the CLI generated from the catalog, `retman-result/1`, schemas in `src/retman/schemas/`, generated `AGENTS.md` and `llms.txt`; the texts inside the machine documents are English (erratum 1) |
+| Nogat standard 2.1, English texts (DEV-2.2, AGI-9.2) | done | `en.toml` for the core and both adapters, `lang = en` and `--lang en`, the answer words in `[answers]`, English texts in the `--json` documents of `doctor check` and `scaffold check` (ADR-022 erratum 1) |
+| Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13), the CHANGELOG, the decision log, README, USAGE, PRD and ARCHITECTURE in English (the README examples run by `tests/contract/test_readme_examples.py`, DOC-2.1, DOC-2.6); open: Next 1.5 (`docs/research/`, `docs/specs/`) |
 | Gate | green | `scripts/gate.sh`: 3039 offline tests, coverage 95%, ruff, mypy strict; run it with `TMPDIR` on a local disk (a network share breaks SQLite and links) |
 | CI (Linux, macOS, Windows) | written, not run | `.github/workflows/ci.yml` and `live.yml`; nothing is pushed |
 
@@ -48,9 +49,8 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
    5. **`docs/research/` and `docs/specs/` in English** (about 6,200 lines: translate, DEV-2.1;
       DEV-17.4 stops new files there; the command names of the eval spec are already current, its
       `retman.toml` mention is not); new plans go to `docs/plans/`. README, USAGE, PRD and
-      ARCHITECTURE are English. Ask the author: PRD N-09 still says PyPI publication is not
-      planned, while the Nogat plan names `nogat-retman` (phase 6); the README and ARCHITECTURE
-      9.3 follow the Nogat plan.
+      ARCHITECTURE are English; PRD N-09 follows the Nogat plan (`nogat-retman` on PyPI in
+      phase 6, with the author's approval).
 2. **Migrate the calls to the changing producer APIs, after Kartograf and IMGWTools have
    DEV §19 on their development heads** (do not before; ECO-051, data-output plan step 5).
    Call sites, as of 2026-10-24:
@@ -82,17 +82,6 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 6. Complete `docs/specs/2026-10-11-retman-eval.md`: geometry placeholder files, the offline
    station catalog, optional parameters never in `expect_clarify`.
 7. `retman collect export` and `retman collect draft` (ADR-011) when the author decides.
-8. English texts for the human-readable output and for the texts inside the `--json` documents of
-   `doctor check`, `scaffold check` and `eval run` (AGI-9.2; `lang = en` is accepted and shows Polish
-   today). Start in `src/retman/i18n/loader.py` (`text_language`, `machine_texts`, `load_core_texts`):
-   write `src/retman/i18n/en.toml` for the core `pl.toml` (58 KB) and `en.toml` next to
-   `src/retman/tools/kartograf/pl.toml` (22 KB) and `src/retman/tools/imgwtools/pl.toml` (77 KB) with
-   the same keys; keep the Polish names and abbreviations beside the English words in the `description`
-   texts that the model reads (DEV-2.4), and keep the placeholders. The completeness test of
-   ARCHITECTURE 4.2 and the translations check of `doctor check` then cover `en`, `machine_texts()`
-   returns English, and the documents that say "the texts exist in Polish only" change: README,
-   USAGE 7.2, ARCHITECTURE 9.1, `.env.example`, `config_template.toml`, the `--lang` help of the
-   catalog, and an erratum to ADR-022 item 9.
 
 ## Open questions
 

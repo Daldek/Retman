@@ -393,6 +393,10 @@ After collecting all values, Retman shows the plan and waits for a decision:
 | `?` | help |
 | `anuluj` | cancels (exit code 130) |
 
+These are the Polish words. With `--lang en` the prompts are English and the words are `y` (yes), `n`,
+`c` (change), `a` (availability check) and `cancel`; a session ends with `end` instead of `koniec`. The
+words of each language are the `[answers]` table of its translation file.
+
 ### 5.1. Changing a value (`z`)
 
 ```
@@ -625,9 +629,10 @@ stays on your computer; it serves to build a test set for `retman eval run` from
 ### 7.1. Session
 
 `retman plan run` without `--text` in a terminal opens a session: you type successive commands after the
-`>` prompt. `koniec` ("end") closes the session (exit code 0), `anuluj` ("cancel") aborts it (exit code
-130). Every `retman` command is a group and a verb (`retman commands list` lists them all); the options of
-each command are described by `retman <group> <verb> --help`.
+`>` prompt. `koniec` ("end"; `end` with `--lang en`) closes the session (exit code 0), `anuluj` ("cancel";
+`cancel` with `--lang en`) aborts it (exit code 130). Every `retman` command is a group and a verb
+(`retman commands list` lists them all); the options of each command are described by
+`retman <group> <verb> --help`.
 
 ### 7.2. Options
 
@@ -639,7 +644,7 @@ each command are described by `retman <group> <verb> --help`.
 | `--explain` | prints the decision-model decisions below the plan: choice, confidence, method and option probabilities |
 | `--config PATH` | a `nogat.toml` file other than the default (section 1.3) |
 | `--json` | in every command: a single `retman-result/1` envelope on stdout and nothing else; never asks |
-| `--lang pl\|en` | language of human-readable texts (texts exist in Polish); `--json` documents do not depend on it |
+| `--lang pl\|en` | language of the texts for people: `pl` (default) or `en`; the texts inside `--json` documents (for example those of `doctor check` and `scaffold check`) are English whatever `--lang` says |
 | `--verbose`, `--quiet` | technical log level on stderr: `debug` or errors only; without the option `RETMAN_LOG_LEVEL` decides, then `NOGAT_LOG_LEVEL`, then `log_level` in `[retman]` and `[nogat]` (default `warning`); the log contains neither commands nor answers |
 | `--deep` | with `doctor check`: also slower checks (a trial write to the IMGWTools store) |
 
