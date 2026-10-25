@@ -1,275 +1,283 @@
-# Retman — dokument wymagań produktu (PRD)
+# Retman — product requirements document (PRD)
 
-> **Status dokumentu:** szkic (2026-10-11, uzupełniony 2026-10-19) · **Licencja:** MIT · **Język dokumentu:** polski
-> **Projekt techniczny:** [ARCHITECTURE.md](ARCHITECTURE.md)
+> **Document status:** draft (2026-10-11, updated 2026-10-25) · **Licence:** MIT · **Document language:** English
+> **Technical design:** [ARCHITECTURE.md](ARCHITECTURE.md)
 
-Ten dokument opisuje, **co** Retman ma robić, **dla kogo** i **dlaczego**. Nie opisuje
-implementacji — ta jest w ARCHITECTURE.md. Miejsca oznaczone **[DO UZUPEŁNIENIA]** są tematem
-trwającego brainstormingu.
+This document describes **what** Retman is supposed to do, **for whom** and **why**. It does not describe
+the implementation — that is in ARCHITECTURE.md. Places marked **[TO BE COMPLETED]** are the subject
+of ongoing brainstorming.
 
-Nazwa pochodzi od retmana — dowódcy flisaków, który prowadził załogę i tratwę rzeką do celu.
-
----
-
-## 1. Problem i kontekst
-
-Ekosystem narzędzi hydrologicznych (Hydrograf, Kartograf, IMGWTools, Hydrolog, BasicHydraulics)
-daje dostęp do danych i obliczeń przez API Pythona oraz — w części narzędzi — przez GUI.
-Część GUI jeszcze nie istnieje.
-
-**[DO UZUPEŁNIENIA]** Jaki konkretny problem użytkowników rozwiązuje Retman: co dziś robią
-ręcznie, ile to trwa, gdzie się mylą lub zatrzymują.
+The name comes from the retman — the leader of the raftsmen, who guided the crew and the raft down the river to its destination.
 
 ---
 
-## 2. Wizja i rola Retmana
+## 1. Problem and context
 
-Retman to warstwa poleceń w języku naturalnym dla ekosystemu narzędzi. Użytkownik opisuje
-zadanie zwykłym zdaniem po polsku, a Retman rozpoznaje, o co chodzi, zbiera brakujące dane,
-pokazuje plan do zatwierdzenia i uruchamia właściwe narzędzie.
+The ecosystem of hydrology tools (Hydrograf, Kartograf, IMGWTools, Hydrolog, BasicHydraulics)
+gives access to data and computations through a Python API and — in some of the tools — through a GUI.
+Some of the GUIs do not exist yet.
 
-**Retman nie zastępuje GUI narzędzi.** To dodatkowa droga dla użytkowników, którzy chcą
-uprościć typowe zadania albo wyjść poza to, co oferuje GUI. Docelowo Retman może działać także
-jako okno czatu współpracujące z GUI (rozdz. 4, scenariusze S-06 i S-07).
-
-**Narzędzia są niezależne od Retmana.** Każde z nich rozwija się samodzielnie (ewentualnie
-dopasowane do Hydrografa), a utrzymanie zgodności z nimi to zadanie Retmana.
-
-**Retman nie zawiera modelu językowego.** Model instaluje się osobno (np. w LM Studio)
-albo korzysta się z modelu dostawcy przez API. Retman łączy się z nim przez API, a jego
-podstawowa instalacja jest możliwie najmniejsza. Rekomendowane są modele polskie i europejskie
-(np. Bielik), ale użytkownik może wpiąć także model frontierowy, jeśli ma do niego dostęp.
-
-**Konfiguracja domyślna:** decyzje podejmuje **basal** przez osobno uruchomiony serwer
-**basal-serve**, a opisy wyników po polsku (od 0.2) pisze **Bielik**, uruchomiony np. w LM Studio.
-Inne modele, także frontierowe, wpina się zmianą konfiguracji.
-
-**Retman wobec asystentów ogólnych.** Asystent AI może już dziś sterować serwerami MCP narzędzi
-bezpośrednio. Retman daje to, czego one nie dają: plan pokazany ze źródłem każdej wartości
-i potwierdzenie człowieka, ślad audytowy w folderze projektu, numerowaną przestrzeń roboczą
-i polskie teksty. Od wersji 0.3 Retman będzie także serwerem MCP dla takich asystentów (W-16);
-narzędzia wywołuje zawsze przez ich API Pythona (ADR-018).
+**[TO BE COMPLETED]** What concrete user problem Retman solves: what users do by hand
+today, how long it takes, where they make mistakes or get stuck.
 
 ---
 
-## 3. Użytkownicy
+## 2. Vision and Retman's role
 
-### 3.1. Priorytety
+Retman is a natural-language command layer for the tool ecosystem. The user describes
+a task in a plain Polish sentence, and Retman recognises what is meant, collects the missing data,
+shows a plan for approval and runs the right tool.
 
-**Na start:** działające narzędzie w środowisku autora. Wersje 0.x są **publicznie dostępne
-na GitHubie**, ale nie są rekomendowane do wdrożeń produkcyjnych przed wersją **1.0.0** —
-służą dopracowaniu produktu.
+**Retman does not replace the tools' GUIs.** It is an additional path for users who want
+to simplify typical tasks or go beyond what the GUI offers. Eventually Retman may also work
+as a chat window cooperating with the GUI (chapter 4, scenarios S-06 and S-07).
 
-| Grupa | Kto to | Rola |
+**The tools are independent of Retman.** Each of them evolves on its own (possibly
+aligned with Hydrograf), and keeping conformance with them is Retman's job.
+
+**Retman does not include a language model.** The model is installed separately (e.g. in LM Studio)
+or a provider's model is used through an API. Retman connects to it through an API, and its
+basic installation is as small as possible. Polish and European models are recommended
+(e.g. Bielik), but the user may also plug in a frontier model if they have access to one.
+
+**Default configuration:** decisions are made by **basal** through a separately started
+**basal-serve** server, and result descriptions in Polish (from 0.2) are written by **Bielik**, run e.g. in LM Studio.
+Other models, including frontier ones, are plugged in by changing the configuration.
+
+**Retman compared to general-purpose assistants.** An AI assistant can already control the tools' MCP servers
+directly today. Retman provides what they do not: a plan shown with the source of every value
+and human confirmation, an audit trail in the project folder, a numbered workspace
+and Polish texts. From version 0.3 Retman will also be an MCP server for such assistants (W-16);
+it always calls the tools through their Python API (ADR-018).
+
+---
+
+## 3. Users
+
+### 3.1. Priorities
+
+**To start with:** a working tool in the author's environment. Versions 0.x are **publicly available
+on GitHub**, but are not recommended for production deployments before version **1.0.0** —
+they serve to refine the product.
+
+| Group | Who they are | Role |
 | --- | --- | --- |
-| **Administracja wodna** | np. Wody Polskie, samorządy — weryfikacja opracowań, decyzje | **grupa docelowa** (od 1.0); wymaga niezawodnego produktu |
-| **Projektanci** | inżynierowie w biurach projektowych przygotowujący operaty i projekty | **grupa docelowa** (od 1.0), równorzędna z administracją |
-| **Studenci i niezależni testerzy** | studenci, dydaktyka, osoby chętne do testów | **testerzy wersji 0.x** — faktyczny priorytet przed 1.0 |
+| **Water administration** | e.g. Wody Polskie (Polish Waters), local governments — verification of studies, decisions | **target group** (from 1.0); requires a reliable product |
+| **Designers** | engineers in design offices preparing water-law reports and designs | **target group** (from 1.0), on a par with the administration |
+| **Students and independent testers** | students, teaching, people willing to test | **testers of versions 0.x** — the actual priority before 1.0 |
 
-Badacze mogą korzystać z Retmana, ale nie są grupą docelową.
+Researchers may use Retman, but they are not a target group.
 
-### 3.2. Poziom techniczny
+### 3.2. Technical level
 
-Zróżnicowany — Retman musi obsłużyć **dwie ścieżki**:
+Varied — Retman must support **two paths**:
 
-| Ścieżka | Dla kogo | Jak pracuje |
+| Path | For whom | How they work |
 | --- | --- | --- |
-| **Prosta** | hydrolog bez znajomości Pythona i wiersza poleceń | prosta instalacja (N-09), wpisuje polecenia w oknie czatu — od wersji 0.5 (rozdz. 9) |
-| **Zaawansowana** | hydrolog z podstawami Pythona | CLI i biblioteka Pythona (W-11), własne skrypty |
+| **Simple** | hydrologist with no knowledge of Python or the command line | simple installation (N-09), types commands in a chat window — from version 0.5 (chapter 9) |
+| **Advanced** | hydrologist with Python basics | CLI and Python library (W-11), own scripts |
 
-### 3.3. Sposoby uruchomienia i sprzęt
+### 3.3. Ways of running and hardware
 
-| Sposób | Dla kogo | Gdzie działa model |
+| Way | For whom | Where the model runs |
 | --- | --- | --- |
-| **Serwer jednostki** | urzędy, uczelnie | na dedykowanym sprzęcie jednostki, w jej sieci wewnętrznej; komputer użytkownika nie potrzebuje GPU. Dostępne od v0.1 — Retman łączy się z serwerem modelu po zmianie adresu w konfiguracji |
-| **Lokalnie** | niezależni projektanci z lepszym sprzętem, chętni co najmniej do przetestowania możliwości | na komputerze użytkownika z kartą graficzną NVIDIA lub z procesorem Apple Silicon (N-06) |
-| **Środowisko autora** | autor, testerzy wersji 0.x | na sprzęcie autora |
+| **Institution server** | offices, universities | on the institution's dedicated hardware, in its internal network; the user's computer needs no GPU. Available from v0.1 — Retman connects to the model server after changing the address in the configuration |
+| **Locally** | independent designers with better hardware, willing at least to test the capabilities | on the user's computer with an NVIDIA graphics card or an Apple Silicon processor (N-06) |
+| **Author's environment** | the author, testers of versions 0.x | on the author's hardware |
 
-- Systemy operacyjne: **Windows, Linux i macOS**.
-- Sam Retman nie ma szczególnych wymagań sprzętowych. Wymagania zależą od wybranego modelu
-  i miejsca, w którym działa (lokalnie, serwer jednostki, API dostawcy).
-- Tryb CPU (najmniejszy model na procesorze) — opcjonalnie, jeśli pomiary pokażą akceptowalny
-  czas odpowiedzi (N-07).
+- Operating systems: **Windows, Linux and macOS**.
+- Retman itself has no special hardware requirements. The requirements depend on the chosen model
+  and the place where it runs (locally, institution server, provider API).
+- CPU mode (the smallest model on the processor) — optional, if measurements show acceptable
+  response time (N-07).
 
-### 3.4. Oczekiwania i bariery
+### 3.4. Expectations and barriers
 
-**[DO UZUPEŁNIENIA]** Czego oczekuje każda grupa i co ją zniechęci.
+**[TO BE COMPLETED]** What each group expects and what will discourage it.
 
 ---
 
-## 4. Scenariusze użycia
+## 4. Usage scenarios
 
-| ID | Scenariusz | Wersja |
+| ID | Scenario | Version |
 | --- | --- | --- |
-| S-01 | **Pojedyncza operacja.** Użytkownik wpisuje jedno zdanie (np. „Pobierz dobowe opady ze stacji Poznań z lat 2000–2020”), widzi plan, zatwierdza go i dostaje pliki z wynikiem. | 0.1 |
-| S-02 | **Praca krok po kroku.** Użytkownik wyznacza zlewnię, a następnym poleceniem liczy dla niej przepływ („…dla tej zlewni”). Retman bierze zlewnię z wcześniejszego wyniku w tym projekcie i pokazuje to w planie; jeśli zlewni jest kilka, pyta, której użyć. | 0.1 |
-| S-03 | **Polecenie niepełne lub niejednoznaczne.** Retman dopytuje o brakujące dane albo o właściwy odczyt (np. „Q50” — 50% czy okres powtarzalności 50 lat?). | 0.1 |
-| S-04 | **Polecenie spoza zakresu.** Retman uczciwie odpowiada, że tego nie potrafi, i pokazuje, co potrafi. | 0.1 |
-| S-05 | **Łańcuch operacji.** Jedno polecenie („policz przepływ stuletni dla punktu…”) uruchamia kilka kroków (zlewnia → przepływ) po jednym zatwierdzeniu planu. | 0.2 |
-| S-06 | **Czat steruje GUI.** Użytkownik rozmawia z Retmanem, a ten wypełnia formularz w GUI narzędzia. | 0.5+ |
-| S-07 | **GUI z podpowiedziami.** Użytkownik wypełnia w GUI to, co wie, a resztę ustala z Retmanem. | 0.5+ |
+| S-01 | **Single operation.** The user types one sentence (e.g. "Pobierz dobowe opady ze stacji Poznań z lat 2000–2020" — download daily precipitation from the Poznań station for the years 2000–2020), sees the plan, approves it and gets files with the result. | 0.1 |
+| S-02 | **Step-by-step work.** The user delineates a catchment, and with the next command computes the flow for it ("…dla tej zlewni" — "…for this catchment"). Retman takes the catchment from the earlier result in this project and shows that in the plan; if there are several catchments, it asks which one to use. | 0.1 |
+| S-03 | **Incomplete or ambiguous command.** Retman asks follow-up questions about missing data or the correct reading (e.g. "Q50" — 50% or a 50-year return period?). | 0.1 |
+| S-04 | **Command out of scope.** Retman honestly answers that it cannot do this, and shows what it can do. | 0.1 |
+| S-05 | **Chain of operations.** One command ("policz przepływ stuletni dla punktu…" — compute the 100-year flow for a point…) runs several steps (catchment → flow) after a single plan confirmation. | 0.2 |
+| S-06 | **Chat drives the GUI.** The user talks to Retman, and Retman fills in the form in the tool's GUI. | 0.5+ |
+| S-07 | **GUI with hints.** The user fills in what they know in the GUI and settles the rest with Retman. | 0.5+ |
 
-**[DO UZUPEŁNIENIA]** Scenariusze charakterystyczne dla głównych grup użytkowników (rozdz. 3).
+**[TO BE COMPLETED]** Scenarios characteristic of the main user groups (chapter 3).
 
 ---
 
-## 5. Wymagania funkcjonalne
+## 5. Functional requirements
 
-| ID | Wymaganie | Wersja | Kryterium akceptacji |
+| ID | Requirement | Version | Acceptance criterion |
 | --- | --- | --- | --- |
-| W-01 | Retman rozpoznaje operację na podstawie polecenia po polsku. | 0.1 | Trafność na zbiorze testowym ≥ **[DO UZUPEŁNIENIA]** |
-| W-02 | Retman dopytuje o dane brakujące, niepewne i niejednoznaczne, zamiast zgadywać. W CLI ma to formę rozmowy w terminalu — jedno pytanie naraz. | 0.1 | Wśród decyzji podjętych bez dopytywania błędnych jest ≤ **1%** (wstępnie, dla konfiguracji domyślnej; do weryfikacji na zbiorze testowym) |
-| W-03 | Polecenie spoza zakresu kończy się informacją, co Retman potrafi. | 0.1 | Polecenia spoza zakresu ze zbioru testowego nie uruchamiają żadnej operacji |
-| W-04 | Przed wykonaniem Retman pokazuje plan; wartości domyślne i wzięte z wcześniejszych wyników są oznaczone, podobnie wiersze, które narzędzie dopowiada offline na podstawie planu (podgląd). | 0.1 | Każda wartość w planie ma widoczne źródło |
-| W-05 | Każde wykonanie wymaga potwierdzenia użytkownika. Potwierdzenia nie da się wczytać razem z zapisanym planem: plan odczytany z danych jest zawsze niepotwierdzony. | 0.1 | Nie istnieje ścieżka wykonania bez potwierdzenia, także z planu odczytanego z danych |
-| W-06 | Każde narzędzie jest dostępne samodzielnie; użytkownik widzi operacje tylko zainstalowanych narzędzi. | 0.1 | Instalacja jednego narzędzia wystarcza do pracy z jego operacjami |
-| W-07 | Retman korzysta z wyników poprzednich poleceń w obrębie projektu i z plików wskazanych przez użytkownika; gdy pasuje więcej niż jeden wynik, pyta, którego użyć. | 0.1 | Scenariusz S-02 działa bez podawania ścieżek; przy kilku pasujących wynikach Retman nigdy nie wybiera sam |
-| W-08 | Prawdopodobieństwo można podać jako dowolną liczbę w typowych zapisach (1%, Q1%, „stuletnia”, T = 100 lat); zapisy niejednoznaczne wywołują pytanie. | 0.1 | Wszystkie formy z ARCHITECTURE p. 4.4 rozpoznawane poprawnie |
-| W-09 | Wynik to pliki plus krótkie podsumowanie. Pliki trafiają do folderu wyników projektu; gdy narzędzie trzyma dane w swoim magazynie (Kartograf), wynik wskazuje pliki magazynu (ścieżka bezwzględna i suma kontrolna) zamiast je kopiować. Ostrzeżenia narzędzia (jakość danych, uwagi licencyjne) są częścią wyniku i są pokazywane użytkownikowi. | 0.1 | **[DO UZUPEŁNIENIA]** (formaty plików) |
-| W-10 | Retman diagnozuje środowisko i podpowiada, jak naprawić problemy. | 0.1 | Każdy wykryty problem ma podpowiedź naprawy |
-| W-11 | Interfejsy: wiersz poleceń (CLI) w formie rozmowy w terminalu — pojedyncze polecenie albo sesja wielu poleceń — oraz biblioteka Pythona. | 0.1 | — |
-| W-12 | Łańcuchy operacji (scenariusz S-05). | 0.2 | — |
-| W-13 | Współpraca z GUI narzędzi (scenariusze S-06, S-07). | 0.5+ | — |
-| W-14 | Doinstalowanie znanego narzędzia jednym poleceniem (`retman add-tool`), po potwierdzeniu. | 0.5+ | Narzędzie trafia do środowiska Retmana w obsługiwanej wersji; `retman doctor` widzi je bez dodatkowych kroków |
-| W-15 | Dziennik pracy i ślad audytowy: każdy wynik zawiera informacje pozwalające odtworzyć, czym i jak go policzono, a projekt ma dziennik wszystkich poleceń, pytań, planów i decyzji — także odrzuconych i przerwanych. | 0.1 | Z samego folderu projektu da się ustalić dla każdego wyniku: użyte wartości i ich źródła, wersje Retmana i narzędzi, model i pewność decyzji, a przy ustawieniu `journal_commands = true` (domyślnym; ARCHITECTURE p. 5.4 i 9.1) także treść polecenia i odpowiedzi na pytania |
-| W-16 | Retman jest dostępny jako serwer MCP dla zewnętrznych asystentów AI; wykonanie wymaga potwierdzenia człowieka w jego kliencie, a klient, który go nie potrafi uzyskać, dostaje tylko plan. | 0.3 | Nie istnieje ścieżka wykonania przez MCP bez potwierdzenia człowieka (test z klientem bez możliwości potwierdzenia) |
-| W-17 | Sprawdzenie dostępności danych na życzenie: po zobaczeniu planu użytkownik może zlecić sprawdzenie, co źródło danych ma dla jego wyboru (lata, rozdzielczości, kompletność pokrycia, opublikowane archiwa). To osobny krok z własnym komunikatem i własną zgodą; raport tylko informuje i niczego w planie nie zmienia. | 0.1 | Bez zgody użytkownika Retman nie łączy się z siecią narzędzia (N-12); raport nie zmienia wartości planu i nie zajmuje numeru wyniku; każde sprawdzenie, także odrzucone, jest w dzienniku projektu |
+| W-01 | Retman recognises the operation from a command given in Polish. | 0.1 | Accuracy on the test set ≥ **[TO BE COMPLETED]** |
+| W-02 | Retman asks follow-up questions about missing, uncertain and ambiguous data instead of guessing. In the CLI this takes the form of a conversation in the terminal — one question at a time. | 0.1 | Among decisions made without asking follow-up questions, ≤ **1%** are wrong (preliminary, for the default configuration; to be verified on the test set) |
+| W-03 | A command outside the scope ends with information about what Retman can do. | 0.1 | Out-of-scope commands from the test set do not start any operation |
+| W-04 | Before execution Retman shows a plan; default values and values taken from earlier results are marked, as are rows that the tool fills in offline based on the plan (preview). | 0.1 | Every value in the plan has a visible source |
+| W-05 | Every execution requires the user's confirmation. Confirmation cannot be loaded together with a saved plan: a plan read from data is always unconfirmed. | 0.1 | There is no execution path without confirmation, including from a plan read from data |
+| W-06 | Each tool is available on its own; the user sees the operations of installed tools only. | 0.1 | Installing a single tool is enough to work with its operations |
+| W-07 | Retman uses the results of previous commands within the project and files indicated by the user; when more than one result matches, it asks which one to use. | 0.1 | Scenario S-02 works without providing paths; with several matching results Retman never chooses on its own |
+| W-08 | Probability can be given as any number in the usual notations (1%, Q1%, "stuletnia" (hundred-year), T = 100 lat); ambiguous notations trigger a question. | 0.1 | All forms from ARCHITECTURE section 4.4 are recognised correctly |
+| W-09 | The result is files plus a short summary. Files go to the project's results folder; when the tool keeps data in its own store (Kartograf), the result points to the store files (absolute path and checksum) instead of copying them. Tool warnings (data quality, licence notices) are part of the result and are shown to the user. | 0.1 | **[TO BE COMPLETED]** (file formats) |
+| W-10 | Retman diagnoses the environment and suggests how to fix problems. | 0.1 | Every detected problem has a fix suggestion |
+| W-11 | Interfaces: command line (CLI) as a conversation in the terminal — a single command or a session of many commands — and a Python library. | 0.1 | — |
+| W-12 | Chains of operations (scenario S-05). | 0.2 | — |
+| W-13 | Cooperation with the tools' GUIs (scenarios S-06, S-07). | 0.5+ | — |
+| W-14 | Installing a known tool with a single command (`retman add-tool`), after confirmation. | 0.5+ | The tool ends up in Retman's environment in a supported version; `retman doctor check` sees it without extra steps |
+| W-15 | Work log and audit trail: every result contains information that makes it possible to reconstruct what it was computed with and how, and the project has a journal of all commands, questions, plans and decisions — including rejected and interrupted ones. | 0.1 | From the project folder alone it is possible to determine for every result: the values used and their sources, the versions of Retman and the tools, the model and the confidence of the decision, and with the setting `journal_commands = true` (the default; ARCHITECTURE sections 5.4 and 9.1) also the text of the command and the answers to the questions |
+| W-16 | Retman is available as an MCP server for external AI assistants; execution requires human confirmation in the assistant's client, and a client that cannot obtain it gets only the plan. | 0.3 | There is no execution path via MCP without human confirmation (test with a client that cannot confirm) |
+| W-17 | Data availability check on demand: after seeing the plan, the user can request a check of what the data source has for their selection (years, resolutions, completeness of coverage, published archives). This is a separate step with its own message and its own consent; the report only informs and changes nothing in the plan. | 0.1 | Without the user's consent Retman does not connect to the tool's network (N-12); the report does not change plan values and does not take a result number; every check, including rejected ones, is in the project journal |
 
 ---
 
-## 6. Wymagania niefunkcjonalne
+## 6. Non-functional requirements
 
-| ID | Wymaganie | Wartość docelowa |
+| ID | Requirement | Target value |
 | --- | --- | --- |
-| N-01 | **Własne zasoby jako droga domyślna.** Retman działa z modelem uruchomionym lokalnie lub w sieci jednostki i nie wymaga płatnych API. | — |
-| N-02 | **Modele wymienne bez zmian w kodzie.** Domyślnie modele polskie: basal (decyzje) i Bielik (opisy wyników); możliwe także inne modele, w tym frontierowe przez API, jeśli użytkownik ma do nich dostęp. | — |
-| N-03 | **Niezależność narzędzi.** Narzędzia nie zawierają nic związanego z Retmanem; zgodność utrzymuje Retman. | — |
-| N-04 | **Prywatność.** Dane nie opuszczają skonfigurowanych usług; domyślnie wszystko działa lokalnie; polecenia nie są przekazywane ani gromadzone poza projektem bez wyraźnej zgody (dziennik projektu jest częścią pracy użytkownika i zostaje w jego folderze, W-15). O tym, gdzie działa model, decyduje użytkownik w konfiguracji; `retman doctor` pokazuje adres każdego modelu. Narzędzia łączą się z publicznymi usługami danych (np. GUGiK, IMGW) dopiero po potwierdzeniu planu albo za zgodą w sprawdzeniu dostępności (N-12), a do usług trafiają parametry żądania, nie polecenie użytkownika. Asystent AI podłączony przez MCP (od 0.3) jest usługą spoza pliku konfiguracji: treść poleceń i ścieżki są dla niego domyślnie ukryte (ARCHITECTURE p. 7.5.1). | — |
-| N-05 | **Wiarygodność ponad wygodę.** Retman woli dopytać, niż się pomylić — w każdej konfiguracji, także z modelem bez skalibrowanej pewności (ARCHITECTURE p. 3.3.3). | patrz W-02 |
-| N-06 | **Minimalny sprzęt.** | lokalnie zalecane: karta NVIDIA z ok. 6–8 GB pamięci albo Apple Silicon z ok. 16 GB pamięci. Sam model domyślny (basal-1.5-mini) potrzebuje ok. 3 GB; opisy wyników przez Bielika (od 0.2) — więcej, zależnie od wielkości modelu (ARCHITECTURE p. 9.2). Przy serwerze jednostki komputer użytkownika nie potrzebuje GPU (p. 3.3) |
-| N-07 | **Czas odpowiedzi** (od wpisania polecenia do pokazania planu). | **[DO UZUPEŁNIENIA]** |
-| N-08 | **Otwartość.** Licencja MIT; kod po angielsku, dokumentacja po polsku. | — |
-| N-09 | **Instalacja.** | Podstawą jest `uv` (Windows, Linux, macOS). Retman i narzędzia z GitHuba (publikacja na PyPI nie jest planowana), w jednym środowisku; model osobno (N-10). **Wersja trudna (0.x):** polecenia `uv` + osobno uruchomiony serwer modelu. **Wersja łatwa (0.5+):** skrypt instalacyjny, kreator `retman init`, `retman add-tool` (W-14). Bez kompilacji po stronie użytkownika; sprawdza to test instalacji w CI (ARCHITECTURE p. 9.4) |
-| N-10 | **Brak modelu w pakiecie.** Retman nie jest dystrybuowany z żadnym modelem językowym; łączy się z modelem przez API (np. LM Studio, Ollama, basal-serve, API dostawcy). Podstawowa instalacja jest możliwie najmniejsza. Dotyczy to także basala: basal-serve jest osobnym programem, a nie zależnością Retmana. | — |
-| N-11 | **Konfiguracja.** Ustawienia niezależne od projektu (m.in. modele, progi pewności, język, prywatność, magazyny danych narzędzi) są w tabelach `[retman]` jednego wspólnego pliku `nogat.toml` na komputerze (DEV-18.1) i w zmiennych `RETMAN_*`, bez ukrytych wartości domyślnych: każda używana wartość jest widoczna w `retman config show` razem ze źródłem, a `retman init` zapisuje je w pliku (ADR-021). Wyniki należą do projektu i są zapisywane w jego folderze. | — |
-| N-12 | **Bez sieci przed potwierdzeniem.** Przed potwierdzeniem planu Retman nie wywołuje żadnej funkcji narzędzia z efektem sieciowym ani zapisem: planowanie to ekstraktory w kodzie, walidacja offline przez narzędzie i podgląd planu. Jedyny wyjątek to sprawdzenie dostępności na życzenie, po osobnej zgodzie (W-17). Serwer modelu jest poza tą regułą (N-04). | Strukturalnie: przed potwierdzeniem kod planowania dostaje tylko widok offline klienta narzędzia (ARCHITECTURE p. 3.2.4); test z klientem zapisującym wywołania sprawdza, że przed `plan.confirm()` nie ma żadnego wywołania `run`, `check` ani `query` |
+| N-01 | **Own resources as the default path.** Retman works with a model run locally or on the organisation's network and does not require paid APIs. | — |
+| N-02 | **Interchangeable models without code changes.** By default Polish models: basal (decisions) and Bielik (result descriptions); other models are also possible, including frontier models via API, if the user has access to them. | — |
+| N-03 | **Tool independence.** Tools contain nothing related to Retman; Retman maintains conformance. | — |
+| N-04 | **Privacy.** Data does not leave the configured services; by default everything runs locally; commands are not passed on or collected outside the project without explicit consent (the project journal is part of the user's work and stays in their folder, W-15). The user decides in the configuration where the model runs; `retman doctor check` shows the address of each model. Tools connect to public data services (e.g. GUGiK, IMGW) only after the plan is confirmed or with consent in the availability check (N-12), and the services receive the request parameters, not the user's command. An AI assistant connected via MCP (from 0.3) is a service outside the configuration file: command text and paths are hidden from it by default (ARCHITECTURE section 7.5.1). | — |
+| N-05 | **Reliability over convenience.** Retman prefers to ask rather than be wrong — in every configuration, including with a model without calibrated confidence (ARCHITECTURE section 3.3.3). | see W-02 |
+| N-06 | **Minimum hardware.** | locally recommended: an NVIDIA card with about 6–8 GB of memory or Apple Silicon with about 16 GB of memory. The default model itself (basal-1.5-mini) needs about 3 GB; result descriptions via Bielik (from 0.2) — more, depending on model size (ARCHITECTURE section 9.2). With an organisation server the user's computer does not need a GPU (section 3.3) |
+| N-07 | **Response time** (from typing the command to showing the plan). | **[TO BE COMPLETED]** |
+| N-08 | **Openness.** MIT licence; code, documentation and machine output in English; the texts that users read are Polish by default and English on request (DEV-2.1, DEV-2.2). | — |
+| N-09 | **Installation.** | The basis is `uv` (Windows, Linux, macOS). Retman and the tools from GitHub (publication on PyPI is not planned), in one environment; the model separately (N-10). **Hard version (0.x):** `uv` commands + a separately started model server. **Easy version (0.5+):** install script, `retman config init` wizard, `retman add-tool` (W-14). No compilation on the user's side; the installation test in CI checks this (ARCHITECTURE section 9.4) |
+| N-10 | **No model in the package.** Retman is not distributed with any language model; it connects to a model via API (e.g. LM Studio, Ollama, basal-serve, a provider's API). The basic installation is as small as possible. This also applies to basal: basal-serve is a separate program, not a dependency of Retman. | — |
+| N-11 | **Configuration.** Project-independent settings (including models, confidence thresholds, language, privacy, tool data stores) are in the `[retman]` tables of one shared `nogat.toml` file on the computer (DEV-18.1) and in `RETMAN_*` variables, with no hidden default values: every value in use is visible in `retman config show` together with its source, and `retman config init` writes them to the file (ADR-021). Results belong to the project and are saved in its folder. | — |
+| N-12 | **No network before confirmation.** Before the plan is confirmed, Retman does not call any tool function with a network effect or a write: planning consists of extractors in code, offline validation by the tool and the plan preview. The only exception is the availability check on request, after separate consent (W-17). The model server is outside this rule (N-04). | Structurally: before confirmation the planning code receives only the offline view of the tool client (ARCHITECTURE section 3.2.4); a test with a client that records calls checks that there is no `run`, `check` or `query` call before `plan.confirm()` |
 
 ---
 
-## 7. Zakres
+## 7. Scope
 
-### 7.1. W zakresie v0.1
+### 7.1. In scope for v0.1
 
-- Pojedyncze operacje (bez łańcuchów) dwóch narzędzi: Kartografa 0.8.0 (cztery operacje na dane
-  przestrzenne) i całego IMGWTools 3.0.0 (wszystkie możliwości użytkowe, także dane ČHMÚ;
-  26 operacji w 6 kategoriach) — p. 7.2, ADR-012, ADR-017.
-- Scenariusze S-01 do S-04.
-- Wymagania W-01 do W-11, W-15 i W-17 oraz N-12.
+- Single operations (no chains) of two tools: Kartograf 0.8.0 (four operations on spatial data)
+  and the whole of IMGWTools 3.0.0 (all user-facing capabilities, including ČHMÚ data;
+  26 operations in 6 categories) — section 7.2, ADR-012, ADR-017.
+- Scenarios S-01 to S-04.
+- Requirements W-01 to W-11, W-15 and W-17, plus N-12.
 
-### 7.2. Operacje v0.1
+### 7.2. Operations in v0.1
 
-Kryteria wyboru: Kartograf — cztery operacje z ADR-001, przeniesione na wersję 0.8.0 (ADR-012);
-IMGWTools — wszystkie możliwości użytkowe katalogu komend narzędzia (ADR-017; autor: „całe IMGW
-wchodzi do v0.1”), z uzasadnionymi wyłączeniami. Operacji jest więcej niż 9, więc rozpoznawanie
-jest dwustopniowe: kategoria, potem operacja (ARCHITECTURE p. 3.4).
+Selection criteria: Kartograf — four operations from ADR-001, carried over to version 0.8.0 (ADR-012);
+IMGWTools — all user-facing capabilities of the tool's command catalog (ADR-017; author: "all of IMGW
+goes into v0.1"), with justified exclusions. There are more than 9 operations, so recognition
+is two-stage: category, then operation (ARCHITECTURE section 3.4).
 
 **Kartograf 0.8.0** (ADR-001, ADR-012, ADR-016):
 
-| Operacja | Narzędzie | Obszar w poleceniu |
+| Operation | Tool | Area in the command |
 | --- | --- | --- |
-| pobranie NMT dla arkusza (rozdzielczości 0,15; 0,5; 0,6; 1; 5; 10 i 100 m; układ wysokościowy EVRF2007 albo KRON86 tam, gdzie istnieją oba) | Kartograf | godło arkusza, plik z geometrią |
-| pobranie NMT, NMPT albo ortofotomapy (kolor RGB, CIR albo B/W) dla arkusza nadrzędnego | Kartograf | godło arkusza; plik z geometrią — poza ortofotomapą |
-| wycinek NMT albo NMPT dla obszaru | Kartograf | prostokąt w PL-1992 albo WGS84, plik z geometrią |
-| pobranie BDOT10k | Kartograf | kod TERYT powiatu, prostokąt, godło, plik z geometrią |
+| download DEM (NMT) for a map sheet (resolutions 0.15, 0.5, 0.6, 1, 5, 10 and 100 m; vertical datum EVRF2007 or KRON86 where both exist) | Kartograf | sheet code (godło), geometry file |
+| download DEM (NMT), DSM (NMPT) or orthophoto (RGB colour, CIR or B/W) for a parent map sheet | Kartograf | sheet code (godło); geometry file — except for orthophoto |
+| DEM (NMT) or DSM (NMPT) cutout for an area | Kartograf | rectangle in PL-1992 or WGS84, geometry file |
+| download BDOT10k (topographic objects database) | Kartograf | county TERYT code, rectangle, sheet code, geometry file |
 
-**IMGWTools 3.0.0** (ADR-017): 26 operacji w sześciu kategoriach, na danych IMGW-PIB i ČHMÚ
-(ARCHITECTURE p. 3.2.11):
+**IMGWTools 3.0.0** (ADR-017): 26 operations in six categories, on IMGW-PIB and ČHMÚ data
+(ARCHITECTURE section 3.2.11):
 
-| Kategoria | Operacje |
+| Category | Operations |
 | --- | --- |
-| stacje i rejestr danych | wyszukanie stacji IMGW-PIB i ČHMÚ (po nazwie, rzece, rodzaju); budowa katalogu stacji w magazynie; lista zbiorów danych i dostawców |
-| dane bieżące i ostrzeżenia | aktualne pomiary stacji hydrologicznej, meteorologicznej albo synoptycznej; ostrzeżenia hydrologiczne i meteorologiczne; stany wody na stacjach (alarmowe i ostrzegawcze) |
-| opady maksymalne PMAXTP | tabela opadów maksymalnych dla punktu (metoda POT albo AMP; opcjonalnie dla wybranych prawdopodobieństw i czasów trwania); odczyt zapisanej komórki siatki |
-| szeregi czasowe stacji | eksport szeregu stacji do CSV (zbiór danych, okres, rok hydrologiczny albo kalendarzowy, zmienne); pokrycie danych stacji w magazynie; budowa szeregów |
-| archiwa i magazyn | pobranie archiwów hydrologicznych albo meteorologicznych do folderu wyniku; sprawdzenie archiwów względem magazynu (plan); pobranie archiwów do magazynu, także według planu; eksport zapisanych archiwów; utworzenie i opis magazynu |
-| projekty danych | utworzenie projektu, dodanie i usunięcie zadania, wskazanie magazynu; pobranie i przypięcie danych projektu; sprawdzenie aktualności i weryfikacja przypiętych danych |
+| stations and data registry | search for IMGW-PIB and ČHMÚ stations (by name, river, kind); build a station catalog in the store; list datasets and providers |
+| current data and warnings | current measurements of a hydrological, meteorological or synoptic station; hydrological and meteorological warnings; water levels at stations (alarm and warning levels) |
+| PMAXTP maximum precipitation | maximum precipitation table for a point (POT or AMP method; optionally for selected probabilities and durations); read a stored grid cell |
+| station time series | export a station series to CSV (dataset, period, hydrological or calendar year, variables); data coverage of a station in the store; build series |
+| archives and store | download hydrological or meteorological archives to the results folder; check archives against the store (plan); download archives to the store, also per plan; export stored archives; create and describe the store |
+| data projects | create a project, add and remove a task, point to a store; download and pin project data; check freshness and verify pinned data |
 
-Pierwszy scenariusz S-01 („Pobierz dobowe opady ze stacji Poznań z lat 2000–2020”) to eksport
-szeregu stacji. Siedem komend katalogu narzędzia jest wyłączonych świadomie, z uzasadnieniem
-(wyszukiwania offline używane wewnątrz planów, powielone odczyty i komendy opisujące sam katalog).
+The first scenario S-01 ("Pobierz dobowe opady ze stacji Poznań z lat 2000–2020" — download daily
+precipitation from the Poznań station for 2000–2020) is a station series export. Seven catalog
+commands of the tool are deliberately excluded, with justification (offline lookups used inside
+plans, duplicated reads and commands describing the catalog itself).
 
-### 7.3. Poza zakresem
+### 7.3. Out of scope
 
-- Odpowiadanie na pytania merytoryczne z hydrologii (osobny projekt asystenta).
-- Zastępowanie GUI narzędzi.
-- Wykonywanie operacji bez potwierdzenia przed wersją 1.0.
-- Obsługa głosowa.
-- Polecenia po angielsku przed wersją 0.5.
-- Wywoływanie narzędzi przez ich serwery MCP (ADR-018).
+Each item has its reason and what covers it instead; the same list is the "When not to use" of the README.
 
----
-
-## 8. Miary sukcesu
-
-| Obszar | Miara | Cel |
+| Out of scope | Why | What covers it |
 | --- | --- | --- |
-| Jakość | trafność rozpoznania operacji | **[DO UZUPEŁNIENIA]** |
-| Jakość | błędy wśród decyzji bez dopytywania | **≤ 1%** — wstępnie, do weryfikacji na zbiorze testowym (W-02) |
-| Wygoda | odsetek poleceń obsłużonych bez dopytywania | **[DO UZUPEŁNIENIA]** po pierwszych testach — im niższy dopuszczalny błąd, tym częściej Retman dopytuje |
-| Produkt | **[DO UZUPEŁNIENIA]** (np. liczba użytkowników, oszczędność czasu, zgłoszenia) | **[DO UZUPEŁNIENIA]** |
+| Answering substantive hydrology questions | Retman runs the operations of the tools; it does not interpret results or teach hydrology | a separate assistant project |
+| Hydrological computation (design rainfall, hydrographs, runoff) | Retman fetches data today; the adapters of Hydrolog and Hydrograf are planned for 0.2 (chapter 9) | Hydrolog and Hydrograf, called directly |
+| GIS processing of the downloaded files | the files are the result; processing them is another job | QGIS, GDAL |
+| Browsing and managing the stores of the tools | Retman records the paths and sums of the files, not the stores | Archiwista |
+| Replacing the tools' GUIs | Retman is an additional path (chapter 2) | the GUIs of the tools |
+| Executing operations without confirmation before version 1.0 | W-05: no silent execution while the product is refined | the tool itself, when the exact call is known |
+| Voice control | not needed to refine the product | none |
+| Commands in English before version 0.5 | the questions, the option descriptions and the extractors are Polish, because basal works best when the questions are in the language of the command (ARCHITECTURE section 3.4) | the tools' own CLIs and MCP servers |
+| Calling tools through their MCP servers | ADR-018: a thin wrapper over the same functions, more packages, harder to guarantee W-05 and to test | the Python API of the tools, which Retman uses |
 
 ---
 
-## 9. Wydania
+## 8. Success metrics
 
-Wersje 0.x są **publicznie dostępne na GitHubie**, ale nie są rekomendowane do wdrożeń
-produkcyjnych. Służą rozwojowi w środowisku autora i testom (studenci, niezależni testerzy).
-Pierwsza wersja rekomendowana do wdrożeń produkcyjnych: **1.0.0**.
+| Area | Metric | Target |
+| --- | --- | --- |
+| Quality | accuracy of operation recognition | **[TO BE COMPLETED]** |
+| Quality | errors among decisions made without asking follow-up questions | **≤ 1%** — preliminary, to be verified on the test set (W-02) |
+| Convenience | share of commands handled without asking follow-up questions | **[TO BE COMPLETED]** after the first tests — the lower the acceptable error, the more often Retman asks |
+| Product | **[TO BE COMPLETED]** (e.g. number of users, time saved, reports) | **[TO BE COMPLETED]** |
 
-| Wersja | Co dostaje użytkownik (tester) |
+---
+
+## 9. Releases
+
+Versions 0.x are **publicly available on GitHub**, but are not recommended for production
+deployments. They serve development in the author's environment and testing (students, independent
+testers). The first version recommended for production deployments: **1.0.0**.
+
+| Version | What the user (tester) gets |
 | --- | --- |
-| **0.1** | pojedyncze operacje z CLI i Pythona na Kartografie 0.8.0 i całym IMGWTools 3.0.0 (dwustopniowe rozpoznawanie operacji), plik geometrii jako obszar, dopytywanie, plan z podglądem offline i potwierdzeniem, sprawdzenie dostępności danych na życzenie, praca krok po kroku, magazyny danych narzędzi w konfiguracji, diagnostyka środowiska; model lokalnie lub na serwerze jednostki; dziennik projektu i ślad audytowy |
-| 0.2 | łańcuchy operacji, opisy wyników po polsku, pozostałe narzędzia ekosystemu (Hydrolog, Hydrograf, BasicHydraulics) |
-| 0.3 | serwer MCP (opcjonalny dodatek `retman[mcp]`): zewnętrzny asystent AI planuje, a człowiek potwierdza wykonanie w swoim kliencie (W-16, ADR-018) |
-| 0.4 | dostęp do Retmana przez API HTTP (np. dla aplikacji webowej i GUI) |
-| 0.5+ | **ścieżka prosta**: okno czatu, skrypt instalacyjny, kreator konfiguracji i `retman add-tool` (Windows, Linux, macOS); współpraca z GUI narzędzi; polecenia po angielsku |
-| **1.0.0** | **pierwsza wersja do wdrożeń produkcyjnych** — niezawodny produkt dla administracji i projektantów |
+| **0.1** | single operations from the CLI and Python on Kartograf 0.8.0 and all of IMGWTools 3.0.0 (two-stage recognition of operations), geometry file as area, asking follow-up questions, plan with offline preview and confirmation, data availability check on request, step-by-step work, tool data stores in the configuration, environment diagnostics; model locally or on the organisation's server; project journal and audit trail |
+| 0.2 | chains of operations, result descriptions in Polish, remaining tools of the ecosystem (Hydrolog, Hydrograf, BasicHydraulics) |
+| 0.3 | MCP server (optional extra `retman[mcp]`): an external AI assistant plans, and a human confirms execution in their own client (W-16, ADR-018) |
+| 0.4 | access to Retman via an HTTP API (e.g. for a web application and GUI) |
+| 0.5+ | **simple path**: chat window, installation script, configuration wizard and `retman add-tool` (Windows, Linux, macOS); cooperation with tool GUIs; commands in English |
+| **1.0.0** | **first version for production deployments** — a reliable product for public administration and designers |
 
 ---
 
-## 10. Założenia i ryzyka
+## 10. Assumptions and risks
 
-**Szkic do przeglądu.**
+**Draft for review.**
 
-| Ryzyko | Skutek | Ograniczenie |
+| Risk | Impact | Mitigation |
 | --- | --- | --- |
-| basal (model domyślny) to młody projekt jednej osoby | brak rozwoju lub wsparcia modelu | model wymienny (N-02); backend dla modeli generatywnych gotowy od v0.1 jako alternatywa |
-| modele generatywne (np. przez LM Studio lub API dostawcy) często nie podają skalibrowanej pewności | trudniej rozpoznać, kiedy dopytać | domyślnie pewność z prawdopodobieństw tokenów (`logprobs`), a gdy serwer ich nie zwraca — ze zgodności kilku odpowiedzi (ARCHITECTURE p. 3.3.3); obowiązkowe potwierdzenie planu (W-05); testy jakości osobno dla każdego rodzaju modelu |
-| model zewnętrznego dostawcy | treść poleceń opuszcza komputer lub sieć jednostki | konfiguracja należy do użytkownika, a `retman doctor` pokazuje adres każdego modelu (N-04); droga domyślna to własne zasoby |
-| nieznana trafność małego modelu na słownictwie hydrologicznym | dużo dopytywania albo błędy | zbiór testowy od pierwszego dnia, synonimy w opisach, możliwość większego modelu |
-| słaby sprzęt użytkowników | Retman za wolny lub nie do uruchomienia | najmniejszy model, diagnostyka, model na serwerze jednostki (od 0.1, p. 3.3) |
-| utrzymanie zgodności z pięcioma narzędziami | Retman psuje się po zmianach w narzędziach | testy na wersjach narzędzi i kontrola zgodności przez wykonanie (`retman-scaffold --check`, ADR-019) w CI |
-| Kartograf 0.8.0 i IMGWTools 3.0.0 bez wypchniętych tagów wydań | Retman zależy od niewydanych commitów | grupa `tools` przypina wypchnięte commity do czasu tagów, potem tagi; zakresy wersji w manifestach (`>=0.8.0,<0.9`, `>=3.0.0,<4`; ADR-012) |
-| magazyny narzędzi na dysku bez dowiązań twardych (FAT/exFAT, część udziałów sieciowych) | narzędzia nie zapiszą danych | `retman init` sprawdza dowiązania twarde przed zapisem pliku konfiguracji, `retman doctor` — w obu magazynach (ARCHITECTURE p. 7.2, 9.1) |
-| klient MCP bez możliwości potwierdzenia albo z modelem w chmurze (od 0.3) | wykonanie bez człowieka albo wyciek treści poleceń | zamknięcie awaryjne: bez potwierdzenia klient dostaje tylko plan; treść poleceń i ścieżki są domyślnie ukryte (ADR-018, ARCHITECTURE p. 7.5.1) |
-| brak części GUI | integracja z GUI odłożona | plan jako dane od v0.1, decyzja o integracji później |
-| laptopy biurowe bez GPU w urzędach i na uczelniach | użytkownicy nie uruchomią modelu lokalnie | serwer jednostki w sieci wewnętrznej (p. 3.3) |
-| instalacja z kompilacją po stronie użytkownika | użytkownik utknie na instalacji | model poza pakietem Retmana (N-10); zależności narzędzi sprawdza test instalacji na czystych systemach w CI (N-09) |
-| brak informacji zwrotnej od grup docelowych przed 1.0 | produkt dopracowany pod autora, a nie pod administrację i projektantów | testerzy wersji 0.x; **[DO UZUPEŁNIENIA]** czy i jak pokazać Retmana administracji przed 1.0 |
+| basal (the default model) is a young one-person project | no further development or support of the model | replaceable model (N-02); backend for generative models ready from v0.1 as an alternative |
+| generative models (e.g. via LM Studio or a provider's API) often do not provide calibrated confidence | harder to recognise when to ask | by default confidence from token probabilities (`logprobs`), and when the server does not return them — from the agreement of several answers (ARCHITECTURE section 3.3.3); mandatory plan confirmation (W-05); quality tests separately for each kind of model |
+| model of an external provider | the content of commands leaves the computer or the organisation's network | the configuration belongs to the user, and `retman doctor check` shows the address of each model (N-04); the default route is the user's own resources |
+| unknown accuracy of a small model on hydrological vocabulary | a lot of follow-up questions or errors | test set from day one, synonyms in descriptions, option of a larger model |
+| weak hardware of users | Retman too slow or impossible to run | smallest model, diagnostics, model on the organisation's server (from 0.1, section 3.3) |
+| maintaining conformance with five tools | Retman breaks after changes in the tools | tests on tool versions and conformance check by execution (`retman scaffold check`, ADR-019) in CI |
+| Kartograf 0.8.0 and IMGWTools 3.0.0 without pushed release tags | Retman depends on unreleased commits | the `tools` group pins pushed commits until tags exist, then tags; version ranges in manifests (`>=0.8.0,<0.9`, `>=3.0.0,<4`; ADR-012) |
+| tool stores on a disk without hard links (FAT/exFAT, some network shares) | tools will not save data | `retman config init` checks hard links before writing the configuration file, `retman doctor check` — in both stores (ARCHITECTURE sections 7.2, 9.1) |
+| MCP client without the ability to confirm or with a model in the cloud (from 0.3) | execution without a human or leakage of command content | fail-safe closure: without confirmation the client gets only the plan; command content and paths are hidden by default (ADR-018, ARCHITECTURE section 7.5.1) |
+| GUI part missing | integration with GUI postponed | plan as data from v0.1, decision on integration later |
+| office laptops without a GPU in public offices and at universities | users will not run the model locally | organisation's server on the internal network (section 3.3) |
+| installation with compilation on the user's side | the user gets stuck on installation | model outside the Retman package (N-10); tool dependencies are checked by an installation test on clean systems in CI (N-09) |
+| no feedback from target groups before 1.0 | product polished for the author, not for public administration and designers | testers of versions 0.x; **[TO BE COMPLETED]** whether and how to show Retman to public administration before 1.0 |
 
-**Założenia:**
-- Użytkownicy znają hydrologię i metody, z których korzystają; Retman nie uczy hydrologii.
-- Użytkownicy ścieżki prostej nie znają Pythona ani wiersza poleceń.
+**Assumptions:**
+- Users know hydrology and the methods they use; Retman does not teach hydrology.
+- Users of the simple path know neither Python nor the command line.
 
 ---
 
-## 11. Otwarte kwestie produktowe
+## 11. Open product questions
 
-1. Problem, który Retman rozwiązuje, opisany z perspektywy administracji i projektantów (rozdz. 1).
-2. Oczekiwania i bariery poszczególnych grup (p. 3.4).
-3. Czy i jak pokazać Retmana grupom docelowym przed 1.0 (rozdz. 10).
-4. Lista pierwszych operacji (p. 7.2) — ustalona dla Kartografa i IMGWTools (ADR-001, ADR-012, ADR-016, ADR-017); do ustalenia dla Hydrologa, Hydrografa i BasicHydraulics (od 0.2).
-5. Wartości docelowe: czas odpowiedzi, miary jakości i sukcesu (rozdz. 5, 6 i 8).
-6. Współpraca z GUI — decyzja, gdy GUI powstaną.
-7. Scenariusze charakterystyczne dla głównych grup użytkowników (rozdz. 4).
-8. Formaty plików wynikowych (W-09; strona techniczna: ARCHITECTURE rozdz. 12, pkt 7) — ustalone dla Kartografa i IMGWTools (ADR-004, ADR-016, ADR-017); dla pozostałych narzędzi otwarte.
+1. The problem Retman solves, described from the perspective of administration and designers (chapter 1).
+2. Expectations and barriers of the individual groups (section 3.4).
+3. Whether and how to show Retman to the target groups before 1.0 (chapter 10).
+4. The list of first operations (section 7.2) — settled for Kartograf and IMGWTools (ADR-001, ADR-012, ADR-016, ADR-017); to be settled for Hydrolog, Hydrograf and BasicHydraulics (from 0.2).
+5. Target values: response time, quality and success measures (chapters 5, 6 and 8).
+6. Cooperation with GUIs — decision once the GUIs exist.
+7. Scenarios characteristic of the main user groups (chapter 4).
+8. Result file formats (W-09; technical side: ARCHITECTURE chapter 12, item 7) — settled for Kartograf and IMGWTools (ADR-004, ADR-016, ADR-017); open for the remaining tools.

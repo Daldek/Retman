@@ -8,7 +8,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 
 | Component | State | Note |
 |---|---|---|
-| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-023) | done; the decision log and the ADRs are English, the rest is Polish | translation of PRD, ARCHITECTURE and USAGE to English pending (ECO-005), see Next 1.5; open questions: PRD ch. 11, ARCHITECTURE ch. 12 |
+| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-023) | done; the decision log, the ADRs, PRD and USAGE are English, ARCHITECTURE is Polish | translation of ARCHITECTURE chapters 1 to 12 to English pending (ECO-005), see Next 1.5; open questions: PRD ch. 11, ARCHITECTURE ch. 12 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
 | Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins commits `8e9bcbb` (Kartograf) and `0d98f3b` (IMGWTools) until the tags `v0.8.0` and `v3.0.0` exist |
@@ -20,7 +20,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
 | Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
 | Nogat standard 2.1, agent interfaces | done | ADR-022: catalog, `retman.operations`, the CLI generated from the catalog, `retman-result/1`, schemas in `src/retman/schemas/`, generated `AGENTS.md` and `llms.txt`; the English texts of the machine documents are Next 8 |
-| Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13), the CHANGELOG and the decision log in English with the statuses of DOC-8.1, ADR-023, the README in English with its examples run by `tests/contract/test_readme_examples.py` (DOC-2.1, DOC-2.6), USAGE in English; open: Next 1.5 (PRD, ARCHITECTURE) |
+| Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13), the CHANGELOG and the decision log in English with the statuses of DOC-8.1, ADR-023, the README in English with its examples run by `tests/contract/test_readme_examples.py` (DOC-2.1, DOC-2.6), USAGE and PRD in English; open: Next 1.5 (ARCHITECTURE) |
 | Gate | green | `scripts/gate.sh`: 2713 offline tests, coverage 95%, ruff, mypy strict; run it with `TMPDIR` on a local disk (a network share breaks SQLite and links) |
 | CI (Linux, macOS, Windows) | written, not run | `.github/workflows/ci.yml` and `live.yml`; nothing is pushed |
 
@@ -45,11 +45,11 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
    English with ADR-023). ADR-020 is the error registry, ADR-021 the user environment, ADR-022
    the agent interfaces and ADR-023 the structure, gate, CI, test tree and technical log. New
    ADRs are English files in `docs/decisions/`; the index in `docs/DECISIONS.md` gets a row each.
-   5. **PRD and ARCHITECTURE in English**, with the new command names (README and USAGE are
-      done: DOC-2.1, the table of every variable stays, DEV-18.3, and the README examples run in
-      `tests/contract/test_readme_examples.py`); then `docs/research/` and `docs/specs/` (about
-      6,200 lines: translate, DEV-2.1; DEV-17.4 stops new files there); new plans go to
-      `docs/plans/`.
+   5. **ARCHITECTURE in English**, with the new command names and the new module tree (README,
+      USAGE and PRD are done: DOC-2.1, the table of every variable stays, DEV-18.3, and the README
+      examples run in `tests/contract/test_readme_examples.py`); then `docs/research/` and
+      `docs/specs/` (about 6,200 lines: translate, DEV-2.1; DEV-17.4 stops new files there); new
+      plans go to `docs/plans/`.
 2. **Migrate the calls to the changing producer APIs, after Kartograf and IMGWTools have
    DEV §19 on their development heads** (do not before; ECO-051, data-output plan step 5).
    Call sites, as of 2026-10-24:
