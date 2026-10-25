@@ -11,7 +11,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-023) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
-| Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins commits `8e9bcbb` (Kartograf) and `0d98f3b` (IMGWTools) until the tags `v0.8.0` and `v3.0.0` exist |
+| Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins commits `8e9bcbb` (Kartograf) and `0d98f3b` (IMGWTools) until the tags `v0.8.0` and `v3.0.0` exist; the move of the IMGWTools pin to the head of its `feature/data-output` is started on the branch `feature/imgwtools-data-output` (Next 2) |
 | Extractors | in progress | missing: numbers with units; the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
@@ -51,27 +51,58 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
       `retman.toml` mention is not); new plans go to `docs/plans/`. README, USAGE, PRD and
       ARCHITECTURE are English; PRD N-09 follows the Nogat plan (`nogat-retman` on PyPI in
       phase 6, with the author's approval).
-2. **Migrate the calls to the changing producer APIs, after Kartograf and IMGWTools have
-   DEV §19 on their development heads** (do not before; ECO-051, data-output plan step 5).
-   Call sites, as of 2026-10-24:
-   - `src/retman/tools/kartograf/client.py` lines 9, 188, 195, 258, 273: `output_dir=` passed
-     to `validate_command`, `run_command`, `check_command` and shown on the command line
-     becomes `root=` (`--root`).
-   - `src/retman/tools/kartograf/handlers.py` lines 84 and 137: `DownloadManager(output_dir=...)`
-     becomes `root=`.
-   - `src/retman/tools/imgwtools/client.py` lines 62 to 71: `reference_data_dir` is exported as
-     `IMGW_DATA_DIR` and becomes `IMGW_REFERENCE_DIR`; lines 95 to 101 and 161 to 174 pass
-     `root` and show `--root`: recheck against the default root `<data_dir>/imgw` and `IMGW_ROOT`
-     (was `IMGW_STORE_ROOT`); `src/retman/stores.py` lines 19 to 22 and 183 to 185 (marker
-     `imgw-store.json`, `store init`) follow the marker rules of DEV-19.12 and DEV-19.13.
-   - Error codes: the Kartograf and IMGWTools codes become registry codes in the tools
-     (`no_coverage` to `no_data`, `download_failed` to `source_unavailable`, and so on, ERR §4):
-     delete `_TOOL_CODES` in `src/retman/adapters/catalog.py`, and change the `[errors]` texts
-     in `src/retman/tools/*/pl.toml` (keyed by `ToolError.tool_code`), the exemptions in
-     `src/retman/devtools/readers/*.py`, the tests under `tests/integration/tools/` and
-     `tests/contract/test_tool_conformance.py`.
-   - `store_dir` of `[retman.tools.kartograf]` and `[retman.tools.imgwtools]` keeps meaning the
-     store root (default `<data_dir>/kartograf` and `<data_dir>/imgw`, ADR-021). Then USAGE, ARCHITECTURE, CHANGELOG.
+2. **Migrate the calls to the changing producer APIs** (ECO-051, data-output plan step 5).
+   - **IMGWTools: not done; start from the branch `feature/imgwtools-data-output`** (from
+     `chore/nogat-2.1` at `f6ac4d1`, no migration commit yet). Target: the head
+     `c16422dd67199981072a3d124e5bf00828868ff6` of IMGWTools `feature/data-output` (its CHANGELOG
+     "Migration guide: data output", its PROGRESS item 3). Steps already tried:
+     1. Pin: change the `imgwtools[store]` commit of the `tools` group, `uv lock`,
+        `uv sync --locked --all-extras`. GitHub has no such commit until that branch is pushed, so
+        put it into the uv git cache of the IMGWTools URL first (`git fetch` of
+        `~/workspace/IMGWTools` `feature/data-output` into the database below
+        `~/.cache/uv/git-v1/db/`; done on this machine).
+     2. Defect of that commit: `import imgwtools` needs `pydantic_settings`, which IMGWTools lists
+        only in its `api` and `cli` extras. Workaround: `pydantic-settings>=2.7` in the `tools`
+        group, in a separate last commit; drop it and re-pin when IMGWTools moves it to its
+        dependencies (reported to the coordinator, who sends the fixed hash).
+     3. First run of the suite on that pin: 23 of 3,051 tests fail: `path` is `output` for
+        `series export` and `store export` (8 tests and the client); `datasets download` has the
+        `DownloadReport` fields `mode`, `output_dir`, `root`, `items`, `files`, `cancelled` and
+        refuses a dataset outside the store without `output_dir` (the conformance check X3, the
+        dataset test); no `[errors.forbidden]` text (X8); `created` and `reused` are `new` and
+        `unchanged`; English tool texts (`poza zakresem`, an empty range is `validation_error`);
+        the catalog has 38 commands (`commands list`).
+     4. Code to change (file and line as of `f6ac4d1`): `tools/imgwtools/client.py` 62 to 71
+        (`IMGW_DATA_DIR` is `IMGW_REFERENCE_DIR`), 91 to 101 (no `root` beside `output_dir`, they
+        exclude each other), 235 to 240 and 272 (`output`; the export result is `{output,
+        files[]}`, not a path), the `files` of a download from `files[]` (`path`, `size_bytes`,
+        `sha256`, `status`); `calls.py` 226 to 228 and `calls_archives.py` 271 to 272 (`path` is
+        `output`; no `force`, every run has its own result folder); `calls_archives.py` 88 to 99
+        (`output` is `output_dir`; while planning there is no folder, so decide on a stand-in such
+        as the project folder); `describe.py` 717 and `describe_archives.py` 104 to 125 (`new`,
+        `unchanged`); `plans.py` 17 and `check.py` 23 (`nieopublikowany` is `not published`: one
+        constant, and the test that the comment promises against `imgwtools.fetch.UNPUBLISHED`;
+        plan item errors in the fixtures are English); `[errors.forbidden]` in the adapter's
+        `pl.toml` and `en.toml`; `stores.py` (marker fields `tool`, `created_at`,
+        `producer_version`; a root with `archives/`, `series/`, `stations/` or `pmaxtp/` and no
+        marker is `store_unavailable`, `no_marker`, and `store init` fixes it: a new
+        `imgw_store_state` state and doctor text; fixtures that write the old marker). Retman sets
+        no `IMGW_STORE_ROOT`, passes `root` from `store_dir` and keeps that setting.
+        Then README, USAGE, ARCHITECTURE 3.2.11, CHANGELOG. An idea, not decided: the English
+        `detail` of a tool error reaches Polish sentences as `{detail}`;
+        `Message.localized("pl")` of IMGWTools can write it in Polish.
+   - **Kartograf: waits for its `feature/data-output`.** Call sites, in
+     `src/retman/tools/kartograf/client.py`: lines 9, 188, 195, 258, 273 (`output_dir=` to
+     `validate_command`, `run_command`, `check_command` and on the command line becomes `root=`,
+     `--root`) and, in `handlers.py`, lines
+     84 and 137 (`DownloadManager(output_dir=...)` becomes `root=`). Error codes: the Kartograf
+     rows of `_TOOL_CODES` in `src/retman/adapters/catalog.py` (`no_coverage` to `no_data`,
+     `download_failed` to `source_unavailable`, and so on, ERR §4) go, and so do the
+     `[errors]` texts keyed by them in `src/retman/tools/kartograf/pl.toml` and `en.toml` (from
+     line 243), the exemptions in `src/retman/devtools/readers/kartograf.py`, and the tests under
+     `tests/integration/tools/kartograf/` and `tests/contract/test_tool_conformance.py`.
+     `store_dir` of `[retman.tools.kartograf]` keeps meaning the store root (default
+     `<data_dir>/kartograf`, ADR-021). Then USAGE, ARCHITECTURE, CHANGELOG.
 3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
    `v3.0.0` once they exist (REL-5.3), run `uv lock` and the gate.
 4. Review `src/retman/eval/commands.jsonl` (614 commands, an agent draft), run `retman-eval`
