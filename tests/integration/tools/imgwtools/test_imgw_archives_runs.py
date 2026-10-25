@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 from imgw_ops_support import TEXTS, YEARS, context, execute, operations, station
-from imgw_store_files import write_layout, write_server_state
+from imgw_store_files import write_damaged_marker, write_layout, write_server_state
 from imgw_support import (
     PlanStatus,
     fixture_store,
@@ -203,20 +203,22 @@ def test_init_preview_says_what_will_happen_and_refuses_foreign_data(
         settings = {"store_dir": str(folder)}
         return preview("init_imgw_store", {}, FakeToolClient(), settings=settings)
 
-    empty, foreign, marked, unmarked, keys = (
+    empty, foreign, marked, unmarked, keys, damaged = (
         tmp_path / "empty",
         tmp_path / "foreign",
         tmp_path / "marked",
         tmp_path / "unmarked",
         tmp_path / "keys",
+        tmp_path / "damaged",
     )
-    for folder in (empty, foreign, marked, unmarked, keys):
+    for folder in (empty, foreign, marked, unmarked, keys, damaged):
         folder.mkdir()
     (foreign / "data.txt").write_text("x")
     # A store the tool built, not a marker written by hand (DEV-10.6)
     shutil.copytree(fixture_store(), marked, dirs_exist_ok=True)
     write_layout(unmarked, "series")
     write_server_state(keys)
+    write_damaged_marker(damaged)
 
     assert state(tmp_path / "new").rows[1][1].startswith("folder nie istnieje")
     assert state(empty).rows[1][1].startswith("pusty folder")
@@ -225,6 +227,10 @@ def test_init_preview_says_what_will_happen_and_refuses_foreign_data(
     # The key file of the REST server is not store content: the tool takes the folder
     assert state(keys).rows[1][1].startswith("pusty folder")
     assert "nie jest magazynem IMGW" in state(foreign).problems[0].text
+    # A marker the tool cannot read is a damaged store, not "other files"
+    (problem,) = state(damaged).problems
+    assert "imgw-store.json" in problem.text and "jest nieczytelny" in problem.text
+    assert "nie jest magazynem IMGW" not in problem.text
 
 
 # --- offline runs on the real tool ----------------------------------------------------

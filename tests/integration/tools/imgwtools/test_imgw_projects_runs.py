@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 from imgw_ops_support import TEXTS, YEARS, context, execute, operations, station
-from imgw_store_files import write_layout, write_server_state
+from imgw_store_files import write_damaged_marker, write_layout, write_server_state
 from imgw_support import (
     fixture_store,
     isolate_environment,
@@ -281,12 +281,14 @@ def test_init_refuses_a_project_inside_the_store_and_a_manifest_of_another_store
 
 
 def store_folders(tmp_path: Path) -> dict[str, Path]:
-    """Store folders a project meets: empty, a layout without a marker, a key file."""
-    folders = {name: tmp_path / name for name in ("empty", "unmarked", "keys")}
+    """Store folders a project meets: empty, no marker, a key file, a damaged marker."""
+    names = ("empty", "unmarked", "keys", "damaged")
+    folders = {name: tmp_path / name for name in names}
     for folder in folders.values():
         folder.mkdir()
     write_layout(folders["unmarked"])
     write_server_state(folders["keys"])
+    write_damaged_marker(folders["damaged"])
     return folders
 
 
@@ -313,8 +315,10 @@ def test_the_plan_of_a_project_refuses_an_unmarked_layout_and_a_key_file_folder(
         assert problems(operation, folders["empty"], where) == []
         (unmarked,) = problems(operation, folders["unmarked"], where)
         (keys,) = problems(operation, folders["keys"], where)
+        (damaged,) = problems(operation, folders["damaged"], where)
         assert "ma układ magazynu IMGW, ale nie ma znacznika" in unmarked
         assert "nie jest jeszcze utworzony" in keys
+        assert "imgw-store.json" in damaged and "jest nieczytelny" in damaged
 
 
 def test_the_tool_refuses_the_store_folders_that_the_plan_of_a_project_refuses(
@@ -340,6 +344,9 @@ def test_the_tool_refuses_the_store_folders_that_the_plan_of_a_project_refuses(
         "empty": (True, None),
         "unmarked": (False, "store_unavailable"),
         "keys": (False, "store_unavailable"),
+        # The tool's project init checks the store itself: store_unavailable
+        # (reason unsupported) where `store init` raises data_error (invalid_marker)
+        "damaged": (False, "store_unavailable"),
     }
 
 

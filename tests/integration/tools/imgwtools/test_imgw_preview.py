@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from imgw_store_files import write_layout, write_server_state
+from imgw_store_files import write_damaged_marker, write_layout, write_server_state
 from imgw_support import (
     build_store,
     fixture_store,
@@ -182,7 +182,7 @@ def test_a_marker_the_tool_cannot_read_is_named_and_not_taken_for_other_files(
 ):
     damaged = tmp_path / "damaged"
     damaged.mkdir()
-    (damaged / "imgw-store.json").write_text("{", encoding="utf-8")
+    write_damaged_marker(damaged)
     client = fake_store({"exists": True, "supported": False, "schema": None})
 
     result = review(

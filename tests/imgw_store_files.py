@@ -18,3 +18,8 @@ def write_layout(folder: Path, tree: str = "archives") -> None:
 def write_server_state(folder: Path) -> None:
     """The key file of the tool's REST server, which a default store also holds."""
     (folder / "api_keys.json").write_text("{}", encoding="utf-8")
+
+
+def write_damaged_marker(folder: Path) -> None:
+    """A marker the tool cannot read (it is not JSON): the store is damaged."""
+    (folder / "imgw-store.json").write_text("{", encoding="utf-8")
