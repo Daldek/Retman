@@ -17,7 +17,7 @@ MANIFEST: ManifestSpec = {
     # The series are Parquet files: the [store] extra brings pyarrow
     "source": "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools",
     "supported_versions": ">=3.0.0,<4",
-    "translations": {"pl": "pl.toml"},
+    "translations": {"pl": "pl.toml", "en": "en.toml"},
     "client": "retman.tools.imgwtools.client:create_client",
     "operations": [*DATA_OPERATIONS, *ARCHIVE_OPERATIONS, *PROJECT_OPERATIONS],
 }

@@ -263,6 +263,36 @@ def test_main_reject_and_cancel_preserve_project_journal(
     assert not (project / "retman-output" / "001_make_dem").exists()
 
 
+@pytest.mark.parametrize(
+    ("answers", "status", "recorded"),
+    [("y", 0, None), ("n", 130, "rejected"), ("cancel", 130, "cancelled")],
+)
+def test_main_the_dialog_speaks_english_and_takes_the_answer_words_of_the_language(
+    command_args,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    answers: str,
+    status: int,
+    recorded: str | None,
+):
+    config_args, project = command_args
+    monkeypatch.setattr("sys.stdin", TerminalInput(f"1\n{answers}\n"))
+
+    code = cli.main(
+        plan_run(config_args, f"Zrób NMT dla {SHEET}", "--lang", "en"),
+        backend=FakeDecisionBackend({"make_dem": "make_dem"}),
+        project_dir=project,
+    )
+    transcript = capsys.readouterr().out
+    log = (project / "retman-output" / "journal.jsonl").read_text()
+
+    assert code == status
+    assert "Run it? [y]es / [n]o / [c]hange" in transcript
+    assert ("Result #1" in transcript) == (status == 0)
+    assert ("Wykonać?" in transcript) is False
+    assert (f'"status": "{recorded}"' in log) == (recorded is not None)
+
+
 def test_main_cancelled_with_json_prints_the_cancelled_envelope(
     command_args, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):

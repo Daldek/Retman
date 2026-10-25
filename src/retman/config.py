@@ -30,7 +30,6 @@ from retman.environment import (
     environment,
 )
 from retman.exceptions import ConfigError
-from retman.i18n.loader import text_language
 
 DecisionBackendName = Literal["basal", "openai_compatible"]
 ConfidenceSetting = Literal["auto", "logprobs", "consistency", "none"]
@@ -91,10 +90,9 @@ class DecisionConfig:
 class Settings:
     """Every setting but the model server: what a command without a model uses.
 
-    ``language`` is the language of the texts: ``lang``, or Polish while ``lang``
-    has no translation (the English texts are not written yet). ``tools`` holds the
-    ``[retman.tools.<tool>]`` tables, the settings a tool client needs
-    (ARCHITECTURE 9.1): paths are absolute ``str``, ``workers`` an ``int``,
+    ``language`` is the language of the texts: the setting ``lang``, ``pl`` or ``en``.
+    ``tools`` holds the ``[retman.tools.<tool>]`` tables, the settings a tool client
+    needs (ARCHITECTURE 9.1): paths are absolute ``str``, ``workers`` an ``int``,
     ``update`` a ``str``. Tools without settings are absent.
     """
 
@@ -221,7 +219,7 @@ def _settings(env: Environment) -> Settings:
 
     return Settings(
         path=env.file.path,
-        language=text_language(value("lang")),
+        language=text("lang"),
         log_level=cast(LogLevel, value("log_level")),
         text_backend=cast(Literal["none"], value("text.backend")),
         results_dir=value("output.results_dir"),

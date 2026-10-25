@@ -35,13 +35,13 @@ _METRICS = (
 )
 
 
-def _number(number: int | float) -> str:
-    return f"{number:.12g}".replace(".", ",")
+def _number(number: int | float, texts: Texts) -> str:
+    return texts.decimal(number, ".12g")
 
 
-def _rounded(number: float) -> str:
+def _rounded(number: float, texts: Texts) -> str:
     """Fractions and seconds: two decimals are enough at tens of commands."""
-    return f"{number:.2f}".replace(".", ",")
+    return texts.decimal(number, ".2f")
 
 
 def _ratio(ratio: Ratio | None, texts: Texts) -> str:
@@ -51,7 +51,7 @@ def _ratio(ratio: Ratio | None, texts: Texts) -> str:
         return texts.get("eval.no_sample", count=ratio.count, total=ratio.total)
     return texts.get(
         "eval.fraction",
-        fraction=_rounded(ratio.fraction),
+        fraction=_rounded(ratio.fraction, texts),
         count=ratio.count,
         total=ratio.total,
     )
@@ -87,11 +87,15 @@ def _group_rows(groups: dict[str, Measures], texts: Texts) -> list[list[str]]:
 
 
 def _timing(
-    timing: Timing | None, texts: Texts, render: Callable[[float], str]
+    timing: Timing | None, texts: Texts, render: Callable[[float, Texts], str]
 ) -> list[str]:
     if timing is None:
         return [texts.get("eval.not_applicable")] * 3
-    return [render(timing.median), render(timing.p90), render(timing.maximum)]
+    return [
+        render(timing.median, texts),
+        render(timing.p90, texts),
+        render(timing.maximum, texts),
+    ]
 
 
 def _errors(errors: list[ErrorCase], texts: Texts) -> list[str]:
@@ -198,7 +202,7 @@ def render_report(
                     ],
                     [
                         [
-                            _number(point.threshold),
+                            _number(point.threshold, texts),
                             _ratio(point.error, texts),
                             _ratio(point.coverage, texts),
                         ]
@@ -210,7 +214,7 @@ def render_report(
             lines.append(texts.get("eval.no_confidences"))
     if target_error is not None and summary.recommendations is not None:
         lines.extend(
-            ["", texts.get("eval.recommendations", target=_number(target_error))]
+            ["", texts.get("eval.recommendations", target=_number(target_error, texts))]
         )
         for category, recommendation in summary.recommendations.items():
             if recommendation.point is None:
@@ -226,7 +230,7 @@ def render_report(
                     texts.get(
                         "eval.recommendation",
                         category=texts.get(f"eval.category_{category}"),
-                        threshold=_number(point.threshold),
+                        threshold=_number(point.threshold, texts),
                         accepted=point.error.total,
                         total=point.coverage.total,
                         error=_ratio(point.error, texts),
@@ -239,7 +243,7 @@ def render_report(
                             category=texts.get(f"eval.category_{category}"),
                             accepted=point.error.total,
                             minimum=recommendation.minimum_sample,
-                            target=_number(target_error),
+                            target=_number(target_error, texts),
                         )
                     )
     lines.extend(

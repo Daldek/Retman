@@ -39,7 +39,7 @@ from retman.devtools.model import (
 from retman.devtools.report import finding_text
 from retman.doctor import run_doctor
 from retman.eval.dataset import EvalCommand
-from retman.i18n.loader import load_core_texts
+from retman.i18n.loader import load_core_texts, localize
 from retman.registry.manifest import ManifestSpec, OperationSpec
 from retman.testing import FakeToolClient
 
@@ -1216,7 +1216,8 @@ def test_check_json_is_an_envelope_with_a_unit_per_tool(
     assert (tool["tool"], tool["status"], tool["points"]) == (TOOL, "checked", 12)
     gap = next(f for f in tool["findings"] if f["check"] == "X4")
     assert gap["severity"] == "error" and gap["args"]["value"] == "2m"
-    assert "„2m”" in gap["text"]
+    # the document is English whatever lang says (AGI-9.2)
+    assert "“2m”" in gap["text"] and "accepts the value" in gap["text"]
 
 
 def test_check_json_of_a_conforming_tool_is_ok_with_an_ok_unit(
@@ -1645,8 +1646,9 @@ def conformance(
 
 
 def doctor_lines(report: Any, section: str = "conformance") -> list[tuple[str, str]]:
+    """The lines of a section as the Polish terminal shows them."""
     return [
-        (check.status, check.text)
+        (check.status, localize(check.text, TEXTS))
         for found in report.sections
         if found.key == section
         for check in found.checks
@@ -1688,7 +1690,7 @@ def test_doctor_names_a_value_a_newer_tool_offers_without_blocking(
     assert status == "error" and "„2m”" in text and "przyjmuje wartość" in text
     section = next(s for s in report.sections if s.key == "conformance")
     assert (
-        section.checks[0].hint
+        localize(section.checks[0].hint, TEXTS)
         == "uruchom retman scaffold check; opisy tego narzędzia wymagają przeglądu"
     )
     # a drifted description is the author's to fix, not a reason to stop working

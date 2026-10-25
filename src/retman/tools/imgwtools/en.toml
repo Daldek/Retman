@@ -1,0 +1,1053 @@
+[categories.imgw_catalog]
+label = "IMGW stations and data register"
+description = "Finding IMGW-PIB and ČHMÚ hydrological and meteorological stations by name, river or code, building the station catalog in the store, list of available datasets and providers"
+
+[categories.imgw_current]
+label = "IMGW current data and warnings"
+description = "Current measurements from the IMGW-PIB server: water level and flow, meteorological and synoptic data, hydrological and meteorological warnings, station alarm and warning levels"
+
+[categories.imgw_pmaxtp]
+label = "PMAXTP maximum precipitation"
+description = "Probable maximum precipitation PMAXTP (precipitation quantiles for a duration and probability) for a point with given coordinates or for a stored grid cell"
+
+[categories.imgw_series]
+label = "IMGW and ČHMÚ station time series"
+description = "Daily and monthly series of IMGW-PIB and ČHMÚ stations: precipitation, flows, water levels, temperatures; export to CSV, station data coverage, building series in the store"
+
+[categories.imgw_archives]
+label = "IMGW archives and data store"
+description = "IMGW-PIB and ČHMÚ data archives: downloading archive files, checking and synchronising the local store, exporting stored archives, initialising and inspecting the store"
+
+[categories.imgw_projects]
+label = "IMGW data projects"
+description = "IMGW data projects: task manifest in the project folder, adding and removing tasks, downloading and pinning data versions, checking whether data is up to date and checksums"
+
+[operations.find_imgw_stations]
+label = "Find IMGW and ČHMÚ stations"
+description = "Find IMGW-PIB and ČHMÚ hydrological or meteorological stations (stacje) by name, river, kind or provider: station codes, names, rivers, coordinates; water gauges (wodowskazy), precipitation, climate and synoptic stations; from the server or from the station catalog in the store."
+summary = "Done. Result #{number}: the list of stations ({count}) saved in a CSV file."
+
+[operations.find_imgw_stations.params.data_source]
+label = "Station list source"
+question = "Where should the station list come from: the IMGW server (network) or the catalog in the local store (no network)?"
+model_question = "Does the command say where to take the station list from: the server or the local store?"
+help = "The server returns current station lists and requires internet access. The catalog in the store works without a network, but it must be built first (“Build the IMGW station catalog”)."
+options.server.label = "From the server (network)"
+options.server.description = "from the IMGW server, current station list, from the internet, online, download the list"
+options.store.label = "From the catalog in the store (no network)"
+options.store.description = "from the store, from the station catalog, locally, offline, without internet, already built catalog"
+options.unspecified.description = "The command does not say where to take the station list from"
+
+[operations.find_imgw_stations.params.provider]
+unset = "both providers (IMGW-PIB and ČHMÚ)"
+label = "Data provider"
+question = "Stations of which provider: IMGW-PIB (Poland) or ČHMÚ (Czechia)?"
+model_question = "Does the command limit stations to one provider: IMGW-PIB (Poland) or ČHMÚ (Czechia)?"
+options.imgw_pib.label = "IMGW-PIB (Poland)"
+options.imgw_pib.description = "IMGW, IMGW-PIB, Polish stations, Poland, Instytut Meteorologii i Gospodarki Wodnej"
+options.chmi.label = "ČHMÚ (Czechia)"
+options.chmi.description = "ČHMÚ, CHMU, CHMI, Czech stations, Czechia, Český hydrometeorologický ústav"
+options.unspecified.description = "The command does not limit stations to one provider"
+
+[operations.find_imgw_stations.params.kind]
+unset = "all kinds (hydrological and meteorological)"
+label = "Station kind"
+question = "Which stations: hydrological (water gauges) or meteorological?"
+model_question = "Does the command limit stations to hydrological or meteorological ones?"
+options.hydro.label = "Hydrological"
+options.hydro.description = "hydrological, hydro, water gauges (wodowskazy), water gauge posts (posterunki wodowskazowe), water level, flow, rivers"
+options.meteo.label = "Meteorological"
+options.meteo.description = "meteorological, meteo, precipitation, climate, synoptic, weather, rain gauges (deszczomierze)"
+options.unspecified.description = "The command does not limit the station kind"
+
+[operations.find_imgw_stations.params.query]
+unset = "no name filter (all stations)"
+label = "Name or river"
+question = "What station name or river should be searched for?"
+example = "Wisła"
+help = "Give part of a station name, a town or a river (e.g. “Poznań”, “na Wiśle”); letter case and Polish diacritics do not matter."
+
+[operations.build_imgw_station_catalog]
+label = "Build the station catalog in the store"
+description = "Build or refresh the catalog of IMGW-PIB or ČHMÚ stations in the local IMGW store (stations.geojson): lists of stations with coordinates, needed to find stations by name without the internet; writes to the store, requires network access."
+summary = "Done. Result #{number}: {provider} station catalog in the store ({station_count} stations, without location: {without_location}, status: {status})."
+
+[operations.build_imgw_station_catalog.check]
+notice = "I will ask the IMGW-PIB or ČHMÚ servers (station lists) whether the catalog in the store is up to date."
+
+[operations.build_imgw_station_catalog.params.provider]
+label = "Data provider"
+question = "Which provider's station catalog should be built: IMGW-PIB or ČHMÚ?"
+model_question = "Which provider's station catalog should the command build: IMGW-PIB (Poland) or ČHMÚ (Czechia)?"
+help = "The catalog is separate for each provider; for Czech data, build the ČHMÚ catalog."
+options.imgw_pib.label = "IMGW-PIB (Poland)"
+options.imgw_pib.description = "IMGW, IMGW-PIB, Polish stations, Poland, Instytut Meteorologii i Gospodarki Wodnej (Institute of Meteorology and Water Management)"
+options.chmi.label = "ČHMÚ (Czechia)"
+options.chmi.description = "ČHMÚ, CHMU, CHMI, Czech stations, Czechia, Český hydrometeorologický ústav"
+options.unspecified.description = "The command does not specify the provider of the station catalog"
+
+[operations.build_imgw_station_catalog.params.user_locations]
+unset = "none (only locations from IMGW lists and from series in the store)"
+label = "File with station locations"
+question = "Which CSV file with station locations should be added to the catalog?"
+example = "polozenia_stacji.csv"
+help = "An optional CSV file with the columns station_code, latitude and longitude (optionally source) supplies coordinates for stations that are not in the IMGW lists."
+
+[operations.list_imgw_datasets]
+label = "List of IMGW and ČHMÚ datasets"
+description = "Show which datasets and providers IMGWTools supports: daily, monthly and half-yearly hydrological and meteorological data, year range, variables, licences, and which datasets are in the store; works offline."
+summary = "Done. Result #{number}: datasets: {datasets}, providers: {providers}."
+
+[operations.list_imgw_datasets.params.provider]
+unset = "both providers (IMGW-PIB and ČHMÚ)"
+label = "Data provider"
+question = "Datasets from which provider should be shown: IMGW-PIB or ČHMÚ?"
+model_question = "Does the command limit the list of datasets to one provider: IMGW-PIB (Poland) or ČHMÚ (Czechia)?"
+options.imgw_pib.label = "IMGW-PIB (Poland)"
+options.imgw_pib.description = "IMGW, IMGW-PIB, Polish stations, Poland, Instytut Meteorologii i Gospodarki Wodnej (Institute of Meteorology and Water Management)"
+options.chmi.label = "ČHMÚ (Czechia)"
+options.chmi.description = "ČHMÚ, CHMU, CHMI, Czech stations, Czechia, Český hydrometeorologický ústav (Czech Hydrometeorological Institute)"
+options.unspecified.description = "The command does not limit the list to one provider"
+
+[operations.list_imgw_datasets.params.kind]
+unset = "all kinds (hydrological and meteorological)"
+label = "Kind of datasets"
+question = "Which datasets should be shown: hydrological or meteorological?"
+model_question = "Does the command limit the list of datasets to hydrological or meteorological ones?"
+options.hydro.label = "Hydrological"
+options.hydro.description = "hydrological, hydro, water level, flow, gauging stations (wodowskazy)"
+options.meteo.label = "Meteorological"
+options.meteo.description = "meteorological, meteo, precipitation, temperature, climate, synoptic"
+options.unspecified.description = "The command does not limit the kind of datasets"
+
+[operations.fetch_current_observations]
+label = "Current station measurements"
+description = "Download current measurement data from the IMGW-PIB server: current water level, discharge and water temperature from hydrological stations, meteorological or synoptic data (air temperature, wind, humidity, precipitation, pressure), for all stations or a single one."
+summary = "Done. Result #{number}: current station data, rows: {rows} (fetched {fetched_at})."
+
+[operations.fetch_current_observations.params.source]
+label = "Type of current data"
+question = "Which current data should be downloaded: hydrological, meteorological or synoptic?"
+model_question = "What type of current data does the command mention: hydrological (water level, discharge), meteorological or synoptic?"
+help = "Hydrological data is water level, discharge and water temperature from gauging stations; meteorological data comes from automatic stations; synoptic data comes from synoptic stations."
+options.hydro.label = "Hydrological (water level, discharge)"
+options.hydro.description = "hydrological, water level, water stage, discharge, flow, water temperature, wodowskaz (gauge), river, ice phenomena"
+options.meteo.label = "Meteorological (automatic stations)"
+options.meteo.description = "meteorological, air temperature, wind, humidity, 10-minute precipitation, automatic stations"
+options.synop.label = "Synoptic"
+options.synop.description = "synoptic, synop, synoptic stations, temperature, pressure, visibility, cloud cover, weather"
+options.unspecified.description = "The command does not say which current data it concerns"
+
+[operations.fetch_current_observations.params.station]
+unset = "all stations"
+label = "Station"
+question = "From the station with which name or code should the data be downloaded?"
+example = "Poznań-Bogdanka"
+help = "Give the station name (e.g. “Poznań-Bogdanka”) or the 9-digit IMGW-PIB code. Without a station I will download data for all stations."
+
+[operations.fetch_current_observations.params.synop_station]
+unset = "all synoptic stations"
+label = "Synoptic station"
+question = "Which synoptic station should be selected (name or 5-digit code)?"
+example = "Warszawa"
+help = "Give part of the synoptic station name or its 5-digit code (e.g. code 12375). Without a station I will download data for all synoptic stations."
+
+[operations.fetch_imgw_warnings]
+label = "Hydrological and meteorological warnings"
+description = "Download current IMGW-PIB warnings: hydrological (rising water, exceeded warning and alarm levels, hydrological drought) and meteorological (strong wind, storms, heavy rain, frost), with the danger level, area and period of validity."
+summary = "Done. Result #{number}: warnings in force: {rows}."
+
+[operations.fetch_imgw_warnings.params.kind]
+unset = "all (hydrological and meteorological)"
+label = "Warning type"
+question = "Which warnings should be downloaded: hydrological or meteorological?"
+model_question = "Does the command limit the warnings to hydrological or meteorological ones?"
+options.hydro.label = "Hydrological"
+options.hydro.description = "hydrological, hydro, rising water (wezbranie), flood (powódź), warning levels (stany ostrzegawcze), hydrological drought (susza hydrologiczna), rivers"
+options.meteo.label = "Meteorological"
+options.meteo.description = "meteorological, meteo, weather, wind, storms, downpours (ulewy), snow, frost, heat (upał)"
+options.unspecified.description = "The command does not limit the type of warnings"
+
+[operations.fetch_hydro_states]
+label = "Water levels at stations (alarm and warning)"
+description = "Download the water level at IMGW-PIB hydrological stations relative to warning and alarm levels: which stations are at alarm, warning, high or normal level; all stations or only the main ones; with station coordinates."
+summary = "Done. Result #{number}: station water levels: {rows}."
+
+[operations.fetch_hydro_states.params.main_only]
+label = "Main stations only"
+question = "Download only the main hydrological stations?"
+model_question = "Does the command say it concerns only the main hydrological stations?"
+help = "Main stations are selected, most important water gauges. Without this restriction the list covers all hydrological stations."
+
+[operations.get_pmaxtp]
+label = "PMAXTP maximum precipitation for a point"
+description = "Download probable maximum precipitation PMAXTP from the IMGW server for a point with the given coordinates: a table of precipitation quantiles for durations from 5 to 180 minutes and exceedance probabilities, POT or AMP method, with the option of saving the grid cell in the store."
+summary = "Done. Result #{number}: PMAXTP table (method {method}) for point {latitude}°N, {longitude}°E, rows: {rows}."
+
+[operations.get_pmaxtp.params.point]
+label = "Point"
+question = "For which point (coordinates) should maximum precipitation be downloaded?"
+example = "52.23, 21.01"
+help = "Give coordinates in WGS84 (latitude and longitude, e.g. 52.23 21.01) or in PL-1992. PMAXTP covers the area of Poland: latitude 49–55°, longitude 14–24.5°."
+
+[operations.get_pmaxtp.params.method]
+label = "Calculation method"
+question = "Which method should be used to download PMAXTP: POT or AMP?"
+model_question = "Which PMAXTP calculation method does the command mention: POT or AMP?"
+help = "POT is the peaks-over-threshold method, AMP the annual maxima method; the results of the two methods differ."
+options.pot.label = "POT (peaks over threshold)"
+options.pot.description = "POT, peaks over threshold, threshold method (metoda ponadprogowa), maxima exceeding a threshold"
+options.amp.label = "AMP (annual maxima)"
+options.amp.description = "AMP, annual maximum precipitation, annual maxima method (metoda maksimów rocznych), yearly maxima"
+options.unspecified.description = "The command does not specify POT or AMP"
+
+[operations.get_pmaxtp.params.storage]
+label = "Saving in the store"
+question = "Should the PMAXTP cell also be saved in the IMGW store, or only in the result file?"
+model_question = "Does the command tell it to save PMAXTP data in the store, or say the result should be only in a file?"
+help = "Saving in the store keeps the grid cell for later offline reading; the result file alone leaves nothing in the store."
+options.none.label = "Result file only"
+options.none.description = "result file only, no saving to the store, one-off, without a store"
+options.store.label = "Also save in the store"
+options.store.description = "save in the store, remember the cell, keep in the store, for later, for offline reading"
+options.unspecified.description = "The command says nothing about saving to the store"
+
+[operations.get_pmaxtp.params.probability]
+unset = "all probabilities from the PMAXTP table"
+label = "Probability"
+question = "For which exceedance probability should the table be narrowed (e.g. 1%, 2%, 10%)?"
+example = "1%"
+help = "Optional result filter: the PMAXTP table contains several probabilities; give the ones you are interested in (e.g. 1% and 10%)."
+
+[operations.get_pmaxtp.params.duration]
+unset = "all durations from the PMAXTP table"
+label = "Rainfall duration"
+question = "For which rainfall duration should the table be narrowed (e.g. 15 min, 1 h)?"
+example = "15 min"
+help = "Optional result filter: PMAXTP gives precipitation for durations from 5 to 180 minutes; give the ones you are interested in."
+
+[operations.read_stored_pmaxtp]
+label = "Read a stored PMAXTP cell"
+description = "Read from the local IMGW store a previously saved PMAXTP grid cell (indices ind_x and ind_y, e.g. 751/317) without internet: the table of maximum probable precipitation for that cell."
+summary = "Done. Result #{number}: PMAXTP table of cell {cell[ind_x]}/{cell[ind_y]} (method {method}), rows: {rows}."
+
+[operations.read_stored_pmaxtp.params.cell]
+label = "PMAXTP grid cell"
+question = "Which PMAXTP grid cell should be read (ind_x/ind_y)?"
+example = "751/317"
+help = "Give the cell indices, e.g. 751/317 or “ind_x 751 ind_y 317”. You know the indices from the result of an earlier PMAXTP download saved to the store."
+
+[operations.read_stored_pmaxtp.params.method]
+label = "Calculation method"
+question = "Which method should the cell be read for: POT or AMP?"
+model_question = "Which PMAXTP calculation method does the command mention: POT or AMP?"
+help = "In the store the cell is saved separately for each method."
+options.pot.label = "POT (peaks over threshold)"
+options.pot.description = "POT, peaks over threshold, threshold method (ponadprogowa), maxima exceeding a threshold"
+options.amp.label = "AMP (annual maxima)"
+options.amp.description = "AMP, annual maximum precipitation, annual maxima method, yearly maxima"
+options.unspecified.description = "The command specifies neither POT nor AMP method"
+
+[operations.export_station_series]
+label = "Export a station series to CSV"
+description = "Download or export the time series of a single station to CSV (szereg czasowy): daily precipitation, flows, water levels, temperature; IMGW-PIB, IMGW, ČHMÚ, Czech Republic; from the server via the store or from the local store."
+summary = "Done. Result #{number}: series of station {station_code} ({rows} rows, {first_date} – {last_date}) saved in a CSV file."
+
+[operations.export_station_series.check]
+notice = "I will ask the IMGW server which archives need to be downloaded to the store for this station and period (HEAD requests, without downloading the files)."
+
+[operations.export_station_series.params.dataset]
+label = "Dataset"
+question = "Which dataset should the series be exported from?"
+model_question = "What kind of data and from which station network does the command mention?"
+help = "The IMGW station list does not say whether a station is a precipitation or a climate station; specify the dataset and I will match the station to it. ČHMÚ hydrological and meteorological data cover the Czech Republic."
+options.pl_hydro_daily.label = "IMGW-PIB daily hydrological data"
+options.pl_hydro_daily.description = "daily hydrological data: water level, flow, water temperature; water gauge (wodowskaz); IMGW-PIB hydrological stations; rivers; daily"
+options.pl_hydro_monthly.label = "IMGW-PIB monthly hydrological data"
+options.pl_hydro_monthly.description = "monthly hydrological data: minimum, mean and maximum water level, flow and water temperature in a month; IMGW-PIB hydrological stations; monthly extremes"
+options.pl_hydro_semiannual.label = "IMGW-PIB half-year and annual hydrological data"
+options.pl_hydro_semiannual.description = "half-year and annual hydrological data: extremes of water level, flow and water temperature in the winter half-year, summer half-year and the year; IMGW-PIB hydrological stations"
+options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
+options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
+options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
+options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge (deszczomierz); daily precipitation"
+options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czech Republic)"
+options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, flow, water temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
+options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czech Republic)"
+options.cz_meteo_daily.description = "Czech meteorological data from ČHMÚ: precipitation, mean, maximum and minimum temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
+options.unspecified.description = "The command specifies neither the kind of data nor the station network (precipitation, climate, hydrology, IMGW-PIB or ČHMÚ)"
+
+[operations.export_station_series.params.station]
+label = "Station"
+question = "For which station (name or code) should the series be exported?"
+example = "Poznań-Ławica"
+help = "Give the station name, town or river, or a code: 9 digits (IMGW-PIB) or a WIGOS identifier (ČHMÚ). I match names against the station catalog in the store; if there is none, give the code."
+
+[operations.export_station_series.params.period]
+label = "Period"
+question = "What period of data should be exported (years or from–to dates)?"
+example = "2000–2020"
+help = "Give years (e.g. 2000–2020, “from the years 2010-2015”, year 2015) or dates (e.g. from 1.01.2000 to 31.12.2005). Whether the years are calendar or hydrological years is determined separately."
+
+[operations.export_station_series.params.year_type]
+label = "Year type"
+question = "Are the given years calendar years (1 Jan – 31 Dec) or hydrological years (1 Nov – 31 Oct)?"
+help = "The hydrological year runs from 1 November of the previous year to 31 October and is named after the year in which it ends (hydrological year 2020 is 1.11.2019 – 31.10.2020). The year type determines the date range and the year numbering in the file."
+options.hydrological.label = "Hydrological (1 Nov – 31 Oct)"
+options.calendar.label = "Calendar (1 Jan – 31 Dec)"
+
+[operations.export_station_series.params.data_source]
+label = "Data source"
+question = "Download the data from the IMGW server (network, tops up the store) or use the local store (no network)?"
+model_question = "Does the command say where to get the data from: the server or the local store?"
+help = "From the server: I will download the missing archives from the network into the store and build the series (the archives cover the whole country). From the store: I will use the series already there, without the internet."
+options.server.label = "From the server (network, tops up the store)"
+options.server.description = "download from the server, fetch, update the data, current data from the internet, top up the store"
+options.store.label = "From the local store (no network)"
+options.store.description = "from the store, locally, offline, already downloaded data, without the internet"
+options.unspecified.description = "The command does not specify the data source"
+
+[operations.export_station_series.params.variables]
+unset = "all variables of the dataset"
+label = "Variables"
+question = "Which variables (e.g. precipitation, discharge, water level) should be exported?"
+example = "discharge and water level"
+help = "Optionally narrow the file to selected variables of the dataset (e.g. Q, H, P); without this I export all variables of the dataset."
+
+[operations.show_station_coverage]
+label = "Station data coverage in the store"
+description = "Show which years and variables the IMGW store has station data (series) for: first and last day, number of measurements, gaps in the data; for one station, several or all stations of the dataset; without the internet."
+summary = "Done. Result #{number}: data coverage: {stations} stations, from {first} to {last}, gaps: {gaps_total}."
+
+[operations.show_station_coverage.params.dataset]
+label = "Dataset"
+question = "For which dataset should the coverage be shown?"
+model_question = "What kind of data, and from which station network, does the command concern?"
+help = "The IMGW station list does not say whether a station is a precipitation or a climate station; specify the dataset and I will match the station to it. ČHMÚ hydrological and meteorological data concern the Czech Republic."
+options.pl_hydro_daily.label = "IMGW-PIB daily hydrological data"
+options.pl_hydro_daily.description = "daily hydrological data: water level, discharge, water temperature; river gauge (wodowskaz); IMGW-PIB hydrological stations; rivers; daily"
+options.pl_hydro_monthly.label = "IMGW-PIB monthly hydrological data"
+options.pl_hydro_monthly.description = "monthly hydrological data: minimum, mean and maximum water level, discharge and water temperature in a month; IMGW-PIB hydrological stations; monthly extremes"
+options.pl_hydro_semiannual.label = "IMGW-PIB half-yearly and annual hydrological data"
+options.pl_hydro_semiannual.description = "half-yearly and annual hydrological data: extremes of water level, discharge and water temperature in the winter half-year, the summer half-year and the year; IMGW-PIB hydrological stations"
+options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
+options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum and mean air temperature, ground-level temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
+options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
+options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge (deszczomierz); daily precipitation"
+options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czech Republic)"
+options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, discharge, water temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
+options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czech Republic)"
+options.cz_meteo_daily.description = "Czech meteorological data from ČHMÚ: precipitation, mean, maximum and minimum temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
+options.unspecified.description = "The command does not specify the kind of data or the station network (precipitation, climate, hydrology, IMGW-PIB or ČHMÚ)"
+
+[operations.show_station_coverage.params.station]
+unset = "all stations of the dataset"
+label = "Stations"
+question = "For which stations should the data coverage be shown (names or codes)?"
+example = "Poznań-Ławica"
+help = "Give one or more stations (name or station code). Without a station I will show the coverage of all stations in the dataset, which makes a very long report."
+
+[operations.build_imgw_series]
+label = "Build dataset series in the store"
+description = "Build or refresh the time series of a dataset from archives saved in the IMGW store (Parquet files): needed after adding archives to the store; works offline, writes to the store."
+summary = "Done. Result #{number}: series of dataset {dataset} in the store: {status}, stations: {stations}."
+
+[operations.build_imgw_series.params.dataset]
+label = "Dataset"
+question = "For which dataset should the series be built?"
+model_question = "What kind of data and from which station network does the command mention?"
+help = "The IMGW station list does not say whether a station is a precipitation or a climate station; specify the dataset and I will match the station to it. ČHMÚ hydrological and meteorological data cover the Czech Republic."
+options.pl_hydro_daily.label = "IMGW-PIB daily hydrological data"
+options.pl_hydro_daily.description = "daily hydrological data: water level, discharge, water temperature; river gauge (wodowskaz); IMGW-PIB hydrological stations; rivers; every day"
+options.pl_hydro_monthly.label = "IMGW-PIB monthly hydrological data"
+options.pl_hydro_monthly.description = "monthly hydrological data: minimum, mean and maximum water level, discharge and water temperature in a month; IMGW-PIB hydrological stations; monthly extremes"
+options.pl_hydro_semiannual.label = "IMGW-PIB half-yearly and annual hydrological data"
+options.pl_hydro_semiannual.description = "half-yearly and annual hydrological data: extremes of water level, discharge and water temperature in the winter half-year, summer half-year and the year; IMGW-PIB hydrological stations"
+options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
+options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum and mean air temperature, ground-level temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
+options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
+options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge; daily rainfall"
+options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czech Republic)"
+options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, discharge, water temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
+options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czech Republic)"
+options.cz_meteo_daily.description = "Czech meteorological data from ČHMÚ: precipitation, mean, maximum and minimum temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
+options.unspecified.description = "The command does not specify the dataset from which the series should be built"
+
+[operations.download_hydro_archives]
+label = "Download hydrological archives to the result folder"
+description = "Download archive files of IMGW-PIB or ČHMÚ hydrological data to the result folder, without processing and without saving to the store: daily, monthly and half-yearly hydrological data (water level, discharge, water temperature), ice phenomena and river overgrowth; ZIP archives from the server, raw source data, packages by year."
+summary = "Done. Result #{number}: archives downloaded — files: {files} ({size}); the files are in the result folder."
+
+[operations.download_hydro_archives.params.dataset]
+label = "Dataset"
+question = "Archives of which hydrological dataset should be downloaded?"
+model_question = "What kind of hydrological data (daily, monthly, half-yearly, ice phenomena, Czechia) does the command mention?"
+help = "IMGW-PIB hydrological data is daily, monthly, or half-yearly and annual; ice phenomena and river overgrowth form a separate dataset. Czech data is the ČHMÚ dataset."
+options.pl_hydro_daily.label = "IMGW-PIB daily hydrological data"
+options.pl_hydro_daily.description = "daily hydrological data: water level, discharge, water temperature; gauge (wodowskaz); IMGW-PIB hydrological stations; rivers; everyday; hydro daily (hydro dobowe)"
+options.pl_hydro_monthly.label = "IMGW-PIB monthly hydrological data"
+options.pl_hydro_monthly.description = "monthly hydrological data: minimum, mean and maximum water level, discharge and water temperature in a month; IMGW-PIB hydrological stations; hydro monthly (hydro miesięczne)"
+options.pl_hydro_semiannual.label = "IMGW-PIB half-yearly and annual hydrological data"
+options.pl_hydro_semiannual.description = "half-yearly and annual hydrological data: extremes of water level, discharge and water temperature in the winter half-year, summer half-year and the year; IMGW-PIB hydrological stations"
+options.pl_hydro_phenomena.label = "IMGW-PIB ice phenomena and river overgrowth"
+options.pl_hydro_phenomena.description = "ice phenomena and river overgrowth: ice, frazil ice (śryż), ice cover, ice jam (zator), channel overgrowth; IMGW-PIB hydrological phenomena"
+options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czechia)"
+options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, discharge, water temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
+options.unspecified.description = "The command does not indicate which hydrological data the archives concern"
+
+[operations.download_hydro_archives.params.years]
+label = "Archive years"
+question = "Which years should the archives be downloaded for (e.g. “2000–2020”)?"
+example = "2000-2020"
+help = "Years are numbered by IMGW: the IMGW-PIB hydrological data archive uses the hydrological year (from 1 November of the previous year to 31 October), ČHMÚ data the calendar year. Give a range (“2000–2020”) or a list (“2010, 2012 and 2015”)."
+
+[operations.download_hydro_archives.params.hydro_params]
+label = "Half-yearly data parameters"
+question = "Which parameters should be downloaded: water level (H), discharge (Q), water temperature (T) or all?"
+model_question = "Which hydrological parameter does the command mention: water level, discharge, water temperature, or all?"
+help = "IMGW-PIB half-yearly and annual data is in separate files for each parameter."
+options.h.label = "Water level (H)"
+options.h.description = "water level, water stage, H, gauge (wodowskaz), cm"
+options.q.label = "Discharge (Q)"
+options.q.description = "discharge, flow rate, Q, cubic metres per second"
+options.t.label = "Water temperature (T)"
+options.t.description = "water temperature, T, degrees Celsius"
+options.all.label = "All (H, Q, T)"
+options.all.description = "all parameters, complete set, water level, discharge and water temperature"
+options.unspecified.description = "The command does not indicate the parameters of half-yearly data"
+
+[operations.download_hydro_archives.params.stations]
+label = "ČHMÚ stations"
+question = "Which ČHMÚ stations should the files be downloaded for? Give station codes (WIGOS identifiers) or station names."
+example = "0-203-1-001000"
+help = "ČHMÚ files are separate for each station, so stations are required. A WIGOS code has the form “0-203-1-001000”."
+
+[operations.download_meteo_archives]
+label = "Download meteorological archives to the result folder"
+description = "Download archive files of IMGW-PIB or ČHMÚ meteorological data to the result folder, without processing and without saving to the store: daily climate and precipitation data, monthly climate, precipitation and synoptic data, term data; climate, precipitation and synoptic stations; ZIP archives from the server, raw source data."
+summary = "Done. Result #{number}: archives downloaded — files: {files} ({size}); the files are in the result folder."
+
+[operations.download_meteo_archives.params.dataset]
+label = "Dataset"
+question = "Which meteorological dataset should the archives be downloaded for?"
+model_question = "What kind of meteorological data (climate, precipitation, synoptic; daily, monthly, term; Czechia) does the command mention?"
+help = "Climate stations measure temperature and precipitation, precipitation stations measure only precipitation and snow cover, and synoptic stations provide monthly data. Czech data is the ČHMÚ dataset."
+options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
+options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
+options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
+options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge; daily precipitation"
+options.pl_meteo_climate_monthly.label = "IMGW-PIB monthly climate data"
+options.pl_meteo_climate_monthly.description = "monthly climate data: monthly means, extremes and totals of temperature and precipitation from IMGW-PIB climate stations"
+options.pl_meteo_precip_monthly.label = "Monthly precipitation from IMGW-PIB precipitation stations"
+options.pl_meteo_precip_monthly.description = "monthly precipitation totals from IMGW-PIB precipitation stations; monthly precipitation"
+options.pl_meteo_synop_monthly.label = "IMGW-PIB monthly synoptic data"
+options.pl_meteo_synop_monthly.description = "monthly data from IMGW-PIB synoptic stations: temperature, humidity, pressure, wind, cloud cover, precipitation; synop"
+options.pl_meteo_climate_terms.label = "IMGW-PIB climate station term data"
+options.pl_meteo_climate_terms.description = "term data: observations of IMGW-PIB climate stations at measurement terms (7, 14, 21), one file per month"
+options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czechia)"
+options.cz_meteo_daily.description = "Czech ČHMÚ meteorological data: precipitation, mean, maximum and minimum temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
+options.unspecified.description = "The command does not specify which meteorological data the archives concern"
+
+[operations.download_meteo_archives.params.years]
+label = "Archive years"
+question = "Which years should the archives be downloaded for (e.g. “2000–2020”)?"
+example = "2000-2020"
+help = "IMGW-PIB meteorological data archives are by calendar year. Give a range (“2000–2020”) or a list (“2010, 2012 and 2015”). For ČHMÚ daily data no years are given: a station file covers its whole history."
+
+[operations.download_meteo_archives.params.stations]
+label = "ČHMÚ stations"
+question = "Which ČHMÚ stations should the files be downloaded for? Give codes (WIGOS identifiers) or station names."
+example = "0-203-0-11514"
+help = "ČHMÚ files are separate for each station, so stations are required. A WIGOS code has the form “0-203-0-11514”."
+
+[operations.check_imgw_archives]
+label = "Check archives against the store"
+description = "Check online which archives of the chosen dataset and years are newer on the IMGW servers or missing from the store, without downloading any data: list of files, dates and sizes on the server, how many files and how many MB need downloading; saves a plan to a file that can later be run with the operation “Download to the store according to a plan”."
+summary = "Done. Result #{number}: archives checked — files: {items}, to download: {to_download} ({size_to_download}); the plan has been saved in the result."
+
+[operations.check_imgw_archives.params.dataset]
+label = "Dataset"
+question = "Which dataset's archives should be checked?"
+model_question = "What kind of data and from which station network does the command mention?"
+help = "The store holds the datasets from which IMGWTools builds time series: daily, monthly and half-yearly hydrological, daily climate and precipitation, and Czech ČHMÚ data."
+options.pl_hydro_daily.label = "IMGW-PIB daily hydrological data"
+options.pl_hydro_daily.description = "daily hydrological data: water level, flow, water temperature; water gauge (wodowskaz); IMGW-PIB hydrological stations; rivers; daily; hydro dobowe"
+options.pl_hydro_monthly.label = "IMGW-PIB monthly hydrological data"
+options.pl_hydro_monthly.description = "monthly hydrological data: minimum, mean and maximum water level, flow and water temperature in a month; IMGW-PIB hydrological stations; hydro miesięczne"
+options.pl_hydro_semiannual.label = "IMGW-PIB half-yearly and annual hydrological data"
+options.pl_hydro_semiannual.description = "half-yearly and annual hydrological data: extremes of water level, flow and water temperature in the winter half-year, summer half-year and the year; IMGW-PIB hydrological stations"
+options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
+options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
+options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
+options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge (deszczomierz); opad dobowy"
+options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czechia)"
+options.cz_hydro_daily.description = "Czech ČHMÚ hydrological data: water level, flow, water temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
+options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czechia)"
+options.cz_meteo_daily.description = "Czech ČHMÚ meteorological data: precipitation, mean, maximum and minimum temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
+options.unspecified.description = "The command does not specify the dataset whose archives are meant"
+
+[operations.check_imgw_archives.params.years]
+label = "Archive years"
+question = "Which years should the archives be checked for (e.g. “2000–2020”)?"
+example = "2000-2020"
+help = "The years are numbered by IMGW: the IMGW-PIB hydrological archive uses the hydrological year (from 1 November of the previous year to 31 October), while meteorological and ČHMÚ archives use the calendar year. For ČHMÚ daily meteorological data, no years are given."
+
+[operations.check_imgw_archives.params.stations]
+label = "ČHMÚ stations"
+question = "Which ČHMÚ stations should the files be checked for? Give the codes (WIGOS identifiers) or station names."
+example = "0-203-1-001000"
+help = "ČHMÚ files are separate for each station, so stations are required."
+
+[operations.sync_imgw_store]
+label = "Download archives to the store"
+description = "Download new and missing archives of the chosen dataset and years to the local IMGW store, then build time series: update the store, synchronise, top up local data, fetch precipitation, flows or water levels into the store (magazyn); writes to the store, requires network access."
+summary = "Done. Result #{number}: IMGW store updated — new archive versions: {created}, series built: {series_created}."
+
+[operations.sync_imgw_store.check]
+notice = "I will query the IMGW-PIB or ČHMÚ servers (file lists and HEAD headers) about the archives in the plan: how many are newer or missing and how much data that is."
+
+[operations.sync_imgw_store.params.dataset]
+label = "Dataset"
+question = "Which dataset's archives should be downloaded to the store?"
+model_question = "What kind of data, and from which station network, does the command mention?"
+help = "The store holds the datasets from which IMGWTools builds time series: daily, monthly and half-yearly hydrological data, daily climate and precipitation data, and Czech ČHMÚ data."
+options.pl_hydro_daily.label = "Daily hydrological data from IMGW-PIB"
+options.pl_hydro_daily.description = "daily hydrological data: water level, flow, water temperature; wodowskaz (river gauge); IMGW-PIB hydrological stations; rivers; daily; hydro dobowe"
+options.pl_hydro_monthly.label = "Monthly hydrological data from IMGW-PIB"
+options.pl_hydro_monthly.description = "monthly hydrological data: minimum, mean and maximum water level, flow and water temperature in a month; IMGW-PIB hydrological stations; hydro miesięczne"
+options.pl_hydro_semiannual.label = "Half-yearly and annual hydrological data from IMGW-PIB"
+options.pl_hydro_semiannual.description = "half-yearly and annual hydrological data: extremes of water level, flow and water temperature in the winter half-year, summer half-year and the year; IMGW-PIB hydrological stations"
+options.pl_meteo_climate_daily.label = "Daily climate data from IMGW-PIB"
+options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum and mean air temperature, ground-level temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
+options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
+options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge (deszczomierz); opad dobowy"
+options.cz_hydro_daily.label = "Daily hydrological data from ČHMÚ (Czechia)"
+options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, flow, water temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
+options.cz_meteo_daily.label = "Daily meteorological data from ČHMÚ (Czechia)"
+options.cz_meteo_daily.description = "Czech meteorological data from ČHMÚ: precipitation, mean, maximum and minimum temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
+options.unspecified.description = "The command does not specify the dataset whose archives should go to the store"
+
+[operations.sync_imgw_store.params.years]
+label = "Archive years"
+question = "Which years should archives be downloaded for (e.g. “2000–2020”)?"
+example = "2000-2020"
+help = "Years are numbered by IMGW: IMGW-PIB hydrological archives use the hydrological year (from 1 November of the previous year to 31 October), while meteorological and ČHMÚ archives use the calendar year. No years are given for ČHMÚ daily meteorological data."
+
+[operations.sync_imgw_store.params.stations]
+label = "ČHMÚ stations"
+question = "Which ČHMÚ stations should files be downloaded for? Give the codes (WIGOS identifiers) or station names."
+example = "0-203-1-001000"
+help = "ČHMÚ files are separate for each station, so stations are required."
+
+[operations.sync_imgw_store_by_plan]
+label = "Download to the store according to a plan"
+description = "Download to the local IMGW store exactly what a saved archive-check plan lists (the result of the “Check archives against the store” operation): synchronise according to the plan, run the plan, plan #5, download according to the saved plan; writes to the store, requires network."
+summary = "Done. Result #{number}: the IMGW store has been updated according to the plan — new archive versions: {created}, series built: {series_created}."
+
+[operations.export_imgw_archive]
+label = "Export stored archives from the store"
+description = "Export to CSV or JSONL the records of archives stored in the IMGW store for a chosen dataset and years: archive data as a table, unpacked archive, export from the store, no internet needed; writes files to the result folder."
+summary = "Done. Result #{number}: archives exported — files: {files}, records: {rows}, format {format}; the files are in the result folder."
+
+[operations.export_imgw_archive.params.dataset]
+label = "Dataset"
+question = "Archives of which dataset should be exported from the store?"
+model_question = "What kind of data and from which station network does the command mention?"
+help = "I export only what the store already has; download any missing archives to the store first."
+options.pl_hydro_daily.label = "IMGW-PIB daily hydrological data"
+options.pl_hydro_daily.description = "daily hydrological data: water level, discharge, water temperature; water gauge (wodowskaz); IMGW-PIB hydrological stations; rivers; daily; hydro daily"
+options.pl_hydro_monthly.label = "IMGW-PIB monthly hydrological data"
+options.pl_hydro_monthly.description = "monthly hydrological data: minimum, mean and maximum water level, discharge and water temperature in a month; IMGW-PIB hydrological stations; hydro monthly"
+options.pl_hydro_semiannual.label = "IMGW-PIB half-yearly and annual hydrological data"
+options.pl_hydro_semiannual.description = "half-yearly and annual hydrological data: extremes of water level, discharge and water temperature in the winter half-year, summer half-year and the year; IMGW-PIB hydrological stations"
+options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
+options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum and mean air temperature, ground-level temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
+options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
+options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge; daily precipitation"
+options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czechia)"
+options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, discharge, water temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
+options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czechia)"
+options.cz_meteo_daily.description = "Czech meteorological data from ČHMÚ: precipitation, mean, maximum and minimum temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
+options.unspecified.description = "The command does not specify the dataset whose archives are to be exported"
+
+[operations.export_imgw_archive.params.years]
+label = "Archive years"
+question = "Which years should the archives be exported for (e.g. “2000–2020”)?"
+example = "2000-2020"
+help = "Years are numbered by IMGW: the IMGW-PIB hydrological archive uses the hydrological year (from 1 November of the previous year to 31 October), while meteorological and ČHMÚ archives use the calendar year. For ČHMÚ daily meteorological data no years are given: I export everything in the store."
+
+[operations.export_imgw_archive.params.format]
+label = "Export format"
+question = "In which format should the records be saved: CSV or JSONL?"
+model_question = "What file format does the command mention: CSV (table) or JSONL (JSON Lines, one record per line)?"
+help = "CSV is a flat table; JSONL preserves the record structure (measurements with flags) in one JSON object per line."
+options.csv.label = "CSV (table)"
+options.csv.description = "CSV, table, spreadsheet, Excel, file with columns, comma-separated"
+options.jsonl.label = "JSONL (JSON Lines)"
+options.jsonl.description = "JSONL, JSON Lines, JSON, records as objects, one object per line"
+options.unspecified.description = "The command does not specify the export format"
+
+[operations.init_imgw_store]
+label = "Create an IMGW store"
+description = "Create (initialise) an empty local IMGW store in the folder from the configuration: the first step before downloading data into the store, setting up the data store (magazyn danych); does not download data and does not change an existing store."
+summary = "Done. Result #{number}: the IMGW store is ready: {store}."
+
+[operations.inspect_imgw_store]
+label = "Describe the IMGW store"
+description = "Show what is in the local IMGW store: whether the store is ready, which versions it contains (archives, series, station catalogs, PMAXTP cells, observations), problems and SHA-256 checksums; what do I have in the store; works offline."
+summary = "Done. Result #{number}: the description of the IMGW store has been saved in the result (entries: {entries}, problems: {problem_count})."
+
+[operations.inspect_imgw_store.params.kind]
+unset = "all kinds of entries"
+label = "Kind of entries"
+question = "Which store entries should the description cover: archives, series, station catalogs, PMAXTP cells, observations or problems?"
+model_question = "Does the command limit the store description to one kind of entries: archives, series, station catalogs, PMAXTP cells, observations or problems?"
+help = "If no kind is given, I describe all store entries."
+options.archive.label = "Archives"
+options.archive.description = "archives (archiwa), archive files, ZIP, downloaded data archives"
+options.series.label = "Series"
+options.series.description = "series (szeregi), time series, built station series, Parquet"
+options.catalog.label = "Station catalogs"
+options.catalog.description = "station catalogs (katalogi stacji), station catalog, stations.geojson, list of stations with locations"
+options.pmaxtp.label = "PMAXTP cells"
+options.pmaxtp.description = "PMAXTP, PMAXTP cells (komórki PMAXTP), maximum precipitation, saved grid cells"
+options.observation.label = "Observations"
+options.observation.description = "observations (obserwacje), saved server signals, ETag, modification dates"
+options.problem.label = "Problems"
+options.problem.description = "problems (problemy), errors, damaged versions, interrupted writes, invalid entries"
+options.unspecified.description = "The command does not limit the description to one kind of entries"
+
+[operations.inspect_imgw_store.params.provider]
+unset = "both providers (IMGW-PIB and ČHMÚ)"
+label = "Data provider"
+question = "Entries of which provider should be described: IMGW-PIB or ČHMÚ?"
+model_question = "Does the command limit the store description to one provider: IMGW-PIB (Poland) or ČHMÚ (Czechia)?"
+help = "If no provider is given, I describe the entries of both providers."
+options.imgw_pib.label = "IMGW-PIB (Poland)"
+options.imgw_pib.description = "IMGW, IMGW-PIB, Polish stations, Poland, Instytut Meteorologii i Gospodarki Wodnej (Institute of Meteorology and Water Management)"
+options.chmi.label = "ČHMÚ (Czechia)"
+options.chmi.description = "ČHMÚ, CHMU, CHMI, Czech stations, Czechia, Český hydrometeorologický ústav (Czech Hydrometeorological Institute)"
+options.unspecified.description = "The command does not limit the description to one provider"
+
+[operations.init_imgw_project]
+label = "Create an IMGW data project"
+description = "Create an IMGW data project in the project folder (an imgw-project.json file with a task list) pointing to the IMGW store from the configuration: the project pins data versions so that results can be reproduced; project setup, new IMGW project."
+summary = "Done. Result #{number}: IMGW data project created (manifest {manifest})."
+
+[operations.add_imgw_project_task]
+label = "Add a task to an IMGW data project"
+description = "Add a task to an IMGW data project: a selection of station time series (a station or an area from a GeoJSON file, years, variables: flows, precipitation, water levels) or a PMAXTP cell for a point; the task is only recorded in the project manifest, and the data is downloaded only by “Download project data”."
+summary = "Done. Result #{number}: task “{task}” added to the IMGW project (tasks in the manifest: {task_count})."
+
+[operations.add_imgw_project_task.params.task]
+label = "Task type"
+question = "Which task should be added to the project: station time series or a PMAXTP cell?"
+model_question = "What type of task does the command mention: station time series (flows, precipitation, water levels, temperatures) or PMAXTP maximum precipitation for a point?"
+help = "A series task selects stations, years and variables; a PMAXTP task stores a maximum precipitation cell for a point."
+options.series.label = "Station time series"
+options.series.description = "station series, flows, precipitation, water levels, temperatures, station data, measurement years"
+options.pmaxtp.label = "PMAXTP cell"
+options.pmaxtp.description = "PMAXTP, maximum precipitation, probable maximum precipitation, point, coordinates, grid cell"
+options.unspecified.description = "The command does not say whether the task concerns station series or PMAXTP"
+
+[operations.add_imgw_project_task.params.task_name]
+label = "Task name"
+question = "What should the task be called? The name: lowercase letters a–z, digits, “_” and “-”, up to 64 characters."
+example = "opady_poznan"
+help = "The name must be unique in the project, start with a letter or digit and contain only lowercase letters a–z, digits, “_” and “-” (e.g. “opady_poznan”). I do not correct names myself."
+
+[operations.add_imgw_project_task.params.dataset]
+label = "Dataset"
+question = "Which dataset should the task's series be selected from?"
+model_question = "What type of data and from which station network does the command concern?"
+help = "The IMGW station list does not say whether a station is a precipitation or a climate station; specify the dataset and I will match the station to it. ČHMÚ data covers the Czech Republic."
+options.pl_hydro_daily.label = "IMGW-PIB daily hydrological data"
+options.pl_hydro_daily.description = "daily hydrological data: water level, flow, water temperature; water gauge (wodowskaz); IMGW-PIB hydrological stations; rivers; daily; hydro daily"
+options.pl_hydro_monthly.label = "IMGW-PIB monthly hydrological data"
+options.pl_hydro_monthly.description = "monthly hydrological data: minimum, mean and maximum water level, flow and water temperature in a month; IMGW-PIB hydrological stations; hydro monthly"
+options.pl_hydro_semiannual.label = "IMGW-PIB half-year and annual hydrological data"
+options.pl_hydro_semiannual.description = "half-year and annual hydrological data: extremes of water level, flow and water temperature in the winter half-year, summer half-year and the year; IMGW-PIB hydrological stations"
+options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
+options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
+options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
+options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge; daily precipitation"
+options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czech Republic)"
+options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, flow, water temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
+options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czech Republic)"
+options.cz_meteo_daily.description = "Czech meteorological data from ČHMÚ: precipitation, mean, maximum and minimum temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
+options.unspecified.description = "The command does not specify the task's dataset"
+
+[operations.add_imgw_project_task.params.selection]
+label = "Station selection"
+question = "Should the stations be given by name or code, or should all stations lying within an area from a GeoJSON file be selected?"
+model_question = "Does the command specify stations (by name or code), or an area from a GeoJSON file in which the stations lie?"
+help = "Selecting by area reads the stations from the station catalog in the store and saves their list in the task."
+options.stations.label = "Specified stations (name or code)"
+options.stations.description = "station, stations, station name, station code, wodowskaz (water gauge), posterunek (gauging post), specific stations"
+options.area.label = "Stations from an area (GeoJSON file)"
+options.area.description = "area, GeoJSON file, geojson, zlewnia (catchment), boundary, all stations in the area, stations in the catchment"
+options.unspecified.description = "The command does not say whether it specifies stations or an area"
+
+[operations.add_imgw_project_task.params.stations]
+label = "Stations"
+question = "Which stations should be selected for the task? Give station names or codes."
+example = "Poznań-Ławica"
+help = "Give one or more stations (name or code: 9 digits for IMGW-PIB, WIGOS identifier for ČHMÚ)."
+
+[operations.add_imgw_project_task.params.area_file]
+label = "Area file (GeoJSON)"
+question = "Which GeoJSON file defines the area in which the stations lie? The file must be in the project folder."
+example = "zlewnia.geojson"
+help = "GeoJSON in WGS84 (Polygon, MultiPolygon, Feature or FeatureCollection) in the project folder, without “..” and symbolic links. Requires the station catalog in the store (“Build the station catalog in the store”)."
+
+[operations.add_imgw_project_task.params.period]
+label = "Task years"
+question = "Which years should the task cover? The task covers whole years, e.g. “2000–2020”."
+example = "2000-2020"
+help = "The task selects whole years (calendar or hydrological); it does not accept a period with dates (from day to day). Give a range of years, e.g. “2000–2020”."
+
+[operations.add_imgw_project_task.params.year_type]
+label = "Year type"
+question = "Are the task years calendar years (1 January to 31 December) or hydrological years (1 November to 31 October)?"
+help = "Hydrological year “2020” runs from 1 November 2019 to 31 October 2020. I always ask about this when the command does not say explicitly."
+options.hydrological.label = "Hydrological years (1 Nov – 31 Oct)"
+options.calendar.label = "Calendar years (1 Jan – 31 Dec)"
+
+[operations.add_imgw_project_task.params.variables]
+unset = "all dataset variables"
+label = "Variables"
+question = "Which variables should the task include (e.g. precipitation, flow, water level)?"
+example = "flow and water level"
+help = "Optionally narrow the task to selected dataset variables (e.g. Q, H, P); otherwise the task covers all variables of the dataset."
+
+[operations.add_imgw_project_task.params.point]
+label = "Point"
+question = "For which point should the PMAXTP cell be saved? Give latitude and longitude (WGS84) or PL-1992 coordinates."
+example = "52.23, 21.01"
+help = "The point must lie within the PMAXTP data area (latitude 49–55° N, longitude 14–24.5° E)."
+
+[operations.add_imgw_project_task.params.method]
+label = "PMAXTP method"
+question = "Which maximum precipitation method should be used: POT or AMP?"
+model_question = "What maximum precipitation method does the command mention: POT (peaks over threshold) or AMP (annual maxima)?"
+help = "POT uses threshold exceedances (partial series), AMP uses annual maxima."
+options.pot.label = "POT (peaks over threshold)"
+options.pot.description = "POT, peaks over threshold, threshold exceedances (przekroczenia progu), partial series (seria częściowa)"
+options.amp.label = "AMP (annual maxima)"
+options.amp.description = "AMP, annual maximum, annual maxima (maksima roczne), series of annual maxima (seria maksimów rocznych)"
+options.unspecified.description = "The command does not specify a PMAXTP method"
+
+[operations.download_imgw_project]
+label = "Download and pin IMGW project data"
+description = "Download the data for the tasks of an IMGW project into the store and record the pinned versions (SHA-256 checksums) in the manifest: either restore the pinned versions (new tasks will be downloaded and pinned for the first time) or update the data to the latest versions, changing the pins; download and pin project data; writes to the store and the manifest, requires network access."
+summary = "Done. Result #{number}: IMGW project data downloaded — tasks pinned: {pinned_count} of {task_count}."
+
+[operations.download_imgw_project.check]
+notice = "I will query the IMGW-PIB or ČHMÚ servers (file lists and HEAD headers) about the project task data: what is newer or missing, and how much data that is. I download nothing."
+
+[operations.download_imgw_project.params.update]
+label = "Download mode"
+question = "Should the pinned data versions be restored (new tasks will be downloaded and pinned for the first time), or should the data be updated to the latest versions and the pins changed?"
+model_question = "Does the command ask to restore the data according to the pins, or to update it to the latest versions (change the pins)?"
+help = "Restoring does not change the pins of tasks that are already pinned: missing files are downloaded again only if they have an identical SHA-256 checksum. Updating pins the tasks anew to the latest data versions."
+options.pinned.label = "Restore pinned versions"
+options.pinned.description = "restore, recover, according to pins, pinned versions, download missing, download and pin, first download, without changing pins"
+options.upgrade.label = "Update data and change pins"
+options.upgrade.description = "update, refresh, latest versions, newer data, re-pin, change pins, upgrade, project data update"
+options.unspecified.description = "The command does not say whether to restore the pinned versions or update the data"
+
+[operations.download_imgw_project.params.tasks]
+unset = "all project tasks"
+label = "Project tasks"
+question = "Which project tasks does the operation apply to? Give their names."
+example = "opady_poznan, przeplywy_warta"
+help = "If no tasks are specified, the operation covers all tasks of the project."
+
+[operations.check_imgw_project]
+label = "Check whether IMGW project data is up to date"
+description = "Check online whether the data of the IMGW project tasks is up to date: what is newer or missing on the servers, without downloading and without changing the store; saves the plan to a file; check the freshness of project data."
+summary = "Done. Result #{number}: project data checked (tasks: {task_count}), files to download: {to_download} ({size_to_download}); the plan was saved in the result."
+
+[operations.check_imgw_project.params.tasks]
+unset = "all project tasks"
+label = "Project tasks"
+question = "Which project tasks should the check cover? Give their names."
+example = "opady_poznan, przeplywy_warta"
+help = "If no tasks are specified, I check all project tasks."
+
+[operations.verify_imgw_project]
+label = "Verify pinned IMGW project data"
+description = "Verify the pinned data of the IMGW project offline: file status (existence and descriptions) or full SHA-256 checksums; whether the project data has not been changed or removed from the store; project checksum verification."
+summary = "Done. Result #{number}: the project verification report was saved in the result (tasks: {task_count}, without issues: {tasks_ok}, with issues: {tasks_issues})."
+
+[operations.verify_imgw_project.params.depth]
+label = "Verification scope"
+question = "Should I check only the file status (existence and descriptions), or the full SHA-256 checksums?"
+model_question = "Does the command ask to check the status of the pinned files, or to verify the full SHA-256 checksums?"
+help = "The file status check is quick; full verification computes the SHA-256 of every pinned file and may take a while."
+options.status.label = "File status (quick)"
+options.status.description = "status, stan, file existence, whether the files are there, quick check, without checksums"
+options.verify.label = "Full SHA-256 checksums"
+options.verify.description = "checksums, sumy kontrolne, SHA-256, SHA256, verify, verification, integrity, whether the data has not been changed, thorough check"
+options.unspecified.description = "The command does not say whether to check the file status or the checksums"
+
+[operations.verify_imgw_project.params.tasks]
+unset = "all project tasks"
+label = "Project tasks"
+question = "Which project tasks should the verification cover? Give their names."
+example = "opady_poznan, przeplywy_warta"
+help = "If no tasks are specified, I verify all project tasks."
+
+[operations.remove_imgw_project_task]
+label = "Remove a task from an IMGW data project"
+description = "Remove a task from an IMGW data project (from the imgw-project.json manifest); data versions in the store are left untouched; remove a task, delete a task from the project."
+summary = "Done. Result #{number}: removed task “{task}” from the IMGW project (tasks in the manifest: {task_count})."
+
+[operations.remove_imgw_project_task.params.task_name]
+label = "Task name"
+question = "Which task should be removed from the project? Give its name."
+example = "opady_poznan"
+help = "Give the task name exactly as it appears in the project."
+
+[operations.set_imgw_project_store]
+label = "Set the current IMGW store for a project"
+description = "Set the IMGW project's store from the configuration: change the project's store after verifying the pinned files in the new store (SHA-256 checksums); move the project to another store, set the project's store."
+summary = "Done. Result #{number}: the IMGW project now points to store {store}."
+
+# --- Texts shared by the tool's operations ------------------------------------------
+# Tool error codes ({detail} is the tool's description; {hint}, {option}, {allowed} too).
+[errors]
+validation_error = "IMGWTools rejects this choice: {detail}"
+not_found = "IMGWTools did not find the data: {detail}"
+conflict = "IMGWTools reports a conflict in the store: {detail}"
+source_unavailable = "The data server is unavailable: {detail}. Try again later."
+missing_dependency = "An IMGWTools add-on is missing: {detail}. Check: retman doctor check"
+data_error = "The IMGWTools data is invalid or incomplete: {detail}"
+store_unavailable = "The IMGW store is unavailable: {detail}. Check: retman doctor check"
+io_error = "File write or read error: {detail}"
+cancelled = "The operation was cancelled: {detail}"
+internal_error = "IMGWTools internal error: {detail}"
+store_write_unsupported = "This disk does not allow IMGWTools to write to the store ({detail}). The store must be on a file system that supports hard links. Check: retman doctor check"
+failed = "The operation failed: {detail}"
+
+# Operation warnings; the tool's licence notes (license_terms) are given verbatim.
+[warnings]
+license_terms = "{text}"
+partial_items = "Failed to process {failed} of {total} items; details are in the tool document in the result folder (tool_*.json)."
+no_rows = "The tool returned no rows."
+stations_without_location = "{count} stations in the catalog have no location (coordinates); you can fill them in with a station locations file."
+pmaxtp_probability_missing = "The PMAXTP table has no probability of {requested} %; available: {available} %."
+pmaxtp_duration_missing = "The PMAXTP table has no duration of {requested} min; available: {available} min."
+pmaxtp_nothing_selected = "None of the requested values appears in the PMAXTP table; the whole table was saved."
+arch_not_published = "The server does not publish {count} of {total} requested files; the rest were downloaded."
+arch_export_partial = "The store has only {found} of {total} archive files for the selected dataset and years; the rest were not exported."
+
+# Plan problems detected offline: with parameters — the question is asked again, without — the plan will fail.
+[problems]
+store_missing = "The IMGW store ({path}) has not been created yet. Create it with the command “Create an IMGW store” or with “retman config init”."
+store_not_imgw = "The folder {path} contains other files and is not an IMGW store. Specify an empty folder in the store_dir setting of the [retman.tools.imgwtools] table in nogat.toml."
+store_unsupported = "The IMGW store in {path} has an unsupported schema ({schema}). Update IMGWTools."
+pyarrow_missing = "The pyarrow package is required for series in the IMGW store. Install IMGWTools with the store extra (imgwtools[store])."
+station_catalog_missing = "The IMGW store has no station catalog. Choose the “server” source or build the catalog first (“Build the IMGW station catalog”)."
+user_locations_missing = "Cannot read the station locations file ({path})."
+user_locations_invalid = "The station locations file ({path}) must be a UTF-8 CSV file with the columns station_code, latitude and longitude."
+pmaxtp_cell_missing = "The store has no saved PMAXTP cell {cell} (method {method}). Save it with the PMAXTP download operation that writes to the store."
+series_missing = "The IMGW store has no series for dataset {dataset}. Choose the “server” source (it will download the archives and build the series) or build the series from the archives in the store."
+station_not_in_series = "Station {station} is not in the series of dataset {dataset} in the store. Choose another station, another dataset or the “server” source."
+variables_not_in_series = "The series does not have the selected variables: {detail}"
+period_outside_coverage = "The store has data for this station only for the period {first} – {last}; the selected period is outside it."
+archives_rejected = "IMGWTools rejects the selected period or station: {detail}"
+arch_plan_other_store = "The plan is for a different store ({plan_store}) than the configured one ({store}). Choose a plan checked for the current store."
+arch_nothing_to_export = "The store has no archives of dataset {dataset} for the years {years}. Choose other years or another dataset, or download data to the store first."
+arch_nothing_to_export_all = "The store has no archives of dataset {dataset}. Choose another dataset or download data to the store first."
+proj_manifest_missing = "The project folder has no file {path}. Create an IMGW data project first (“Create an IMGW data project”)."
+proj_manifest_invalid = "Cannot read the project manifest {path} ({detail})."
+proj_inside_store = "The project folder ({project}) is inside the IMGW store ({store}); the project must be outside the store."
+proj_other_store = "The project points to store {manifest_store}, but the settings ([retman.tools.imgwtools] store_dir) say {store}. Set the current store for the project (“Set the current IMGW store for a project”) or change the settings."
+proj_task_exists = "The project already has a task “{name}” (tasks: {tasks}). Give a different name."
+proj_task_missing = "The project has no task “{name}” (tasks: {tasks})."
+proj_tasks_unknown = "The project has no tasks: {names} (project tasks: {known})."
+proj_no_tasks = "The project has no tasks ({path}). Add a task first (“Add a task to an IMGW data project”)."
+proj_area_missing = "Area file {file} not found."
+proj_area_outside = "The area file {file} must be inside the project folder ({project}), with no “..” in the path and no symbolic links."
+proj_area_invalid = "The file {file} is not a valid GeoJSON area file (Polygon, MultiPolygon, Feature or FeatureCollection)."
+proj_catalog_missing = "Selecting stations by area requires the station catalog of provider {provider} in the store. Build the catalog first (“Build the station catalog in the store”)."
+proj_period_early = "Dataset {dataset} starts in {first_year}; choose later years."
+
+# Plan preview rows (offline).
+[preview.store]
+label = "IMGW store"
+value = "{path} (from configuration)"
+
+[preview.station_matches]
+label = "Matching stations"
+value = "{count} in the store catalog"
+
+[preview.reference_present]
+label = "Station locations (static file)"
+value = "{file} in folder {path}"
+
+[preview.reference_absent]
+label = "Station locations (static file)"
+value = "file {file} is missing from folder {path}; stations without a location in the lists will have no coordinates"
+
+[preview.user_locations_file]
+label = "Station locations file"
+value = "{name} ({count} stations)"
+
+[preview.all_hydro]
+label = "Scope"
+value = "all IMGW-PIB hydrological stations (the whole list)"
+
+[preview.all_meteo]
+label = "Scope"
+value = "all IMGW-PIB meteorological stations (the whole list)"
+
+[preview.all_synop]
+label = "Scope"
+value = "all IMGW-PIB synoptic stations (the whole list)"
+
+[preview.warnings_both]
+label = "Warning type"
+value = "hydrological and meteorological"
+
+[preview.pmaxtp_cell]
+label = "Cell in the store"
+value = "{cell} (method {method}), point {latitude}°N, {longitude}°E"
+
+[preview.store_coverage]
+label = "Data in the store"
+value = "{first} – {last}, gaps: {gaps}"
+
+[preview.store_no_series]
+label = "Data in the store"
+value = "no series for this dataset; it will be created after the archives are downloaded"
+
+[preview.store_no_station]
+label = "Data in the store"
+value = "the station is not yet in the series; it will appear after the archives are downloaded"
+
+[preview.period_partial]
+label = "Period in the store"
+value = "the store covers only part of the selected period ({first} – {last})"
+
+[preview.archives]
+label = "Archive files to check"
+value = "at most {count}: from {first} to {last}; size unknown without checking online"
+
+[preview.all_stations]
+label = "Stations"
+value = "all stations in the {dataset} dataset"
+
+[preview.arch_file]
+label = "Archive"
+value = "{name}; size unknown without checking online"
+
+[preview.arch_files]
+label = "Archives"
+value = "number of files: {count} ({first} … {last}); size unknown without checking online"
+
+[preview.arch_span_hydrological]
+label = "Data range"
+value = "{start} – {end} (hydrological years, from 1 November to 31 October)"
+
+[preview.arch_span_calendar]
+label = "Data range"
+value = "{start} – {end} (calendar years)"
+
+[preview.arch_plan]
+label = "Synchronisation plan"
+value = "files: {total}; to download: {to_download} ({size}); up to date: {current}; checked {checked_at} UTC"
+
+[preview.arch_export]
+label = "Archives to export"
+value = "in store: {found} of {total} dataset archive files (format {format}); I will not export the missing ones"
+
+[preview.arch_export_found]
+label = "Archives to export"
+value = "in store: {found} dataset archive files (format {format})"
+
+[preview.arch_store_missing]
+label = "Store state"
+value = "folder does not exist — it will be created and initialised"
+
+[preview.arch_store_empty]
+label = "Store state"
+value = "empty folder — it will be initialised"
+
+[preview.arch_store_ready]
+label = "Store state"
+value = "the store already exists — the operation will change nothing"
+
+[preview.proj_manifest_new]
+label = "Project manifest"
+value = "{path} — will be created"
+
+[preview.proj_manifest_exists]
+label = "Project manifest"
+value = "{path} — already exists, no changes"
+
+[preview.proj_manifest_write]
+label = "Project manifest"
+value = "{path} — will be changed"
+
+[preview.proj_manifest_read]
+label = "Project manifest"
+value = "{path} — read only"
+
+[preview.proj_store]
+label = "Project store"
+value = "{path} (from the project manifest)"
+
+[preview.proj_store_other]
+label = "Project store"
+value = "{path} (from the project manifest; the configuration has a different store: {configured})"
+
+[preview.proj_store_same]
+label = "Store change"
+value = "the project already points to this store ({path}); pinned files will only be verified"
+
+[preview.proj_year_type_fixed]
+label = "Year type"
+value = "hydrological — the only one in which half-year series exist"
+
+[preview.proj_tasks]
+label = "Tasks in the project"
+value = "{count}: {names}"
+
+[preview.proj_download_pinned]
+label = "Pins"
+value = "new tasks to download and pin: {new}; pinned tasks to restore (pins unchanged): {pinned}"
+
+[preview.proj_download_upgrade]
+label = "Pins"
+value = "all selected tasks ({count}) will be re-pinned to the latest versions — the pins will change"
+
+[preview.proj_task_pinned]
+label = "Pinned files"
+value = "task “{name}” is pinned; files in the store are left untouched"
+
+# Availability check rows (with network access, separate consent).
+[check]
+catalog_current = "The station catalog in the store is up to date."
+catalog_newer = "The station lists at the source are newer than the catalog; it will be rebuilt."
+catalog_missing = "The station catalog is not in the store yet; it will be built."
+catalog_unverifiable = "The catalog cannot be compared with the station lists at the source."
+catalog_check_failed = "Could not check the station lists at the source."
+sources = "Station lists at the source: {reachable} of {total} available."
+from_store = "The data comes from the store; no network is needed."
+archives = "To download: {to_download} of {total} files ({size} MB); {current} already up to date in the store."
+archives_unsized = "To download: {to_download} of {total} files (the server did not give a size); {current} already up to date in the store."
+items_unpublished = "Not published at the source: {count} files."
+items_failed = "Could not be checked: {count} files."
+arch_summary = "Files: {total}; to download: {to_download} ({size}); already up to date: {current}."
+arch_size_unknown = "Number of files without a size given by the server: {count}; the size to download is incomplete."
+arch_unpublished = "Number of files the server does not publish: {count}."
+arch_no_signal = "Number of files without comparison headers on the server: {count}; it is not known whether they are up to date."
+arch_failed = "Number of files that could not be checked: {count} ({detail})."
+arch_series = "After the download, these series will be built or rebuilt: {names}."
+proj_state_missing = "Task “{name}”: to download and pin ({detail})."
+proj_state_newer = "Task “{name}”: newer data is available ({detail})."
+proj_state_current = "Task “{name}”: data is up to date ({detail})."
+proj_state_unverifiable = "Task “{name}”: cannot check whether it is up to date ({detail})."
+proj_state_failed = "Task “{name}”: the check failed ({detail})."

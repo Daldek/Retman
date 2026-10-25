@@ -293,9 +293,19 @@ group_commands = "katalog poleceń i przewodniki dla agentów"
 group_eval = "ocena modelu na zbiorze poleceń"
 group_scaffold = "opisy narzędzi: kontrola rozjazdów i szkice (dla programistów)"
 help_json = "Wypisz jeden dokument JSON (kopertę retman-result/1) i nic więcej; nigdy nie pyta."
-help_lang = "Język tekstów dla człowieka: pl albo en (teksty istnieją po polsku)."
+help_lang = "Język tekstów dla człowieka: pl albo en."
 help_verbose = "Log techniczny na stderr na poziomie debug."
 help_quiet = "Log techniczny na stderr tylko z błędami."
+
+# Odpowiedzi, które terminal przyjmuje (src/retman/cli/conversation.py, src/retman/cli/main.py,
+# src/retman/initialize.py): małymi literami, pierwsza pozycja to skrót z pytań (cli.confirmation).
+[answers]
+yes = ["t", "tak"]
+no = ["n", "nie"]
+change = ["z"]
+check = ["s"]
+cancel = ["anuluj"]
+end = ["koniec"]
 
 [results]
 success = "Gotowe. Wynik #{number}: {operation}. Pliki: {directory}"
@@ -417,7 +427,7 @@ test_ok = "pytanie testowe: poprawna odpowiedź ({details})"
 test_wrong = "pytanie testowe: błędna odpowiedź ({details})"
 hint_test_wrong = "model wybiera nietrafnie; sprawdź model w konfiguracji i uruchom retman eval run"
 test_failed = "pytanie testowe nie powiodło się: {error}"
-confidence_value = "pewność {value} {method}"
+confidence_value = "pewność {value:.2f} {method}"
 confidence_missing = "bez pewności"
 method_basal = "z basala"
 method_logprobs = "z logprobs"

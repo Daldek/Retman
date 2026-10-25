@@ -7,7 +7,7 @@
 [retman]
 # Shared keys: the same names work in [nogat], which every Nogat tool reads; a value
 # here overrides it for Retman only.
-# lang = "pl"            # language of questions, options and messages: "pl" | "en" (the texts exist in Polish only)
+# lang = "pl"            # language of the texts for people: "pl" | "en" (--json is always English)
 # log_level = "warning"  # technical log on stderr: "debug" | "info" | "warning" | "error"
 # data_dir = "..."       # parent of the data stores and of the command collection; default: the user data folder of nogat
 # cache_dir = "..."      # parent of the caches; default: the user cache folder of nogat

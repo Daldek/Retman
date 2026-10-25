@@ -10,6 +10,7 @@ A mistake in the call is a :class:`~retman.exceptions.UsageError`.
 """
 
 import argparse
+import sys
 from collections.abc import Sequence
 from typing import Any, NoReturn
 
@@ -38,15 +39,23 @@ class _Parser(argparse.ArgumentParser):
 def help_language(argv: Sequence[str] | None) -> str:
     """Return the language of the ``--help`` texts before the call is parsed.
 
-    ``--lang`` of the call if it is there, else the setting ``lang``.
+    ``--lang`` of the call if it is there, else the setting ``lang``. A language that
+    Retman has no texts in is refused later, when the call is parsed, so Polish (the
+    default of ``lang``) renders that error. Without ``argv`` the words are those of
+    the process, as for the parser.
     """
-    words = list(argv) if argv is not None else []
+    words = list(sys.argv[1:] if argv is None else argv)
+    language = None
     for index, word in enumerate(words):
         if word == "--lang" and index + 1 < len(words):
-            return words[index + 1]
+            language = words[index + 1]
+            break
         if word.startswith("--lang="):
-            return word.partition("=")[2]
-    return str(environment().setting("lang").value)
+            language = word.partition("=")[2]
+            break
+    if language is None:
+        language = str(environment().setting("lang").value)
+    return language if language in LANGUAGES else "pl"
 
 
 def _escaped(text: str) -> str:

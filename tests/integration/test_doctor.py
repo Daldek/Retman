@@ -16,7 +16,7 @@ from retman import cli
 from retman.backends.base import Decision
 from retman.config import init_config
 from retman.doctor import _plural, run_doctor
-from retman.i18n.loader import load_core_texts
+from retman.i18n.loader import load_core_texts, localize
 from retman.stores import ToolOutcome
 from retman.testing import FakeDecisionBackend
 
@@ -77,8 +77,10 @@ def _not_installed(name: str) -> str:
 
 
 def _lines(report, section: str) -> list[str]:
+    """The texts of a section as the Polish terminal shows them."""
+    polish = load_core_texts("pl")
     return [
-        check.text
+        localize(check.text, polish)
         for found in report.sections
         if found.key == section
         for check in found.checks
@@ -107,6 +109,34 @@ def test_healthy_setup_shows_model_address_and_exits_zero(tmp_path: Path, dummy)
     count = _plural(load_core_texts("pl"), "operations", len(dummy[0][0]["operations"]))
     assert f"dummy_tool 1.2.0, obsługiwane >=1.2,<2, {count}" in text
     assert "✗" not in text
+
+
+def test_the_document_is_english_and_the_terminal_text_follows_the_language(
+    tmp_path: Path, dummy
+):
+    config = _openai_config(tmp_path)
+
+    with _server(["bielik-11b"]) as client:
+        report, polish = run_doctor(
+            config,
+            tmp_path,
+            backend=_fake("terrain"),
+            client=client,
+            manifests=dummy,
+            version_lookup=_installed("1.2.0"),
+        )
+    document = json.dumps(report.document(), ensure_ascii=False)
+    english = report.to_text(load_core_texts("en"))
+
+    # AGI-9.2: the document is English whatever the language of the terminal
+    assert not any(letter in document for letter in "ąćęłńóśźżĄĆĘŁŃÓŚŹŻ")
+    assert "test question: correct answer (confidence 0.97 " in document
+    assert "pytanie testowe: poprawna odpowiedź (pewność 0,97 " in report.to_text(
+        polish
+    )
+    # the same message in the other language, not a Polish sentence in an English line
+    assert "test question: correct answer (confidence 0.97 " in english
+    assert "pytanie" not in english and "Konfiguracja" not in english
 
 
 def test_unreachable_model_blocks_work_and_says_how_to_fix(tmp_path: Path, dummy):
@@ -306,8 +336,9 @@ def _make_stores(tmp_path: Path, **skip: bool) -> dict[str, Path]:
 
 
 def _stores(report) -> list[tuple[str, str]]:
+    polish = load_core_texts("pl")
     return [
-        (check.status, check.text)
+        (check.status, localize(check.text, polish))
         for found in report.sections
         if found.key == "stores"
         for check in found.checks

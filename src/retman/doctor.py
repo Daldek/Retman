@@ -29,7 +29,13 @@ from retman.exceptions import (
     ManifestError,
     TranslationError,
 )
-from retman.i18n.loader import Texts, load_core_texts, load_texts
+from retman.i18n.loader import (
+    Texts,
+    load_core_texts,
+    load_texts,
+    localize,
+    machine_messages,
+)
 from retman.outcomes import EXIT_FAILED, EXIT_OK, EXIT_PARTIAL
 from retman.registry.loader import discover_manifests, version_matches
 from retman.registry.manifest import ManifestSpec, validate_manifest
@@ -135,35 +141,40 @@ class DoctorReport:
         ]
 
     def to_text(self, texts: Texts) -> str:
-        """Terminal report as in ARCHITECTURE 7.2."""
+        """Terminal report as in ARCHITECTURE 7.2, written from ``texts``."""
         lines = [texts.get("doctor.title", version=self.version)]
         for section in self.sections:
-            lines.extend(["", section.title])
+            lines.extend(["", localize(section.title, texts)])
             for check in section.checks:
                 line = texts.get(
                     "doctor.line",
                     marker=texts.get(f"doctor.marker_{check.status}"),
-                    text=check.text,
+                    text=localize(check.text, texts),
                 )
                 if check.hint:
-                    line = texts.get("doctor.with_hint", line=line, hint=check.hint)
+                    line = texts.get(
+                        "doctor.with_hint", line=line, hint=localize(check.hint, texts)
+                    )
                 lines.append(line)
         return "\n".join(lines) + "\n"
 
     def document(self) -> dict[str, Any]:
-        """Return the document ``retman-doctor/1`` (without its ``schema``)."""
+        """Return the document ``retman-doctor/1`` (without its ``schema``).
+
+        The texts are English whatever the setting ``lang`` says (AGI-9.2).
+        """
         ids = {id(check): ident for ident, check in self._numbered()}
         return {
             "sections": [
                 {
                     "key": section.key,
-                    "title": section.title,
+                    "title": str(section.title),
                     "checks": [
                         {
                             "id": ids[id(check)],
                             "status": check.status,
-                            "text": check.text,
-                            "hint": check.hint,
+                            "text": str(check.text),
+                            "hint": None if check.hint is None else str(check.hint),
                             "blocking": check.blocking,
                             **({"code": check.code} if check.code else {}),
                             **({"reason": check.reason} if check.reason else {}),
@@ -286,6 +297,7 @@ def _models_on_server(
 def _decision_checks(
     config: Config,
     texts: Texts,
+    human: Texts,
     backend: DecisionBackend | None,
     client: httpx.Client,
 ) -> list[Check]:
@@ -297,9 +309,9 @@ def _decision_checks(
     if backend is None:
         try:
             backend = (
-                OpenAICompatibleBackend(decision, texts, client)
+                OpenAICompatibleBackend(decision, human, client)
                 if decision.backend == "openai_compatible"
-                else build_decision_backend(config, texts)
+                else build_decision_backend(config, human)
             )
         except ConfigError as err:
             return [address, *_config_problems(texts, err)]
@@ -337,13 +349,14 @@ def _decision_checks(
                 texts.get("doctor.hint_model", path=config.path),
             )
         )
+    # The test question goes to the model in the language of the commands
     options = {
-        "terrain": texts.get("doctor.test_terrain"),
-        "weather": texts.get("doctor.test_weather"),
+        "terrain": human.get("doctor.test_terrain"),
+        "weather": human.get("doctor.test_weather"),
     }
     try:
         answer = backend.choose(
-            texts.get("doctor.test_command"), texts.get("doctor.test_question"), options
+            human.get("doctor.test_command"), human.get("doctor.test_question"), options
         )
     except BackendConnectionError:
         checks.append(
@@ -372,7 +385,7 @@ def _decision_checks(
     details = (
         texts.get(
             "doctor.confidence_value",
-            value=f"{answer.confidence:.2f}".replace(".", ","),
+            value=answer.confidence,
             method=texts.get(f"doctor.method_{answer.confidence_method}"),
         )
         if answer.confidence is not None
@@ -899,9 +912,11 @@ def run_doctor(
     Returns
     -------
     tuple[DoctorReport, Texts]
-        The report and the texts to render it with.
+        The report, whose texts are English (AGI-9.2), and the texts of the language
+        of the setting ``lang`` to render it with (:meth:`DoctorReport.to_text`).
     """
-    texts = load_core_texts(REPORT_LANGUAGE)
+    texts = machine_messages()
+    human = load_core_texts(REPORT_LANGUAGE)
     tool_manifests = list(manifests if manifests is not None else discover_manifests())
     file = environment(config_path, options=options).file
     sections: list[Section] = []
@@ -914,8 +929,7 @@ def run_doctor(
         configuration.checks.extend(_config_problems(texts, err))
     config: Config | None = None
     if settings is not None:
-        texts = load_core_texts(settings.language)
-        configuration.title = texts.get("doctor.section_configuration")
+        human = load_core_texts(settings.language)
         state = texts.get(
             "doctor.config_exists" if file.exists else "doctor.config_missing"
         )
@@ -936,7 +950,7 @@ def run_doctor(
                 Section(
                     "decision",
                     texts.get("doctor.section_decision"),
-                    _decision_checks(config, texts, backend, http),
+                    _decision_checks(config, texts, human, backend, http),
                 )
             )
         finally:
@@ -983,4 +997,4 @@ def run_doctor(
                 ],
             )
         )
-    return DoctorReport(__version__, sections), texts
+    return DoctorReport(__version__, sections), human

@@ -11,7 +11,7 @@ MANIFEST: ManifestSpec = {
     "distribution": "kartograf",
     "source": "git+https://github.com/Daldek/Kartograf",
     "supported_versions": ">=0.8.0,<0.9",
-    "translations": {"pl": "pl.toml"},
+    "translations": {"pl": "pl.toml", "en": "en.toml"},
     "client": "retman.tools.kartograf.client:create",
     "operations": [
         {

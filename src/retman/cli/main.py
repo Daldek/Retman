@@ -33,7 +33,7 @@ from retman.exceptions import (
     Terminated,
     UsageError,
 )
-from retman.i18n.loader import Texts, load_core_texts, text_language
+from retman.i18n.loader import Texts, load_core_texts
 from retman.initialize import run_init
 from retman.logs import configure_logging
 from retman.outcomes import (
@@ -64,15 +64,15 @@ def _config_text(texts: Texts, error: ConfigError) -> str:
 def _session(
     retman: Retman, texts: Texts, *, check: bool, yes: bool, explain: bool
 ) -> int:
-    """Read commands until the user says ``koniec`` (a session in a terminal)."""
+    """Read commands until the user says the end word (a session in a terminal)."""
     while True:
         try:
             command = input(texts.get("cli.command_prompt")).strip()
         except EOFError:
             return EXIT_OK
-        if command == "koniec":
+        if command in texts.lines("answers.end"):
             return EXIT_OK
-        if command == "anuluj":
+        if command in texts.lines("answers.cancel"):
             print(texts.get("cli.cancelled"))
             return EXIT_CANCELLED
         if command and (
@@ -168,7 +168,7 @@ def main(
     as_json = False
     with sigterm_as_exception():
         try:
-            parser = build_parser(load_core_texts(text_language(help_language(argv))))
+            parser = build_parser(load_core_texts(help_language(argv)))
             args = parser.parse_args(argv)
             if args.group is None or args.verb is None:
                 raise UsageError(
@@ -187,7 +187,7 @@ def main(
             config = Path(str(options["config"])) if "config" in options else None
             env = environment(config, options=overrides)
             configure_logging(str(env.setting("log_level").value))
-            texts = load_core_texts(text_language(str(env.setting("lang").value)))
+            texts = load_core_texts(str(env.setting("lang").value))
             given = {
                 "backend": backend,
                 "project_dir": project_dir,

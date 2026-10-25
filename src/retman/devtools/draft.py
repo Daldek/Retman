@@ -506,10 +506,11 @@ def _render_builder(
 def _render_translations(
     operation: str, info: CommandInfo, params: Sequence[_Param]
 ) -> str:
-    """Render the skeleton of ``pl.toml``: every key the manifest check requires."""
+    """Render the skeleton of ``pl.toml`` and ``en.toml``: every key the check needs."""
     prefix = f"operations.{operation}"
     lines = [
-        f"# translation skeleton (src/retman/tools/<tool>/pl.toml); {info.summary}",
+        "# translation skeleton (src/retman/tools/<tool>/pl.toml and en.toml); "
+        f"{info.summary}",
         f"[{prefix}]",
         f'label = "{TODO}"',
         f'description = "{TODO}"  # for the model: synonyms and English names',

@@ -24,8 +24,6 @@ from retman.operations.config import init_lines
 from retman.outcomes import report_error
 from retman.stores import hardlink_error, init_imgw_store, tool_installed
 
-_YES = ("t", "tak")
-
 
 def _ask_stores_dir(texts: Texts, env: Environment) -> Path:
     """Ask for the folder that will hold both tool stores; Enter keeps the default."""
@@ -86,7 +84,9 @@ def _offer_imgw_store(store: Path, texts: Texts) -> int:
         print(texts.get("init.imgw_not_installed", path=store))
         return 0
     print(texts.get("init.imgw_question", path=store))
-    if input(texts.get("init.imgw_prompt")).strip().lower() not in _YES:
+    if input(texts.get("init.imgw_prompt")).strip().lower() not in texts.lines(
+        "answers.yes"
+    ):
         print(texts.get("init.imgw_declined"))
         return 0
     outcome = init_imgw_store(store)
@@ -152,7 +152,8 @@ def run_init(
     collect = collect_commands
     if collect is None:
         print(texts.get("cli.collect_question", path=default_collect_path(env)))
-        collect = input(texts.get("cli.collect_prompt")).strip().lower() in _YES
+        answer = input(texts.get("cli.collect_prompt")).strip().lower()
+        collect = answer in texts.lines("answers.yes")
     chosen = stores_dir if stores_dir is not None else _ask_stores_dir(texts, env)
     paths = tool_paths(env, chosen)
     if (failed := _create_folders(paths, texts)) is not None:

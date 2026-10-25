@@ -3,9 +3,9 @@
 This is ``plan run`` with a person at the keyboard (AGI-3.5 allows prompts only when
 stdin is a terminal and the call is not ``--json``): the same pipeline as
 :func:`retman.operations.plan_run`, with prompts in between. The user can ask for
-help (``?``), change a value (``z``), have the availability checked (``s``, a separate
-step with its own consent, ARCHITECTURE 6.5), decline (``n``), cancel (``anuluj``) or
-confirm (``t``).
+help (``?``), change a value, have the availability checked (a separate step with its
+own consent, ARCHITECTURE 6.5), decline, cancel or confirm; the words that mean
+these are the ``[answers]`` of the translation file of the language.
 """
 
 from retman.core.dialog import Question
@@ -16,6 +16,11 @@ from retman.i18n.loader import Texts
 from retman.operations.documents import explain_lines, result_lines
 from retman.operations.plan import failure
 from retman.outcomes import EXIT_CANCELLED, EXIT_OK, write_document
+
+
+def _said(answer: str, key: str, texts: Texts) -> bool:
+    """Whether ``answer`` is one of the words of ``[answers] <key>``, in lower case."""
+    return answer.lower() in texts.lines(f"answers.{key}")
 
 
 def _prompt(question: Question, texts: Texts) -> str:
@@ -36,7 +41,7 @@ def _answer_questions(retman: Retman, plan: Plan, texts: Texts) -> Plan | None:
     while plan.questions:
         question = plan.questions[0]
         answer = _prompt(question, texts)
-        if answer.strip().lower() == "anuluj":
+        if _said(answer.strip(), "cancel", texts):
             retman.record_plan(plan, "cancelled")
             print(texts.get("cli.cancelled"))
             return None
@@ -104,15 +109,15 @@ def conversation(
         )
         if answer == "?":
             print(texts.get("cli.help"))
-        elif answer.lower() in ("anuluj",):
+        elif _said(answer, "cancel", texts):
             retman.record_plan(plan, "cancelled")
             print(texts.get("cli.cancelled"))
             return EXIT_CANCELLED
-        elif answer.lower() == "n":
+        elif _said(answer, "no", texts):
             retman.record_plan(plan, "rejected")
             print(texts.get("cli.rejected"))
             return EXIT_CANCELLED
-        elif answer.lower() == "s" and plan.can_check:
+        elif _said(answer, "check", texts) and plan.can_check:
             # A separate step with its own notice and consent: the only network
             # use before the plan is confirmed (ARCHITECTURE 6.5)
             print(plan.check_notice())
@@ -121,19 +126,19 @@ def conversation(
                 + "\n"
                 + texts.get("cli.answer_prompt")
             )
-            if consent.strip().lower() != "t":
+            if not _said(consent.strip(), "yes", texts):
                 retman.record_check(plan, "rejected")
                 print(texts.get("cli.check_declined"))
                 continue
             plan.confirm_check()
             print(texts.get("cli.checking"))
             print(retman.check(plan).summary())
-        elif answer.lower() == "z":
+        elif _said(answer, "change", texts):
             changed = _change(retman, plan, texts)
             if changed is None:
                 return EXIT_CANCELLED
             plan = changed
-        elif answer.lower() == "t":
+        elif _said(answer, "yes", texts):
             return _execute(retman, plan, texts, "plan run")
         else:
             print(texts.get("cli.error", error=texts.get("dialog.invalid_choice")))

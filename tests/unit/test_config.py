@@ -86,10 +86,10 @@ def test_a_shared_data_directory_moves_both_stores_and_the_collection(
     assert settings.collect_path == tmp_path / "shared" / "retman" / "collected.jsonl"
 
 
-def test_a_language_without_texts_is_shown_in_polish() -> None:
+def test_the_texts_are_shown_in_the_language_of_the_setting() -> None:
     settings = load_settings(environ={"NOGAT_LANG": "en"})
 
-    assert settings.language == "pl"
+    assert settings.language == "en"
 
 
 def test_the_model_server_has_no_default_and_the_error_lists_what_is_missing() -> None:

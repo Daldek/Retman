@@ -1,0 +1,294 @@
+[categories.spatial_data]
+label = "GUGiK spatial data"
+description = "Downloading spatial data from GUGiK: the DEM (NMT, numeryczny model terenu), the DSM (NMPT, numeryczny model pokrycia terenu), orthophoto (ortofotomapa), elevation cutouts (wycinki wysokościowe) and BDOT10k (topographic vector data)"
+
+[operations.download_dem_sheet]
+label = "Download DEM (NMT) for a map sheet or area"
+description = "Download the DEM (NMT, numeryczny model terenu, DTM, ground elevation or terrain relief) from GUGiK for a sheet code (godło arkusza) or for an area from a geometry file."
+
+[operations.download_dem_sheet.check]
+notice = "I will query the GUGiK services (the WFS map sheet index and the PRG layer) for the years, resolutions and vertical reference systems available for the sheet code or the file from the plan. The 100 m DEM (voivodeship files) has no such sheet index, so I check nothing for it."
+
+[operations.download_dem_sheet.params.area]
+label = "Sheet code or DEM (NMT) area"
+question = "For which sheet code or geometry file should I download the DEM (NMT, numeryczny model terenu)?"
+help = "Give a PL-1992 or PL-2000 sheet code (godło), or an SHP/GPKG file. Kartograf expands a PL-1992 sheet code coarser than 1:10000 into 1:10000 map sheets; a PL-2000 sheet code (godło) at 1:10000 scale (e.g. 7.171.21) has no DEM (NMT) at that scale — use the child sheets operation. For a file, the 1:10000 map sheets (PL-1992) whose envelope touches the envelope of any feature are downloaded; the shape of the features is not taken into account. For each map sheet the latest available flight is downloaded; you do not choose the year or campaign."
+example = "N-34-130-D-d-2-4"
+geometry_note = "1:10000 map sheets (PL-1992) intersecting the envelope of any feature in the layer; the shape of the polygon is not taken into account"
+
+[operations.download_dem_sheet.params.resolution]
+label = "DEM (NMT) resolution"
+question = "At what resolution should the DEM be downloaded: 0.15 m, 0.5 m, 0.6 m, 1 m, 5 m, 10 m or 100 m?"
+model_question = "What resolution does the command mention?"
+help = "In EVRF2007, 0.15 m, 0.5 m, 0.6 m, 1 m, 5 m and 10 m are available; in KRON86 only 0.5 m and 1 m. The 100 m DEM consists of XYZ files in ZIP archives per voivodeship, with no vertical reference system and not clipped to a map sheet."
+options.0_15m.label = "0.15 m (EVRF2007 only)"
+options.0_15m.description = "0.15 m — DEM (NMT) with a 15 centimetre pixel, 0.15 m, 15 cm (EVRF2007 only)"
+options.0_5m.label = "0.5 m"
+options.0_5m.description = "0.5 m — DEM (NMT) with a 50 centimetre pixel, 0.5 m, 50 cm, half a metre (this is not 5 m)"
+options.0_6m.label = "0.6 m (EVRF2007 only)"
+options.0_6m.description = "0.6 m — DEM (NMT) with a 60 centimetre pixel, 0.6 m, 60 cm (EVRF2007 only)"
+options.1m.label = "1 m"
+options.1m.description = "1 m — DEM (NMT), terrain model with a 1 metre pixel, 100 cm"
+options.5m.label = "5 m (EVRF2007 only)"
+options.5m.description = "5 m — DEM (NMT), terrain model with a 5 metre pixel (EVRF2007 only; this is not 0.5 m)"
+options.10m.label = "10 m (EVRF2007 only)"
+options.10m.description = "10 m — DEM (NMT), terrain model with a 10 metre pixel (EVRF2007 only)"
+options.100m.label = "100 m (voivodeship files, no vertical reference system)"
+options.100m.description = "100 m — DEM (NMT) of 100 metres, national grid, XYZ files in ZIP per voivodeship, no vertical reference system"
+options.unspecified.description = "No resolution given — ask which one is meant"
+
+[operations.download_dem_sheet.params.vertical_crs]
+label = "DEM (NMT) vertical reference system"
+question = "In which vertical reference system should the DEM be downloaded: EVRF2007 or KRON86?"
+model_question = "What vertical reference system does the command mention?"
+help = "KRON86 is available only for resolutions of 0.5 m and 1 m; the other resolutions exist only in EVRF2007."
+options.evrf2007.label = "EVRF2007"
+options.evrf2007.description = "EVRF2007 — European vertical reference system, PL-EVRF2007-NH, Amsterdam datum"
+options.kron86.label = "KRON86 (0.5 m and 1 m only)"
+options.kron86.description = "KRON86 — Kronstadt 86, PL-KRON86-NH (0.5 m and 1 m only)"
+options.unspecified.description = "No vertical reference system given — ask whether EVRF2007 or KRON86"
+
+[operations.download_sheet_hierarchy]
+label = "Download child sheets (DEM, DSM or orthophoto)"
+description = "Download the hierarchy of GUGiK child sheets: DEM (NMT, numeryczny model terenu, DTM, terrain relief), DSM (NMPT, numeryczny model pokrycia terenu) or an orthophoto (ortofotomapa, ortofoto, aerial photographs) in the RGB, CIR or black-and-white variant."
+
+[operations.download_sheet_hierarchy.check]
+notice = "I will query GUGiK services (the WFS sheet index and the PRG layer, or the WMS orthophoto index) for data on the sheet code or the file from the plan. For an orthophoto the index knows only the RGB variant; for CIR and black-and-white I check nothing."
+
+[operations.download_sheet_hierarchy.params.product]
+label = "Sheet data type"
+question = "What data should be downloaded for the child sheets: DEM (NMT), DSM (NMPT) or an orthophoto?"
+model_question = "What type of data does the command mention?"
+help = "DEM (NMT) and DSM (NMPT) sheets store elevations (ASC grid), while an orthophoto is a georeferenced aerial photograph (GeoTIFF) in the chosen colour variant: RGB, CIR or black-and-white. For each sheet the latest available flight is downloaded; you do not choose the year or campaign."
+options.dem.label = "DEM (NMT, digital terrain model)"
+options.dem.description = "NMT — numeryczny model terenu, DEM, DTM, ground elevation and terrain relief"
+options.dsm.label = "DSM (NMPT, digital surface model)"
+options.dsm.description = "NMPT — numeryczny model pokrycia terenu, DSM, height of buildings and vegetation"
+options.orthophoto.label = "Orthophoto"
+options.orthophoto.description = "Ortofotomapa — ortofoto, orthophoto, georeferenced aerial photograph, flight images"
+options.unspecified.description = "No product given — ask about NMT (DEM), NMPT (DSM) or orthophoto"
+
+[operations.download_sheet_hierarchy.params.area]
+label = "Parent sheet code or area"
+question = "What is the sheet code of the parent sheet to expand, or the geometry file?"
+help = "Give the sheet code of a coarser PL-1992 or PL-2000 sheet, or an SHP/GPKG file; the target scale must be more detailed. For a file, the sheets in the chosen scale whose bounding box touches the bounding box of any feature are downloaded; the shape of the features is not taken into account. I download an orthophoto only for a sheet code, not for a file."
+example = "N-34-130-D-d-2"
+geometry_note = "sheets in the chosen scale intersecting the bounding box of any feature in the layer; the polygon shape is not taken into account"
+
+[operations.download_sheet_hierarchy.params.target_scale]
+label = "Child sheet scale"
+question = "To which Kartograf scale should the sheet code be expanded?"
+model_question = "What target scale does the command mention?"
+help = "PL-1992 sheets exist only at 1:10000 (the standard GUGiK sheet) — for a PL-1992 sheet code and for a file in PL-1992, choose 1:10000. The scales 1:5000, 1:2000, 1:1000 and 1:500 belong to PL-2000 (GUGiK most often publishes 1:2000). The scale must be finer than the scale of the parent sheet code and match its coordinate system."
+options.scale_10000.label = "1:10000 (PL-1992)"
+options.scale_10000.description = "1:10000 — standard PL-1992 DEM/DSM/orthophoto sheets (the only PL-1992 sheet scale)"
+options.scale_5000.label = "1:5000 (PL-2000)"
+options.scale_5000.description = "1:5000 — PL-2000 sheets in a separate branch of the division"
+options.scale_2000.label = "1:2000 (PL-2000)"
+options.scale_2000.description = "1:2000 — a common scale of PL-2000 DEM and orthophoto sheets"
+options.scale_1000.label = "1:1000 (PL-2000)"
+options.scale_1000.description = "1:1000 — detailed PL-2000 sheets"
+options.scale_500.label = "1:500 (PL-2000)"
+options.scale_500.description = "1:500 — the most detailed PL-2000 sheets"
+options.unspecified.description = "No target scale given — ask"
+
+[operations.download_sheet_hierarchy.params.resolution]
+label = "DEM resolution"
+question = "At what resolution should the DEM sheets be downloaded: 0.15 m, 0.5 m, 0.6 m, 1 m, 5 m or 10 m?"
+model_question = "What DEM resolution does the command mention?"
+help = "In the EVRF2007 system, 0.15 m, 0.5 m, 0.6 m, 1 m, 5 m and 10 m are available; in KRON86 only 0.5 m and 1 m."
+options.0_15m.label = "0.15 m (EVRF2007 only)"
+options.0_15m.description = "0.15 m — 15 centimetre pixel, 0.15 m, 15 cm (EVRF2007 only)"
+options.0_5m.label = "0.5 m"
+options.0_5m.description = "0.5 m — 50 centimetre pixel, 0.5 m, 50 cm, half a metre (not 5 m)"
+options.0_6m.label = "0.6 m (EVRF2007 only)"
+options.0_6m.description = "0.6 m — 60 centimetre pixel, 0.6 m, 60 cm (EVRF2007 only)"
+options.1m.label = "1 m"
+options.1m.description = "1 m — 1 metre pixel, 100 cm"
+options.5m.label = "5 m (EVRF2007 only)"
+options.5m.description = "5 m — 5 metre pixel (EVRF2007 only; not 0.5 m)"
+options.10m.label = "10 m (EVRF2007 only)"
+options.10m.description = "10 m — 10 metre pixel (EVRF2007 only)"
+options.unspecified.description = "No resolution given — ask which one is meant"
+
+[operations.download_sheet_hierarchy.params.resolution_dsm]
+label = "DSM (NMPT) resolution"
+question = "In what resolution should the DSM (NMPT) sheets be downloaded: 0.5 m, 0.6 m or 1 m?"
+model_question = "What DSM (NMPT) resolution does the command mention?"
+help = "DSM (NMPT) in EVRF2007: 0.5 m, 0.6 m and 1 m; in KRON86 only 0.5 m and 1 m."
+options.0_5m.label = "0.5 m"
+options.0_5m.description = "0.5 m — 50 centimetre pixel, 0.5 m, 50 cm, half a metre"
+options.0_6m.label = "0.6 m (EVRF2007 only)"
+options.0_6m.description = "0.6 m — 60 centimetre pixel, 0.6 m, 60 cm (EVRF2007 only)"
+options.1m.label = "1 m"
+options.1m.description = "1 m — 1 metre pixel, 100 cm"
+options.unspecified.description = "No DSM (NMPT) resolution given — ask which one is meant"
+
+[operations.download_sheet_hierarchy.params.vertical_crs]
+label = "Vertical datum of the sheets"
+question = "In which vertical datum should the sheets be downloaded: EVRF2007 or KRON86?"
+model_question = "What vertical datum does the command mention?"
+help = "Applies to DEM (NMT) and DSM (NMPT). KRON86 is available only for resolutions of 0.5 m and 1 m."
+options.evrf2007.label = "EVRF2007"
+options.evrf2007.description = "EVRF2007 — European vertical reference system, Amsterdam reference level"
+options.kron86.label = "KRON86 (0.5 m and 1 m only)"
+options.kron86.description = "KRON86 — Kronstadt 86, historical system (0.5 m and 1 m only)"
+options.unspecified.description = "No vertical datum given — ask about EVRF2007 or KRON86"
+
+[operations.download_sheet_hierarchy.params.color]
+label = "Orthophoto colour variant"
+question = "In which colour variant should the orthophoto be downloaded: RGB (natural colours), CIR (near infrared) or black and white?"
+model_question = "What orthophoto colour variant does the command mention?"
+help = "GUGiK publishes the same map sheet in three variants: RGB (natural colours), CIR (near-infrared colour, vegetation shown in red) and black-and-white (B/W). If a sheet has no data in the chosen variant, GUGiK has nothing to offer; I do not substitute another variant."
+options.rgb.label = "RGB (natural colours)"
+options.rgb.description = "RGB — orthophoto in natural colours, true colour, an ordinary aerial photograph (colour alone, without a mention of infrared, does not decide between RGB and CIR)"
+options.cir.label = "CIR (near infrared)"
+options.cir.description = "CIR — near-infrared orthophoto, colour infrared, false colours, vegetation in red, infrared"
+options.bw.label = "Black-and-white (B/W)"
+options.bw.description = "B/W — black-and-white orthophoto, greyscale, shades of grey, panchromatic"
+options.unspecified.description = "No colour variant given — ask about RGB, CIR or black-and-white"
+
+[operations.download_elevation_cutout]
+label = "1 m DEM (NMT) or DSM (NMPT) cutout for a rectangle or area"
+description = "Download a single GeoTIFF elevation cutout from the GUGiK WCS: DEM (NMT, numeryczny model terenu, DTM, terrain relief) or DSM (NMPT, numeryczny model pokrycia terenu) for a coordinate rectangle or the bounding box of a geometry file."
+
+[operations.download_elevation_cutout.check]
+notice = "I will query the GUGiK services (the WFS sheet index and the PRG layer) for data covering the rectangle or the file from the plan. The cutout is assembled by the WCS server, so the sheet index only approximates what the result will contain."
+
+[operations.download_elevation_cutout.params.product]
+label = "Cutout product"
+question = "Should the cutout contain DEM (NMT, terrain) or DSM (NMPT, land cover)?"
+model_question = "What kind of data does the command mention?"
+help = "A WCS cutout always has a resolution of 1 m (the only resolution in this mode) and comes from a composite of flights on the GUGiK server; you choose neither the year nor the campaign — the year is chosen when downloading sheets."
+options.dem.label = "DEM (NMT, numeryczny model terenu)"
+options.dem.description = "NMT — numeryczny model terenu, DEM, DTM, terrain relief"
+options.dsm.label = "DSM (NMPT, numeryczny model pokrycia terenu)"
+options.dsm.description = "NMPT — numeryczny model pokrycia terenu, DSM, buildings and trees"
+options.unspecified.description = "No product given — ask about NMT or NMPT"
+
+[operations.download_elevation_cutout.params.area]
+label = "Cutout rectangle or area"
+question = "Which coordinate rectangle or geometry file should be cut from the elevation data?"
+help = "Give the rectangle bounds in PL-1992 (EPSG:2180) or WGS84 (EPSG:4326), or an SHP/GPKG file. For a file, the cutout covers the rectangle of all its features and is not clipped to their shape; there is no data only outside the land area of Poland."
+example = "530000,382000,530100,382100 EPSG:2180"
+geometry_note = "a single rectangle covering all features of the layer; does not clip to the polygon; no data outside the land area of Poland"
+
+[operations.download_elevation_cutout.params.target_crs]
+label = "Output coordinate system"
+question = "Which coordinate system should the cutout be saved in?"
+help = "The result is a single GeoTIFF file. EPSG:2180 is PL-1992; EPSG:5514 is S-JTSK, EPSG:3045 is ETRS89/TM33. The code can be given with a prefix (EPSG:2180), as a number alone (2180) or by name (PL-1992). In the command I recognise the output system by the words “wynik”, “do”, “przelicz”, “zapisz”, “docelowy”; a system given right after the coordinates is treated as the system of the rectangle."
+options.epsg_2180.label = "EPSG:2180 (PL-1992)"
+options.epsg_5514.label = "EPSG:5514 (S-JTSK)"
+options.epsg_3045.label = "EPSG:3045 (ETRS89/TM33)"
+
+[operations.download_elevation_cutout.params.vertical_crs]
+label = "Vertical reference system of the cutout"
+question = "Which vertical reference system should be chosen for the 1 m DEM/DSM cutout?"
+model_question = "What vertical reference system does the command mention?"
+help = "The 1 m DEM (NMT) and DSM (NMPT) WCS cutout supports EVRF2007 or KRON86."
+options.evrf2007.label = "EVRF2007"
+options.evrf2007.description = "EVRF2007 — European vertical reference system, Amsterdam datum"
+options.kron86.label = "KRON86"
+options.kron86.description = "KRON86 — Kronstadt 86"
+options.unspecified.description = "No vertical reference system given — ask about EVRF2007 or KRON86"
+
+[operations.download_bdot10k]
+label = "Download BDOT10k (current county packages)"
+description = "Download BDOT10k (the Topographic Objects Database, topographic vectors and land cover) for a TERYT county, a sheet code (godło), a rectangle or a geometry file."
+
+[operations.download_bdot10k.check]
+notice = "I will ask the PRG GUGiK service which counties the area from the plan intersects, and check whether their BDOT10k packages are already in the store. For a TERYT code I do not connect to the network."
+
+[operations.download_bdot10k.params.area]
+label = "BDOT10k area"
+question = "For which county (TERYT), map sheet, rectangle or geometry file should BDOT10k be downloaded?"
+help = "A county TERYT code has 4 digits. For a rectangle, a sheet code (godło) or a file, the full, current package of every county intersected by the area's bounding box is downloaded (all layers), not clipped to the area; Kartograf rejects an area with more than 100 packages or more than 10 GB."
+example = "TERYT 2264 or N-34-130-D-d-2-4"
+geometry_note = "full packages of all counties intersecting the area's bounding box; the county list is known only after querying PRG (network, after confirmation)"
+
+[operations.download_bdot10k.params.format]
+label = "BDOT10k format"
+question = "Should the BDOT10k vectors be saved as GeoPackage or Shapefile?"
+model_question = "What file format does the command mention?"
+help = "GeoPackage is one .gpkg file per county. Kartograf returns Shapefile as a ZIP archive; Retman extracts all .shp files together with their accompanying files into the result folder."
+options.gpkg.label = "GeoPackage (.gpkg)"
+options.gpkg.description = "GeoPackage (.gpkg, GPKG) — SQLite geospatial database, a single file"
+options.shp.label = "Shapefile (.shp)"
+options.shp.description = "Shapefile (.shp, SHP) — all layers from the ZIP package together with .dbf/.shx/.prj"
+options.unspecified.description = "No format given — ask about GeoPackage or Shapefile"
+
+# Result warnings. Keys equal to Kartograf note codes replace its text
+# (ASCII, with command-line flag names); other warning notes are
+# shown verbatim (core: warnings.tool_notice).
+[warnings]
+sheets_missing = "Downloaded {count} of {total} sheets."
+sheets_failed = "Some sheets could not be downloaded: {detail}"
+no_coverage_sheets = "GUGiK has no orthophoto in the selected variant for {count} of {total} sheets (e.g. sea, an area abroad or no such colour variant)."
+failed_sheets = "Failed to download {count} of {total} sheets ({units}); repeat the download."
+incomplete_campaign = "The latest GUGiK flight is incomplete for some sheets: the files may have large areas without data (nodata or black)."
+no_coverage_some = "GUGiK has no data for some sheets (e.g. sea or an area abroad)."
+check_failed = "The GUGiK sheet index was unavailable; stored versions were used without checking for newer ones."
+sheet_crs_mismatch = "GUGiK published some sheets in a different system than the sheet code indicates: {text}"
+download_size = "Large download: {text}"
+cache_disabled = "The Kartograf metadata cache is disabled: {text}"
+failed_counties = "Failed to download {count} of {total} BDOT10k county packages (counties: {units})."
+all_nodata = "The cutout contains no valid elevation data (the whole result is nodata)."
+masked_pixels = "{count} pixels outside land were masked as nodata."
+
+# Kartograf errors by fixed error code; its own text is only {detail}
+[errors]
+kartograf_error = "Kartograf reported an error: {detail}"
+invalid_input = "Kartograf rejects this choice: {detail}"
+invalid_sheet_code = "Invalid sheet code: {detail}"
+download_failed = "Failed to download data from the GUGiK service. Details: {detail}"
+no_coverage = "GUGiK has no data for the specified area and the selected product parameters. Details: {detail}"
+year_out_of_range = "GUGiK has data for this area, but not from the requested range of years. Details: {detail}"
+cache_error = "The Kartograf metadata cache is not working: {detail}"
+invalid_sidecar = "The metadata file written by Kartograf in the store is corrupted: {detail}"
+transform_failed = "Failed to convert the coordinates: {detail}"
+transform_unavailable = "There is no safe conversion between the selected systems: {detail}"
+io_error = "Kartograf cannot write the data (check the disk space and whether the disk supports hard links): {detail}"
+internal_error = "Internal Kartograf error: {detail}"
+all_counties_failed = "Failed to download any BDOT10k county package ({detail})."
+unsafe_archive = "The shapefile archive contains a disallowed path or a file outside the result folder ({detail})."
+invalid_archive = "The downloaded BDOT10k shapefile archive is corrupted ({detail})."
+missing_shapefiles = "The downloaded BDOT10k shapefile archive contains no .shp files ({detail})."
+orthophoto_needs_sheet = "I download the orthophoto only for a sheet code, not for an area of the type “{detail}”."
+
+# Reasons why the plan must be corrected before confirmation (preview without network)
+[problems]
+scale_unavailable = "Sheet code {code} (PL-2000) cannot be expanded to the selected scale. Available scales: {allowed}."
+no_descendants = "Map sheet {code} (PL-2000) has no child sheets in the scales I can download. Give the parent sheet code."
+no_sheets = "The geometry file does not intersect any map sheet in the selected scale."
+orthophoto_needs_sheet = "I download the orthophoto only for a sheet code, not for a geometry file. Give a sheet code or choose other data."
+outside_poland = "The area from the file lies outside Poland, and BDOT10k covers only Poland."
+
+# Additional plan rows (preview without network)
+[preview.envelope]
+label = "Area envelope"
+value = "{width_km} × {height_km} km (EPSG:2180: E {min_x}–{max_x}, N {min_y}–{max_y})"
+
+[preview.sheets]
+label = "Number of map sheets"
+value = "{count} × {scale} (PL-{system})"
+
+[preview.province_files]
+label = "Data scope"
+value = "voivodeship files (DEM (NMT) 100 m is not divided into map sheets)"
+
+# Availability check rows (separate step with network)
+[check]
+selection_available = "  Your selection: {product} {resolution}, {vertical_crs} — full set of map sheets, latest year {year}"
+selection_partial = "  Your selection: {product} {resolution}, {vertical_crs} — data for only part of the area (year {year}: {full} full and {partial} partial map sheets)"
+selection_unavailable = "  Your selection: {product} {resolution}, {vertical_crs} — no data for this area"
+cutout_note = "  The WCS server assembles the cutout from the latest flights; the sheet index only approximates this."
+alternatives = "  Also available for this area:"
+alternative = "    {product} {resolution}, {vertical_crs} — year {year}, full set of map sheets"
+province_files = "  DEM (NMT) 100 m consists of voivodeship files: the sheet index does not cover them, so nothing was checked."
+incomplete = "  Could not check the whole area; the result may be incomplete."
+orthophoto_none = "  GUGiK has no RGB orthophoto for this area. {detail}"
+orthophoto_sheets = "  RGB orthophoto: {published} of {total} map sheets have data, latest flight on {newest}"
+orthophoto_variant = "  The orthophoto sheet index knows only the RGB variant; CIR and black-and-white were not checked."
+in_store = "  {count} of them are already in the store."
+counties = "  Counties in the area: {count} ({units})"
+no_counties = "  The area does not intersect any county."

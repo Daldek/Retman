@@ -1,14 +1,18 @@
 """The catalog as text for people: ``--help`` and the terminal view of ``commands``.
 
-The texts of a command come from the translation files, ``[catalog.<operation_id>]``
-(AGI-3.7, AGI-9.1); the option names, flags, values and the examples are the machine
-names of the catalog, identical in every language (AGI-1.6).
+The texts of a command are English in its declaration (AGI-9.1) and Polish in the
+translation file, ``[catalog.<operation_id>]`` of ``pl.toml`` (AGI-3.7); the option
+names, flags, values and the examples are the machine names of the catalog,
+identical in every language (AGI-1.6).
 """
 
 from collections.abc import Sequence
 
 from retman.catalog.spec import Command, Option
 from retman.i18n.loader import Texts
+
+# The language of the declarations
+_DECLARED = "en"
 
 
 def _base(command: Command) -> str:
@@ -17,21 +21,36 @@ def _base(command: Command) -> str:
 
 def summary_of(command: Command, texts: Texts) -> str:
     """Return the one-line summary of ``command`` in the language of ``texts``."""
+    if texts.language == _DECLARED:
+        return command.summary
     return texts.get(f"{_base(command)}.summary")
 
 
 def description_of(command: Command, texts: Texts) -> str:
     """Return the description of ``command`` in the language of ``texts``."""
+    if texts.language == _DECLARED:
+        return command.description
     return texts.get(f"{_base(command)}.description")
+
+
+def rules_of(command: Command, texts: Texts) -> list[str]:
+    """Return the rules for agents of ``command`` in the language of ``texts``."""
+    if texts.language == _DECLARED:
+        return list(command.rules)
+    return texts.lines(f"{_base(command)}.rules")
 
 
 def option_description(command: Command, option: Option, texts: Texts) -> str:
     """Return the description of ``option`` in the language of ``texts``."""
+    if texts.language == _DECLARED:
+        return option.description
     return texts.get(f"{_base(command)}.options.{option.name}.description")
 
 
 def meaning_of(command: Command, option: Option, value: str, texts: Texts) -> str:
     """Return the meaning of one value of a ``choice`` option."""
+    if texts.language == _DECLARED:
+        return option.meanings[value]
     return texts.get(f"{_base(command)}.options.{option.name}.meanings.{value}")
 
 
@@ -156,7 +175,7 @@ def describe_command(command: Command, texts: Texts) -> list[str]:
     if command.rules:
         lines += [
             texts.get("commands_view.rules"),
-            *(f"  - {rule}" for rule in texts.lines(f"{_base(command)}.rules")),
+            *(f"  - {rule}" for rule in rules_of(command, texts)),
         ]
     if command.errors:
         lines.append(
