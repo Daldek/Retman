@@ -1,4 +1,4 @@
-# Specyfikacja: `retman-eval`
+# Specyfikacja: `retman eval run`
 
 **Status:** przyjęta przez autora (2026-10-12)
 **Data:** 2026-10-11
@@ -7,7 +7,7 @@ CLAUDE.md (środowisko i komendy, testy), ARCHITECTURE 13.1
 
 ## 1. Cel
 
-`retman-eval` mierzy, jak dobrze Retman **planuje** polecenia: czy rozpoznaje operację,
+`retman eval run` mierzy, jak dobrze Retman **planuje** polecenia: czy rozpoznaje operację,
 czy poprawnie ustala parametry, kiedy dopytuje i jak często myli się, nie pytając.
 Wynik służy do:
 
@@ -97,7 +97,7 @@ i bliskich zakresowi.
 ## 3. Uruchomienie
 
 ```bash
-retman-eval --config PATH [--commands PATH] [--operations ID[,ID...]] [--tags TAG[,TAG...]]
+retman eval run --config PATH [--commands PATH] [--operations ID[,ID...]] [--tags TAG[,TAG...]]
             [--repeat N] [--target-error P] [--output RAW.jsonl] [--report REPORT.md]
 ```
 
@@ -237,7 +237,7 @@ są w `retman/i18n/pl.toml` (sekcja `[eval]`), jak wszystkie teksty dla użytkow
 | --- | --- | --- |
 | `OutOfScopeError(RetmanError)` z atrybutem `operations` | `retman/exceptions.py`, `core/pipeline.py`, `cli.py` | eval musi odróżnić „spoza zakresu” od błędu; CLI może wtedy pominąć prefiks „Błąd:” |
 | liczba zapytań do modelu na plan | licznik w pipeline albo opakowanie backendu w eval | miara czasu (p. 5.2) |
-| `retman-eval` w `[project.scripts]` | `pyproject.toml` | ARCHITECTURE 9.3: pakiet podstawowy, bez dodatkowych zależności |
+| `retman eval run` w `[project.scripts]` | `pyproject.toml` | ARCHITECTURE 9.3: pakiet podstawowy, bez dodatkowych zależności |
 | moduły `retman/eval/{runner,metrics,report}.py`, dane `retman/eval/commands.jsonl` | ARCHITECTURE 3.1 | — |
 
 ## 8. Testy (offline, `FakeDecisionBackend`)
@@ -256,7 +256,7 @@ Test `live` (świadomie, `-m live`): jeden przebieg kilku poleceń na serwerze z
 
 ## 9. Kryteria akceptacji
 
-1. `retman-eval --config <plik z LM Studio>` przechodzi cały zbiór Kartografa i tworzy
+1. `retman eval run --config <plik z LM Studio>` przechodzi cały zbiór Kartografa i tworzy
    raport z wszystkimi miarami z p. 5.2 i krzywą z p. 5.3.
 2. Raport z przebiegu Bielik 11B (`logprobs`) trafia do `docs/research/`, z zaleceniem progów
    dla `--target-error 0.01`.
