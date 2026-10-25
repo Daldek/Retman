@@ -48,8 +48,8 @@ in `pyproject.toml`; both are the heads of the branches `feature/data-output` of
 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@8a36e977d607192b11c66f44f318f2e7676b60d1" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@7b117550103a3d8d46afc97043b90f0e93314c8b"
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@b73aad3327cf6faf7ec7d15fe47e9a897f21954a" \
+    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@7e2114e1424903f1fd8fc036a2cb7aa81df44287"
 ```
 
 The IMGWTools `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are

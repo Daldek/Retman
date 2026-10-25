@@ -57,14 +57,12 @@ dev = [
 # Tools used by handler tests and manual smoke runs (ARCHITECTURE 3.2.7, ADR-003).
 # Not a runtime dependency of Retman (ARCHITECTURE 9.3). Commits until the tags v0.8.0
 # and v3.0.0 exist; then pin the tags. Both commits are the heads of the branches
-# feature/data-output of the tools (data output convention, ECO-051) and are NOT pushed
-# yet: `uv lock` and `uv sync` resolve them only on a machine whose git cache holds
-# them, until the author pushes Kartograf and IMGWTools (docs/PROGRESS.md, Next 2). The
-# supported ranges of both tools admit their development versions while the commits are
-# pinned (REL-5.6).
+# feature/data-output of the tools (data output convention, ECO-051), pushed to GitHub.
+# The supported ranges of both tools admit their development versions while the commits
+# are pinned (REL-5.6).
 tools = [
-    "kartograf @ git+https://github.com/Daldek/Kartograf@8a36e977d607192b11c66f44f318f2e7676b60d1",
-    "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@7b117550103a3d8d46afc97043b90f0e93314c8b",
+    "kartograf @ git+https://github.com/Daldek/Kartograf@b73aad3327cf6faf7ec7d15fe47e9a897f21954a",
+    "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@7e2114e1424903f1fd8fc036a2cb7aa81df44287",
 ]
 
 [tool.uv]
