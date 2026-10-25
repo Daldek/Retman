@@ -217,6 +217,21 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   magazyn IMGW", where IMGWTools checks the layout and writes the marker. A folder that holds only
   the `api_keys.json` of the IMGWTools server counts as empty, no longer as foreign
   (ARCHITECTURE 7.2, 9.1; ADR-024).
+- **Breaking: Kartograf data output** (ECO-051). Retman calls Kartograf as its branch
+  `feature/data-output` defines it: the folder `[retman.tools.kartograf] store_dir` is the store
+  `root` of every call (it was `output_dir`, `--output-dir` on the command line of the audit and
+  `DownloadManager(output_dir=...)` of the orthophoto), a run is read from the
+  `kartograf-result/1` envelope (`status`, `items[]`, `notices[]` with `message`, and the
+  `files[]` of its `result` with `size_bytes`), the offline lookups are `sheet parse`,
+  `sheet find` and `store sidecar`, and `retman scaffold` reads `list_commands` and
+  `command_schema`. The errors are the codes of the registry: the `error_code` of a result is
+  `no_data` (it was `no_coverage`), `source_unavailable` (`download_failed`),
+  `validation_error` (`invalid_input`) and so on, and the precision is the `details.reason` of
+  the `failure` of the result; the `[errors]` texts of the tool are keyed by the codes.
+  Migration: read the new codes in `result.json`; the plan and the settings do not change. The
+  first write into a new folder writes the store marker `kartograf-store.json`. The `tools` group
+  pins Kartograf `8a36e977`, the head of its branch `feature/data-output`, which is not pushed
+  yet.
 - The supported ranges admit the development versions of the pending releases while the
   `tools` group pins commits: Kartograf `>=0.8.0.dev0,<0.9` and IMGWTools `>=3.0.0.dev0,<4`
   (REL-5.6, ADR-024 erratum 1). The version check of the loader, `retman doctor check` and

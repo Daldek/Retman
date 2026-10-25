@@ -15,10 +15,10 @@ from kartograf_support import (
     OfflineClient,
     Reply,
     context,
-    document,
     operations,
     settings,
 )
+from kartograf_support import plan as recorded_plan
 
 from retman.adapters.catalog import CatalogCall, ToolError
 from retman.adapters.manifest_adapter import run_check
@@ -84,8 +84,8 @@ def check(
 
 
 def plan(name: str, tmp_path: Path) -> dict[str, Any]:
-    """A recorded freshness plan with its store placeholder replaced."""
-    return document(name, tmp_path / "store")
+    """The freshness plan of the real Kartograf for an empty store, by ``name``."""
+    return recorded_plan(name, tmp_path / "store")
 
 
 def test_nmt_sheet_newest_complete_year_and_only_sheet_grids_as_alternatives(
@@ -393,7 +393,7 @@ def test_orthophoto_no_coverage_is_unavailable_with_the_services_reason(
     tmp_path: Path,
 ) -> None:
     def refuse(call: CatalogCall) -> dict[str, Any]:
-        raise ToolError("kartograf", "no_coverage", "Brak arkuszy w skorowidzu")
+        raise ToolError("kartograf", "no_data", "Brak arkuszy w skorowidzu")
 
     report, client = check(
         tmp_path,
@@ -567,7 +567,7 @@ def test_bdot10k_area_without_counties_is_unavailable(tmp_path: Path) -> None:
 
 def test_client_error_during_the_check_is_an_unknown_report(tmp_path: Path) -> None:
     def fail(call: CatalogCall) -> dict[str, Any]:
-        raise ToolError("kartograf", "download_failed", "WFS nie odpowiada")
+        raise ToolError("kartograf", "source_unavailable", "WFS nie odpowiada")
 
     report, client = check(
         tmp_path, "download_dem_sheet", DEM_SHEET, queries={ELEVATION: fail}

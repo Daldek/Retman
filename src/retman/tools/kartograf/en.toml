@@ -218,7 +218,7 @@ options.shp.description = "Shapefile (.shp, SHP) — all layers from the ZIP pac
 options.unspecified.description = "No format given — ask about GeoPackage or Shapefile"
 
 # Result warnings. Keys equal to Kartograf note codes replace its text
-# (ASCII, with command-line flag names); other warning notes are
+# (English, with command-line flag names); other warning notes are
 # shown verbatim (core: warnings.tool_notice).
 [warnings]
 sheets_missing = "Downloaded {count} of {total} sheets."
@@ -235,18 +235,17 @@ failed_counties = "Failed to download {count} of {total} BDOT10k county packages
 all_nodata = "The cutout contains no valid elevation data (the whole result is nodata)."
 masked_pixels = "{count} pixels outside land were masked as nodata."
 
-# Kartograf errors by fixed error code; its own text is only {detail}
+# Kartograf errors by registry code (ERR §4); its own text is only {detail}, and its
+# details.reason says which of the errors of the code it is
 [errors]
-kartograf_error = "Kartograf reported an error: {detail}"
-invalid_input = "Kartograf rejects this choice: {detail}"
-invalid_sheet_code = "Invalid sheet code: {detail}"
-download_failed = "Failed to download data from the GUGiK service. Details: {detail}"
-no_coverage = "GUGiK has no data for the specified area and the selected product parameters. Details: {detail}"
-year_out_of_range = "GUGiK has data for this area, but not from the requested range of years. Details: {detail}"
-cache_error = "The Kartograf metadata cache is not working: {detail}"
-invalid_sidecar = "The metadata file written by Kartograf in the store is corrupted: {detail}"
-transform_failed = "Failed to convert the coordinates: {detail}"
-transform_unavailable = "There is no safe conversion between the selected systems: {detail}"
+validation_error = "Kartograf rejects this choice: {detail}"
+no_data = "GUGiK has no data for the specified area and the selected product parameters. Details: {detail}"
+source_unavailable = "Failed to download data from the GUGiK service. Details: {detail}"
+store_unavailable = "The Kartograf store or its metadata cache is not usable: {detail}. Check: retman doctor check"
+conflict = "Kartograf will not write to this store: {detail}. Check: retman doctor check"
+data_error = "The data Kartograf keeps in the store is invalid or incomplete: {detail}"
+calculation_error = "Kartograf could not compute the result: {detail}"
+unsupported = "There is no safe conversion between the selected systems: {detail}"
 io_error = "Kartograf cannot write the data (check the disk space and whether the disk supports hard links): {detail}"
 internal_error = "Internal Kartograf error: {detail}"
 all_counties_failed = "Failed to download any BDOT10k county package ({detail})."

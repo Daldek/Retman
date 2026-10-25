@@ -27,7 +27,7 @@ def reject_pair(call: CatalogCall) -> ToolError | None:
     if call.options["resolution"] == "5m" and call.options["vertical_crs"] == "KRON86":
         return ToolError(
             "dummy_tool",
-            "invalid_input",
+            "validation_error",
             "5 m nie ma KRON86",
             options=("resolution", "vertical_crs"),
         )

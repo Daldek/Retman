@@ -155,7 +155,7 @@ def test_dem_sheet_rejection_naming_no_parameter_is_tool_drift() -> None:
     client = FakeToolClient(
         validation={
             "elevation download": ToolError(
-                "kartograf", "invalid_input", "x", option="no_such_option"
+                "kartograf", "validation_error", "x", option="no_such_option"
             )
         }
     )
@@ -213,7 +213,7 @@ def test_hierarchy_sheet_without_any_workable_scale_says_it_has_no_descendants()
         if "descendants" in call.options:
             raise ToolError(
                 "kartograf",
-                "invalid_input",
+                "validation_error",
                 "no descendants",
                 option="descendants",
                 call=call,
@@ -223,7 +223,7 @@ def test_hierarchy_sheet_without_any_workable_scale_says_it_has_no_descendants()
     result = preview(
         "download_sheet_hierarchy",
         {"area": PL2000_FINE, **HIERARCHY},
-        FakeToolClient(documents={"parse": parse}),
+        FakeToolClient(documents={"sheet parse": parse}),
     )
 
     assert result.rows == []
@@ -340,7 +340,7 @@ def test_find_sheets_without_any_sheet_is_a_problem_of_the_area(tmp_path: Path) 
     client = FakeToolClient(
         documents={
             "geometry envelope": {"bbox": [530000, 382000, 532000, 384000]},
-            "find_sheets": {"count": 0},
+            "sheet find": {"count": 0},
         }
     )
 

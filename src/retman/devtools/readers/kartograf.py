@@ -1,8 +1,10 @@
-"""Reader of Kartograf's command catalog (``kartograf.get_catalog``, 0.8)."""
+"""Reader of Kartograf's command catalog (``list_commands``, ``command_schema``)."""
 
 import importlib
+import inspect
 from collections.abc import Mapping
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 from retman.devtools.model import (
@@ -13,59 +15,114 @@ from retman.devtools.model import (
     Verdict,
 )
 
-# Document schemas the Kartograf client of Retman understands: the data
-# documents of the download commands and the plan of ``check_command``
+# Document schemas the Kartograf client of Retman understands: the domain document of
+# the download commands, which ``run_command`` wraps in the ``kartograf-result/1``
+# envelope, and the plan ``check_command`` puts into it
 KNOWN_SCHEMAS = ("kartograf-download/1", "kartograf-plan/1")
 
 # Error codes of the registry that a library client never meets
 UNREACHABLE_ERRORS = {
-    "usage_error": "only the command-line parser raises it (parse_command)",
-    "interrupted": "Ctrl-C reaches Retman as KeyboardInterrupt, not as an error",
-    "terminated": "the SIGTERM of the command-line process",
+    "forbidden": "only the MCP server raises it (a path outside --allow-dir, a write "
+    "on a server that does not write)",
 }
 
-# Effects of the catalog that change something on disk
-_WRITING_EFFECTS = frozenset({"store_write", "project_write", "cache_delete"})
+# The plan option of a command that has a plan, which is no argument of a function
+_CHECK = "check"
+
+
+def _run_options(kartograf: ModuleType) -> frozenset[str]:
+    """Return the names a run takes besides the task options: store, plan, workers...
+
+    The catalog lists every argument of the library function of a command; the
+    arguments of ``run_command`` and ``check_command`` other than the command and its
+    options (``root``, ``output_dir``, ``update``, ``plan``, ``workers``, ``summary``,
+    ``force``, ``cache``...) are the environment of a call, which Retman's client owns,
+    and the plan option ``check``.
+    """
+    names: set[str] = {_CHECK}
+    for function in (kartograf.run_command, kartograf.check_command):
+        names.update(inspect.signature(function).parameters)
+    return frozenset(names - {"command", "options"})
+
+
+def _enum(prop: Mapping[str, Any]) -> tuple[str, ...] | None:
+    """Return the allowed values of an option as text, or ``None`` for free form."""
+    values = prop.get("enum")
+    return tuple(str(item["value"]) for item in values) if values else None
+
+
+def _kind(prop: Mapping[str, Any]) -> str:
+    """Return the type label of an option: ``path`` for a path, else the JSON type."""
+    return "path" if prop.get("path_role") else str(prop["type"])
+
+
+def _example_options(kartograf: ModuleType, call: str) -> Mapping[str, object] | None:
+    """Return the options of an example command line; ``None`` if it is no data call."""
+    try:
+        options: Mapping[str, object] = kartograf.parse_command(call).options
+    except kartograf.KartografError:
+        return None
+    return options
 
 
 def read_catalog() -> ToolCatalog:
     """Kartograf's catalog: every command with its task options and effects."""
     kartograf = importlib.import_module("kartograf")
-    catalog = kartograf.get_catalog(params=True, tables=True)
-    data = {item.id for item in kartograf.data_commands()}
+    listed = kartograf.list_commands().to_dict()
+    entries = {
+        row["name"]: kartograf.command_schema(row["name"]).to_dict()["commands"][0]
+        for row in listed["commands"]
+    }
+    # The twelve data commands (``validate_command`` takes them) are the values of the
+    # option ``command`` of ``project add``
+    task = next(
+        option
+        for option in entries["project add"]["options"]
+        if option["name"] == "command"
+    )
+    data = {str(item["value"]) for item in task["enum"]}
+    run_options = _run_options(kartograf)
     commands: dict[str, CommandInfo] = {}
-    for info in catalog.commands:
-        options = tuple(
-            OptionInfo(
-                name=param.name,
-                required=bool(param.required),
-                allowed=tuple(param.allowed) if param.allowed else None,
-                kind=str(param.kind),
-                default=param.default,
-                description=param.description or "",
-            )
-            # Environment arguments (store, workers, update...) are the client's
-            for param in info.params
-            if param.task
-        )
-        effects = set(info.effects)
-        commands[info.id] = CommandInfo(
-            id=info.id,
-            group=info.group or "",
-            summary=info.summary or "",
-            options=options,
-            network="network" in effects,
-            writes=bool(effects & _WRITING_EFFECTS),
-            data=info.id in data,
-            result_schema=info.result_schema or "",
-            check_schema=info.check_result_schema or "",
-            examples=tuple(dict(example.options) for example in info.examples),
+    for name, entry in entries.items():
+        effects = entry["effects"]
+        commands[name] = CommandInfo(
+            id=name,
+            group=name.split()[0],
+            summary=str(entry["summary"]),
+            options=tuple(
+                OptionInfo(
+                    name=prop["name"],
+                    required=bool(prop["required"]),
+                    allowed=_enum(prop),
+                    kind=_kind(prop),
+                    default=prop.get("default"),
+                    minimum=prop.get("min"),
+                    maximum=prop.get("max"),
+                    description=str(prop["description"]),
+                )
+                for prop in entry["options"]
+                if name not in data or prop["name"] not in run_options
+            ),
+            network=bool(effects["network"]),
+            writes=effects["writes"] != "none",
+            data=name in data,
+            result_schema=str(entry["result"]["schema"]),
+            check_schema="kartograf-plan/1" if name in data and entry["check"] else "",
+            examples=tuple(
+                options
+                for example in entry["examples"]
+                if name in data
+                and (options := _example_options(kartograf, example["call"]))
+                is not None
+            ),
         )
     return ToolCatalog(
         tool="kartograf",
         version=str(kartograf.__version__),
         commands=commands,
-        error_codes=tuple(item.code for item in catalog.errors),
+        error_codes=tuple(
+            sorted({code for entry in entries.values() for code in entry["errors"]})
+        ),
         unreachable_errors=UNREACHABLE_ERRORS,
         known_schemas=KNOWN_SCHEMAS,
     )

@@ -2296,10 +2296,10 @@ a GPU. The results go into the documentation as guidance for model selection (PR
   nor `mypy src tests` depends on what is installed.
 - The `tools` dependency group in `pyproject.toml` serves tests and manual runs; it is not
   a dependency of the user's environment. Until the tags `v0.8.0` (Kartograf) and `v3.0.0`
-  (IMGWTools) it pins commits: Kartograf `8e9bcbb0` (`origin/develop`, pushed) and IMGWTools with
-  the `store` extra (`7b11755`, the head of its branch `feature/data-output`, not pushed yet:
-  `uv lock` resolves it only where the git cache holds it, until the author pushes IMGWTools;
-  PROGRESS Next 2); after release it switches to tags (ADR-012, ADR-024). The IMGWTools `store`
+  (IMGWTools) it pins commits: Kartograf `8a36e977` and IMGWTools with the `store` extra
+  (`7b11755`), the heads of the branches `feature/data-output` of the two tools, not pushed yet:
+  `uv lock` resolves them only where the git cache holds them, until the author pushes both
+  tools; PROGRESS Next 2); after release it switches to tags (ADR-012, ADR-024). The IMGWTools `store`
   extra installs `pyarrow` (time series are Parquet files).
 - Retman **has no extras that install tools** (`retman[hydrograf]` etc.). Dependencies pointing
   directly to Git repositories would force fixed versions instead of ranges and would block any

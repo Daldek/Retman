@@ -54,11 +54,11 @@ def sheet_count(call: CatalogCall, client: PlanClient) -> SheetCount | None:
         if "layer" in options:
             area["layer"] = options["layer"]
         found = client.lookup(
-            CatalogCall("find_sheets", {**area, "scale": scale, "sheet_system": system})
+            CatalogCall("sheet find", {**area, "scale": scale, "sheet_system": system})
         )
         return SheetCount(int(found["count"]), scale, system)
     code = str(options["sheet"])
-    own = client.lookup(CatalogCall("parse", {"sheet": code}))
+    own = client.lookup(CatalogCall("sheet parse", {"sheet": code}))
     system, scale = str(own["sheet_system"]), str(own["scale"])
     target = options.get("scale")
     if target is None and system == "1992" and _denominator(scale) > 10000:
@@ -66,7 +66,9 @@ def sheet_count(call: CatalogCall, client: PlanClient) -> SheetCount | None:
         target = _PL1992_SCALE
     if target is None or target == scale:
         return SheetCount(1, scale, system)
-    below = client.lookup(CatalogCall("parse", {"sheet": code, "descendants": target}))
+    below = client.lookup(
+        CatalogCall("sheet parse", {"sheet": code, "descendants": target})
+    )
     return SheetCount(int(below["descendants"]["count"]), str(target), system)
 
 

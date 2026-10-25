@@ -11,9 +11,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-import kartograf
-import pytest
-from kartograf_support import OfflineClient, document, geometry, materialise, operations
+from kartograf_offline import GugikIndex, flight, gugik_index
+from kartograf_support import CHILDREN, NEWEST, OfflineClient, geometry, operations
 
 from retman.config import init_config, load_config
 from retman.core.pipeline import Retman
@@ -159,8 +158,7 @@ def _only_result(app: Any) -> tuple[Path, dict[str, Any]]:
 def test_executed_sheets_stay_in_the_store_and_the_record_names_the_tool_run(
     tmp_path: Path,
 ) -> None:
-    doc = document("sheets_one_of_four", tmp_path / "stores" / "kartograf")
-    materialise(doc)
+    index = GugikIndex([flight(CHILDREN[0], *NEWEST, full=False)])
     app, client = make_app(
         tmp_path,
         {
@@ -168,21 +166,26 @@ def test_executed_sheets_stay_in_the_store_and_the_record_names_the_tool_run(
             "1m": "1m",
             "evrf2007": "evrf2007",
         },
-        runs={"elevation download": doc},
     )
     plan = app.plan("Pobierz NMT 1 m EVRF2007 dla arkusza N-34-139-C-a-3")
     assert client.network == []
 
-    result = app.execute(plan.confirm())
+    with gugik_index(index):
+        result = app.execute(plan.confirm())
 
     assert result.ok, result.error
     assert [method for method, _ in client.network] == ["run"]
     folder, record = _only_result(app)
+    store = tmp_path / "stores" / "kartograf"
     (entry,) = record["files"]["dem"]
     assert entry["store"] == "kartograf" and len(entry["sha256"]) == 64
-    assert Path(entry["path"]).is_relative_to(tmp_path / "stores" / "kartograf")
-    assert record["tool"]["calls"][0]["command"] == "elevation download"
-    assert (folder / record["tool"]["calls"][0]["document_file"]).is_file()
+    assert Path(entry["path"]).is_relative_to(store)
+    # The first write into the new store marked it (DEV-19.12)
+    assert (store / "kartograf-store.json").is_file()
+    call = record["tool"]["calls"][0]
+    assert call["command"] == "elevation download"
+    assert call["schema"] == "kartograf-result/1"
+    assert (folder / call["document_file"]).is_file()
     assert record["preview"]["sheet_count"] == 4
     # 1 of 4 sheets: the user is told in words, not only in the record
     assert any("1 z 4" in warning for warning in result.warnings)
@@ -191,7 +194,6 @@ def test_executed_sheets_stay_in_the_store_and_the_record_names_the_tool_run(
 def test_a_failed_run_is_a_result_with_retmans_text_of_the_tools_error_code(
     tmp_path: Path,
 ) -> None:
-    doc = document("sheets_none_delivered", tmp_path / "stores" / "kartograf")
     app, _ = make_app(
         tmp_path,
         {
@@ -199,48 +201,24 @@ def test_a_failed_run_is_a_result_with_retmans_text_of_the_tools_error_code(
             "1m": "1m",
             "evrf2007": "evrf2007",
         },
-        runs={"elevation download": doc},
     )
     plan = app.plan("Pobierz NMT 1 m EVRF2007 dla arkusza N-34-139-C-a-4")
 
-    result = app.execute(plan.confirm())
+    with gugik_index(GugikIndex()):
+        result = app.execute(plan.confirm())
 
     assert not result.ok
-    assert result.error_code == "no_coverage"
+    # The registry code is the code of the result, the reason is in the failure
+    assert result.error_code == "no_data"
+    assert result.failure is not None
+    assert result.failure["details"]["reason"] == "no_coverage"
     assert "GUGiK nie ma danych" in (result.error or "")
 
 
 def test_an_orthophoto_runs_through_the_provider_and_lands_in_the_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
-    store = tmp_path / "stores" / "kartograf"
-    sheet = store / "orto" / "pl_1992_cir" / "N-34-139-C-a-3-1.tif"
-    sheet.parent.mkdir(parents=True)
-    sheet.write_bytes(b"II*\x00" + bytes(12))
-    versioned = kartograf.VersionedFile(
-        path=sheet,
-        status="new",
-        label="2025-04-26_1",
-        sha256="0" * 64,
-        version_path=sheet,
-    )
-    outcome = kartograf.DownloadResult(
-        succeeded=[sheet], files={"N-34-139-C-a-3-1": (versioned,)}
-    )
-
-    class Provider:
-        def __init__(self, session: Any = None, cache: Any = None, *, color: str):
-            self.color = color
-
-    class Manager:
-        def __init__(self, output_dir: Path, provider: Any, **_: Any) -> None:
-            self.provider = provider
-
-        def download_sheet(self, code: str, **_: Any) -> Any:
-            return outcome
-
-    monkeypatch.setattr(kartograf, "GugikOrtoProvider", Provider)
-    monkeypatch.setattr(kartograf, "DownloadManager", Manager)
+    index = GugikIndex([flight(CHILDREN[0], "2025-04-26", "82712", orthophoto=True)])
     app, client = make_app(
         tmp_path,
         {
@@ -255,12 +233,16 @@ def test_an_orthophoto_runs_through_the_provider_and_lands_in_the_store(
     )
     assert plan.questions == [], [q.name for q in plan.questions]
 
-    result = app.execute(plan.confirm())
+    with gugik_index(index):
+        result = app.execute(plan.confirm())
 
     assert result.ok, result.error
     assert client.network == []  # the provider route does not use the command client
     _, record = _only_result(app)
+    store = tmp_path / "stores" / "kartograf"
     (entry,) = record["files"]["orthophoto"]
     assert entry["store"] == "kartograf"
+    assert Path(entry["path"]).is_relative_to(store)
+    assert (store / "kartograf-store.json").is_file()
     assert record["tool"]["calls"][0]["options"]["color"] == "CIR"
     assert record["params"]["color"]["value"] == "cir"

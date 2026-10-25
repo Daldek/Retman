@@ -1,4 +1,9 @@
-"""What Retman reports of Kartograf's data commands, from recorded documents."""
+"""What Retman reports of Kartograf's data commands, from the tool's own documents.
+
+The documents are the ``kartograf-result/1`` envelopes the real Kartograf writes
+offline (``kartograf_support.sheets`` and ``bdot10k``); only the WCS cutout, which
+cannot be produced without a server, is a recorded document.
+"""
 
 import json
 from pathlib import Path
@@ -6,16 +11,22 @@ from typing import Any
 from zipfile import ZipFile
 
 import pytest
+from kartograf.testing import make_sidecar
+from kartograf_offline import TIFF, ZIP
 from kartograf_support import (
     BBOX,
+    CHILDREN,
+    FOUR,
+    NO_FLIGHT,
     SHEET,
     TERYT,
     OfflineClient,
+    bdot10k,
     context,
     document,
-    materialise,
     operations,
     settings,
+    sheets,
 )
 
 from retman.adapters.catalog import ToolError, run_calls
@@ -24,7 +35,7 @@ from retman.registry.manifest import HandlerOutput
 from retman.testing import FakeToolClient
 from retman.tools.kartograf.client import run_from_document
 
-SHEETS_OF_FOUR = {"type": "sheet", "code": "N-34-139-C-a-3"}
+SHEETS_OF_FOUR = {"type": "sheet", "code": FOUR}
 NMT = {"resolution": "1m", "vertical_crs": "evrf2007"}
 SHAPEFILES = {"format": "shp"}
 
@@ -32,8 +43,7 @@ SHAPEFILES = {"format": "shp"}
 def run(
     tmp_path: Path, name: str, params: dict[str, Any], command: str, doc: dict[str, Any]
 ) -> HandlerOutput:
-    """Run the operation's calls against a recorded document, as ``execute`` does."""
-    materialise(doc)
+    """Run the operation's calls against a document of the tool, as ``execute`` does."""
     client = OfflineClient(settings(tmp_path), runs={command: doc})
     output_dir = tmp_path / "result"
     output_dir.mkdir(exist_ok=True)
@@ -49,7 +59,7 @@ def test_partial_sheets_are_counted_from_the_request_not_read_from_the_document(
     tmp_path: Path,
 ) -> None:
     """Kartograf calls a run with 1 of 4 sheets ``ok``; the count is computed."""
-    doc = document("sheets_one_of_four", tmp_path / "store")
+    doc = sheets("one_of_four", tmp_path / "store")
 
     output = run(
         tmp_path,
@@ -68,12 +78,12 @@ def test_partial_sheets_are_counted_from_the_request_not_read_from_the_document(
     # Kartograf's own notices stay, under the codes Retman words itself
     assert {"incomplete_campaign", "no_coverage_some"} <= set(keys(output))
     assert list(output["files"]) == ["dem"]
-    assert output["files"]["dem"][0].name == "N-34-139-C-a-3-1.asc"
+    assert output["files"]["dem"][0].name == f"{CHILDREN[0]}.asc"
 
 
 def test_a_complete_single_sheet_has_nothing_missing(tmp_path: Path) -> None:
-    doc = document("sheets_one_delivered", tmp_path / "store")
-    area = {"type": "sheet", "code": "N-34-139-C-a-3-1"}
+    doc = sheets("one_delivered", tmp_path / "store")
+    area = {"type": "sheet", "code": CHILDREN[0]}
 
     output = run(
         tmp_path, "download_dem_sheet", {"area": area, **NMT}, "elevation download", doc
@@ -86,7 +96,7 @@ def test_a_complete_single_sheet_has_nothing_missing(tmp_path: Path) -> None:
 def test_a_failed_download_next_to_delivered_sheets_is_a_warning_with_its_detail(
     tmp_path: Path,
 ) -> None:
-    doc = document("sheets_hard_failure", tmp_path / "store")
+    doc = sheets("hard_failure", tmp_path / "store")
 
     output = run(
         tmp_path,
@@ -97,33 +107,36 @@ def test_a_failed_download_next_to_delivered_sheets_is_a_warning_with_its_detail
     )
 
     failure = next(w for w in output["warnings"] if w["key"] == "sheets_failed")
-    assert "N-34-139-C-a-3-2" in failure["args"]["detail"]
+    assert CHILDREN[1] in failure["args"]["detail"]
     assert output["values"]["sheet_count"] == 1
     # The run is recorded as partial: the delivered sheet is the result
     assert output["tool"]["calls"][0]["status"] == "partial"
 
 
-def test_a_request_without_any_delivered_file_is_an_error_with_kartografs_code(
+def test_a_request_without_any_delivered_file_is_an_error_with_the_registry_code(
     tmp_path: Path,
 ) -> None:
-    doc = document("sheets_none_delivered", tmp_path / "store")
+    doc = sheets("none_delivered", tmp_path / "store")
 
     with pytest.raises(ToolError) as caught:
         run(
             tmp_path,
             "download_dem_sheet",
-            {"area": {"type": "sheet", "code": "N-34-139-C-a-4"}, **NMT},
+            {"area": {"type": "sheet", "code": NO_FLIGHT}, **NMT},
             "elevation download",
             doc,
         )
 
-    assert caught.value.tool_code == "no_coverage"
+    assert caught.value.tool_code == "no_data"
+    assert caught.value.code == "no_data"
+    # The reason of the failed unit is the precision of the code
+    assert caught.value.details["reason"] == "no_coverage"
 
 
 def test_the_tools_document_is_saved_whole_and_referenced_with_its_checksum(
     tmp_path: Path,
 ) -> None:
-    doc = document("sheets_one_of_four", tmp_path / "store")
+    doc = sheets("one_of_four", tmp_path / "store")
 
     output = run(
         tmp_path,
@@ -138,17 +151,22 @@ def test_the_tools_document_is_saved_whole_and_referenced_with_its_checksum(
         (tmp_path / "result" / audit["document_file"]).read_text("utf-8")
     )
     assert audit["command"] == "elevation download"
-    assert audit["schema"] == "kartograf-download/1"
+    assert audit["schema"] == "kartograf-result/1"
     assert audit["options"]["resolution"] == "1m"
-    assert saved["schema"] == "kartograf-download/1"
+    # The envelope is kept as it is, the document of the command inside it
+    assert saved["schema"] == "kartograf-result/1"
+    assert saved["result"]["schema"] == "kartograf-download/1"
     assert audit["files"][0]["version"] == "2025-10-21_84183"
+    assert audit["files"][0]["status"] == "new"
+    assert audit["files"][0]["sha256"] == saved["result"]["files"][0]["sha256"]
 
 
 def test_nmt_100m_province_files_are_not_sheets(tmp_path: Path) -> None:
-    doc = document("sheets_one_delivered", tmp_path / "store")
-    doc["files"][0]["file"]["path"] = str(
-        tmp_path / "store" / "nmt" / "100m" / "22.zip"
-    )
+    doc = sheets("one_delivered", tmp_path / "store")
+    archive = tmp_path / "store" / "nmt" / "100m" / "22.zip"
+    archive.parent.mkdir(parents=True)
+    archive.write_bytes(ZIP)
+    doc["result"]["files"][0]["path"] = str(archive)
 
     output = run(
         tmp_path,
@@ -165,8 +183,7 @@ def test_nmt_100m_province_files_are_not_sheets(tmp_path: Path) -> None:
 
 def test_a_result_survives_a_count_that_cannot_be_made(tmp_path: Path) -> None:
     """The delivered files are the result even when the offline lookup fails."""
-    doc = document("sheets_one_of_four", tmp_path / "store")
-    materialise(doc)
+    doc = sheets("one_of_four", tmp_path / "store")
     call_run = run_from_document
     client = FakeToolClient(
         runs={"elevation download": lambda call: call_run(call, doc)}
@@ -190,10 +207,11 @@ def test_a_result_survives_a_count_that_cannot_be_made(tmp_path: Path) -> None:
 
 def _cutout(tmp_path: Path, extra: dict[str, Any] | None) -> HandlerOutput:
     doc = document("cutout_all_nodata", tmp_path / "store")
+    path = Path(doc["result"]["files"][0]["path"])
+    path.parent.mkdir(parents=True)
+    path.write_bytes(TIFF)
     if extra is not None:
-        path = Path(doc["files"][0]["file"]["path"])
-        path.parent.mkdir(parents=True)
-        sidecar = {"schema": "kartograf-meta/1", "extra": extra}
+        sidecar = make_sidecar(extra=extra)
         Path(f"{path}.meta.json").write_text(json.dumps(sidecar), encoding="utf-8")
     params = {
         "product": "dem",
@@ -228,7 +246,7 @@ def test_cutout_without_a_readable_sidecar_still_warns_from_the_notice(
 def test_bdot10k_geopackages_stay_in_the_store_and_a_failed_county_is_a_warning(
     tmp_path: Path,
 ) -> None:
-    doc = document("bdot10k_gpkg_one_county_failed", tmp_path / "store")
+    doc = bdot10k("GPKG", tmp_path / "store")
 
     output = run(
         tmp_path,
@@ -264,13 +282,12 @@ LAYERS = {"roads.shp": SHP, "roads.dbf": b"dbf", "roads.shx": b"shx"}
 
 
 def _shapefile_run(tmp_path: Path, archives: dict[str, Any]) -> HandlerOutput:
-    """Run BDOT10k as SHP with ZIPs of the given content per county (None: absent)."""
-    doc = document("bdot10k_shp_one_county_failed", tmp_path / "store")
-    for item in doc["files"]:
-        path = Path(item["file"]["path"])
+    """Run BDOT10k as SHP with ZIPs of the content given per county (bytes: no ZIP)."""
+    doc = bdot10k("SHP", tmp_path / "store")
+    for item in doc["result"]["files"]:
+        path = Path(item["path"])
         content = archives[item["unit"]]
         if isinstance(content, bytes):
-            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content)
         else:
             _county_zip(path, content)
@@ -332,12 +349,13 @@ def test_when_every_county_fails_the_run_fails_with_one_error(tmp_path: Path) ->
 def test_a_single_failing_county_is_reported_with_its_own_cause(
     tmp_path: Path,
 ) -> None:
-    doc = document("bdot10k_shp_one_county_failed", tmp_path / "store")
-    doc["files"] = doc["files"][:1]
-    doc["failed"] = []
-    path = Path(doc["files"][0]["file"]["path"])
-    path.parent.mkdir(parents=True)
-    path.write_bytes(b"not a zip")
+    doc = bdot10k("SHP", tmp_path / "store")
+    # One county was delivered and nothing failed
+    doc["result"]["files"] = doc["result"]["files"][:1]
+    doc["result"]["failed"] = []
+    doc["items"] = doc["items"][:1]
+    doc["status"] = "ok"
+    Path(doc["result"]["files"][0]["path"]).write_bytes(b"not a zip")
     client = OfflineClient(settings(tmp_path), runs={"landcover download": doc})
     output_dir = tmp_path / "result"
     output_dir.mkdir()

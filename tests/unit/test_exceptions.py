@@ -18,13 +18,18 @@ from retman.exceptions import (
 @pytest.mark.parametrize(
     ("tool_code", "code", "reason", "exit_code"),
     [
-        ("no_coverage", "no_data", "no_coverage", 14),
-        ("download_failed", "source_unavailable", "download_failed", 5),
-        ("invalid_input", "validation_error", "invalid_input", 2),
-        ("transform_unavailable", "unsupported", "transform_unavailable", 15),
-        ("store_write_unsupported", "store_unavailable", "store_write_unsupported", 8),
+        # A code of the registry passes through; the reason is the tool's own
+        ("no_data", "no_data", None, 14),
+        ("source_unavailable", "source_unavailable", None, 5),
+        ("validation_error", "validation_error", None, 2),
+        ("unsupported", "unsupported", None, 15),
         ("cancelled", "cancelled", None, 130),
         ("not_found", "not_found", None, 3),
+        # The words only Retman's clients use refine a registry code
+        ("store_write_unsupported", "store_unavailable", "store_write_unsupported", 8),
+        ("not_offline", "internal_error", "not_offline", 1),
+        ("not_read_only", "internal_error", "not_read_only", 1),
+        # Anything else is an internal error that names the code
         ("quota_exceeded", "internal_error", "quota_exceeded", 1),
     ],
 )
@@ -47,7 +52,7 @@ def test_tool_error_keeps_the_reason_the_tool_gives_for_a_registry_code() -> Non
 
 
 def test_tool_error_records_the_command_when_the_call_is_set_later() -> None:
-    error = ToolError("kartograf", "no_coverage", "x")
+    error = ToolError("kartograf", "no_data", "x")
     assert "tool_command" not in error.details
 
     error.call = CatalogCall("elevation download", {})

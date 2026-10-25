@@ -134,7 +134,7 @@ def test_any_change_of_the_plan_withdraws_consent_and_the_old_report(app, plan):
 
 def test_a_failed_check_is_a_report_and_the_plan_is_still_confirmable(create_app):
     def unreachable(call: CatalogCall):
-        raise ToolError("dummy_tool", "no_coverage", "brak sieci")
+        raise ToolError("dummy_tool", "no_data", "brak sieci")
 
     client = FakeToolClient(documents={AVAILABILITY: unreachable})
     app = create_app(RULES, clients={"dummy_tool": client})

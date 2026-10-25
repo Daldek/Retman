@@ -76,8 +76,8 @@ def make_catalog(**changes: Any) -> ToolCatalog:
         TOOL,
         "1.2.0",
         {item.id: item for item in (download, availability)},
-        error_codes=("invalid_input", "no_coverage", "usage_error"),
-        unreachable_errors={"usage_error": "the command line only"},
+        error_codes=("validation_error", "no_data", "terminated"),
+        unreachable_errors={"terminated": "the command line only"},
         known_schemas=("dummy-download/1",),
     )
     return replace(catalog, **changes)
@@ -86,7 +86,7 @@ def make_catalog(**changes: Any) -> ToolCatalog:
 def reject(
     call: CatalogCall, detail: str, *, option: str | None = None, **more: Any
 ) -> ToolError:
-    return ToolError(TOOL, "invalid_input", detail, option=option, call=call, **more)
+    return ToolError(TOOL, "validation_error", detail, option=option, call=call, **more)
 
 
 def tool_rule(call: CatalogCall) -> ToolError | None:
@@ -895,12 +895,12 @@ def test_error_code_without_a_polish_text_is_an_error(
     dummy: tuple[ManifestSpec, Path],
 ) -> None:
     catalog = make_catalog(
-        error_codes=("invalid_input", "usage_error", "quota_exceeded")
+        error_codes=("validation_error", "terminated", "quota_exceeded")
     )
 
     missing = only(run(dummy, catalog=catalog), "x8_error_text_missing")
 
-    # usage_error is exempt (command line only) and invalid_input has its text
+    # terminated is exempt (the command line only) and validation_error has its text
     assert missing.args["codes"] == "quota_exceeded"
     assert missing.args["file"] == "pl.toml"
 
@@ -982,7 +982,7 @@ def test_samples_that_never_make_a_point_are_a_warning(
 def test_operation_filter_runs_no_tool_wide_check(
     dummy: tuple[ManifestSpec, Path],
 ) -> None:
-    catalog = make_catalog(error_codes=("invalid_input", "quota_exceeded"))
+    catalog = make_catalog(error_codes=("validation_error", "quota_exceeded"))
 
     narrow = run(dummy, catalog=catalog, operations=["fetch_dem"])
     wide = run(dummy, catalog=catalog, operations=["fetch_dem"], tool_level=True)

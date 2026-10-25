@@ -48,7 +48,7 @@ in `pyproject.toml`; the IMGWTools one is the head of its branch `feature/data-o
 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169" \
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@8a36e977d607192b11c66f44f318f2e7676b60d1" \
     --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@7b117550103a3d8d46afc97043b90f0e93314c8b"
 ```
 

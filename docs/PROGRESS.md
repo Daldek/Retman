@@ -11,7 +11,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-024) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
-| Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins `8e9bcbb` (Kartograf) and `7b11755` (IMGWTools: the head of its `feature/data-output`, **not pushed**, so the author pushes IMGWTools first, Next 2) until the tags `v0.8.0` and `v3.0.0` exist; the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
+| Kartograf 0.8.0 adapter (4 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins `8a36e977` (Kartograf) and `7b11755` (IMGWTools): the heads of their `feature/data-output`, **not pushed**, so the author pushes both first, Next 2) until the tags `v0.8.0` and `v3.0.0` exist; the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
 | Extractors | in progress | missing: numbers with units; the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
@@ -67,20 +67,26 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      (decided, ADR-024, USAGE 13). Not part of the migration: the fixture store of the IMGW tests
      (`imgw_support.fixture_store`) leaves a `retman-imgw-test-*` folder in `TMPDIR` per run, and
      `docs/research/` still names the old variables, which is history.
-   - **Kartograf: waits for its `feature/data-output`.** Call sites, in
-     `src/retman/tools/kartograf/client.py`: lines 9, 188, 195, 258, 273 (`output_dir=` to
-     `validate_command`, `run_command`, `check_command` and on the command line becomes `root=`,
-     `--root`) and, in `handlers.py`, lines 84 and 137 (`DownloadManager(output_dir=...)` becomes
-     `root=`). Error codes: the Kartograf rows of `_TOOL_CODES` in
-     `src/retman/adapters/catalog.py` (lines 114 to 129: `no_coverage` to `no_data`,
-     `download_failed` to `source_unavailable`, and so on, ERR §4) go, and so do the `[errors]`
-     texts keyed by them in `src/retman/tools/kartograf/pl.toml` and `en.toml` (the table starts
-     at line 239). Check `UNREACHABLE_ERRORS` and `KNOWN_SCHEMAS` of
-     `src/retman/devtools/readers/kartograf.py` (lines 16 to 25) against the new catalog; the
-     tests under `tests/integration/tools/kartograf/` and `tests/contract/test_tool_conformance.py`
-     follow. `store_dir` of `[retman.tools.kartograf]` keeps meaning the store root (default
-     `<data_dir>/kartograf`, ADR-021). Then USAGE, ARCHITECTURE, CHANGELOG, and an ADR or an
-     erratum of ADR-024 for the Kartograf side.
+   - **Kartograf: the calls are migrated on the branch `feature/kartograf-data-output`; the marker
+     states, the user documents and ADR-025 are open.** The `tools` group pins
+     `8a36e977d607192b11c66f44f318f2e7676b60d1`, the head of Kartograf `feature/data-output`,
+     **not pushed** (fetched into the database of the Kartograf URL below
+     `~/.cache/uv/git-v1/db/` as `local-feature-data-output`, the way the IMGWTools pin is; the
+     author pushes Kartograf first). Done: `root=` and `--root` (client and
+     `DownloadManager(provider, root=...)`), the `kartograf-result/1` envelope and its `files[]`,
+     the command ids `sheet parse`, `sheet find` and `store sidecar`, the reader of `retman
+     scaffold` on `list_commands` and `command_schema`, the registry codes (the Kartograf rows of
+     `_TOOL_CODES` are gone; `ToolFailure.reason`) and the `[errors]` texts keyed by them, tests
+     on the real Kartograf in process and offline (`tests/integration/tools/kartograf/
+     kartograf_offline.py`), mypy against its types. Open: (1) the marker states of the store
+     folder like IMGW `no_marker` (`retman.stores`, `doctor check`, preview problems): Kartograf
+     reports a refused store as the failure of the sheets (`source_unavailable`, its text names the
+     store), so Retman has to judge the folder itself before the run; (2) doctor and `stores`
+     tests on stores built by `kartograf.testing` (DEV-10.6; `built_store` of
+     `kartograf_support` is the helper); (3) USAGE, ARCHITECTURE (3.2.4, 3.2.10, 7.2, 9.1, the old
+     codes in 6.x), the pin note of USAGE 1, README and ADR-025 (an erratum of ADR-024 names the
+     Kartograf pin); (4) optionally an operation that runs `kartograf store init` for a layout
+     without its marker, like "Utwórz magazyn IMGW".
 3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
    `v3.0.0` once they exist (REL-5.3), and in the same change narrow the `supported_versions` of
    both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test of the IMGWTools manifest

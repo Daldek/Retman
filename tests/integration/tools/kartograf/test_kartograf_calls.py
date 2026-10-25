@@ -212,7 +212,8 @@ def test_a_rejected_grid_pair_is_routed_to_both_parameters_that_make_it() -> Non
         {"area": SHEET, "resolution": "5m", "vertical_crs": "kron86"},
     )
 
-    assert error.tool_code == "invalid_input"
+    assert error.tool_code == "validation_error"
+    assert error.details["reason"] == "invalid_input"
     names = [
         param["name"] for param in operations()["download_dem_sheet"].spec["params"]
     ]

@@ -84,7 +84,7 @@ def sheets_output(
     warnings.extend(
         {"key": "sheets_failed", "args": {"detail": failure.detail}}
         for failure in run.failed
-        if failure.kind == "download"
+        if failure.kind == "source_unavailable"
     )
     warnings.extend(notice_warnings(operation, ctx.tool, run.notices))
     values: dict[str, Any] = {
@@ -120,7 +120,7 @@ def _sidecar_extra(path: Path, ctx: ToolContext) -> dict[str, Any]:
     The facts are a bonus, not the result: an unreadable sidecar gives none.
     """
     try:
-        document = ctx.client.lookup(CatalogCall("store_sidecar", {"path": str(path)}))
+        document = ctx.client.lookup(CatalogCall("store sidecar", {"path": str(path)}))
     except ToolError:
         return {}
     return dict(document.get("sidecar", {}).get("extra") or {})

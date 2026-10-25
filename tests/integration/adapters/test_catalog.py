@@ -30,19 +30,22 @@ PARAMS = ("area", "resolution", "vertical_crs")
     ("error", "expected"),
     [
         # A tool option is routed through the call's own map ...
-        (ToolError("t", "invalid_input", "x", option="sheet"), ["area"]),
+        (ToolError("t", "validation_error", "x", option="sheet"), ["area"]),
         # ... or, where the names agree, by name; several options keep their order
         (
             ToolError(
-                "t", "invalid_input", "x", options=("vertical_crs", "resolution")
+                "t", "validation_error", "x", options=("vertical_crs", "resolution")
             ),
             ["vertical_crs", "resolution"],
         ),
         # An option the operation fixes itself names no parameter: that is drift
-        (ToolError("t", "invalid_input", "x", option="product"), []),
-        (ToolError("t", "invalid_input", "x"), []),
+        (ToolError("t", "validation_error", "x", option="product"), []),
+        (ToolError("t", "validation_error", "x"), []),
         # Two options of one parameter route once
-        (ToolError("t", "invalid_input", "x", options=("sheet", "geometry")), ["area"]),
+        (
+            ToolError("t", "validation_error", "x", options=("sheet", "geometry")),
+            ["area"],
+        ),
     ],
 )
 def test_route_error_names_the_retman_parameters_a_rejection_concerns(error, expected):

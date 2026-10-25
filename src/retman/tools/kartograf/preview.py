@@ -84,7 +84,7 @@ def _scale_choices(code: str, ctx: ToolContext) -> list[str]:
             continue
         try:
             ctx.client.lookup(
-                CatalogCall("parse", {"sheet": code, "descendants": scale})
+                CatalogCall("sheet parse", {"sheet": code, "descendants": scale})
             )
         except ToolError:
             continue

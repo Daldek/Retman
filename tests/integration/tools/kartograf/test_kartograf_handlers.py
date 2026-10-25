@@ -12,13 +12,13 @@ from typing import Any
 
 import kartograf
 import pytest
+from kartograf.testing import make_sidecar
 from kartograf_support import (
     OfflineClient,
     context,
-    document,
     geometry,
-    materialise,
     settings,
+    sheets,
 )
 
 from retman.adapters.catalog import ToolError
@@ -49,9 +49,9 @@ def install(monkeypatch: pytest.MonkeyPatch, answer: Any) -> Recorder:
             recorder.providers.append({"cache": cache, "color": color})
 
     class Manager:
-        def __init__(self, output_dir: Path, provider: Any, *, workers: int = 1):
+        def __init__(self, provider: Any, *, root: Path, workers: int = 1):
             recorder.managers.append(
-                {"output_dir": output_dir, "provider": provider, "workers": workers}
+                {"root": root, "provider": provider, "workers": workers}
             )
 
         def _respond(self) -> Any:
@@ -88,6 +88,7 @@ def delivered(store: Path, sheets: list[str], label: str = "2025-04-26_82712") -
                 status="new",
                 label=label,
                 sha256="0" * 64,
+                size_bytes=path.stat().st_size,
                 version_path=path,
             ),
         )
@@ -116,9 +117,8 @@ def run(
 def test_dem_and_dsm_run_through_the_command_layer_never_the_provider_class(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    doc = sheets("one_of_four", tmp_path / "store")
     recorder = install(monkeypatch, AssertionError("the provider route was used"))
-    doc = document("sheets_one_of_four", tmp_path / "store")
-    materialise(doc)
     client = OfflineClient(settings(tmp_path), runs={"elevation download": doc})
     params = {
         "product": "dem",
@@ -133,7 +133,7 @@ def test_dem_and_dsm_run_through_the_command_layer_never_the_provider_class(
     assert [call.command for _, call in client.network] == ["elevation download"]
     assert recorder.providers == [] and recorder.requests == []
     assert list(output["files"]) == ["dem"]
-    assert output["tool"]["calls"][0]["schema"] == "kartograf-download/1"
+    assert output["tool"]["calls"][0]["schema"] == "kartograf-result/1"
 
 
 def test_orthophoto_is_asked_of_the_provider_in_the_colour_the_user_chose(
@@ -152,7 +152,7 @@ def test_orthophoto_is_asked_of_the_provider_in_the_colour_the_user_chose(
     assert str(settings(tmp_path)["cache_file"]) in repr(vars(cache).values())
     assert recorder.managers == [
         {
-            "output_dir": store,
+            "root": store,
             "provider": recorder.managers[0]["provider"],
             "workers": 2,
         }
@@ -225,7 +225,7 @@ def test_a_flight_the_index_calls_incomplete_is_a_warning_from_the_sidecar(
 ) -> None:
     result = delivered(tmp_path / "store", ["s1"])
     path = result.succeeded[0]
-    sidecar = {"schema": "kartograf-meta/1", "extra": {"source": {"full_sheet": False}}}
+    sidecar = make_sidecar(extra={"source": {"full_sheet": False}})
     Path(f"{path}.meta.json").write_text(json.dumps(sidecar), encoding="utf-8")
     install(monkeypatch, result)
 
@@ -254,18 +254,26 @@ def test_the_audit_block_records_the_colour_the_command_could_not_say(
     }
     assert call["sha256"] == hashlib.sha256(saved).hexdigest()
     assert json.loads(saved)["color"] == "CIR"
+    # The files of the summary have the shape of the files[] of the tool's documents
+    (entry,) = json.loads(saved)["files"]
+    assert entry["status"] == "new" and entry["size_bytes"] == 16
+    assert entry["unit"] == "s1" and entry["label"] == "2025-04-26_82712"
     assert call["files"][0]["version"] == "2025-04-26_82712"
 
 
 @pytest.mark.parametrize(
-    ("no_coverage", "code"),
-    [(["s1", "s2"], "no_coverage"), (["s1"], "download_failed")],
+    ("no_coverage", "code", "reason"),
+    [
+        (["s1", "s2"], "no_data", "no_coverage"),
+        (["s1"], "source_unavailable", None),
+    ],
 )
 def test_when_no_sheet_is_delivered_the_error_says_whether_the_data_are_missing(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     no_coverage: list[str],
     code: str,
+    reason: str | None,
 ) -> None:
     result = kartograf.DownloadResult(
         failed=["s1", "s2"],
@@ -278,6 +286,7 @@ def test_when_no_sheet_is_delivered_the_error_says_whether_the_data_are_missing(
         run(tmp_path, {**ORTHOPHOTO, "area": PARENT_1992})
 
     assert caught.value.tool_code == code
+    assert caught.value.details.get("reason") == reason
     assert "Brak ortofotomapy CIR dla s1" in caught.value.detail
 
 
@@ -292,7 +301,7 @@ def test_a_single_sheet_without_the_variant_raises_kartografs_own_error_as_a_too
             {**ORTHOPHOTO, "area": {"type": "sheet", "code": "N-34-130-D-d-2-4"}},
         )
 
-    assert caught.value.tool_code == "no_coverage"
+    assert caught.value.tool_code == "no_data"
 
 
 def test_an_orthophoto_is_not_made_of_a_geometry_file(

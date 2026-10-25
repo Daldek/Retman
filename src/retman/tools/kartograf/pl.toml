@@ -218,7 +218,7 @@ options.shp.description = "Shapefile (.shp, SHP) — wszystkie warstwy z pakietu
 options.unspecified.description = "Nie podano formatu — dopytaj o GeoPackage albo Shapefile"
 
 # Ostrzeżenia wyniku. Klucze równe kodom uwag Kartografa zastępują jego tekst
-# (ASCII, z nazwami flag wiersza poleceń); pozostałe uwagi ostrzegawcze są
+# (angielski, z nazwami flag wiersza poleceń); pozostałe uwagi ostrzegawcze są
 # pokazywane dosłownie (core: warnings.tool_notice).
 [warnings]
 sheets_missing = "Pobrano {count} z {total} arkuszy."
@@ -235,18 +235,17 @@ failed_counties = "Nie udało się pobrać {count} z {total} pakietów powiatowy
 all_nodata = "Wycinek nie zawiera ważnych danych wysokościowych (cały wynik to nodata)."
 masked_pixels = "Poza lądem zamaskowano {count} pikseli jako nodata."
 
-# Błędy Kartografa po stałym kodzie błędu; jego własny tekst jest tylko {detail}
+# Błędy Kartografa po kodzie rejestru błędów (ERR §4); jego własny tekst jest tylko
+# {detail}, a details.reason mówi, który to błąd tego kodu
 [errors]
-kartograf_error = "Kartograf zgłosił błąd: {detail}"
-invalid_input = "Kartograf odrzuca ten wybór: {detail}"
-invalid_sheet_code = "Niepoprawne godło arkusza: {detail}"
-download_failed = "Nie udało się pobrać danych z usługi GUGiK. Szczegóły: {detail}"
-no_coverage = "GUGiK nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: {detail}"
-year_out_of_range = "GUGiK ma dane dla tego obszaru, ale nie z żądanego zakresu lat. Szczegóły: {detail}"
-cache_error = "Pamięć podręczna metadanych Kartografa nie działa: {detail}"
-invalid_sidecar = "Plik metadanych zapisany przez Kartografa w magazynie jest uszkodzony: {detail}"
-transform_failed = "Nie udało się przeliczyć współrzędnych: {detail}"
-transform_unavailable = "Brak bezpiecznego przeliczenia między wybranymi układami: {detail}"
+validation_error = "Kartograf odrzuca ten wybór: {detail}"
+no_data = "GUGiK nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: {detail}"
+source_unavailable = "Nie udało się pobrać danych z usługi GUGiK. Szczegóły: {detail}"
+store_unavailable = "Magazyn Kartografa albo jego pamięć podręczna metadanych nie nadaje się do użycia: {detail}. Sprawdź: retman doctor check"
+conflict = "Kartograf nie zapisze danych w tym magazynie: {detail}. Sprawdź: retman doctor check"
+data_error = "Dane, które Kartograf trzyma w magazynie, są nieprawidłowe albo niekompletne: {detail}"
+calculation_error = "Kartograf nie mógł obliczyć wyniku: {detail}"
+unsupported = "Brak bezpiecznego przeliczenia między wybranymi układami: {detail}"
 io_error = "Kartograf nie może zapisać danych (sprawdź miejsce na dysku i to, czy dysk obsługuje twarde dowiązania): {detail}"
 internal_error = "Wewnętrzny błąd Kartografa: {detail}"
 all_counties_failed = "Nie udało się pobrać żadnego pakietu powiatowego BDOT10k ({detail})."

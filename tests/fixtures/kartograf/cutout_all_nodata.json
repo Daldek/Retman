@@ -1,38 +1,64 @@
 {
- "schema": "kartograf-download/1",
- "files": [
-  {
-   "unit": "530000_382000_530100_382100",
-   "country": "PL",
-   "file": {
+ "schema": "kartograf-result/1",
+ "tool": "kartograf",
+ "version": "0.8.0.dev0",
+ "command": "elevation download",
+ "check": false,
+ "status": "ok",
+ "result": {
+  "schema": "kartograf-download/1",
+  "mode": "store",
+  "root": "<store>",
+  "output_dir": null,
+  "files": [
+   {
+    "unit": "530000_382000_530100_382100",
+    "country": "PL",
     "path": "<store>/nmt/pl_1992_evrf2007_1m/bbox/530000_382000_530100_382100.tif",
+    "size_bytes": 0,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
     "status": "new",
     "label": "2026-10-19_ab12cd34",
-    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-    "version_path": "<store>/nmt/pl_1992_evrf2007_1m/bbox/530000_382000_530100_382100.tif",
-    "newer": null,
-    "unverified": null,
-    "same_as": null
+    "version_path": "<store>/nmt/pl_1992_evrf2007_1m/bbox/530000_382000_530100_382100.tif"
    }
+  ],
+  "raw": [],
+  "inputs": [],
+  "failed": [],
+  "skipped": [],
+  "stale": [],
+  "superseded": [],
+  "summary": null,
+  "notices": [
+   {
+    "level": "info",
+    "code": "cutout_size",
+    "message": "wycinek 100 x 100 m: 1 zapytanie WCS"
+   },
+   {
+    "level": "warning",
+    "code": "all_nodata",
+    "message": "wycinek w calosci nodata - WCS GUGiK nie zwrocil danych dla obszaru"
+   }
+  ],
+  "ok": true
+ },
+ "items": [
+  {
+   "id": "530000_382000_530100_382100",
+   "status": "ok"
   }
  ],
- "raw": [],
- "inputs": [],
- "failed": [],
- "stale": [],
- "superseded": [],
- "summary": null,
  "notices": [
   {
    "level": "info",
    "code": "cutout_size",
-   "text": "wycinek 100 x 100 m: 1 zapytanie WCS"
+   "message": "wycinek 100 x 100 m: 1 zapytanie WCS"
   },
   {
    "level": "warning",
    "code": "all_nodata",
-   "text": "wycinek w calosci nodata - WCS GUGiK nie zwrocil danych dla obszaru"
+   "message": "wycinek w calosci nodata - WCS GUGiK nie zwrocil danych dla obszaru"
   }
- ],
- "ok": true
+ ]
 }

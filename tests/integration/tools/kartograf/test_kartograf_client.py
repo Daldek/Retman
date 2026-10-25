@@ -1,23 +1,32 @@
 """Kartograf's command client: offline checks, lookups and the way a run is made.
 
-Validation, command lines and lookups use the real Kartograf offline. What needs the
-network (``run_command``, ``check_command``, ``check_availability``) is replaced by a
-recorder, so that the arguments the client hands to Kartograf can be asserted.
+Validation, command lines, lookups, runs and plans use the real Kartograf in process,
+offline (``kartograf_offline``: its network is a stub, its store a real folder). Where a
+test asserts what the client hands to Kartograf, ``run_command`` and the like are
+replaced by a recorder.
 """
 
-from collections.abc import Iterator
+import hashlib
+import json
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
 import kartograf
 import pytest
+from kartograf_offline import GugikIndex, flight, gugik_index
 from kartograf_support import (
+    CHILDREN,
+    FOUR,
+    NMT_OPTIONS,
     SHEET,
     TERYT,
+    built_store,
     context,
     document,
     geometry,
     settings,
+    sheets,
 )
 
 from retman.adapters.catalog import CatalogCall, ToolError, ToolNotice, ToolRun
@@ -36,6 +45,9 @@ DOWNLOAD = CatalogCall(
     },
     "dem",
 )
+# The call of the real runs: a sheet that expands into four, of which the index of
+# the scenario "one of four" has one flight
+DOWNLOAD_FOUR = CatalogCall("elevation download", {**NMT_OPTIONS, "sheet": FOUR}, "dem")
 BBOX_OPTIONS = {
     "product": "nmt",
     "country": "pl",
@@ -49,11 +61,20 @@ def tree(root: Path) -> set[Path]:
     return set(root.rglob("*"))
 
 
-class Report:
-    """What a Kartograf command returns: an object with ``to_dict()``."""
+def one_of_four() -> GugikIndex:
+    """An index with a flight of the first of the four sheets of ``FOUR``."""
+    return GugikIndex([flight(CHILDREN[0], "2025-10-21", "84183", full=False)])
 
-    def __init__(self, data: dict[str, Any]) -> None:
+
+class Report:
+    """What a Kartograf command returns: an object with ``to_dict()``.
+
+    ``result`` is the domain document of an envelope (the plan of ``check_command``).
+    """
+
+    def __init__(self, data: dict[str, Any], result: dict[str, Any] | None = None):
         self.data = data
+        self.result = Report(result) if result is not None else None
 
     def to_dict(self) -> dict[str, Any]:
         return self.data
@@ -107,7 +128,10 @@ def test_validate_names_the_parameters_of_a_pair_kartograf_rejects(
     with pytest.raises(ToolError) as caught:
         KartografClient(settings(tmp_path)).validate(call)
 
-    assert caught.value.tool_code == "invalid_input"
+    # The registry code of the tool, its reason as the precision
+    assert caught.value.tool_code == "validation_error"
+    assert caught.value.code == "validation_error"
+    assert caught.value.details["reason"] == "invalid_input"
     assert {"resolution", "vertical_crs"} <= set(caught.value.options)
     assert caught.value.call is call
 
@@ -137,13 +161,25 @@ def test_command_line_carries_store_workers_and_the_update_flag(
 ) -> None:
     client = KartografClient({**settings(tmp_path), "update": update})
 
-    words = client.command_line(DOWNLOAD).split()
+    line = client.command_line(DOWNLOAD)
 
+    words = line.split()
     store = str(tmp_path / "store")
-    assert words[words.index("-o") + 1] == store
+    # The store is the store root, never the plain directory of a write
+    assert words[words.index("--root") + 1] == store
+    assert "--output-dir" not in words and "-o" not in words
     assert words[words.index("-w") + 1] == "2"
     for other in ("--upgrade", "--force"):
         assert (other in words) == (other == flag)
+    # Kartograf reads its own line back into the call
+    parsed = kartograf.parse_command(line)
+    assert parsed.options == {
+        "product": "nmt",
+        "sheet": "N-34-130-D-d-2-4",
+        "resolution": "5m",
+        "vertical_crs": "EVRF2007",
+    }
+    assert parsed.run["root"] == store
 
 
 # --- lookup (the real Kartograf, offline) ------------------------------------
@@ -157,7 +193,7 @@ def test_lookup_parse_counts_the_descendant_sheets(
     tmp_path: Path, sheet: str, scale: str, count: int
 ) -> None:
     found = KartografClient(settings(tmp_path)).lookup(
-        CatalogCall("parse", {"sheet": sheet, "descendants": scale})
+        CatalogCall("sheet parse", {"sheet": sheet, "descendants": scale})
     )
 
     assert found["descendants"]["count"] == count
@@ -172,13 +208,13 @@ def test_lookup_find_sheets_reads_a_geometry_file_and_a_rectangle(
 
     by_file = client.lookup(
         CatalogCall(
-            "find_sheets",
+            "sheet find",
             {"geometry": area["path"], "scale": "1:10000", "sheet_system": "1992"},
         )
     )
     by_box = client.lookup(
         CatalogCall(
-            "find_sheets",
+            "sheet find",
             {
                 "bbox": [530000, 382000, 531000, 383000],
                 "bbox_crs": "EPSG:2180",
@@ -213,22 +249,37 @@ def test_lookup_envelope_of_a_geometry_file_is_its_bounding_box(
     assert found["crs"] == "EPSG:2180"
 
 
-def test_lookup_store_sidecar_returns_what_the_meta_file_says(
+def test_lookup_store_sidecar_reads_the_sidecar_of_a_file_of_the_tools_store(
     tmp_path: Path,
 ) -> None:
+    store = built_store(tmp_path / "store")
+    newest = store.files[0].versions[-1]
+
+    found = KartografClient(settings(tmp_path)).lookup(
+        CatalogCall("store sidecar", {"path": str(store.files[0].path)})
+    )
+
+    assert found["sidecar"]["dataset"] == "pl.gugik.nmt_1m"
+    assert found["sidecar"]["sha256"] == newest.sha256
+    assert found["sidecar"]["size_bytes"] == newest.size_bytes
+
+
+def test_lookup_store_sidecar_returns_the_extra_facts_of_the_meta_file(
+    tmp_path: Path,
+) -> None:
+    from kartograf.testing import make_sidecar
+
     data = tmp_path / "store" / "sheet.asc"
     data.parent.mkdir()
     data.write_text("x", encoding="utf-8")
-    (tmp_path / "store" / "sheet.asc.meta.json").write_text(
-        '{"schema": "kartograf-meta/1", "extra": {"mask": {"masked_pixels": 3}}}',
-        encoding="utf-8",
-    )
+    meta = make_sidecar(extra={"mask": {"masked_pixels": 3}})
+    Path(f"{data}.meta.json").write_text(json.dumps(meta), encoding="utf-8")
 
     found = KartografClient(settings(tmp_path)).lookup(
-        CatalogCall("store_sidecar", {"path": str(data)})
+        CatalogCall("store sidecar", {"path": str(data)})
     )
 
-    assert found["sidecar"]["extra"] == {"mask": {"masked_pixels": 3}}
+    assert found["sidecar"]["extra"]["mask"] == {"masked_pixels": 3}
 
 
 @pytest.mark.parametrize(
@@ -238,10 +289,12 @@ def test_lookup_store_sidecar_returns_what_the_meta_file_says(
         CatalogCall("imagery download", {"sheet": "N-34-130-D-d-2-4"}),
         CatalogCall("landcover download", {"teryt": "2264"}),
         CatalogCall("elevation availability", BBOX_OPTIONS),
+        CatalogCall("store init", {}),
+        CatalogCall("cache clear", {}),
     ],
     ids=lambda call: call.command,
 )
-def test_lookup_refuses_a_command_that_needs_the_network(
+def test_lookup_refuses_a_command_that_needs_the_network_or_writes(
     tmp_path: Path, call: CatalogCall
 ) -> None:
     client = KartografClient(settings(tmp_path))
@@ -251,13 +304,15 @@ def test_lookup_refuses_a_command_that_needs_the_network(
 
     assert caught.value.tool_code == "not_offline"
     assert caught.value.call is call
+    assert not (tmp_path / "store").exists()
 
 
 def test_lookup_without_its_required_option_is_invalid_input(tmp_path: Path) -> None:
     with pytest.raises(ToolError) as caught:
-        KartografClient(settings(tmp_path)).lookup(CatalogCall("parse", {}))
+        KartografClient(settings(tmp_path)).lookup(CatalogCall("sheet parse", {}))
 
-    assert caught.value.tool_code == "invalid_input"
+    assert caught.value.tool_code == "validation_error"
+    assert caught.value.details["reason"] == "invalid_input"
 
 
 # --- run ----------------------------------------------------------------------
@@ -274,13 +329,15 @@ def test_run_hands_kartograf_the_store_workers_update_mode_and_cache(
     mode: str | None,
 ) -> None:
     config = {**settings(tmp_path), "update": update}
-    report = Report(document("sheets_one_of_four", tmp_path / "store"))
+    report = Report(sheets("one_of_four", tmp_path / "elsewhere"))
 
     recorder = run_with(monkeypatch, report, KartografClient(config))
 
     ((args, kwargs),) = recorder.uses
     assert args == (DOWNLOAD.command, DOWNLOAD.options)
-    assert kwargs["output_dir"] == config["store_dir"]
+    # The store is the versioned store of the settings, not a directory of plain files
+    assert kwargs["root"] == config["store_dir"]
+    assert "output_dir" not in kwargs
     assert kwargs["workers"] == 2
     assert kwargs["update"] == mode
     cache = kwargs["cache"]
@@ -288,86 +345,161 @@ def test_run_hands_kartograf_the_store_workers_update_mode_and_cache(
     assert Path(cache.db_path) == Path(config["cache_file"])
 
 
-def test_run_returns_the_documents_files_notices_and_command_line(
-    tmp_path: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch
+def test_run_writes_the_store_the_settings_name_and_nothing_into_the_working_directory(
+    tmp_path: Path, cwd: Path
 ) -> None:
+    index = one_of_four()
     store = tmp_path / "store"
-    monkeypatch.setattr(
-        kartograf,
-        "run_command",
-        Recorder(Report(document("sheets_one_of_four", store))),
-    )
 
-    run = KartografClient(settings(tmp_path)).run(DOWNLOAD)
+    with gugik_index(index):
+        run = KartografClient(settings(tmp_path)).run(DOWNLOAD_FOUR)
 
     assert isinstance(run, ToolRun)
     assert run.status == "ok"
-    assert run.schema == "kartograf-download/1"
+    assert run.schema == "kartograf-result/1"
     assert run.command == "elevation download"
     (file,) = run.files
     assert file.path.name == "N-34-139-C-a-3-1.asc"
     assert file.path.is_relative_to(store)
-    assert file.sha256 == (
-        "9c1a23d3176aeeeb963758c6d593be67251c4dfe21b479d31a78833ce4c7b7eb"
-    )
+    assert file.sha256 == hashlib.sha256(file.path.read_bytes()).hexdigest()
     assert file.version == "2025-10-21_84183"
     assert file.status == "new"
+    # The first write into a new root marks the store (DEV-19.12)
+    assert json.loads((store / "kartograf-store.json").read_text("utf-8"))[
+        "schema"
+    ] == ("kartograf-store/1")
+    assert run.command_line.startswith("kartograf elevation download")
+    assert f"--root {store}" in run.command_line
+    assert index.resolved == list(CHILDREN)
+
+
+def test_run_returns_the_notices_of_the_envelope_as_they_are(
+    tmp_path: Path, cwd: Path
+) -> None:
+    with gugik_index(one_of_four()):
+        run = KartografClient(settings(tmp_path)).run(DOWNLOAD_FOUR)
+
     assert run.notices
     assert all(isinstance(notice, ToolNotice) for notice in run.notices)
     assert {"incomplete_campaign", "no_coverage_some"} == {n.code for n in run.notices}
-    assert run.command_line.startswith("kartograf elevation download")
-    assert str(store) in run.command_line
+    assert {notice.level for notice in run.notices} == {"warning"}
+    # The whole envelope is the tool's document, notices and units included
+    assert run.document["notices"][0]["code"] == run.notices[0].code
+    assert run.document["result"]["schema"] == "kartograf-download/1"
+    assert [item["id"] for item in run.document["items"]] == [CHILDREN[0]]
+
+
+def test_a_repeated_run_finds_the_version_in_the_store_and_says_unchanged(
+    tmp_path: Path, cwd: Path
+) -> None:
+    index = GugikIndex([flight(CHILDREN[0], "2025-10-21", "84183")])
+    client = KartografClient(settings(tmp_path))
+    call = CatalogCall(
+        "elevation download", {**NMT_OPTIONS, "sheet": CHILDREN[0]}, "dem"
+    )
+
+    with gugik_index(index):
+        client.run(call)
+        again = client.run(call)
+
+    # The document says unchanged for a version that was not transferred again
+    (file,) = again.files
+    assert file.status == "unchanged"
+    assert len(index.downloaded) == 1
 
 
 @pytest.mark.parametrize(
-    ("name", "status", "files", "failures"),
+    ("scenario", "status", "files", "failures"),
     [
-        ("sheets_one_delivered", "ok", 1, []),
-        ("sheets_one_of_four", "ok", 1, []),
-        ("sheets_hard_failure", "partial", 1, [("download", "PL")]),
-        ("sheets_none_delivered", "failed", 0, [("no_coverage", "PL")]),
-        ("cutout_all_nodata", "ok", 1, []),
-        ("bdot10k_gpkg_one_county_failed", "partial", 2, [("download", "0224")]),
+        ("one_delivered", "ok", 1, []),
+        ("one_of_four", "ok", 1, []),
+        ("hard_failure", "partial", 1, [("source_unavailable", "PL", None)]),
+        ("none_delivered", "failed", 0, [("no_data", "PL", "no_coverage")]),
     ],
 )
-def test_run_from_document_maps_every_recorded_outcome(
+def test_run_from_document_maps_every_outcome_of_the_tool(
     tmp_path: Path,
-    name: str,
+    scenario: str,
     status: str,
     files: int,
-    failures: list[tuple[str, str]],
+    failures: list[tuple[str, str, str | None]],
 ) -> None:
-    run = run_from_document(DOWNLOAD, document(name, tmp_path / "store"))
+    doc = sheets(scenario, tmp_path / "store")
+
+    run = run_from_document(DOWNLOAD_FOUR, doc)
 
     assert run.status == status
     assert len(run.files) == files
-    assert [(item.kind, item.unit) for item in run.failed] == failures
-    assert run.schema == "kartograf-download/1"
+    assert [(item.kind, item.unit, item.reason) for item in run.failed] == [
+        (code, unit, reason) for code, unit, reason in failures
+    ]
+    assert run.schema == "kartograf-result/1"
+    assert run.document is doc
+
+
+def test_run_from_document_reads_a_failed_county_and_a_cutout_of_all_nodata(
+    tmp_path: Path,
+) -> None:
+    counties = run_from_document(DOWNLOAD, bdot10k_document(tmp_path))
+    cutout = run_from_document(
+        DOWNLOAD, document("cutout_all_nodata", tmp_path / "store")
+    )
+
+    assert counties.status == "partial"
+    assert [f.path.name for f in counties.files] == ["0208.gpkg", "0261.gpkg"]
+    assert [(f.kind, f.unit) for f in counties.failed] == [
+        ("source_unavailable", "0224")
+    ]
+    assert cutout.status == "ok"
+    # Every notice is kept; the info notice stays in the audit and is not shown
+    assert [notice.code for notice in cutout.notices] == ["cutout_size", "all_nodata"]
+
+
+def bdot10k_document(tmp_path: Path) -> dict[str, Any]:
+    """The envelope of BDOT10k of three counties, one of which fails."""
+    from kartograf_support import bdot10k
+
+    return bdot10k("GPKG", tmp_path / "store")
 
 
 # --- errors -------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    ("raised", "code"),
+    ("raised", "code", "reason"),
     [
-        (kartograf.NoCoverageError("x", sheet="s", hints=("h",)), "no_coverage"),
-        (kartograf.DownloadError("x"), "download_failed"),
-        (OSError("disk full"), "io_error"),
-        (RuntimeError("bug"), "internal_error"),
+        (
+            kartograf.NoCoverageError("x", sheet="s", hints=("h",)),
+            "no_data",
+            "no_coverage",
+        ),
+        (kartograf.DownloadError("x"), "source_unavailable", None),
+        (kartograf.ConflictError("x", reason="not_empty"), "conflict", "not_empty"),
+        (
+            kartograf.StoreUnavailableError("x", reason="no_marker"),
+            "store_unavailable",
+            "no_marker",
+        ),
+        (kartograf.CacheError("x"), "store_unavailable", "cache"),
+        (OSError("disk full"), "io_error", None),
+        (RuntimeError("bug"), "internal_error", None),
     ],
+    ids=lambda value: type(value).__name__ if isinstance(value, Exception) else None,
 )
-def test_run_turns_every_failure_into_a_tool_error_with_the_original_as_cause(
+def test_run_turns_every_failure_into_a_tool_error_with_the_registry_code(
     tmp_path: Path,
     cwd: Path,
     monkeypatch: pytest.MonkeyPatch,
     raised: Exception,
     code: str,
+    reason: str | None,
 ) -> None:
     with pytest.raises(ToolError) as caught:
         run_with(monkeypatch, raised, KartografClient(settings(tmp_path)))
 
     assert caught.value.tool_code == code
+    assert caught.value.code == code
+    assert caught.value.details.get("reason") == reason
     assert caught.value.__cause__ is raised
     assert caught.value.call is DOWNLOAD
 
@@ -390,24 +522,84 @@ def test_run_lets_a_keyboard_interrupt_through(
         run_with(monkeypatch, KeyboardInterrupt(), KartografClient(settings(tmp_path)))
 
 
+# --- the marker of the store (DEV-19.12 to DEV-19.14) -------------------------------
+
+
+def unmarked_layout(tmp_path: Path) -> Path:
+    """A store whose marker is gone: its layout, no ``kartograf-store.json``."""
+    store = built_store(tmp_path / "store")
+    (store.root / "kartograf-store.json").unlink()
+    return store.root
+
+
+def other_files(tmp_path: Path) -> Path:
+    """A folder with a file that is no part of a store."""
+    store = tmp_path / "store"
+    store.mkdir()
+    (store / "notes.txt").write_text("not a store", encoding="utf-8")
+    return store
+
+
+def inside_a_store(tmp_path: Path) -> Path:
+    """A folder that does not exist yet, in the store of another tool or version."""
+    return built_store(tmp_path / "outer").root / "inner"
+
+
+@pytest.mark.parametrize("prepare", [unmarked_layout, other_files, inside_a_store])
+def test_a_run_into_a_store_kartograf_refuses_fails_before_a_byte_is_written(
+    tmp_path: Path, cwd: Path, prepare: Callable[[Path], Path]
+) -> None:
+    store = prepare(tmp_path)
+    before = tree(tmp_path)
+    index = one_of_four()
+
+    with gugik_index(index):
+        run = KartografClient({**settings(tmp_path), "store_dir": str(store)}).run(
+            DOWNLOAD_FOUR
+        )
+
+    # Kartograf reports the refusal as the failure of the sheets (its text names the
+    # store), so the folder itself has to be judged before the run (doctor, preview)
+    assert run.status == "failed" and run.files == ()
+    assert str(store) in run.failed[0].detail
+    assert tree(tmp_path) == before
+    assert index.downloaded == []
+
+
 # --- check and query ----------------------------------------------------------
 
 
 def test_check_asks_kartograf_for_the_plan_of_the_store_with_the_cache_file(
     tmp_path: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    plan = Report(document("plan_bdot10k_teryt", tmp_path / "store"))
-    recorder = Recorder(plan)
+    plan = {"schema": "kartograf-plan/1", "mode": "store", "items": []}
+    recorder = Recorder(Report({"result": plan}, plan))
     monkeypatch.setattr(kartograf, "check_command", recorder)
 
     answer = KartografClient(settings(tmp_path)).check(DOWNLOAD)
 
-    assert answer == plan.data
+    # The plan is the result of the envelope, not the envelope
+    assert answer == plan
     ((args, kwargs),) = recorder.uses
     assert args == (DOWNLOAD.command, DOWNLOAD.options)
-    assert kwargs["output_dir"] == str(tmp_path / "store")
+    assert kwargs["root"] == str(tmp_path / "store")
+    assert "output_dir" not in kwargs
     assert isinstance(kwargs["cache"], kartograf.MetadataCache)
     assert Path(kwargs["cache"].db_path) == tmp_path / "data" / "kartograf_cache.db"
+
+
+def test_check_of_a_request_returns_the_plan_of_the_store_and_writes_nothing(
+    tmp_path: Path, cwd: Path
+) -> None:
+    with gugik_index(one_of_four()):
+        answer = KartografClient(settings(tmp_path)).check(DOWNLOAD_FOUR)
+
+    assert answer["schema"] == "kartograf-plan/1"
+    assert answer["mode"] == "store"
+    assert answer["root"] == str(tmp_path / "store")
+    assert [item["status"] for item in answer["items"]] == ["missing"]
+    # A plan creates nothing, not even the store (DEV-19.10)
+    assert not (tmp_path / "store").exists()
 
 
 def test_query_turns_a_rectangle_into_a_bbox_and_uses_the_cache_file(
@@ -443,7 +635,8 @@ def test_query_of_a_rectangle_without_its_crs_is_invalid_input(
             CatalogCall("elevation availability", options)
         )
 
-    assert caught.value.tool_code == "invalid_input"
+    assert caught.value.tool_code == "validation_error"
+    assert caught.value.details["reason"] == "invalid_input"
     assert recorder.uses == []
 
 

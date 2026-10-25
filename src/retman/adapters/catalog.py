@@ -75,11 +75,16 @@ class ToolFile:
 
 @dataclass(frozen=True)
 class ToolFailure:
-    """A unit (sheet, file, county) a command could not deliver."""
+    """A unit (sheet, file, county) a command could not deliver.
+
+    ``kind`` is the tool's code of the failure (a registry code where the tool gives
+    one) and ``reason`` its ``details.reason``, when the tool names one.
+    """
 
     unit: str
     kind: str
     detail: str
+    reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -107,22 +112,12 @@ class ToolRun:
     schema: str = ""
 
 
-# Registry code and ``details.reason`` of the codes a tool reports (ERR §4). A code of
-# the registry passes through; the others are the codes of the pinned Kartograf (before
-# its adoption of the registry) and of Retman's own clients. Delete the Kartograf rows
-# when a Kartograf that uses the registry is pinned (docs/PROGRESS.md, Next 2).
+# Registry code and ``details.reason`` of the codes only Retman's clients use (ERR §4).
+# Every code of the registry passes through unchanged, with the tool's
+# ``details.reason`` as its precision: ``not_offline`` and ``not_read_only`` are raised
+# by the clients themselves, ``store_write_unsupported`` is the IMGWTools client's word
+# for a ``conflict`` whose reason is ``not_atomic``.
 _TOOL_CODES: Mapping[str, tuple[ErrorCode, str | None]] = {
-    "invalid_input": ("validation_error", "invalid_input"),
-    "usage_error": ("validation_error", "usage"),
-    "invalid_sheet_code": ("validation_error", "invalid_sheet_code"),
-    "no_coverage": ("no_data", "no_coverage"),
-    "year_out_of_range": ("no_data", "year_out_of_range"),
-    "download_failed": ("source_unavailable", "download_failed"),
-    "cache_error": ("store_unavailable", "cache"),
-    "invalid_sidecar": ("data_error", "invalid_sidecar"),
-    "transform_failed": ("calculation_error", "transform_failed"),
-    "transform_unavailable": ("unsupported", "transform_unavailable"),
-    "interrupted": ("cancelled", None),
     "store_write_unsupported": ("store_unavailable", "store_write_unsupported"),
     "not_offline": ("internal_error", "not_offline"),
     "not_read_only": ("internal_error", "not_read_only"),
@@ -158,12 +153,14 @@ def registry_code(
 class ToolError(RetmanError):
     """A tool refused or failed; raised by clients instead of the tool's exceptions.
 
-    ``tool_code`` is the tool's stable error code (``invalid_input``, ``no_coverage``,
-    ``io_error``…); ``code`` is the registry code it maps to (:func:`registry_code`)
-    and ``details.reason`` keeps the tool's precision. ``option``/``options`` name the
-    tool options at fault and ``allowed`` what the tool would accept there. An option
-    inside the options a command takes of another command is named by its path
-    (``options.years``), so that ``CatalogCall.params`` can route it like any other.
+    ``tool_code`` is the stable error code the tool reported (a registry code such as
+    ``validation_error``, ``no_data`` or ``io_error``, or a code of Retman's client);
+    ``code`` is the registry code it maps to (:func:`registry_code`) and
+    ``details.reason`` keeps the tool's precision (``no_coverage``, ``no_marker``…).
+    ``option``/``options`` name the tool options at fault and ``allowed`` what the tool
+    would accept there. An option inside the options a command takes of another command
+    is named by its path (``options.years``), so that ``CatalogCall.params`` can route
+    it like any other.
     ``detail`` and ``hint`` are the tool's own wording: the user sees Retman's text
     chosen by ``tool_code`` (see ``tool_error_text``). ``call`` is the command that
     raised (set by the generic runners when the client did not).
@@ -629,6 +626,7 @@ def run_calls(
                 if run.status == "cancelled"
                 else (first.kind if first else "failed"),
                 first.detail if first else run.status,
+                details={"reason": first.reason} if first and first.reason else None,
                 call=call,
             )
     describe: Describe = (

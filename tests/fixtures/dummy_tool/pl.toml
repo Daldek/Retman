@@ -113,8 +113,8 @@ unset = "bez nazwy (nazwa pliku z prostokąta)"
 
 # Teksty ze zwracanych kodów błędów narzędzia ({detail}, {option_label}, {allowed})
 [errors]
-invalid_input = "Narzędzie odrzuca wybór „{option_label}”: {detail}"
-no_coverage = "Brak danych dla tego obszaru ({detail})."
+validation_error = "Narzędzie odrzuca wybór „{option_label}”: {detail}"
+no_data = "Brak danych dla tego obszaru ({detail})."
 
 [problems]
 sheet_unavailable = "Arkusz {code} nie jest dostępny w usłudze."

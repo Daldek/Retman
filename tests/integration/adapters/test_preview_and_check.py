@@ -22,7 +22,7 @@ def reject_pair(call: CatalogCall) -> ToolError | None:
     if call.options["resolution"] == "5m" and call.options["vertical_crs"] == "KRON86":
         return ToolError(
             "dummy_tool",
-            "invalid_input",
+            "validation_error",
             "5 m nie ma KRON86",
             options=("resolution", "vertical_crs"),
         )
@@ -53,7 +53,9 @@ def test_a_rejection_of_the_geometry_layer_goes_back_to_the_area(operations):
     geometry = {"type": "geometry", "path": "/p/z.gpkg", "layer": "dzialki"}
 
     def refuse_layer(call: CatalogCall) -> ToolError:
-        return ToolError("dummy_tool", "invalid_input", "brak warstwy", option="layer")
+        return ToolError(
+            "dummy_tool", "validation_error", "brak warstwy", option="layer"
+        )
 
     result, _ = preview(
         operations,
@@ -67,7 +69,7 @@ def test_a_rejection_of_the_geometry_layer_goes_back_to_the_area(operations):
 def test_a_rejection_naming_no_parameter_is_drift_not_a_question(operations):
     def refuse_product(call: CatalogCall) -> ToolError:
         return ToolError(
-            "dummy_tool", "invalid_input", "nieznany produkt", option="product"
+            "dummy_tool", "validation_error", "nieznany produkt", option="product"
         )
 
     with pytest.raises(ToolDriftError) as caught:
@@ -122,7 +124,7 @@ def test_check_reports_what_the_tool_says_and_never_changes_the_plan(operations)
     ("failure", "error"),
     [
         (
-            ToolError("dummy_tool", "no_coverage", "brak"),
+            ToolError("dummy_tool", "no_data", "brak"),
             "Brak danych dla tego obszaru (brak).",
         ),
         (RuntimeError("serwer nie odpowiada"), "serwer nie odpowiada"),

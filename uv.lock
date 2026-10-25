@@ -618,10 +618,11 @@ wheels = [
 
 [[package]]
 name = "kartograf"
-version = "0.8.0"
-source = { git = "https://github.com/Daldek/Kartograf?rev=8e9bcbb058d11f06afae5a65e62f31870f69d169#8e9bcbb058d11f06afae5a65e62f31870f69d169" }
+version = "0.8.0.dev0"
+source = { git = "https://github.com/Daldek/Kartograf?rev=8a36e977d607192b11c66f44f318f2e7676b60d1#8a36e977d607192b11c66f44f318f2e7676b60d1" }
 dependencies = [
     { name = "numpy" },
+    { name = "platformdirs" },
     { name = "pyjwt", extra = ["crypto"] },
     { name = "pyogrio" },
     { name = "pyproj" },
@@ -1389,7 +1390,7 @@ dev = [
 ]
 tools = [
     { name = "imgwtools", extras = ["store"], git = "https://github.com/Daldek/IMGWTools?rev=7b117550103a3d8d46afc97043b90f0e93314c8b" },
-    { name = "kartograf", git = "https://github.com/Daldek/Kartograf?rev=8e9bcbb058d11f06afae5a65e62f31870f69d169" },
+    { name = "kartograf", git = "https://github.com/Daldek/Kartograf?rev=8a36e977d607192b11c66f44f318f2e7676b60d1" },
 ]
 
 [[package]]

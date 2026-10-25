@@ -43,9 +43,12 @@ from retman.tools.kartograf.describe import data_dates
 # Messages of failed sheets shown in an error (the audit document has them all)
 _SHOWN_ERRORS = 3
 # Schema of the summary Retman saves for an orthophoto download (the provider route
-# has no ``kartograf-download/1`` document)
+# has no ``kartograf-result/1`` document)
 _SCHEMA = "retman-orthophoto-download/1"
 _DOCUMENT = "tool_1_imagery_download.json"
+# ``VersionedFile.status`` has two words for a version that was not transferred:
+# Kartograf's documents say ``unchanged`` for both, and so does the summary
+_DOCUMENT_STATUS = {"local": "unchanged", "reused": "unchanged"}
 
 
 def download_sheet_hierarchy(
@@ -81,8 +84,8 @@ def _download_orthophoto(
     with translated(call), closing(metadata_cache(ctx.settings)) as cache:
         provider = kartograf.GugikOrtoProvider(cache=cache, color=color)
         manager = kartograf.DownloadManager(
-            output_dir=ctx.store_dir,
-            provider=provider,
+            provider,
+            root=ctx.store_dir,
             workers=ctx.settings["workers"],
         )
         result = (
@@ -98,14 +101,16 @@ def _download_orthophoto(
         messages = [
             result.errors[sheet] for sheet in result.failed if sheet in result.errors
         ]
-        code_ = (
-            "no_coverage" if result.no_coverage == result.failed else "download_failed"
-        )
+        missing = result.no_coverage == result.failed
         raise ToolError(
-            TOOL, code_, "; ".join(messages[:_SHOWN_ERRORS]) or code, call=call
+            TOOL,
+            "no_data" if missing else "source_unavailable",
+            "; ".join(messages[:_SHOWN_ERRORS]) or code,
+            details={"reason": "no_coverage"} if missing else None,
+            call=call,
         )
     hard = result.hard_failures
-    notices = [ToolNotice(n.level, n.code, n.text) for n in result.notices]
+    notices = [ToolNotice(n.level, n.code, n.message) for n in result.notices]
     warnings: list[HandlerWarning] = []
     if result.no_coverage:
         warnings.append(
@@ -134,9 +139,8 @@ def _download_orthophoto(
     if operation is not None:
         warnings.extend(notice_warnings(operation, ctx.tool, notices))
     command_line = (
-        f"DownloadManager(output_dir={str(ctx.store_dir)!r}, "
-        f"provider=GugikOrtoProvider(color={color!r}), "
-        f"workers={ctx.settings['workers']}), "
+        f"DownloadManager(GugikOrtoProvider(color={color!r}), "
+        f"root={str(ctx.store_dir)!r}, workers={ctx.settings['workers']}), "
         + (
             f"download_hierarchy({code!r}, {str(target)!r}, update={update!r})"
             if target is not None
@@ -153,10 +157,11 @@ def _download_orthophoto(
             {
                 "unit": sheet,
                 "path": str(item.path),
-                "version_path": str(item.version_path),
-                "label": item.label,
-                "status": item.status,
+                "size_bytes": item.size_bytes,
                 "sha256": item.sha256,
+                "status": _DOCUMENT_STATUS.get(item.status, item.status),
+                "label": item.label,
+                "version_path": str(item.version_path),
             }
             for sheet in sorted(result.files)
             for item in result.files[sheet]
@@ -164,7 +169,7 @@ def _download_orthophoto(
         "no_coverage": sorted(result.no_coverage),
         "failed": {sheet: result.errors.get(sheet, "") for sheet in hard},
         "notices": [
-            {"level": n.level, "code": n.code, "text": n.text} for n in notices
+            {"level": n.level, "code": n.code, "message": n.text} for n in notices
         ],
     }
     data = (json.dumps(document, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
@@ -180,7 +185,7 @@ def _download_orthophoto(
                 "path": str(item.path),
                 "sha256": item.sha256,
                 "version": item.label,
-                "status": item.status,
+                "status": _DOCUMENT_STATUS.get(item.status, item.status),
             }
             for item in delivered
         ],

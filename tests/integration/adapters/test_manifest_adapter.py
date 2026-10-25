@@ -212,7 +212,7 @@ def test_notices_and_partial_failures_are_never_dropped(operations, tmp_path):
     ("code", "expected"),
     [
         (
-            "invalid_input",
+            "validation_error",
             "Narzędzie odrzuca wybór „Układ wysokościowy”: KRON86 tylko do 1 m",
         ),
         (
@@ -252,14 +252,17 @@ def test_runner_stops_at_the_first_failed_command_and_keeps_its_document(
     failing = ToolRun(
         "elevation download",
         "failed",
-        failed=(ToolFailure("PL", "no_coverage", "brak pokrycia"),),
+        failed=(ToolFailure("PL", "no_data", "brak pokrycia", "no_coverage"),),
         document={"schema": "dummy-download/1", "ok": False},
     )
     client = FakeToolClient(runs={"elevation download": failing})
 
     result, output_dir = run_operation(two_calls, tmp_path, FETCH_PARAMS, client=client)
 
-    assert not result.ok and result.error_code == "no_coverage"
+    assert not result.ok and result.error_code == "no_data"
+    # The reason of the failed unit is the precision of the registry code
+    assert result.failure is not None
+    assert result.failure["details"]["reason"] == "no_coverage"
     assert result.error == "Brak danych dla tego obszaru (brak pokrycia)."
     assert [method for method, _ in client.calls] == ["run"]  # the second never ran
     assert (output_dir / "tool_1_elevation_download.json").is_file()
