@@ -213,10 +213,10 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   yet (ARCHITECTURE 3.2.11, 9.3; USAGE 5.2).
 - An IMGW store folder can be a layout of a store without its marker (`archives/`, `series/`,
   `stations/` or `pmaxtp/` and no `imgw-store.json`): `retman doctor check` reports it as
-  `store_unavailable`, reason `no_marker`, and the plan names it and points to "Utwórz magazyn
-  IMGW" or `retman config init`, where IMGWTools checks the layout and writes the marker. A
-  folder that holds only the `api_keys.json` of the IMGWTools server counts as empty, no longer
-  as foreign (ARCHITECTURE 7.2, 9.1; ADR-024).
+  `store_unavailable`, reason `no_marker`, and the plan names it and points to the command "Utwórz
+  magazyn IMGW", where IMGWTools checks the layout and writes the marker. A folder that holds only
+  the `api_keys.json` of the IMGWTools server counts as empty, no longer as foreign
+  (ARCHITECTURE 7.2, 9.1; ADR-024).
 
 ### Removed
 

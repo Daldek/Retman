@@ -672,14 +672,15 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
 - **Store** (`[retman.tools.imgwtools] store_dir`, section 9.1) is the `root` option of the commands
   that read or write it; the client adds it unless the call names plain files (the next rule). A
   missing store, a folder with the layout of a store but no marker, a foreign folder or a store with
-  an unsupported schema is a **preview problem**; the problem of a missing store and of a layout
-  without a marker comes with the repair command ("Utwórz magazyn IMGW" (create the IMGW store),
-  `retman config init`: the tool checks the layout and writes the marker), and a folder that holds
-  only the `api_keys.json` of the tool's server counts as a missing store, not as a foreign folder;
-  no operation creates a store silently. The client exports `reference_data_dir` once as the
-  `IMGW_REFERENCE_DIR` variable before the first import of the tool — the only exception to the "no
-  environment variables" rule, because the tool has no option for the static station positions file;
-  the value comes from the settings, not from the environment.
+  an unsupported schema is a **preview problem**; the problem of a missing store comes with the
+  repair commands ("Utwórz magazyn IMGW" (create the IMGW store), `retman config init`), and that of
+  a layout without a marker with the first one, which makes the tool check the layout and write the
+  marker (`retman config init` does not run again on a settings file that has its tables); a folder
+  that holds only the `api_keys.json` of the tool's server counts as a missing store, not as a
+  foreign folder; no operation creates a store silently. The client exports `reference_data_dir`
+  once as the `IMGW_REFERENCE_DIR` variable before the first import of the tool — the only
+  exception to the "no environment variables" rule, because the tool has no option for the static
+  station positions file; the value comes from the settings, not from the environment.
 - **Output: plain files or the store** (the data output convention ECO-051, ADR-024). IMGWTools
   writes either plain files into a directory (`output_dir`) or a versioned store (`root`), never
   both: its catalog declares such options `exclusive`, and the client adds `root` only to a call that
@@ -1832,7 +1833,7 @@ The source of each value in the plan: `command` (from the command), `default` (d
 | Decision model | **server address**; whether it responds; which model is loaded; a **test question** with an obvious answer (whether the model answers sensibly); where the confidence comes from (`basal`, `logprobs`, agreement, unavailable) and the thresholds (`"auto"` with a backend other than `basal` is a configuration error, section 6.2) |
 | Text model | whether it is enabled; **server address**; whether it responds |
 | Tools | which are installed; whether their versions fall within the supported range; number of available operations |
-| Tool data stores | for tools in use (installed, in a supported version, not disabled): store path without symbolic links (IMGWTools does not accept one: error; Kartograf: warning), the folder exists or can be created and is writable, **hard links work in both stores** (attempted in the store or in the nearest existing folder on the same disk); Kartograf: metadata cache (missing is a warning — Kartograf runs slower); IMGWTools: the `imgw-store.json` marker and its schema (a missing store, or a folder that holds only the `api_keys.json` of the tool's server, is a warning with a hint; a folder with the layout of a store but no marker (reason `no_marker`; the hint is `store init`, that is "Utwórz magazyn IMGW" or `retman config init`), a foreign folder or a corrupted marker is an error), `pyarrow` (time series), reference data folder; with `--deep` also a trial write to the IMGWTools store |
+| Tool data stores | for tools in use (installed, in a supported version, not disabled): store path without symbolic links (IMGWTools does not accept one: error; Kartograf: warning), the folder exists or can be created and is writable, **hard links work in both stores** (attempted in the store or in the nearest existing folder on the same disk); Kartograf: metadata cache (missing is a warning — Kartograf runs slower); IMGWTools: the `imgw-store.json` marker and its schema (a missing store, or a folder that holds only the `api_keys.json` of the tool's server, is a warning with a hint; a folder with the layout of a store but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn IMGW", which runs `store init`), a foreign folder or a corrupted marker is an error), `pyarrow` (time series), reference data folder; with `--deep` also a trial write to the IMGWTools store |
 | Conformance of descriptions with tools | a light version of `retman scaffold check` (section 3.2.3) for tools in use: the commands from the manifest are in the installed tool's catalog, and the tool does not offer a value that the manifest neither offers nor disables (e.g. "kartograf 0.8.1 accepts a resolution of 0.3 m"); operations without a row in the `retman eval run` set are reported as unchecked. These lines warn but do not block work (exit code unchanged) |
 | Translations | complete set of texts for the language from the `lang` setting |
 | Workspace | results folder of the current project; number of results; whether the `result.json` files can be read |

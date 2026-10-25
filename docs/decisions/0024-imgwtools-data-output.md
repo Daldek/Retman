@@ -72,10 +72,11 @@ The texts of the tool, which are English strings in its documents:
 5. **Store folders.** `retman.stores.imgw_store_state` follows the rules of `store init` without
    importing the tool. A folder with the layout of a store (`archives/`, `series/`, `stations/` or
    `pmaxtp/`) and no marker is `no_marker`: `doctor check` reports a blocking `store_unavailable`
-   with the reason `no_marker`, and the way out is `store init`, which verifies the layout, through
-   "Utwórz magazyn IMGW" or `retman config init`. A folder that holds only `api_keys.json`, the
-   state file of the REST server of the tool in its default store folder, counts as empty. A
-   project (`project init`, `project set store`) refuses both folders, as the tool does.
+   with the reason `no_marker`, and the way out is the command "Utwórz magazyn IMGW", which makes
+   the tool verify the layout and write the marker (`store init`). A folder that holds only
+   `api_keys.json`, the state file of the REST server of the tool in its default store folder,
+   counts as empty. A project (`project init`, `project set store`) refuses both folders, as the
+   tool does.
 
 ## Consequences
 

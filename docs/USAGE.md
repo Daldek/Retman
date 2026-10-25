@@ -911,10 +911,11 @@ section checks paths (without symbolic links), write permission, **hard links in
 Kartograf cache, the IMGWTools store marker, `pyarrow` and the reference data folder. A missing IMGW
 store (also a folder that holds only the `api_keys.json` of the IMGWTools server) is a warning with
 the hint "create it: retman config init"; a disk without hard links, a foreign folder in the store's
-place and a folder with the layout of a store but no marker (the same command writes the marker after
-the tool has checked the layout) are blocking problems. The "Conformance" section is a lightweight
-version of `retman scaffold check`: it warns when an installed tool accepts a value that the
-descriptions neither offer nor exclude; it does not block work.
+place and a folder with the layout of a store but no marker (the hint is the command "Utwórz magazyn
+IMGW", which makes the tool check the layout and write the marker) are blocking problems. The
+"Conformance" section is a lightweight version of `retman scaffold check`: it warns when an
+installed tool accepts a value that the descriptions neither offer nor exclude; it does not block
+work.
 
 `retman doctor check --deep` adds a slower check: a trial write to the IMGWTools store on the tool's
 built-in test data, in a temporary directory and without network access:

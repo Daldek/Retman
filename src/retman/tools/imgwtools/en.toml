@@ -847,7 +847,7 @@ arch_export_partial = "The store has only {found} of {total} archive files for t
 [problems]
 store_missing = "The IMGW store ({path}) has not been created yet. Create it with the command “Create an IMGW store” or with “retman config init”."
 store_not_imgw = "The folder {path} contains other files and is not an IMGW store. Specify an empty folder in the store_dir setting of the [retman.tools.imgwtools] table in nogat.toml."
-store_no_marker = "The folder {path} has the layout of an IMGW store but no marker. Write the marker with the command “Create an IMGW store” or with “retman config init”; the tool checks the layout first."
+store_no_marker = "The folder {path} has the layout of an IMGW store but no marker. Write the marker with the command “Create an IMGW store”; the tool checks the layout first."
 store_unsupported = "The IMGW store in {path} has an unsupported schema ({schema}). Update IMGWTools."
 pyarrow_missing = "The pyarrow package is required for series in the IMGW store. Install IMGWTools with the store extra (imgwtools[store])."
 station_catalog_missing = "The IMGW store has no station catalog. Choose the “server” source or build the catalog first (“Build the IMGW station catalog”)."

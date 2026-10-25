@@ -473,7 +473,7 @@ def test_imgw_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
     )
     text = report.to_text(texts)
     assert "ma układ magazynu IMGWTools, ale nie ma znacznika imgw-store.json" in text
-    assert "zapisz znacznik: retman config init" in text
+    assert "zapisz znacznik poleceniem „Utwórz magazyn IMGW”" in text
     # Looking changes nothing in a folder that may hold data: no probe, no marker
     assert [path.name for path in store.iterdir()] == ["series"]
 
