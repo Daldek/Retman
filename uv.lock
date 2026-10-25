@@ -1355,6 +1355,7 @@ source = { editable = "." }
 default-groups = ["dev", "tools"]
 dependencies = [
     { name = "httpx" },
+    { name = "packaging" },
     { name = "platformdirs" },
 ]
 
@@ -1374,6 +1375,7 @@ tools = [
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
+    { name = "packaging", specifier = ">=24" },
     { name = "platformdirs", specifier = ">=4" },
 ]
 

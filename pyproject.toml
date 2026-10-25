@@ -34,7 +34,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Hydrology",
     "Typing :: Typed",
 ]
-dependencies = ["httpx>=0.27", "platformdirs>=4"]
+dependencies = ["httpx>=0.27", "packaging>=24", "platformdirs>=4"]
 
 [project.scripts]
 retman = "retman.cli:main"
@@ -59,7 +59,8 @@ dev = [
 # and v3.0.0 exist; then pin the tags. The IMGWTools commit is the head of its branch
 # feature/data-output (data output convention, ECO-051) and is NOT pushed yet: `uv lock`
 # and `uv sync` resolve it only on a machine whose git cache holds it, until the author
-# pushes IMGWTools (docs/PROGRESS.md, Next 2).
+# pushes IMGWTools (docs/PROGRESS.md, Next 2). The supported ranges of both tools admit
+# their development versions while the commits are pinned (REL-5.6).
 tools = [
     "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169",
     "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@a30452182b01f47cc18e48466da4edf4d0c8cb6a",

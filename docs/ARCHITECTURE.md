@@ -539,12 +539,17 @@ The kinds of the remaining tools (Hydrolog, Hydrograf, BasicHydraulics) are an o
 Guarding conformance is Retman's job, not the tools'. Tools evolve independently,
 and Retman adapts to them:
 
-- Each tool has a **supported version range** in its manifest: Kartograf `>=0.8.0,<0.9`
-  (0.x releases may break compatibility), IMGWTools `>=3.0.0,<4` (semantic versioning and `/1`
-  document contracts; ADR-012). The range corresponds to release tags in the tool's repository on
-  GitHub; until the `v0.8.0` and `v3.0.0` tags are pushed, the `tools` dependency group pins
-  commits (section 9.3). Retman checks the installed tool's version at startup (section 3.2.5); it
-  does not install tools on its own (sections 9.3, 9.4).
+- Each tool has a **supported version range** in its manifest: Kartograf `>=0.8.0.dev0,<0.9`
+  (0.x releases may break compatibility), IMGWTools `>=3.0.0.dev0,<4` (semantic versioning and
+  `/1` document contracts; ADR-012). The range corresponds to release tags in the tool's
+  repository on GitHub; until the `v0.8.0` and `v3.0.0` tags are pushed, the `tools` dependency
+  group pins commits (section 9.3) and the range starts at the development version of the pending
+  release (`.dev0`, REL-5.6), because PEP 440 puts `0.8.0.dev0` below `0.8.0`; the release change
+  that replaces the commits by tags narrows the ranges to `>=0.8.0,<0.9` and `>=3.0.0,<4`. Every
+  check of a version (the loader, `retman doctor check`, `retman scaffold check`, the conformance
+  tests) reads that one range, as a PEP 440 specifier set with development versions admitted
+  (`retman.registry.loader.version_matches`). Retman checks the installed tool's version at
+  startup (section 3.2.5); it does not install tools on its own (sections 9.3, 9.4).
 - **Retman's CI** runs the handler tests and the conformance check (`retman scaffold check`,
   section 3.2.3) on the oldest and newest supported version of each tool, and regularly
   (e.g. nightly) also on the tools' current main branch — an API change that would break Retman
@@ -960,7 +965,7 @@ MANIFEST = {
     "tool": "kartograf",
     "distribution": "kartograf",
     "source": "git+https://github.com/Daldek/Kartograf",
-    "supported_versions": ">=0.8.0,<0.9",
+    "supported_versions": ">=0.8.0.dev0,<0.9",
     "translations": {"pl": "pl.toml", "en": "en.toml"},
     "client": "retman.tools.kartograf.client:create",    # factory(settings) -> RunClient (section 3.2.4)
     "operations": [
@@ -1855,8 +1860,8 @@ Model decyzyjny
   ! progi pewności: "auto" — zalecane dostrojenie na własnym zbiorze testowym (retman eval run, ARCHITECTURE 6.2)
 
 Narzędzia
-  ✓ imgwtools 3.0.0, obsługiwane >=3.0.0,<4, 26 operacji
-  ✓ kartograf 0.8.0, obsługiwane >=0.8.0,<0.9, 4 operacje
+  ✓ imgwtools 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
+  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 4 operacje
 
 Magazyny danych narzędzi
   ✓ kartograf: magazyn /dane/retman/stores/kartograf (zapis możliwy, dowiązania twarde działają)

@@ -69,7 +69,7 @@ def test_every_reference_of_every_operation_resolves_to_a_function(operations):
 
 
 def test_the_tool_version_range_is_the_released_major():
-    assert MANIFEST["supported_versions"] == ">=3.0.0,<4"
+    assert MANIFEST["supported_versions"] == ">=3.0.0.dev0,<4"
     assert MANIFEST["distribution"] == "imgwtools"
     assert "imgwtools[store]" in MANIFEST["source"]
 

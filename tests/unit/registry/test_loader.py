@@ -46,8 +46,48 @@ def test_version_matches_equality_and_inequality_with_padding():
     assert version_matches("1.2.0", "==1.2,!=1.2.1")
     assert not version_matches("1.2.1", "==1.2.1,!=1.2.1")
     assert version_matches("1.2.2", ">1.2.1,<=1.2.2")
-    with pytest.raises(ManifestError):
-        version_matches("1.2", "~=1.2")
+    assert version_matches("1.2.5", "~=1.2.1")
+    assert not version_matches("1.3", "~=1.2.1")
+
+
+@pytest.mark.parametrize(
+    ("version", "accepted"),
+    [
+        ("0.8.0.dev0", True),
+        ("0.8.0.dev7", True),
+        ("0.8.0rc1", True),
+        ("0.8.0", True),
+        ("0.8.4", True),
+        ("0.7.9", False),
+        ("0.7.9.dev3", False),
+        ("0.9.0.dev0", False),
+        ("0.9", False),
+    ],
+)
+def test_version_matches_admits_the_development_versions_of_the_pending_release(
+    version, accepted
+):
+    # REL-5.6: PEP 440 puts 0.8.0.dev0 below 0.8.0, so the range starts at .dev0
+    assert version_matches(version, ">=0.8.0.dev0,<0.9") is accepted
+
+
+def test_version_matches_refuses_the_development_version_below_a_release_range():
+    assert not version_matches("0.8.0.dev0", ">=0.8.0,<0.9")
+
+
+def test_version_matches_takes_a_local_version_as_its_public_version():
+    assert version_matches("3.0.0+g7b11755", ">=3.0.0.dev0,<4")
+
+
+def test_version_matches_refuses_a_version_that_is_no_pep_440_version():
+    assert not version_matches("not-a-version", ">=1,<2")
+
+
+def test_version_matches_rejects_a_malformed_range():
+    with pytest.raises(ManifestError, match="invalid supported_versions"):
+        version_matches("1.2", ">=1.2,<")
+    with pytest.raises(ManifestError, match="invalid supported_versions"):
+        version_matches("1.2", "newer than 1")
 
 
 def test_load_operations_disables_absent_out_of_range_and_disabled(dummy):

@@ -3,10 +3,12 @@
 import importlib
 import importlib.metadata
 import logging
-import re
 import tomllib
 from collections.abc import Callable, Iterable
 from pathlib import Path
+
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from packaging.version import InvalidVersion, Version
 
 from retman.exceptions import ManifestError
 from retman.i18n.loader import load_texts
@@ -21,34 +23,28 @@ from retman.registry.operation import (
 
 logger = logging.getLogger(__name__)
 
-_VERSION = re.compile(r"(>=|<=|==|!=|>|<)\s*(\d+(?:\.\d+)*)\Z")
-_RELEASE = re.compile(r"\d+(?:\.\d+)*")
-
 
 def version_matches(version: str, specifier: str) -> bool:
-    """Match a numeric release against comma-separated comparison clauses."""
-    if not _RELEASE.fullmatch(version):
+    """Tell whether an installed version lies in a manifest's supported range.
+
+    The range is a PEP 440 specifier set; development versions count (REL-5.6), so
+    ``0.8.0.dev0`` lies in ``>=0.8.0.dev0,<0.9``. A version that is no PEP 440 version
+    is outside every range.
+
+    Raises
+    ------
+    ManifestError
+        If ``specifier`` is no PEP 440 specifier set.
+    """
+    try:
+        supported = SpecifierSet(specifier)
+    except InvalidSpecifier as err:
+        raise ManifestError(f"invalid supported_versions: {specifier}") from err
+    try:
+        installed = Version(version)
+    except InvalidVersion:
         return False
-    installed = tuple(int(part) for part in version.split("."))
-    for clause in specifier.split(","):
-        match = _VERSION.fullmatch(clause.strip())
-        if match is None:
-            raise ManifestError(f"invalid supported_versions: {specifier}")
-        op, release = match.groups()
-        target = tuple(int(part) for part in release.split("."))
-        width = max(len(installed), len(target))
-        lhs = installed + (0,) * (width - len(installed))
-        rhs = target + (0,) * (width - len(target))
-        if not {
-            ">=": lhs >= rhs,
-            "<=": lhs <= rhs,
-            "==": lhs == rhs,
-            "!=": lhs != rhs,
-            ">": lhs > rhs,
-            "<": lhs < rhs,
-        }[op]:
-            return False
-    return True
+    return supported.contains(installed, prereleases=True)
 
 
 def discover_manifests() -> Iterable[tuple[ManifestSpec, Path]]:

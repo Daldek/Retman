@@ -217,6 +217,13 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   magazyn IMGW", where IMGWTools checks the layout and writes the marker. A folder that holds only
   the `api_keys.json` of the IMGWTools server counts as empty, no longer as foreign
   (ARCHITECTURE 7.2, 9.1; ADR-024).
+- The supported ranges admit the development versions of the pending releases while the
+  `tools` group pins commits: Kartograf `>=0.8.0.dev0,<0.9` and IMGWTools `>=3.0.0.dev0,<4`
+  (REL-5.6, ADR-024 erratum 1). The version check of the loader, `retman doctor check` and
+  `retman scaffold check` reads the range as a PEP 440 specifier set
+  (`packaging`, a new core dependency) instead of a comparison of numbers, so `~=` and the
+  other PEP 440 forms are valid in a manifest. The release change that puts the tags in place of
+  the commits narrows the ranges to `>=0.8.0,<0.9` and `>=3.0.0,<4`.
 
 ### Removed
 

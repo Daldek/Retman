@@ -885,8 +885,8 @@ Model decyzyjny
   ! pewność: niedostępna (confidence = "none") — wybory modelu w planie są oznaczone jako niezweryfikowane → ustaw confidence = "auto" w [retman.decision] (nogat.toml), jeśli serwer podaje logprobs
 
 Narzędzia
-  ✓ imgwtools 3.0.0, obsługiwane >=3.0.0,<4, 26 operacji
-  ✓ kartograf 0.8.0, obsługiwane >=0.8.0,<0.9, 4 operacje
+  ✓ imgwtools 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
+  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 4 operacje
 
 Magazyny danych narzędzi
   ✓ kartograf: magazyn ~/.local/share/nogat/kartograf (zapis możliwy, dowiązania twarde działają)

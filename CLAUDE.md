@@ -24,7 +24,7 @@ and every `[TO BE COMPLETED]` are the author's decisions: report them, do not se
   tool; `retman scaffold check` compares them (ADR-019).
 - **Retman contains no model** (N-10, ARCHITECTURE 3.3, 9.3). No ML library, provider SDK or
   `basal` package in the dependencies; backends are plain HTTP requests. Core dependencies: the
-  HTTP client and `platformdirs`.
+  HTTP client, `packaging` (the version ranges of the tools) and `platformdirs`.
 - **Always confirm before executing** in 0.x (W-05, ARCHITECTURE 6.3). No execution path without
   `plan.confirm()`; `Plan.from_dict` never restores a confirmation.
 - **No network before confirmation** (N-12, ARCHITECTURE 3.2.4, 6.5). Planning code (call
