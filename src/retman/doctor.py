@@ -42,9 +42,11 @@ from retman.registry.manifest import ManifestSpec, validate_manifest
 from retman.stores import (
     IMGW_MARKER,
     IMGW_REFERENCE_FILE,
+    KARTOGRAF_MARKER,
     ToolOutcome,
     hardlink_error,
     imgw_store_state,
+    kartograf_store_state,
     nearest_existing,
     probe_imgw_write,
     symlink_component,
@@ -646,31 +648,85 @@ def _hardlink_checks(
     ]
 
 
+# How the report names a store folder that Kartograf refuses: the keys of the text and
+# of the hint under ``doctor.stores`` and the ``details.reason`` of the failed unit
+_KARTOGRAF_REFUSALS: Mapping[str, tuple[str, str, str]] = {
+    "foreign": ("kartograf_foreign", "hint_kartograf_foreign", "foreign_folder"),
+    "no_marker": ("kartograf_no_marker", "hint_kartograf_no_marker", "no_marker"),
+    "unreadable": (
+        "kartograf_unreadable",
+        "hint_kartograf_marker",
+        "marker_unreadable",
+    ),
+    "unsupported": (
+        "kartograf_unsupported",
+        "hint_kartograf_marker",
+        "marker_unsupported",
+    ),
+    "nested": ("kartograf_nested", "hint_kartograf_nested", "nested_store"),
+}
+
+
 def _kartograf_checks(
     settings: dict[str, Any], texts: Texts, config_path: Path
 ) -> list[Check]:
-    """Kartograf's store keeps every version of a file as a hard link target."""
+    """Kartograf marks a store folder with a file, which its first write puts there.
+
+    A missing or empty folder is only not marked yet; a layout without its marker, a
+    folder with other files, a marker that cannot be used and a store that lies in or
+    holds another store are errors, because Kartograf refuses to write into them. The
+    store keeps every version of a file as a hard link target.
+    """
     store = Path(settings["store_dir"])
     checks, state = _store_folder(
         "kartograf", store, texts, config_path, symlinks_refused=False
     )
+    found = kartograf_store_state(store) if state != "broken" else None
     where: Path | None = None
-    if state == "missing":
-        checks.append(
-            Check(
-                "warning",
-                texts.get("doctor.stores.missing", tool="kartograf", path=store),
-                texts.get("doctor.stores.hint_missing_kartograf"),
+    if found is not None:
+        refusal = _KARTOGRAF_REFUSALS.get(found.state)
+        if refusal is not None:
+            text_key, hint_key, reason = refusal
+            args = {
+                "path": store,
+                "marker": KARTOGRAF_MARKER,
+                "schema": found.detail,
+                "other": found.detail,
+                "config": config_path,
+            }
+            checks.append(
+                Check(
+                    "error",
+                    texts.get(f"doctor.stores.{text_key}", **args),
+                    texts.get(f"doctor.stores.{hint_key}", **args),
+                    blocking=True,
+                    code="store_unavailable",
+                    reason=reason,
+                )
             )
-        )
-        # The file system is the one of the closest existing folder
-        where = nearest_existing(store)
-    elif state == "ok":
-        where = store
+        elif found.state == "missing":
+            checks.append(
+                Check(
+                    "warning",
+                    texts.get("doctor.stores.missing", tool="kartograf", path=store),
+                    texts.get("doctor.stores.hint_missing_kartograf"),
+                )
+            )
+            # The file system is the one of the closest existing folder
+            where = nearest_existing(store)
+        else:
+            where = store
     if where is not None:
         checks.extend(_hardlink_checks("kartograf", where, texts, config_path))
-    if state == "ok" and not checks:
-        checks.append(Check("ok", texts.get("doctor.stores.kartograf_ok", path=store)))
+    if found is not None and found.state in ("empty", "ready") and not checks:
+        key = "kartograf_ready" if found.state == "ready" else "kartograf_ok"
+        ok = texts.get(
+            f"doctor.stores.{key}",
+            path=store,
+            marker=KARTOGRAF_MARKER,
+            schema=found.detail,
+        )
+        checks.append(Check("ok", ok))
     checks.extend(_cache_checks(Path(settings["cache_file"]), texts, config_path))
     return checks
 

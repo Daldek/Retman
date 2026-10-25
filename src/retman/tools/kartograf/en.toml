@@ -261,6 +261,11 @@ no_descendants = "Map sheet {code} (PL-2000) has no child sheets in the scales I
 no_sheets = "The geometry file does not intersect any map sheet in the selected scale."
 orthophoto_needs_sheet = "I download the orthophoto only for a sheet code, not for a geometry file. Give a sheet code or choose other data."
 outside_poland = "The area from the file lies outside Poland, and BDOT10k covers only Poland."
+store_no_marker = "The folder {path} has the layout of a Kartograf store but no marker. Write the marker with the command kartograf store init --root {path}; Kartograf checks the layout first."
+store_not_kartograf = "{path} is not a Kartograf store: it is a file or a folder with other files. Specify an empty folder in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
+store_marker_unreadable = "The marker kartograf-store.json in {path} is unreadable. The store is damaged or comes from a different version of Kartograf; specify another folder in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
+store_unsupported = "The Kartograf store in {path} has an unsupported marker schema ({schema}). Update Kartograf."
+store_nested = "The folder {path} cannot be a Kartograf store: it lies in, is or holds another store ({other}). Specify a folder outside it in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
 
 # Additional plan rows (preview without network)
 [preview.envelope]

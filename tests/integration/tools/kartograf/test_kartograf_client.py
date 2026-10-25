@@ -6,6 +6,7 @@ test asserts what the client hands to Kartograf, ``run_command`` and the like ar
 replaced by a recorder.
 """
 
+import contextlib
 import hashlib
 import json
 from collections.abc import Callable, Iterator
@@ -546,24 +547,55 @@ def inside_a_store(tmp_path: Path) -> Path:
 
 
 @pytest.mark.parametrize("prepare", [unmarked_layout, other_files, inside_a_store])
-def test_a_run_into_a_store_kartograf_refuses_fails_before_a_byte_is_written(
+def test_a_run_into_a_store_kartograf_refuses_writes_and_fetches_nothing(
     tmp_path: Path, cwd: Path, prepare: Callable[[Path], Path]
 ) -> None:
     store = prepare(tmp_path)
     before = tree(tmp_path)
     index = one_of_four()
 
-    with gugik_index(index):
-        run = KartografClient({**settings(tmp_path), "store_dir": str(store)}).run(
+    # Reported as the failure of the sheets or raised: either way, nothing happens
+    with gugik_index(index), contextlib.suppress(ToolError):
+        KartografClient({**settings(tmp_path), "store_dir": str(store)}).run(
             DOWNLOAD_FOUR
         )
 
-    # Kartograf reports the refusal as the failure of the sheets (its text names the
-    # store), so the folder itself has to be judged before the run (doctor, preview)
-    assert run.status == "failed" and run.files == ()
-    assert str(store) in run.failed[0].detail
     assert tree(tmp_path) == before
     assert index.downloaded == []
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="Kartograf reports a refused store as the failure of each sheet "
+    "(source_unavailable, kind download) after the work has begun. Its fix: a refused "
+    "store is a command error with its registry code and reason, raised before any "
+    "work. Drop this marker when the Kartograf pin has that fix.",
+)
+@pytest.mark.parametrize(
+    ("prepare", "code", "reason"),
+    [
+        (unmarked_layout, "store_unavailable", "no_marker"),
+        (other_files, "conflict", "not_empty"),
+        (inside_a_store, "conflict", "nested_store"),
+    ],
+    ids=["no_marker", "not_empty", "nested_store"],
+)
+def test_a_run_into_a_store_kartograf_refuses_is_an_error_with_its_registry_code(
+    tmp_path: Path,
+    cwd: Path,
+    prepare: Callable[[Path], Path],
+    code: str,
+    reason: str,
+) -> None:
+    store = prepare(tmp_path)
+
+    with gugik_index(one_of_four()), pytest.raises(ToolError) as caught:
+        KartografClient({**settings(tmp_path), "store_dir": str(store)}).run(
+            DOWNLOAD_FOUR
+        )
+
+    # The reason survives as details.reason, so that nothing parses the text of the tool
+    assert (caught.value.code, caught.value.details["reason"]) == (code, reason)
 
 
 # --- check and query ----------------------------------------------------------

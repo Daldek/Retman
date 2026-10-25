@@ -232,6 +232,14 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   first write into a new folder writes the store marker `kartograf-store.json`. The `tools` group
   pins Kartograf `8a36e977`, the head of its branch `feature/data-output`, which is not pushed
   yet.
+- A Kartograf store folder can be the layout of a store without its marker (files in a product
+  tree such as `nmt/` and no `kartograf-store.json`), a folder with other files, a folder whose
+  marker Kartograf cannot read, or a folder inside another store: `retman doctor check` reports
+  each as `store_unavailable` (reasons `no_marker`, `foreign_folder`, `marker_unreadable`,
+  `marker_unsupported`, `nested_store`), and the plan of every Kartograf operation that writes
+  names it before you confirm; Kartograf itself reports such a store only after its work has
+  begun, as the failure of every sheet. A missing or an empty folder stays fine: the first
+  write marks it (ARCHITECTURE 3.2.10, 7.2; USAGE 11).
 - The supported ranges admit the development versions of the pending releases while the
   `tools` group pins commits: Kartograf `>=0.8.0.dev0,<0.9` and IMGWTools `>=3.0.0.dev0,<4`
   (REL-5.6, ADR-024 erratum 1). The version check of the loader, `retman doctor check` and

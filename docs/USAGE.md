@@ -908,12 +908,17 @@ Model tekstowy
 
 (Report layout; the values of addresses, versions and paths depend on the environment.) The "Stores"
 section checks paths (without symbolic links), write permission, **hard links in both stores**, the
-Kartograf cache, the IMGWTools store marker, `pyarrow` and the reference data folder. A missing IMGW
-store (also a folder that holds only the `api_keys.json` of the IMGWTools server) is a warning with
-the hint "create it: retman config init"; a disk without hard links, a foreign folder in the store's
-place and a folder with the layout of a store but no marker (the hint is the command "Utwórz magazyn
-IMGW", which makes the tool check the layout and write the marker) are blocking problems. The
-"Conformance" section is a lightweight version of `retman scaffold check`: it warns when an
+store marker of each tool (`kartograf-store.json`, `imgw-store.json`), the Kartograf cache,
+`pyarrow` and the reference data folder. A missing IMGW store (also a folder that holds only the
+`api_keys.json` of the IMGWTools server) is a warning with the hint "create it: retman config
+init"; a missing or empty Kartograf store is fine, because Kartograf marks it by itself at the
+first download. A disk without hard links, a foreign folder in the store's place, a marker that
+the tool cannot read, a store inside another store and a folder with the layout of a store but no
+marker are blocking problems: for IMGWTools the hint is the command "Utwórz magazyn IMGW", for
+Kartograf `kartograf store init --root <folder>`, and either makes the tool check the layout and
+write the marker. The plan of a Kartograf operation names the same folder problems before you
+confirm anything.
+The "Conformance" section is a lightweight version of `retman scaffold check`: it warns when an
 installed tool accepts a value that the descriptions neither offer nor exclude; it does not block
 work.
 

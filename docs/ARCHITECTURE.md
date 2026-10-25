@@ -625,6 +625,24 @@ into the same store. Kartograf's notices about data quality (e.g. an incomplete 
 sheet layout, no data for some of the sheets) are shown in the result either with Retman's own text
 from `[warnings]` or verbatim; a partial result is a result with a warning.
 
+**The store folder.** Kartograf marks its store with `kartograf-store.json` (schema
+`kartograf-store/1`) and writes the marker by itself on the first write into a missing or an
+empty folder (a product folder without a file, a staging folder `.incoming` and the temporary
+file of a writer that is just marking the folder are no content). Before it writes a byte it
+refuses a folder with the layout of a store and no marker (`store_unavailable`, reason
+`no_marker`; `store init` verifies the layout and writes the marker), a folder with other files
+(`conflict`, reason `not_empty`), a marker that is not a `kartograf-store/1` document
+(`data_error`) and a folder that lies in, is or holds the store of another tool or place
+(`conflict`, reason `nested_store`); but a run reports the refusal as the failure of every
+sheet (`source_unavailable`), and the plan of the tool judges the folder only after the
+network. Retman therefore judges the folder itself (`retman.stores.kartograf_store_state`: the
+rules of `kartograf.marker`, held against the tool by `tests/unit/test_stores.py`, with no
+import of the tool) in two places: `retman doctor check` (section 7.2) and the offline preview
+of every Kartograf operation that writes, where a folder the tool refuses is the one blocking
+problem of the plan (`store_no_marker`, `store_not_kartograf`, `store_marker_unreadable`,
+`store_unsupported`, `store_nested`; it names no parameter, so there is nothing to answer
+again). The search for a store below a folder that is refused anyway is left to the tool.
+
 **Availability check** (`s`, section 6.5): for DEM (NMT), DSM (NMPT) and the cutout it asks the GUGiK
 services (the WFS sheet index and the PRG layer) about years, resolutions, vertical reference
 systems and completeness of the map sheets for the area from the plan (`elevation availability`);
@@ -1838,7 +1856,7 @@ The source of each value in the plan: `command` (from the command), `default` (d
 | Decision model | **server address**; whether it responds; which model is loaded; a **test question** with an obvious answer (whether the model answers sensibly); where the confidence comes from (`basal`, `logprobs`, agreement, unavailable) and the thresholds (`"auto"` with a backend other than `basal` is a configuration error, section 6.2) |
 | Text model | whether it is enabled; **server address**; whether it responds |
 | Tools | which are installed; whether their versions fall within the supported range; number of available operations |
-| Tool data stores | for tools in use (installed, in a supported version, not disabled): store path without symbolic links (IMGWTools does not accept one: error; Kartograf: warning), the folder exists or can be created and is writable, **hard links work in both stores** (attempted in the store or in the nearest existing folder on the same disk); Kartograf: metadata cache (missing is a warning — Kartograf runs slower); IMGWTools: the `imgw-store.json` marker and its schema (a missing store, or a folder that holds only the `api_keys.json` of the tool's server, is a warning with a hint; a folder with the layout of a store but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn IMGW", which runs `store init`), a foreign folder or a corrupted marker is an error), `pyarrow` (time series), reference data folder; with `--deep` also a trial write to the IMGWTools store |
+| Tool data stores | for tools in use (installed, in a supported version, not disabled): store path without symbolic links (IMGWTools does not accept one: error; Kartograf: warning), the folder exists or can be created and is writable, **hard links work in both stores** (attempted in the store or in the nearest existing folder on the same disk); Kartograf: the `kartograf-store.json` marker and its schema (a missing or an empty folder is only not marked yet, the first write marks it; a folder with the layout of a store, that is files in a product tree such as `nmt/`, but no marker (reason `no_marker`; the hint is `kartograf store init --root <folder>`), a folder with other files (`foreign_folder`), a marker that is corrupted or has another schema (`marker_unreadable`, `marker_unsupported`) and a folder that lies in, is or holds the store of another tool or place (`nested_store`) are errors), metadata cache (missing is a warning — Kartograf runs slower); IMGWTools: the `imgw-store.json` marker and its schema (a missing store, or a folder that holds only the `api_keys.json` of the tool's server, is a warning with a hint; a folder with the layout of a store but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn IMGW", which runs `store init`), a foreign folder or a corrupted marker is an error), `pyarrow` (time series), reference data folder; with `--deep` also a trial write to the IMGWTools store |
 | Conformance of descriptions with tools | a light version of `retman scaffold check` (section 3.2.3) for tools in use: the commands from the manifest are in the installed tool's catalog, and the tool does not offer a value that the manifest neither offers nor disables (e.g. "kartograf 0.8.1 accepts a resolution of 0.3 m"); operations without a row in the `retman eval run` set are reported as unchecked. These lines warn but do not block work (exit code unchanged) |
 | Translations | complete set of texts for the language from the `lang` setting |
 | Workspace | results folder of the current project; number of results; whether the `result.json` files can be read |

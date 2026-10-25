@@ -13,6 +13,7 @@ import httpx
 import pytest
 from document_schemas import violations
 from imgw_store_files import write_server_state
+from kartograf_store_files import write_marker
 
 from retman import cli
 from retman.backends.base import Decision
@@ -513,6 +514,119 @@ def test_imgw_folder_with_only_the_key_file_of_the_server_is_not_created_yet(
         if "imgwtools: magazyn" in text and "nie został jeszcze utworzony" in text
     ] == ["warning"]
     assert [path.name for path in store.iterdir()] == ["api_keys.json"]
+
+
+def test_kartograf_store_with_its_marker_is_listed_with_it(
+    tmp_path: Path,
+    imgw_store_template: Path,
+    kartograf_store_template: Path,
+    store_tools,
+    pyarrow,
+):
+    paths = _make_stores(tmp_path, imgw_store_template)
+    shutil.copytree(kartograf_store_template, paths["kartograf"], dirs_exist_ok=True)
+
+    report, _ = _run_stores(tmp_path, store_tools)
+    stores = _stores(report)
+
+    assert report.exit_code == 0
+    assert all(status == "ok" for status, _ in stores)
+    assert (
+        f"kartograf: magazyn {paths['kartograf']} (znacznik kartograf-store.json, "
+        "schemat kartograf-store/1, dowiązania twarde działają)"
+    ) in [text for _, text in stores]
+
+
+@pytest.mark.parametrize(
+    ("setup", "reason", "expected"),
+    [
+        (
+            "foreign_files",
+            "foreign_folder",
+            "nie jest pusty i nie jest magazynem Kartografa",
+        ),
+        (
+            "unsupported_schema",
+            "marker_unsupported",
+            "nieobsługiwany schemat (kartograf-store/2)",
+        ),
+        ("unreadable_marker", "marker_unreadable", "jest nieczytelny"),
+        ("inside_a_store", "nested_store", "leży w innym magazynie"),
+    ],
+)
+def test_kartograf_folder_that_is_not_a_usable_store_blocks_work(
+    tmp_path: Path,
+    imgw_store_template: Path,
+    store_tools,
+    pyarrow,
+    setup: str,
+    reason: str,
+    expected: str,
+):
+    store = _make_stores(tmp_path, imgw_store_template)["kartograf"]
+    if setup == "foreign_files":
+        (store / "notes.txt").write_text("not a store", encoding="utf-8")
+    elif setup == "unsupported_schema":
+        write_marker(store, "kartograf-store/2")
+    elif setup == "unreadable_marker":
+        (store / "kartograf-store.json").write_text("{", encoding="utf-8")
+    else:
+        # Both stores of the setting lie in a folder that is a store itself
+        write_marker(tmp_path / "stores")
+
+    report, _ = _run_stores(tmp_path, store_tools)
+    (problem,) = [
+        check
+        for found in report.sections
+        if found.key == "stores"
+        for check in found.checks
+        if check.status == "error"
+    ]
+
+    assert report.exit_code == 10
+    assert (problem.blocking, problem.code, problem.reason) == (
+        True,
+        "store_unavailable",
+        reason,
+    )
+    assert expected in localize(problem.text, load_core_texts("pl"))
+
+
+def test_kartograf_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
+    tmp_path: Path,
+    imgw_store_template: Path,
+    kartograf_store_template: Path,
+    store_tools,
+    pyarrow,
+):
+    store = _make_stores(tmp_path, imgw_store_template)["kartograf"]
+    shutil.copytree(kartograf_store_template, store, dirs_exist_ok=True)
+    (store / "kartograf-store.json").unlink()
+    held = set(store.rglob("*"))
+
+    report, texts = _run_stores(tmp_path, store_tools)
+    (problem,) = [
+        check
+        for found in report.sections
+        if found.key == "stores"
+        for check in found.checks
+        if check.status == "error"
+    ]
+
+    assert report.exit_code == 10
+    assert (problem.blocking, problem.code, problem.reason) == (
+        True,
+        "store_unavailable",
+        "no_marker",
+    )
+    text = report.to_text(texts)
+    assert (
+        "ma układ magazynu Kartografa, ale nie ma znacznika kartograf-store.json"
+        in text
+    )
+    assert f"kartograf store init --root {store}" in text
+    # Looking changes nothing in a folder that may hold data: no marker, no probe file
+    assert set(store.rglob("*")) == held
 
 
 def test_store_path_that_is_a_file_blocks_work(

@@ -9,13 +9,26 @@ from pathlib import Path
 
 import pytest
 from imgw_store_files import write_layout, write_server_state
+from kartograf_store_files import (
+    MARKER,
+    write_marker,
+    write_other_marker,
+    write_product_files,
+)
 
 from retman.stores import (
     IMGW_MARKER,
+    KARTOGRAF_MARKER,
+    KARTOGRAF_SCHEMA,
+    KARTOGRAF_STAGING,
+    KARTOGRAF_TREES,
+    STORE_MARKERS,
     ImgwStore,
+    KartografStore,
     hardlink_error,
     imgw_store_state,
     init_imgw_store,
+    kartograf_store_state,
     probe_imgw_write,
     symlink_component,
 )
@@ -97,6 +110,200 @@ def test_imgw_store_state_sees_the_layout_in_every_tree_of_a_store(
     write_layout(tmp_path, tree)
 
     assert imgw_store_state(tmp_path) == ImgwStore("no_marker")
+
+
+# The product trees of Kartograf, spelled out: not taken from ``retman.stores``
+KARTOGRAF_PRODUCT_TREES = [
+    "boundaries",
+    "cadastre",
+    "contours",
+    "geodesy",
+    "hsg",
+    "hydro",
+    "intensity",
+    "landcover",
+    "laz",
+    "maps",
+    "models3d",
+    "names",
+    "nmpt",
+    "nmt",
+    "oblique-orto",
+    "orto",
+    "soil",
+    "true-orto",
+]
+
+# (folder, state, detail) of ``kartograf_store_state``. The detail of a store inside
+# or holding another is the folder of the other store, relative to the test folder.
+KARTOGRAF_STATES = [
+    ("missing", "missing", ""),
+    ("file", "not_a_directory", ""),
+    ("empty", "empty", ""),
+    # Neither folders of products without a file, nor a staging folder, nor the file of
+    # a writer that is about to mark the folder are content: the first write marks it
+    ("empty_trees", "empty", ""),
+    ("staging_in_a_tree", "empty", ""),
+    ("marker_being_written", "empty", ""),
+    ("ready", "ready", "kartograf-store/1"),
+    ("foreign", "foreign", ""),
+    ("foreign_folder", "foreign", ""),
+    ("tree_is_a_file", "foreign", ""),
+    ("unreadable", "unreadable", ""),
+    ("no_schema", "unreadable", ""),
+    ("newer", "unsupported", "kartograf-store/2"),
+    # A layout is a store that lost its marker (or never had one): `store init`
+    ("layout", "no_marker", ""),
+    ("layout_and_notes", "no_marker", ""),
+    # A store never lies in, is or holds the store of another tool or place
+    ("in_a_kartograf_store", "nested", "outer"),
+    ("in_an_imgw_store", "nested", "outer"),
+    ("is_an_imgw_store", "nested", "store"),
+    ("holds_an_imgw_store", "nested", "store/imports"),
+    # The product trees of a store are its own data: they are not searched
+    ("marker_in_a_tree", "ready", "kartograf-store/1"),
+]
+
+# What Kartograf's check before a plan or a write says of a folder in each state
+KARTOGRAF_VERDICTS = {
+    "missing": "ok",
+    "empty": "ok",
+    "ready": "ok",
+    "no_marker": "store_unavailable/no_marker",
+    "foreign": "conflict/not_empty",
+    "not_a_directory": "conflict/not_empty",
+    "unreadable": "data_error/invalid_layout",
+    "unsupported": "data_error/invalid_layout",
+    "nested": "conflict/nested_store",
+}
+
+
+# The scenarios made from a store that the tool itself built (DEV-10.6)
+BUILT_BY_THE_TOOL = (
+    "ready",
+    "layout",
+    "layout_and_notes",
+    "holds_an_imgw_store",
+    "marker_in_a_tree",
+)
+
+
+def make_kartograf_folder(
+    setup: str, root: Path, request: pytest.FixtureRequest
+) -> Path:
+    """Build the scenario ``setup`` below ``root``; return the folder to judge."""
+    folder = root / "store"
+    if setup in BUILT_BY_THE_TOOL:
+        shutil.copytree(request.getfixturevalue("kartograf_store_template"), folder)
+    match setup:
+        case "missing" | "ready":
+            pass
+        case "file":
+            folder.write_text("x", encoding="utf-8")
+        case "empty":
+            folder.mkdir()
+        case "empty_trees":
+            (folder / "nmt" / "a_variant" / "versions").mkdir(parents=True)
+        case "staging_in_a_tree":
+            staging = folder / "nmt" / "a_variant" / ".incoming"
+            staging.mkdir(parents=True)
+            (staging / "part.bin").write_text("x", encoding="utf-8")
+        case "marker_being_written":
+            folder.mkdir()
+            (folder / f".{MARKER}.0123abcd.tmp").write_text("{", encoding="utf-8")
+        case "foreign":
+            folder.mkdir()
+            (folder / "notes.txt").write_text("x", encoding="utf-8")
+        case "foreign_folder":
+            (folder / "docs").mkdir(parents=True)
+            (folder / "docs" / "notes.txt").write_text("x", encoding="utf-8")
+        case "tree_is_a_file":
+            folder.mkdir()
+            (folder / "nmt").write_text("x", encoding="utf-8")
+        case "unreadable":
+            folder.mkdir()
+            (folder / MARKER).write_text("{", encoding="utf-8")
+        case "no_schema":
+            folder.mkdir()
+            (folder / MARKER).write_text('{"tool": "kartograf"}', encoding="utf-8")
+        case "newer":
+            write_marker(folder, "kartograf-store/2")
+        case "layout" | "layout_and_notes":
+            (folder / MARKER).unlink()
+            if setup == "layout_and_notes":
+                (folder / "notes.txt").write_text("x", encoding="utf-8")
+        case "in_a_kartograf_store":
+            write_marker(root / "outer")
+            folder = root / "outer" / "inner"
+        case "in_an_imgw_store":
+            write_other_marker(root / "outer")
+            folder = root / "outer" / "inner"
+        case "is_an_imgw_store":
+            write_other_marker(folder)
+        case "holds_an_imgw_store":
+            write_other_marker(folder / "imports")
+        case "marker_in_a_tree":
+            write_other_marker(folder / "nmt" / "a_copy")
+        case _:
+            raise ValueError(setup)
+    return folder
+
+
+@pytest.mark.parametrize(
+    ("setup", "state", "detail"),
+    KARTOGRAF_STATES,
+    ids=[setup for setup, _, _ in KARTOGRAF_STATES],
+)
+def test_kartograf_store_state_tells_what_the_folder_holds(
+    tmp_path: Path,
+    request: pytest.FixtureRequest,
+    setup: str,
+    state: str,
+    detail: str,
+):
+    folder = make_kartograf_folder(setup, tmp_path, request)
+
+    found = kartograf_store_state(folder)
+
+    other = str(tmp_path / detail) if state == "nested" else detail
+    assert (found.state, found.detail) == (state, other)
+
+
+@pytest.mark.parametrize("tree", KARTOGRAF_PRODUCT_TREES)
+def test_kartograf_store_state_sees_the_layout_in_every_product_tree(
+    tmp_path: Path, tree: str
+):
+    write_product_files(tmp_path, tree)
+
+    assert kartograf_store_state(tmp_path) == KartografStore("no_marker")
+
+
+@pytest.mark.parametrize("setup", [setup for setup, _, _ in KARTOGRAF_STATES])
+def test_kartograf_store_state_agrees_with_the_check_the_tool_makes(
+    tmp_path: Path, request: pytest.FixtureRequest, setup: str
+):
+    kartograf = pytest.importorskip("kartograf")
+    marker = pytest.importorskip("kartograf.marker")
+    folder = make_kartograf_folder(setup, tmp_path, request)
+
+    try:
+        marker.lenient_store(folder)
+        verdict = "ok"
+    except kartograf.KartografError as error:
+        verdict = f"{error.code}/{error.details().get('reason')}"
+
+    assert verdict == KARTOGRAF_VERDICTS[kartograf_store_state(folder).state]
+
+
+def test_kartograf_store_names_are_the_ones_of_the_tool():
+    marker = pytest.importorskip("kartograf.marker")
+
+    assert marker.MARKER == KARTOGRAF_MARKER
+    assert marker.MARKER_SCHEMA == KARTOGRAF_SCHEMA
+    assert marker.STORE_MARKERS == STORE_MARKERS
+    assert marker.INCOMING == KARTOGRAF_STAGING
+    # A product the tool adds must show up here: files in its tree are a layout
+    assert marker.managed_trees() == KARTOGRAF_TREES
 
 
 def test_hardlink_test_works_in_the_folder_and_leaves_nothing_behind(tmp_path: Path):

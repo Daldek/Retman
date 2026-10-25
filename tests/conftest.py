@@ -226,3 +226,16 @@ def imgw_store_template(tmp_path_factory: pytest.TempPathFactory) -> Path:
     root = tmp_path_factory.mktemp("imgw-store") / "store"
     testing.build_fixture_store(root)
     return root
+
+
+@pytest.fixture(scope="session")
+def kartograf_store_template(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A Kartograf store as the tool itself builds it (DEV-10.6), built once.
+
+    Tests copy it; the states the tool never writes (no marker, an unknown schema, a
+    foreign folder) are made from a copy or by hand (``kartograf_store_files``).
+    """
+    testing = pytest.importorskip("kartograf.testing")
+    root = tmp_path_factory.mktemp("kartograf-store") / "store"
+    testing.build_fixture_store(root)
+    return root

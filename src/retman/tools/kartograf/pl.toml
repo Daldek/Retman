@@ -261,6 +261,11 @@ no_descendants = "Arkusz {code} (PL-2000) nie ma arkuszy potomnych w skalach, kt
 no_sheets = "Plik geometrii nie przecina żadnego arkusza w wybranej skali."
 orthophoto_needs_sheet = "Ortofotomapę pobieram tylko dla godła arkusza, nie dla pliku geometrii. Podaj godło albo wybierz inne dane."
 outside_poland = "Obszar z pliku leży poza Polską, a BDOT10k obejmuje tylko Polskę."
+store_no_marker = "Folder {path} ma układ magazynu Kartografa, ale nie ma znacznika. Zapisz znacznik poleceniem kartograf store init --root {path}; Kartograf najpierw sprawdzi układ."
+store_not_kartograf = "{path} nie jest magazynem Kartografa: to plik albo folder z innymi plikami. Wskaż pusty folder w ustawieniu store_dir tabeli [retman.tools.kartograf] pliku nogat.toml."
+store_marker_unreadable = "Znacznik kartograf-store.json w {path} jest nieczytelny. Magazyn jest uszkodzony albo pochodzi z innej wersji Kartografa; wskaż inny folder w ustawieniu store_dir tabeli [retman.tools.kartograf] pliku nogat.toml."
+store_unsupported = "Magazyn Kartografa w {path} ma nieobsługiwany schemat znacznika ({schema}). Zaktualizuj Kartografa."
+store_nested = "Folder {path} nie może być magazynem Kartografa: leży w innym magazynie, jest nim albo go zawiera ({other}). Wskaż folder poza nim w ustawieniu store_dir tabeli [retman.tools.kartograf] pliku nogat.toml."
 
 # Dodatkowe wiersze planu (podgląd bez sieci)
 [preview.envelope]

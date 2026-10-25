@@ -67,8 +67,9 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      (decided, ADR-024, USAGE 13). Not part of the migration: the fixture store of the IMGW tests
      (`imgw_support.fixture_store`) leaves a `retman-imgw-test-*` folder in `TMPDIR` per run, and
      `docs/research/` still names the old variables, which is history.
-   - **Kartograf: the calls are migrated on the branch `feature/kartograf-data-output`; the marker
-     states, the user documents and ADR-025 are open.** The `tools` group pins
+   - **Kartograf: the calls and the marker states are migrated on the branch
+     `feature/kartograf-data-output`; the operation that writes the marker, the user documents
+     and ADR-025 are open.** The `tools` group pins
      `8a36e977d607192b11c66f44f318f2e7676b60d1`, the head of Kartograf `feature/data-output`,
      **not pushed** (fetched into the database of the Kartograf URL below
      `~/.cache/uv/git-v1/db/` as `local-feature-data-output`, the way the IMGWTools pin is; the
@@ -78,15 +79,20 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      scaffold` on `list_commands` and `command_schema`, the registry codes (the Kartograf rows of
      `_TOOL_CODES` are gone; `ToolFailure.reason`) and the `[errors]` texts keyed by them, tests
      on the real Kartograf in process and offline (`tests/integration/tools/kartograf/
-     kartograf_offline.py`), mypy against its types. Open: (1) the marker states of the store
-     folder like IMGW `no_marker` (`retman.stores`, `doctor check`, preview problems): Kartograf
-     reports a refused store as the failure of the sheets (`source_unavailable`, its text names the
-     store), so Retman has to judge the folder itself before the run; (2) doctor and `stores`
-     tests on stores built by `kartograf.testing` (DEV-10.6; `built_store` of
-     `kartograf_support` is the helper); (3) USAGE, ARCHITECTURE (3.2.4, 3.2.10, 7.2, 9.1, the old
-     codes in 6.x), the pin note of USAGE 1, README and ADR-025 (an erratum of ADR-024 names the
-     Kartograf pin); (4) optionally an operation that runs `kartograf store init` for a layout
-     without its marker, like "Utwórz magazyn IMGW".
+     kartograf_offline.py`), mypy against its types, and the marker states of the store folder
+     (`retman.stores.kartograf_store_state`, `doctor check`, one blocking problem in the plan of
+     every operation that writes; the rules are those of `kartograf.marker`, held against the
+     tool by `tests/unit/test_stores.py`). **A Kartograf bug is waited for:** a run reports a
+     refused store (no marker, other files, a store in a store) as the failure of every sheet,
+     `source_unavailable`, instead of one command error with its registry code and reason before
+     any work (DEV-17.5: to be fixed in Kartograf). The test
+     `test_a_run_into_a_store_kartograf_refuses_is_an_error_with_its_registry_code`
+     (`test_kartograf_client.py`) is written against the fixed behaviour and is
+     `xfail(strict=True)`: when the pin has the fix it fails as unexpectedly passing, and the
+     marker is dropped. Open: (1) the operation `init_kartograf_store` ("Utwórz magazyn
+     Kartografa", `store init`); (2) USAGE, ARCHITECTURE (3.2.4, 3.2.10, 7.2, 9.1, the old codes
+     in 6.x), the pin note of USAGE 1, README and ADR-025 (an erratum of ADR-024 names the
+     Kartograf pin).
 3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
    `v3.0.0` once they exist (REL-5.3), and in the same change narrow the `supported_versions` of
    both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test of the IMGWTools manifest
