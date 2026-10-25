@@ -6,7 +6,6 @@ test asserts what the client hands to Kartograf, ``run_command`` and the like ar
 replaced by a recorder.
 """
 
-import contextlib
 import hashlib
 import json
 from collections.abc import Callable, Iterator
@@ -546,31 +545,6 @@ def inside_a_store(tmp_path: Path) -> Path:
     return built_store(tmp_path / "outer").root / "inner"
 
 
-@pytest.mark.parametrize("prepare", [unmarked_layout, other_files, inside_a_store])
-def test_a_run_into_a_store_kartograf_refuses_writes_and_fetches_nothing(
-    tmp_path: Path, cwd: Path, prepare: Callable[[Path], Path]
-) -> None:
-    store = prepare(tmp_path)
-    before = tree(tmp_path)
-    index = one_of_four()
-
-    # Reported as the failure of the sheets or raised: either way, nothing happens
-    with gugik_index(index), contextlib.suppress(ToolError):
-        KartografClient({**settings(tmp_path), "store_dir": str(store)}).run(
-            DOWNLOAD_FOUR
-        )
-
-    assert tree(tmp_path) == before
-    assert index.downloaded == []
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="Kartograf reports a refused store as the failure of each sheet "
-    "(source_unavailable, kind download) after the work has begun. Its fix: a refused "
-    "store is a command error with its registry code and reason, raised before any "
-    "work. Drop this marker when the Kartograf pin has that fix.",
-)
 @pytest.mark.parametrize(
     ("prepare", "code", "reason"),
     [
@@ -588,14 +562,20 @@ def test_a_run_into_a_store_kartograf_refuses_is_an_error_with_its_registry_code
     reason: str,
 ) -> None:
     store = prepare(tmp_path)
+    before = tree(tmp_path)
+    index = one_of_four()
 
-    with gugik_index(one_of_four()), pytest.raises(ToolError) as caught:
+    with gugik_index(index), pytest.raises(ToolError) as caught:
         KartografClient({**settings(tmp_path), "store_dir": str(store)}).run(
             DOWNLOAD_FOUR
         )
 
     # The reason survives as details.reason, so that nothing parses the text of the tool
     assert (caught.value.code, caught.value.details["reason"]) == (code, reason)
+    # One error of the command, before the index of the sheets is asked: not the failure
+    # of every sheet after the work has begun
+    assert (index.resolved, index.downloaded) == ([], [])
+    assert tree(tmp_path) == before
 
 
 # --- check and query ----------------------------------------------------------
