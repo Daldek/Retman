@@ -460,7 +460,7 @@ def test_a_download_reports_the_state_of_each_task(
         (
             OperationResult(
                 "archive:pl.imgw.hydro_daily:2020/a.zip",
-                "created",
+                "new",
                 store / "v",
                 None,
                 "a",
@@ -489,7 +489,7 @@ def test_a_download_reports_the_state_of_each_task(
     }
     assert result.values["statuses"] == {"a": "upgraded", "b": "failed"}
     assert (result.values["pinned"], result.values["pinned_count"]) == (["a"], 1)
-    assert result.values["files"] == {"created": 1, "failed": 1}
+    assert result.values["files"] == {"new": 1, "failed": 1}
     # The failure of one task is reported, not hidden behind a success
     assert any("brak sieci" in warning for warning in result.warnings)
 
