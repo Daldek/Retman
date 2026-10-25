@@ -344,9 +344,9 @@ def test_the_tool_refuses_the_store_folders_that_the_plan_of_a_project_refuses(
         "empty": (True, None),
         "unmarked": (False, "store_unavailable"),
         "keys": (False, "store_unavailable"),
-        # The tool's project init checks the store itself: store_unavailable
-        # (reason unsupported) where `store init` raises data_error (invalid_marker)
-        "damaged": (False, "store_unavailable"),
+        # The tool's project init reads the marker as `store init` does: a marker that
+        # cannot be read is data_error (invalid_marker)
+        "damaged": (False, "data_error"),
     }
 
 

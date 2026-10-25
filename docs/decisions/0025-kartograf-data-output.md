@@ -155,3 +155,8 @@ data: `data` is `not effects.read_only` of `command_schema`, so X9 lists the 14 
 download, write or delete (the downloads, `soil hsg`, `project *`, `cache clear`) and not the
 source listings, the availability reports, the store reads, `sheet` and `config show`. This
 replaces the sentence of erratum 1 that `data` is true for all.
+
+**Erratum 3 (2026-10-25, Kartograf `45dedf4a`):** the pin is now Kartograf
+`45dedf4a155e2d2f7302459a8c383876fed98e98`, the head of `feature/data-output`, which is on
+GitHub. The head makes `store_root()` public; Retman does not use it, because it passes `root`
+from `[retman.tools.kartograf] store_dir` and resolves no default root of a tool.

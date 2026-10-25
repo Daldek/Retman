@@ -53,7 +53,7 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
       phase 6, with the author's approval).
 2. **Migrate the calls to the changing producer APIs** (ECO-051, data-output plan step 5).
    - **IMGWTools: done (the calls, the marker states, the documents, ADR-024); the pin is the
-     final head.** The `tools` group pins `7e2114e1424903f1fd8fc036a2cb7aa81df44287`, the head
+     final head.** The `tools` group pins `3f7de36f98f1ba40d72ab5556942567cfbc55b92`, the head
      of IMGWTools `feature/data-output`, which is on GitHub, so `uv lock` and `uv sync` resolve
      it normally (`pydantic-settings` is a core dependency there). Retman sets no
      `IMGW_STORE_ROOT` or `IMGW_ROOT` and uses no `imgw_*` operation id of the MCP and REST
@@ -65,11 +65,11 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      holds `imgw_store_state` against the check of the tool. Not part of the migration:
      `docs/research/` still names the old variables, which is history. The fixture store of the
      IMGW tests is removed when the test session ends; the tool's `project init` refuses a
-     damaged marker as `store_unavailable` (`unsupported`), `store init` as `data_error`
-     (`invalid_marker`); the plans and the project run are tested.
+     damaged marker as `data_error` (`invalid_marker`) like `store init` (since `3f7de36`); the
+     plans and the project run are tested.
    - **Kartograf: done (the calls, the marker states, the operation that writes the marker, the
      documents, ADR-025); the pin is the final head.** The `tools` group pins
-     `b73aad3327cf6faf7ec7d15fe47e9a897f21954a`, the head of Kartograf `feature/data-output`,
+     `45dedf4a155e2d2f7302459a8c383876fed98e98`, the head of Kartograf `feature/data-output`,
      which is on GitHub. Done: `root=` and `--root` (client and `DownloadManager(provider,
      root=...)`), the `kartograf-result/1` envelope and its `files[]`, the command ids `sheet
      parse`, `sheet find` and `store sidecar`, the reader of `retman scaffold` on

@@ -128,3 +128,11 @@ and no longer as 0 files. A root with the layout and no marker is `store_unavail
 plan and in the run; the plans of Retman name such a marker as unreadable instead of "other
 files". `tests/unit/test_stores.py` holds `imgw_store_state` against the check of `series build`
 of the tool for every state.
+
+**Erratum 4 (2026-10-25, IMGWTools `3f7de36`):** the pin is now IMGWTools
+`3f7de36f98f1ba40d72ab5556942567cfbc55b92`, the head of the same branch, which is on GitHub. `project init` reads the
+marker as `store init` does: a marker that cannot be read is `data_error` (`invalid_marker`)
+there too (it was `store_unavailable`, `unsupported`), so the test of the store folders that a
+project meets expects `data_error` for the damaged one. The tool has `store_root()` for its
+default root; Retman does not use it, because it passes `root` from `[retman.tools.imgwtools]
+store_dir` to every command and resolves no default root of a tool.
