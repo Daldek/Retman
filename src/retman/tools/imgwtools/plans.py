@@ -1,10 +1,10 @@
 """Reading ``imgw-plan/1`` documents: counts and sizes for previews, checks, results.
 
-A plan is what ``store check``, ``project check`` and the check twins of
-``store sync`` and ``project download`` return: the freshness of each archive
-file (``current``, ``newer``, ``missing``, ``unverifiable``, ``check_failed``)
-with the size the server reports. The plan of a store write that the tool will
-refuse lists that refusal as its one action and no archive. Everything here is
+A plan is what ``store check`` and the check twin of ``store sync`` return: the
+freshness of each archive file (``current``, ``newer``, ``missing``,
+``unverifiable``, ``check_failed``) with the size the server reports. The plan of
+a store write that the tool will refuse lists that refusal as its one action and
+no archive. Everything here is
 plain data handling.
 """
 

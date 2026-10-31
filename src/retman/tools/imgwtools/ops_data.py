@@ -2,8 +2,8 @@
 
 Categories ``imgw_catalog``, ``imgw_current``, ``imgw_pmaxtp`` and ``imgw_series``
 (research-imgw 2 and 5.3). The manifest of the tool lists ``OPERATIONS`` among
-its own; the archive and project operations live in ``ops_archives`` and
-``ops_projects``. Nothing here imports the tool.
+its own; the archive operations live in ``ops_archives``. Nothing here imports
+the tool.
 """
 
 from typing import Final

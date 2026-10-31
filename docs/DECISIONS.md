@@ -42,7 +42,7 @@ ADR-x`); each relation is recorded on both sides.
 | [ADR-014](#adr-014-no-network-before-confirmation-preview-and-check) | No network before confirmation: preview and check | accepted | 2026-10-19 |
 | [ADR-015](#adr-015-tool-stores-outside-results-folders) | Tool stores outside results folders | accepted; amended by ADR-021 | 2026-10-19 |
 | [ADR-016](#adr-016-geometry-file-as-an-area) | Geometry file as an area | accepted; amends ADR-001, ADR-004 | 2026-10-19 |
-| [ADR-017](#adr-017-all-of-imgwtools-in-v01-and-two-stage-recognition) | All of IMGWTools in v0.1 and two-stage recognition | accepted; amends ADR-001, ADR-004 | 2026-10-19 |
+| [ADR-017](#adr-017-all-of-imgwtools-in-v01-and-two-stage-recognition) | All of IMGWTools in v0.1 and two-stage recognition | accepted; amends ADR-001, ADR-004; erratum 1 (projects removed, Nogat ECO-054) | 2026-10-19 |
 | [ADR-018](#adr-018-mcp-tools-via-the-python-api-retman-server-in-v03) | MCP: tools via the Python API, Retman server in v0.3 | accepted | 2026-10-19 |
 | [ADR-019](#adr-019-static-manifests-and-retman-scaffold-from-tool-catalogs) | Static manifests and `retman-scaffold` from tool catalogs | accepted; amended by ADR-022 | 2026-10-19 |
 | [ADR-020](decisions/0020-error-registry.md) | Adopt the shared error registry | accepted | 2026-10-24 |
@@ -546,6 +546,10 @@ duration, variables, task name. 13 new data kinds.
 
 **Consequences:** PRD 7.2; ARCHITECTURE 3.1, 3.2.6, 3.4, 4.4, 6.1. Research:
 `docs/research/2026-10-19-imgwtools-3.0.0-operacje.md`.
+
+**Erratum 1 (2026-10-31, Nogat ECO-054):** IMGWTools keeps no projects any more (they belong
+to Archiwista), so the category "data projects" and its seven operations are removed: 19
+operations in 5 categories. With 24 operations of both tools, recognition stays two-stage.
 
 ---
 

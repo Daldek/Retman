@@ -28,9 +28,9 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   or Shapefile; and the creation of the store ("Utwórz magazyn Kartografa", `kartograf store
   init`: it writes the store marker into a new or an empty folder, or into a layout that has
   lost it, after the tool has checked the layout; ECO-051).
-- All IMGWTools 3.0.0 operations, ČHMÚ included: 26 operations in 6 categories (station
+- All IMGWTools 3.0.0 operations, ČHMÚ included: 19 operations in 5 categories (station
   search and catalog, current data and warnings, PMAXTP, station series, archives and the
-  store, data projects; ADR-017, PRD 7.2).
+  store; ADR-017, PRD 7.2).
 - Two-stage recognition (category, then operation) when there are more than 9 operations
   (ADR-017, ARCHITECTURE 3.4).
 - Extractors: station (offline, from the catalog of the IMGW store), years, period, kind of
@@ -283,5 +283,14 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `--plan-only`, the commands `retman init`, `retman doctor`, `retman results` and
   `retman log`, and the file `retman.toml`. Each has its replacement in the migration notes
   under Changed (ADR-020 to ADR-022).
+- **Breaking:** the Polish commands for IMGWTools data projects: the category "Projekty danych
+  IMGW" (`imgw_projects`) and its seven operations `init_imgw_project`,
+  `add_imgw_project_task`, `remove_imgw_project_task`, `set_imgw_project_store`,
+  `download_imgw_project`, `check_imgw_project` and `verify_imgw_project`, with their
+  previews, texts and eval rows. IMGWTools keeps no projects any more: projects, and the pins
+  of store versions, belong to Archiwista (Nogat ECO-054). The `tools` group pins IMGWTools
+  `4bf8bb0d`, the head of its `feature/archiwista-projects`, and the tool's new error code
+  `unsupported` has its text. Migration: keep a project in Archiwista; Retman still downloads,
+  checks and synchronises the IMGW store (ARCHITECTURE 3.2.11).
 
 [Unreleased]: https://github.com/Daldek/Retman/commits/develop

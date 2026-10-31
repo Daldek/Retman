@@ -43,13 +43,13 @@ in **one** environment, a running model server, settings and the tools' data sto
 Installation is described in ARCHITECTURE 9.4. Until v0.1.0 is released there is no release tag, and
 the Kartograf `v0.8.0` and IMGWTools `v3.0.0` tags have not been pushed yet, so you install Retman from
 the `develop` branch and the tools from pinned commits (the same ones the tests use, the `tools` group
-in `pyproject.toml`; both are the heads of the branches `feature/data-output` of the tools, and
-`docs/PROGRESS.md` says whether they are pushed):
+in `pyproject.toml`; Kartograf's is the head of its branch `feature/data-output`, IMGWTools' the head
+of its branch `feature/archiwista-projects`, and `docs/PROGRESS.md` says whether they are pushed):
 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@b73aad3327cf6faf7ec7d15fe47e9a897f21954a" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@7e2114e1424903f1fd8fc036a2cb7aa81df44287"
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@c31ca04c078ebbee36850d0aa4dcead59dd77a41" \
+    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@4bf8bb0d44ceb27ca84f4f6fa6ffeee46a6b3185"
 ```
 
 The IMGWTools `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are
@@ -536,8 +536,8 @@ Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 
 The check is offered by, among others, four Kartograf operations (years, resolutions and completeness of
 coverage; for BDOT10k — the counties of the area and packages already in the store) as well as building
-the station catalog, exporting a series from source "serwer" (server), synchronising archives and
-downloading IMGW project data (how many files are newer or missing).
+the station catalog, exporting a series from source "serwer" (server) and synchronising archives (how
+many files are newer or missing).
 
 ---
 
@@ -689,7 +689,7 @@ execution requires confirmation, from Python — see section 10.
 
 ```
 $ retman plan run --text "Jaka będzie jutro pogoda?"
-Błąd: Polecenie nie dotyczy dostępnych operacji: Stacje i rejestr danych IMGW, Dane bieżące i ostrzeżenia IMGW, Opady maksymalne PMAXTP, Szeregi czasowe stacji IMGW i ČHMÚ, Archiwa i magazyn danych IMGW, Projekty danych IMGW, Dane przestrzenne GUGiK
+Błąd: Polecenie nie dotyczy dostępnych operacji: Stacje i rejestr danych IMGW, Dane bieżące i ostrzeżenia IMGW, Opady maksymalne PMAXTP, Szeregi czasowe stacji IMGW i ČHMÚ, Archiwa i magazyn danych IMGW, Dane przestrzenne GUGiK
 ```
 
 With two-stage recognition Retman lists the **groups** of operations instead of forcing a match to the
@@ -762,7 +762,7 @@ Ways of writing the area:
 
 ### 9.2. IMGWTools 3.0.0 — IMGW-PIB and ČHMÚ data (ADR-017)
 
-26 operations in six groups. All of them require an initialised IMGW store (section 1.3); recognising
+19 operations in five groups. All of them require an initialised IMGW store (section 1.3); recognising
 stations by name works offline from the station catalog in the store. The "Network" column says whether
 execution connects to the server (only after `t`):
 
@@ -773,7 +773,6 @@ execution connects to the server (only after `t`):
 | PMAXTP maximum precipitation | table for a point (POT or AMP method; saving the cell in the store or not; narrowing to selected probabilities and durations); reading a saved cell | download yes, read no |
 | Station time series | export of a station's time series to CSV (dataset, period, year kind, variables; source "store" or "server", `s`); data coverage of a station in the store; building time series | "server" source |
 | IMGW data archives and store | download of hydrological or meteorological archives to the result folder; check of archives against the store (plan); download of archives into the store (`s`), also per a plan from an earlier result (e.g. "#5"); export of stored archives to CSV or JSON Lines; store creation; store description | downloads and check yes |
-| IMGW data projects | project creation; adding and removing a task; pointing to a store; downloading and pinning data (`s`); freshness check; verification of pinned data | download and check yes |
 
 Example commands (illustrative; not all are in the `retman eval run` set yet): "Znajdź stacje hydrologiczne
 na Wiśle" (find hydrological stations on the Vistula), "Zbuduj katalog stacji IMGW" (build the IMGW station

@@ -374,9 +374,10 @@ operation being planned or executed — so that a handler can hand plain catalog
    would execute the operation, without network or writes. A rejection (`ToolError` with the option
    or options affected) is routed to Retman parameters (via `CatalogCall.params` or identical
    names) and becomes a question asked again with a reason (`Plan.reopened`, section 6.3).
-   An option nested inside another option (e.g. task options in IMGWTools `project add`) has the
-   path `options.<name>` in `ToolError.option` and in `CatalogCall.params`, so it also reaches its
-   parameter. A rejection that cannot be routed to any parameter is a `ToolDriftError`: the
+   An option nested inside another option (a command that carries the options of another
+   command) has the path `options.<name>` in `ToolError.option` and in `CatalogCall.params`, so
+   it also reaches its parameter. A rejection that cannot be routed to any parameter is a
+   `ToolDriftError`: the
    installed tool no longer accepts what the manifest describes (`retman doctor check`,
    `retman scaffold check`);
 2. if the tool accepted all calls, it calls `preview(params, ctx)`, which returns
@@ -574,7 +575,7 @@ All tool-related tests live in the Retman repo:
 | Tool | Operation scope | Depends on | Status |
 | --- | --- | --- | --- |
 | Kartograf | downloading spatial data (DEM (NMT), DSM (NMPT), orthophoto, BDOT10k) | — | v0.1, version 0.8.0 |
-| IMGWTools | IMGW-PIB and ČHMÚ measurement data: stations, current data, PMAXTP, time series, archives and store, data projects | — | v0.1, version 3.0.0 |
+| IMGWTools | IMGW-PIB and ČHMÚ measurement data: stations, current data, PMAXTP, time series, archives and store | — | v0.1, version 3.0.0 |
 | Hydrolog | hydrological calculations (flows, methods) | — | planned (v0.2) |
 | BasicHydraulics | simple hydraulic calculations | — | planned (v0.2) |
 | Hydrograf | catchment delineation, composite procedures | Hydrolog (and others) | planned (v0.2) |
@@ -673,8 +674,8 @@ CIR and black-and-white variants have no index — the check then checks nothing
 
 #### 3.2.11. IMGWTools 3.0.0 operations
 
-All of IMGWTools in v0.1 (ADR-017): 26 operations in six categories, on IMGW-PIB and ČHMÚ data.
-Together with Kartograf's `spatial_data` category there are seven of them (none with more than 9
+All of IMGWTools in v0.1 (ADR-017): 19 operations in five categories, on IMGW-PIB and ČHMÚ data.
+Together with Kartograf's `spatial_data` category there are six of them (none with more than 9
 operations), so recognition is two-stage (section 3.4). All operations go through the command layer;
 those that connect to a server do so only after the plan is confirmed. Operations marked `check`
 offer an availability check (section 6.5).
@@ -699,12 +700,8 @@ offer an availability check (section 6.5).
 | | `export_imgw_archive` — export saved archives to CSV or JSON Lines | `archive_records` | no network |
 | | `init_imgw_store` — create the store | — | writes (store marker) |
 | | `inspect_imgw_store` — description of the store (entries, versions, problems) | `imgw_report` | no network |
-| `imgw_projects` — data projects | `init_imgw_project`, `add_imgw_project_task`, `remove_imgw_project_task`, `set_imgw_project_store` — project manifest (`imgw-project.json`) in the project folder | — | writes to the project folder |
-| | `download_imgw_project` — download and pin the data of the project's tasks; `check` | — | network; writes |
-| | `check_imgw_project` — plan of the project data's currency | `imgw_plan` | network |
-| | `verify_imgw_project` — verification of pinned data (state or checksums) | `imgw_report` | no network |
 
-Operations that write only to the store or to the project folder (no result kind) leave
+Operations that write only to the store (no result kind) leave
 `result.json` and the tool's documents in the results folder; the others write CSV files and reports in the
 results folder — IMGWTools never points to store files in a result. Operations whose result is
 a document without a file (lists, tables) save it as CSV (tables) or JSON.
@@ -778,18 +775,16 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
   changes what will happen: building the station catalog (whether the source lists are newer), exporting
   a series (with the "server" source: how many archives must be downloaded; with the "store" source the
   check does not connect to the network and says so explicitly) and synchronising archives (how many
-  files are newer or missing and how much data that is — HEAD requests without downloading), downloading
-  project data (task state). Point and "live" operations and artifact operations (`check_imgw_archives`,
-  `check_imgw_project`) have no `check`: the check would say nothing that the execution itself would not
-  say, and the result of these operations is a plan (`imgw_plan`) that the user confirms and executes
-  (`sync_imgw_store_by_plan`).
-- **Excluded catalog commands** (8 of 38, each reachable through the IMGWTools CLI and API): `datasets
+  files are newer or missing and how much data that is — HEAD requests without downloading). Point
+  and "live" operations and the artifact operation `check_imgw_archives` have no `check`: the check
+  would say nothing that the execution itself would not say, and the result of `check_imgw_archives`
+  is a plan (`imgw_plan`) that the user confirms and executes (`sync_imgw_store_by_plan`).
+- **Excluded catalog commands** (8 of 30, each reachable through the IMGWTools CLI and API): `datasets
   files`, `pmaxtp url`, `pmaxtp check` and `series select` are offline lookups used by previews and
   mappers, not separate operations; `series read` yields the same records as the series export (and a
   file with license columns is produced by `export_station_series`); `commands list`, `commands schema`
   and `commands guide` describe the catalog itself (Retman reads schemas only in `retman scaffold`).
-  The `project add` command is exposed for `series select` and `pmaxtp sync` tasks; the other task
-  types have nothing to pin or are covered by the series task.
+  IMGWTools keeps no projects: they belong to Archiwista (Nogat ECO-054).
 
 ### 3.3. Models: Retman contains no model [N-01], [N-02], [N-10]
 

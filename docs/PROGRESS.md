@@ -11,11 +11,11 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-025) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
-| Kartograf 0.8.0 adapter (5 operations), IMGWTools 3.0.0 adapter (26 operations, two-stage recognition) | done | the `tools` group pins `b73aad33` (Kartograf) and `7e2114e` (IMGWTools): the heads of their `feature/data-output`, both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist; the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
+| Kartograf 0.8.0 adapter (5 operations), IMGWTools 3.0.0 adapter (19 operations, two-stage recognition) | done | the `tools` group pins `c31ca04c` (Kartograf, the head of its `feature/data-output`) and `4bf8bb0d` (IMGWTools, the head of its `feature/archiwista-projects`), both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist; the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
 | Extractors | in progress | missing: numbers with units; the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
-| `retman eval run` and the 630-command set | in progress | code done; the last run was on the old 83-command set |
+| `retman eval run` and the 501-command set | in progress | code done; the last run was on the old 83-command set |
 | Nogat standard 2.1, structure and tooling | done | branch `chore/nogat-2.1`: gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
 | Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
 | Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
@@ -33,7 +33,7 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 | Rulesets for `main`, `develop` and `v*` tags, private vulnerability reporting, Dependabot security updates, default branch (DEV-3.6, DEV-13.6, DEV-13.7) | GitHub settings |
 | `docs/CLA.md` | the author's legal text; `CONTRIBUTING.md` and the pull request template already refer to it |
 | Tags, releases, replacing the commit pins of the `tools` group by tags, PyPI name `nogat-retman` (phases 5 and 6) | need the producers' tags and the author's approval |
-| Push of `chore/nogat-2.1`, `feature/imgwtools-data-output` and `feature/kartograf-data-output`, pull request, merge into `develop` | approvals (DEV-3.3) |
+| Push of `chore/nogat-2.1`, `feature/imgwtools-data-output`, `feature/kartograf-data-output` and `feature/archiwista-projects`, pull request, merge into `develop` | approvals (DEV-3.3) |
 
 ## Next
 
@@ -52,10 +52,12 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
       ARCHITECTURE are English; PRD N-09 follows the Nogat plan (`nogat-retman` on PyPI in
       phase 6, with the author's approval).
 2. **Migrate the calls to the changing producer APIs** (ECO-051, data-output plan step 5).
-   - **IMGWTools: done (the calls, the marker states, the documents, ADR-024); the pin is the
-     final head.** The `tools` group pins `6bd35a49b329f99b591ffdee39367daec0e75af7`, the head
-     of IMGWTools `feature/data-output`, which is on GitHub, so `uv lock` and `uv sync` resolve
-     it normally (`pydantic-settings` is a core dependency there). Retman sets no
+   - **IMGWTools: done (the calls, the marker states, the documents, ADR-024); projects are
+     gone (Nogat ECO-054, plan `2026-10-31-archiwista-projects` step 4).** The `tools` group
+     pins `4bf8bb0d44ceb27ca84f4f6fa6ffeee46a6b3185`, the head of IMGWTools
+     `feature/archiwista-projects`, which is on GitHub, so `uv lock` and `uv sync` resolve it
+     normally. IMGWTools keeps no projects there, so the category `imgw_projects` and its seven
+     operations are removed; projects belong to Archiwista. Retman sets no
      `IMGW_STORE_ROOT` or `IMGW_ROOT` and uses no `imgw_*` operation id of the MCP and REST
      surfaces: it calls the command layer by command name and passes `root` from `store_dir`.
      The texts of the tool stay English inside Polish messages (decided, ADR-024, USAGE 13). The
@@ -63,10 +65,8 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      that the tool turns away (`not_empty`, `nested_store`) as `store_refused`, the plans name a
      marker that cannot be read (`data_error`, `invalid_marker`), and `tests/unit/test_stores.py`
      holds `imgw_store_state` against the check of the tool. Not part of the migration:
-     `docs/research/` still names the old variables, which is history. The fixture store of the
-     IMGW tests is removed when the test session ends; the tool's `project init` refuses a
-     damaged marker as `data_error` (`invalid_marker`) like `store init` (since `3f7de36`); the
-     plans and the project run are tested.
+     `docs/research/` still names the old variables and the project operations, which is
+     history. The fixture store of the IMGW tests is removed when the test session ends.
    - **Kartograf: done (the calls, the marker states, the operation that writes the marker, the
      documents, ADR-025); the pin is the final head.** The `tools` group pins
      `c31ca04c078ebbee36850d0aa4dcead59dd77a41`, the head of Kartograf `feature/data-output`,
@@ -86,11 +86,13 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      is removed (ADR-025 erratum 1). The 16 eval rows of that operation are written, but
      `retman eval run` has not run on them (it needs a model server), and the ambiguous rows
      `imgw-init-store-014` and `-015` now expect IMGW after a question about the operation.
+     Open: re-pin Kartograf at the head without projects (plan `2026-10-31-archiwista-projects`
+     step 4; Kartograf's step 2).
 3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
    `v3.0.0` once they exist (REL-5.3), and in the same change narrow the `supported_versions` of
    both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test of the IMGWTools manifest
    pins the string), run `uv lock` and the gate.
-4. Review `src/retman/eval/commands.jsonl` (630 commands, an agent draft), run `retman-eval`
+4. Review `src/retman/eval/commands.jsonl` (501 commands, an agent draft), run `retman-eval`
    with Bielik 11B on it (two-stage recognition, `0_5m` against `5m`), then set the confidence
    thresholds.
 5. Live tests of IMGWTools (none in the `live` set), a smoke run of the CLI on Windows and

@@ -257,8 +257,6 @@ def _total(run: ToolRun) -> int:
     for key in ("items", "files", "series", "actions"):
         value = result.get(key)
         total += len(value) if isinstance(value, list) else 0
-    tasks = result.get("tasks")
-    total += len(tasks) if isinstance(tasks, dict) else 0
     return max(total, len(run.failed))
 
 

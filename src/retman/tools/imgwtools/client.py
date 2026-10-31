@@ -34,17 +34,14 @@ SCHEMA = "imgw-result/1"
 # Retman words it separately (the remedy is a different disk, not a retry)
 NOT_ATOMIC = "not_atomic"
 STORE_WRITE_UNSUPPORTED = "store_write_unsupported"
-# ``project add`` keeps the options of another command in this option, and the tool
-# names a rejection of any of them by it
-TASK_OPTIONS = "options"
-# Item states that are failures of a unit (sync, download, plan, project)
+# Item states that are failures of a unit (sync, download, plan)
 _FAILED_STATES = ("failed", "stale_plan", "check_failed")
 # Commands whose result lists the plain files they wrote as ``files[]`` (``path``,
 # ``size_bytes``, ``sha256``, ``status``): the exports to the one file ``output`` and
 # the download to ``output_dir``
 _WRITING_COMMANDS = ("series export", "store export", "datasets download")
-# Commands that may write the freshness plan given as ``plan``
-_PLAN_COMMANDS = ("store check", "project check")
+# The command that may write the freshness plan given as ``plan``
+_PLAN_COMMANDS = ("store check",)
 
 
 def _sha256(path: Path) -> str:
@@ -110,25 +107,6 @@ class IMGWToolsClient:
             options["root"] = str(self._store_root())
         return options
 
-    def _task_option(self, err: Exception) -> str | None:
-        """Return the path ``options.<name>`` of the task option a rejection concerns.
-
-        ``project add`` carries the options of another command in ``options``. The
-        tool re-raises a rejection of that command with ``option`` replaced by
-        ``options`` (the original ``option`` is lost) and keeps the original error
-        as the cause. The path says what the user got wrong: ``CatalogCall.params``
-        routes ``options.variables`` to the parameter ``variables``, where
-        ``options`` alone names nothing to ask about. ``None`` when the tool gave no
-        cause (a missing option of ``project add`` itself).
-        """
-        cause = err.__cause__
-        if not isinstance(cause, self._imgw.IMGWError):
-            return None
-        inner = cause.details.get("option")
-        if isinstance(inner, str) and inner != TASK_OPTIONS:
-            return f"{TASK_OPTIONS}.{inner}"
-        return None
-
     def _error(self, err: Exception, call: CatalogCall) -> ToolError:
         """Build a ``ToolError`` for an exception of the tool, with the tool's code."""
         if isinstance(err, OSError):
@@ -141,8 +119,6 @@ class IMGWToolsClient:
         if code == "conflict" and details.get("reason") == NOT_ATOMIC:
             code = STORE_WRITE_UNSUPPORTED
         option = details.get("option")
-        if option == TASK_OPTIONS:
-            option = self._task_option(err) or option
         allowed = details.get("allowed")
         return ToolError(
             TOOL,
@@ -296,7 +272,7 @@ class IMGWToolsClient:
     def _failures(
         command: str, status: str, document: ToolDocument
     ) -> tuple[ToolFailure, ...]:
-        """Units a command could not handle: failed items, plans, series, tasks."""
+        """Units a command could not handle: failed items, plans, series."""
         result = document.get("result")
         if not isinstance(result, dict):
             return ()
@@ -317,13 +293,6 @@ class IMGWToolsClient:
             if isinstance(report, dict) and report.get("status") == "failed":
                 problems = "; ".join(map(str, report.get("problems") or ()))
                 failures.append(ToolFailure("series", "failed", problems or "failed"))
-        tasks = result.get("tasks")
-        if isinstance(tasks, dict):
-            failures.extend(
-                ToolFailure(str(name), "failed", "failed")
-                for name, state in tasks.items()
-                if state == "failed"
-            )
         if not failures and status == "failed":
             problems = "; ".join(map(str, result.get("problems") or ()))
             failures.append(ToolFailure(command, "failed", problems or "failed"))

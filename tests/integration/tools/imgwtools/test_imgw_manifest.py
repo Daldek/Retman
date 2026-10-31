@@ -45,15 +45,14 @@ def operations() -> dict[str, Operation]:
     )
 
 
-def test_the_manifest_has_26_operations_in_six_categories(operations):
-    assert len(operations) == 26
+def test_the_manifest_has_19_operations_in_five_categories(operations):
+    assert len(operations) == 19
     assert Counter(operation.category for operation in operations.values()) == {
         "imgw_catalog": 3,
         "imgw_current": 3,
         "imgw_pmaxtp": 2,
         "imgw_series": 3,
         "imgw_archives": 8,
-        "imgw_projects": 7,
     }
 
 

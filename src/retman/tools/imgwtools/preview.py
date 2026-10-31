@@ -7,7 +7,7 @@ many archives would be fetched) and reports problems: those that name
 parameters are asked again, those without parameters block the plan (a store
 that does not exist is a matter of the configuration, not of an answer). The
 shared helpers (``store_rows``, ``store_problems``) are also used by the
-operations of the archive and project modules.
+operations of the archive module.
 """
 
 import csv

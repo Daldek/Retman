@@ -18,10 +18,6 @@ description = "Daily and monthly series of IMGW-PIB and ČHMÚ stations: precipi
 label = "IMGW archives and data store"
 description = "IMGW-PIB and ČHMÚ data archives: downloading archive files, checking and synchronising the local store, exporting stored archives, initialising and inspecting the store"
 
-[categories.imgw_projects]
-label = "IMGW data projects"
-description = "IMGW data projects: task manifest in the project folder, adding and removing tasks, downloading and pinning data versions, checking whether data is up to date and checksums"
-
 [operations.find_imgw_stations]
 label = "Find IMGW and ČHMÚ stations"
 description = "Find IMGW-PIB and ČHMÚ hydrological or meteorological stations (stacje) by name, river, kind or provider: station codes, names, rivers, coordinates; water gauges (wodowskazy), precipitation, climate and synoptic stations; from the server or from the station catalog in the store."
@@ -629,191 +625,6 @@ options.chmi.label = "ČHMÚ (Czechia)"
 options.chmi.description = "ČHMÚ, CHMU, CHMI, Czech stations, Czechia, Český hydrometeorologický ústav (Czech Hydrometeorological Institute)"
 options.unspecified.description = "The command does not limit the description to one provider"
 
-[operations.init_imgw_project]
-label = "Create an IMGW data project"
-description = "Create an IMGW data project in the project folder (an imgw-project.json file with a task list) pointing to the IMGW store from the configuration: the project pins data versions so that results can be reproduced; project setup, new IMGW project."
-summary = "Done. Result #{number}: IMGW data project created (manifest {manifest})."
-
-[operations.add_imgw_project_task]
-label = "Add a task to an IMGW data project"
-description = "Add a task to an IMGW data project: a selection of station time series (a station or an area from a GeoJSON file, years, variables: flows, precipitation, water levels) or a PMAXTP cell for a point; the task is only recorded in the project manifest, and the data is downloaded only by “Download project data”."
-summary = "Done. Result #{number}: task “{task}” added to the IMGW project (tasks in the manifest: {task_count})."
-
-[operations.add_imgw_project_task.params.task]
-label = "Task type"
-question = "Which task should be added to the project: station time series or a PMAXTP cell?"
-model_question = "What type of task does the command mention: station time series (flows, precipitation, water levels, temperatures) or PMAXTP maximum precipitation for a point?"
-help = "A series task selects stations, years and variables; a PMAXTP task stores a maximum precipitation cell for a point."
-options.series.label = "Station time series"
-options.series.description = "station series, flows, precipitation, water levels, temperatures, station data, measurement years"
-options.pmaxtp.label = "PMAXTP cell"
-options.pmaxtp.description = "PMAXTP, maximum precipitation, probable maximum precipitation, point, coordinates, grid cell"
-options.unspecified.description = "The command does not say whether the task concerns station series or PMAXTP"
-
-[operations.add_imgw_project_task.params.task_name]
-label = "Task name"
-question = "What should the task be called? The name: lowercase letters a–z, digits, “_” and “-”, up to 64 characters."
-example = "opady_poznan"
-help = "The name must be unique in the project, start with a letter or digit and contain only lowercase letters a–z, digits, “_” and “-” (e.g. “opady_poznan”). I do not correct names myself."
-
-[operations.add_imgw_project_task.params.dataset]
-label = "Dataset"
-question = "Which dataset should the task's series be selected from?"
-model_question = "What type of data and from which station network does the command concern?"
-help = "The IMGW station list does not say whether a station is a precipitation or a climate station; specify the dataset and I will match the station to it. ČHMÚ data covers the Czech Republic."
-options.pl_hydro_daily.label = "IMGW-PIB daily hydrological data"
-options.pl_hydro_daily.description = "daily hydrological data: water level, flow, water temperature; water gauge (wodowskaz); IMGW-PIB hydrological stations; rivers; daily; hydro daily"
-options.pl_hydro_monthly.label = "IMGW-PIB monthly hydrological data"
-options.pl_hydro_monthly.description = "monthly hydrological data: minimum, mean and maximum water level, flow and water temperature in a month; IMGW-PIB hydrological stations; hydro monthly"
-options.pl_hydro_semiannual.label = "IMGW-PIB half-year and annual hydrological data"
-options.pl_hydro_semiannual.description = "half-year and annual hydrological data: extremes of water level, flow and water temperature in the winter half-year, summer half-year and the year; IMGW-PIB hydrological stations"
-options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
-options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
-options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
-options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge; daily precipitation"
-options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czech Republic)"
-options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, flow, water temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
-options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czech Republic)"
-options.cz_meteo_daily.description = "Czech meteorological data from ČHMÚ: precipitation, mean, maximum and minimum temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
-options.unspecified.description = "The command does not specify the task's dataset"
-
-[operations.add_imgw_project_task.params.selection]
-label = "Station selection"
-question = "Should the stations be given by name or code, or should all stations lying within an area from a GeoJSON file be selected?"
-model_question = "Does the command specify stations (by name or code), or an area from a GeoJSON file in which the stations lie?"
-help = "Selecting by area reads the stations from the station catalog in the store and saves their list in the task."
-options.stations.label = "Specified stations (name or code)"
-options.stations.description = "station, stations, station name, station code, wodowskaz (water gauge), posterunek (gauging post), specific stations"
-options.area.label = "Stations from an area (GeoJSON file)"
-options.area.description = "area, GeoJSON file, geojson, zlewnia (catchment), boundary, all stations in the area, stations in the catchment"
-options.unspecified.description = "The command does not say whether it specifies stations or an area"
-
-[operations.add_imgw_project_task.params.stations]
-label = "Stations"
-question = "Which stations should be selected for the task? Give station names or codes."
-example = "Poznań-Ławica"
-help = "Give one or more stations (name or code: 9 digits for IMGW-PIB, WIGOS identifier for ČHMÚ)."
-
-[operations.add_imgw_project_task.params.area_file]
-label = "Area file (GeoJSON)"
-question = "Which GeoJSON file defines the area in which the stations lie? The file must be in the project folder."
-example = "zlewnia.geojson"
-help = "GeoJSON in WGS84 (Polygon, MultiPolygon, Feature or FeatureCollection) in the project folder, without “..” and symbolic links. Requires the station catalog in the store (“Build the station catalog in the store”)."
-
-[operations.add_imgw_project_task.params.period]
-label = "Task years"
-question = "Which years should the task cover? The task covers whole years, e.g. “2000–2020”."
-example = "2000-2020"
-help = "The task selects whole years (calendar or hydrological); it does not accept a period with dates (from day to day). Give a range of years, e.g. “2000–2020”."
-
-[operations.add_imgw_project_task.params.year_type]
-label = "Year type"
-question = "Are the task years calendar years (1 January to 31 December) or hydrological years (1 November to 31 October)?"
-help = "Hydrological year “2020” runs from 1 November 2019 to 31 October 2020. I always ask about this when the command does not say explicitly."
-options.hydrological.label = "Hydrological years (1 Nov – 31 Oct)"
-options.calendar.label = "Calendar years (1 Jan – 31 Dec)"
-
-[operations.add_imgw_project_task.params.variables]
-unset = "all dataset variables"
-label = "Variables"
-question = "Which variables should the task include (e.g. precipitation, flow, water level)?"
-example = "flow and water level"
-help = "Optionally narrow the task to selected dataset variables (e.g. Q, H, P); otherwise the task covers all variables of the dataset."
-
-[operations.add_imgw_project_task.params.point]
-label = "Point"
-question = "For which point should the PMAXTP cell be saved? Give latitude and longitude (WGS84) or PL-1992 coordinates."
-example = "52.23, 21.01"
-help = "The point must lie within the PMAXTP data area (latitude 49–55° N, longitude 14–24.5° E)."
-
-[operations.add_imgw_project_task.params.method]
-label = "PMAXTP method"
-question = "Which maximum precipitation method should be used: POT or AMP?"
-model_question = "What maximum precipitation method does the command mention: POT (peaks over threshold) or AMP (annual maxima)?"
-help = "POT uses threshold exceedances (partial series), AMP uses annual maxima."
-options.pot.label = "POT (peaks over threshold)"
-options.pot.description = "POT, peaks over threshold, threshold exceedances (przekroczenia progu), partial series (seria częściowa)"
-options.amp.label = "AMP (annual maxima)"
-options.amp.description = "AMP, annual maximum, annual maxima (maksima roczne), series of annual maxima (seria maksimów rocznych)"
-options.unspecified.description = "The command does not specify a PMAXTP method"
-
-[operations.download_imgw_project]
-label = "Download and pin IMGW project data"
-description = "Download the data for the tasks of an IMGW project into the store and record the pinned versions (SHA-256 checksums) in the manifest: either restore the pinned versions (new tasks will be downloaded and pinned for the first time) or update the data to the latest versions, changing the pins; download and pin project data; writes to the store and the manifest, requires network access."
-summary = "Done. Result #{number}: IMGW project data downloaded — tasks pinned: {pinned_count} of {task_count}."
-
-[operations.download_imgw_project.check]
-notice = "I will query the IMGW-PIB or ČHMÚ servers (file lists and HEAD headers) about the project task data: what is newer or missing, and how much data that is. I download nothing."
-
-[operations.download_imgw_project.params.update]
-label = "Download mode"
-question = "Should the pinned data versions be restored (new tasks will be downloaded and pinned for the first time), or should the data be updated to the latest versions and the pins changed?"
-model_question = "Does the command ask to restore the data according to the pins, or to update it to the latest versions (change the pins)?"
-help = "Restoring does not change the pins of tasks that are already pinned: missing files are downloaded again only if they have an identical SHA-256 checksum. Updating pins the tasks anew to the latest data versions."
-options.pinned.label = "Restore pinned versions"
-options.pinned.description = "restore, recover, according to pins, pinned versions, download missing, download and pin, first download, without changing pins"
-options.upgrade.label = "Update data and change pins"
-options.upgrade.description = "update, refresh, latest versions, newer data, re-pin, change pins, upgrade, project data update"
-options.unspecified.description = "The command does not say whether to restore the pinned versions or update the data"
-
-[operations.download_imgw_project.params.tasks]
-unset = "all project tasks"
-label = "Project tasks"
-question = "Which project tasks does the operation apply to? Give their names."
-example = "opady_poznan, przeplywy_warta"
-help = "If no tasks are specified, the operation covers all tasks of the project."
-
-[operations.check_imgw_project]
-label = "Check whether IMGW project data is up to date"
-description = "Check online whether the data of the IMGW project tasks is up to date: what is newer or missing on the servers, without downloading and without changing the store; saves the plan to a file; check the freshness of project data."
-summary = "Done. Result #{number}: project data checked (tasks: {task_count}), files to download: {to_download} ({size_to_download}); the plan was saved in the result."
-
-[operations.check_imgw_project.params.tasks]
-unset = "all project tasks"
-label = "Project tasks"
-question = "Which project tasks should the check cover? Give their names."
-example = "opady_poznan, przeplywy_warta"
-help = "If no tasks are specified, I check all project tasks."
-
-[operations.verify_imgw_project]
-label = "Verify pinned IMGW project data"
-description = "Verify the pinned data of the IMGW project offline: file status (existence and descriptions) or full SHA-256 checksums; whether the project data has not been changed or removed from the store; project checksum verification."
-summary = "Done. Result #{number}: the project verification report was saved in the result (tasks: {task_count}, without issues: {tasks_ok}, with issues: {tasks_issues})."
-
-[operations.verify_imgw_project.params.depth]
-label = "Verification scope"
-question = "Should I check only the file status (existence and descriptions), or the full SHA-256 checksums?"
-model_question = "Does the command ask to check the status of the pinned files, or to verify the full SHA-256 checksums?"
-help = "The file status check is quick; full verification computes the SHA-256 of every pinned file and may take a while."
-options.status.label = "File status (quick)"
-options.status.description = "status, stan, file existence, whether the files are there, quick check, without checksums"
-options.verify.label = "Full SHA-256 checksums"
-options.verify.description = "checksums, sumy kontrolne, SHA-256, SHA256, verify, verification, integrity, whether the data has not been changed, thorough check"
-options.unspecified.description = "The command does not say whether to check the file status or the checksums"
-
-[operations.verify_imgw_project.params.tasks]
-unset = "all project tasks"
-label = "Project tasks"
-question = "Which project tasks should the verification cover? Give their names."
-example = "opady_poznan, przeplywy_warta"
-help = "If no tasks are specified, I verify all project tasks."
-
-[operations.remove_imgw_project_task]
-label = "Remove a task from an IMGW data project"
-description = "Remove a task from an IMGW data project (from the imgw-project.json manifest); data versions in the store are left untouched; remove a task, delete a task from the project."
-summary = "Done. Result #{number}: removed task “{task}” from the IMGW project (tasks in the manifest: {task_count})."
-
-[operations.remove_imgw_project_task.params.task_name]
-label = "Task name"
-question = "Which task should be removed from the project? Give its name."
-example = "opady_poznan"
-help = "Give the task name exactly as it appears in the project."
-
-[operations.set_imgw_project_store]
-label = "Set the current IMGW store for a project"
-description = "Set the IMGW project's store from the configuration: change the project's store after verifying the pinned files in the new store (SHA-256 checksums); move the project to another store, set the project's store."
-summary = "Done. Result #{number}: the IMGW project now points to store {store}."
-
 # --- Texts shared by the tool's operations ------------------------------------------
 # Tool error codes ({detail} is the tool's description; {hint}, {option}, {allowed} too).
 [errors]
@@ -825,6 +636,7 @@ source_unavailable = "The data server is unavailable: {detail}. Try again later.
 missing_dependency = "An IMGWTools add-on is missing: {detail}. Check: retman doctor check"
 data_error = "The IMGWTools data is invalid or incomplete: {detail}"
 store_unavailable = "The IMGW store is unavailable: {detail}. Check: retman doctor check"
+unsupported = "IMGWTools does not support this: {detail}"
 io_error = "File write or read error: {detail}"
 cancelled = "The operation was cancelled: {detail}"
 internal_error = "IMGWTools internal error: {detail}"
@@ -863,19 +675,6 @@ archives_rejected = "IMGWTools rejects the selected period or station: {detail}"
 arch_plan_other_store = "The plan is for a different store ({plan_store}) than the configured one ({store}). Choose a plan checked for the current store."
 arch_nothing_to_export = "The store has no archives of dataset {dataset} for the years {years}. Choose other years or another dataset, or download data to the store first."
 arch_nothing_to_export_all = "The store has no archives of dataset {dataset}. Choose another dataset or download data to the store first."
-proj_manifest_missing = "The project folder has no file {path}. Create an IMGW data project first (“Create an IMGW data project”)."
-proj_manifest_invalid = "Cannot read the project manifest {path} ({detail})."
-proj_inside_store = "The project folder ({project}) is inside the IMGW store ({store}); the project must be outside the store."
-proj_other_store = "The project points to store {manifest_store}, but the settings ([retman.tools.imgwtools] store_dir) say {store}. Set the current store for the project (“Set the current IMGW store for a project”) or change the settings."
-proj_task_exists = "The project already has a task “{name}” (tasks: {tasks}). Give a different name."
-proj_task_missing = "The project has no task “{name}” (tasks: {tasks})."
-proj_tasks_unknown = "The project has no tasks: {names} (project tasks: {known})."
-proj_no_tasks = "The project has no tasks ({path}). Add a task first (“Add a task to an IMGW data project”)."
-proj_area_missing = "Area file {file} not found."
-proj_area_outside = "The area file {file} must be inside the project folder ({project}), with no “..” in the path and no symbolic links."
-proj_area_invalid = "The file {file} is not a valid GeoJSON area file (Polygon, MultiPolygon, Feature or FeatureCollection)."
-proj_catalog_missing = "Selecting stations by area requires the station catalog of provider {provider} in the store. Build the catalog first (“Build the station catalog in the store”)."
-proj_period_early = "Dataset {dataset} starts in {first_year}; choose later years."
 
 # Plan preview rows (offline).
 [preview.store]
@@ -986,54 +785,6 @@ value = "the folder has the layout of a store but no marker — the layout will 
 label = "Store state"
 value = "the store already exists — the operation will change nothing"
 
-[preview.proj_manifest_new]
-label = "Project manifest"
-value = "{path} — will be created"
-
-[preview.proj_manifest_exists]
-label = "Project manifest"
-value = "{path} — already exists, no changes"
-
-[preview.proj_manifest_write]
-label = "Project manifest"
-value = "{path} — will be changed"
-
-[preview.proj_manifest_read]
-label = "Project manifest"
-value = "{path} — read only"
-
-[preview.proj_store]
-label = "Project store"
-value = "{path} (from the project manifest)"
-
-[preview.proj_store_other]
-label = "Project store"
-value = "{path} (from the project manifest; the configuration has a different store: {configured})"
-
-[preview.proj_store_same]
-label = "Store change"
-value = "the project already points to this store ({path}); pinned files will only be verified"
-
-[preview.proj_year_type_fixed]
-label = "Year type"
-value = "hydrological — the only one in which half-year series exist"
-
-[preview.proj_tasks]
-label = "Tasks in the project"
-value = "{count}: {names}"
-
-[preview.proj_download_pinned]
-label = "Pins"
-value = "new tasks to download and pin: {new}; pinned tasks to restore (pins unchanged): {pinned}"
-
-[preview.proj_download_upgrade]
-label = "Pins"
-value = "all selected tasks ({count}) will be re-pinned to the latest versions — the pins will change"
-
-[preview.proj_task_pinned]
-label = "Pinned files"
-value = "task “{name}” is pinned; files in the store are left untouched"
-
 # Availability check rows (with network access, separate consent).
 [check]
 catalog_current = "The station catalog in the store is up to date."
@@ -1054,8 +805,3 @@ arch_unpublished = "Number of files the server does not publish: {count}."
 arch_no_signal = "Number of files without comparison headers on the server: {count}; it is not known whether they are up to date."
 arch_failed = "Number of files that could not be checked: {count} ({detail})."
 arch_series = "After the download, these series will be built or rebuilt: {names}."
-proj_state_missing = "Task “{name}”: to download and pin ({detail})."
-proj_state_newer = "Task “{name}”: newer data is available ({detail})."
-proj_state_current = "Task “{name}”: data is up to date ({detail})."
-proj_state_unverifiable = "Task “{name}”: cannot check whether it is up to date ({detail})."
-proj_state_failed = "Task “{name}”: the check failed ({detail})."

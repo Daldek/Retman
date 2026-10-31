@@ -56,13 +56,14 @@ dev = [
 ]
 # Tools used by handler tests and manual smoke runs (ARCHITECTURE 3.2.7, ADR-003).
 # Not a runtime dependency of Retman (ARCHITECTURE 9.3). Commits until the tags v0.8.0
-# and v3.0.0 exist; then pin the tags. Both commits are the heads of the branches
-# feature/data-output of the tools (data output convention, ECO-051), pushed to GitHub.
+# and v3.0.0 exist; then pin the tags. The commits are heads pushed to GitHub: Kartograf
+# of its branch feature/data-output (data output convention, ECO-051), IMGWTools of its
+# branch feature/archiwista-projects (projects moved to Archiwista, ECO-054).
 # The supported ranges of both tools admit their development versions while the commits
 # are pinned (REL-5.6).
 tools = [
     "kartograf @ git+https://github.com/Daldek/Kartograf@c31ca04c078ebbee36850d0aa4dcead59dd77a41",
-    "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@6bd35a49b329f99b591ffdee39367daec0e75af7",
+    "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@4bf8bb0d44ceb27ca84f4f6fa6ffeee46a6b3185",
 ]
 
 [tool.uv]

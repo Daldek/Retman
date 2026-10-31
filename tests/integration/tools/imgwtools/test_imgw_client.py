@@ -102,51 +102,6 @@ def test_a_rejected_option_value_lists_what_the_tool_allows(client):
     assert caught.value.allowed == ("POT", "AMP")
 
 
-def add_task(project: Path, options: dict[str, Any], **given: Any) -> CatalogCall:
-    """``project add`` of a ``series select`` task, as the builders make it."""
-    return CatalogCall(
-        "project add",
-        {
-            "project_dir": str(project),
-            "name": "task",
-            "command": "series select",
-            "options": options,
-            **given,
-        },
-    )
-
-
-TASK = {
-    "dataset": "pl.imgw.hydro_monthly",
-    "years": [2000, 2001],
-    "year_type": "hydrological",
-    "stations": ["150000111"],
-}
-
-
-def test_a_rejected_task_option_is_named_by_its_path_inside_options(client, tmp_path):
-    # The tool says only "options" and keeps the option at fault as the cause
-    with pytest.raises(ToolError) as caught:
-        client.validate(add_task(tmp_path, {**TASK, "variables": ["Q"]}))
-
-    assert caught.value.tool_code == "validation_error"
-    assert caught.value.option == "options.variables"
-    assert caught.value.allowed is not None and "Q_mean" in caught.value.allowed
-
-
-def test_a_rejection_that_names_no_task_option_keeps_the_tools_option(client, tmp_path):
-    without_years = {key: TASK[key] for key in TASK if key != "years"}
-
-    with pytest.raises(ToolError) as bad_name:
-        client.validate(add_task(tmp_path, TASK, name="Bad Name!"))
-    with pytest.raises(ToolError) as no_years:
-        client.validate(add_task(tmp_path, without_years))
-
-    # An option of ``project add`` itself; and "options" where the tool says no more
-    assert bad_name.value.option == "name"
-    assert no_years.value.option == "options"
-
-
 def test_lookup_refuses_every_command_that_uses_the_network_or_writes(client):
     refused = [
         command
@@ -372,7 +327,6 @@ def test_units_a_command_could_not_handle_are_listed_as_failures():
             ]
         }
     }
-    project = {"result": {"tasks": {"a": "current", "b": "failed"}, "files": []}}
     catalog = {"result": {"status": "failed", "problems": ["list unavailable"]}}
 
     failures = IMGWToolsClient._failures
@@ -385,7 +339,6 @@ def test_units_a_command_could_not_handle_are_listed_as_failures():
     ]
     # An archive the source does not publish is not a failure
     assert failures("datasets download", "ok", download) == ()
-    assert [f.unit for f in failures("project download", "partial", project)] == ["b"]
     assert [
         (f.unit, f.detail) for f in failures("store catalog", "failed", catalog)
     ] == [("store catalog", "list unavailable")]

@@ -162,7 +162,8 @@ Varied — Retman must support **two paths**:
 
 - Single operations (no chains) of two tools: Kartograf 0.8.0 (five operations: four on spatial data and the creation of its store)
   and the whole of IMGWTools 3.0.0 (all user-facing capabilities, including ČHMÚ data;
-  26 operations in 6 categories) — section 7.2, ADR-012, ADR-017.
+  19 operations in 5 categories; projects belong to Archiwista, Nogat ECO-054) — section 7.2,
+  ADR-012, ADR-017.
 - Scenarios S-01 to S-04.
 - Requirements W-01 to W-11, W-15 and W-17, plus N-12.
 
@@ -182,7 +183,7 @@ is two-stage: category, then operation (ARCHITECTURE section 3.4).
 | DEM (NMT) or DSM (NMPT) cutout for an area | Kartograf | rectangle in PL-1992 or WGS84, geometry file |
 | download BDOT10k (topographic objects database) | Kartograf | county TERYT code, rectangle, sheet code, geometry file |
 
-**IMGWTools 3.0.0** (ADR-017): 26 operations in six categories, on IMGW-PIB and ČHMÚ data
+**IMGWTools 3.0.0** (ADR-017): 19 operations in five categories, on IMGW-PIB and ČHMÚ data
 (ARCHITECTURE section 3.2.11):
 
 | Category | Operations |
@@ -192,7 +193,6 @@ is two-stage: category, then operation (ARCHITECTURE section 3.4).
 | PMAXTP maximum precipitation | maximum precipitation table for a point (POT or AMP method; optionally for selected probabilities and durations); read a stored grid cell |
 | station time series | export a station series to CSV (dataset, period, hydrological or calendar year, variables); data coverage of a station in the store; build series |
 | archives and store | download hydrological or meteorological archives to the results folder; check archives against the store (plan); download archives to the store, also per plan; export stored archives; create and describe the store |
-| data projects | create a project, add and remove a task, point to a store; download and pin project data; check freshness and verify pinned data |
 
 The first scenario S-01 ("Pobierz dobowe opady ze stacji Poznań z lat 2000–2020" — download daily
 precipitation from the Poznań station for 2000–2020) is a station series export. Seven catalog

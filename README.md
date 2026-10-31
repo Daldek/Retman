@@ -6,7 +6,7 @@ Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial
 
 - A person or a program states a data task in Polish and wants to see a checked plan before anything is fetched, for example `Pobierz NMT 1 m dla arkusza N-34-130-D-d-2-4` ("download the 1 m digital elevation model for map sheet N-34-130-D-d-2-4").
 - Spatial data of GUGiK through Kartograf: digital elevation model (DEM, Polish NMT), digital surface model (DSM, NMPT), orthophoto and the topographic database BDOT10k, for a map sheet, a rectangle, a county (TERYT code) or a geometry file (SHP, GPKG).
-- Measurements of IMGW-PIB and ČHMÚ through IMGWTools: station search and catalog, current data and warnings, PMAXTP maximum precipitation, station series, archives and the data store, data projects.
+- Measurements of IMGW-PIB and ČHMÚ through IMGWTools: station search and catalog, current data and warnings, PMAXTP maximum precipitation, station series, archives and the data store.
 - Work that has to be confirmed and traceable: every run needs the user's confirmation, and results are numbered and kept in the project folder with a journal.
 
 ## When not to use
@@ -20,13 +20,13 @@ Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial
 
 ## Install
 
-Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf) and `v3.0.0` (IMGWTools) exist, the commits that Retman is tested with are named (the IMGWTools one is the head of its branch `feature/data-output`, [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) says whether it is pushed):
+Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf) and `v3.0.0` (IMGWTools) exist, the commits that Retman is tested with are named (the IMGWTools one is the head of its branch `feature/archiwista-projects`, [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) says whether it is pushed):
 
 ```sh
 # CLI
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@c31ca04c078ebbee36850d0aa4dcead59dd77a41" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@6bd35a49b329f99b591ffdee39367daec0e75af7"
+    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@4bf8bb0d44ceb27ca84f4f6fa6ffeee46a6b3185"
 
 # Python library (name the same tools in the project's own dependencies)
 uv add "retman @ git+https://github.com/Daldek/Retman@develop"
@@ -168,7 +168,7 @@ The commands of the catalog; each exists as a CLI command and as a Python functi
 | `retman scaffold list` | `retman.operations.scaffold_list` | List the data commands of a tool and the operations that use them | no |
 | `retman scaffold draft` | `retman.operations.scaffold_draft` | Draft an operation from a command of a tool, for review by hand | no |
 
-The operations that a Polish command can select, 31 operations in 7 categories (a command that names none of them is `unsupported`):
+The operations that a Polish command can select, 24 operations in 6 categories (a command that names none of them is `unsupported`):
 
 | Category | Id | Tool | Operations | Data source |
 |---|---|---|---|---|
@@ -178,7 +178,6 @@ The operations that a Polish command can select, 31 operations in 7 categories (
 | Maximum precipitation PMAXTP | `imgw_pmaxtp` | IMGWTools 3.0.0 | 2 | IMGW-PIB |
 | Station time series | `imgw_series` | IMGWTools 3.0.0 | 3 | IMGW-PIB, ČHMÚ |
 | Archives and the data store | `imgw_archives` | IMGWTools 3.0.0 | 8 | IMGW-PIB, ČHMÚ |
-| Data projects | `imgw_projects` | IMGWTools 3.0.0 | 7 | IMGW-PIB, ČHMÚ |
 
 ## For AI agents
 

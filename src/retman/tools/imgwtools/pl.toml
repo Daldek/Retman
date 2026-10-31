@@ -18,10 +18,6 @@ description = "Szeregi dobowe i miesięczne stacji IMGW-PIB i ČHMÚ: opady, prz
 label = "Archiwa i magazyn danych IMGW"
 description = "Archiwa danych IMGW-PIB i ČHMÚ: pobieranie plików archiwalnych, sprawdzanie i synchronizacja lokalnego magazynu, eksport zapisanych archiwów, inicjalizacja i podgląd magazynu"
 
-[categories.imgw_projects]
-label = "Projekty danych IMGW"
-description = "Projekty danych IMGW: manifest zadań w folderze projektu, dodawanie i usuwanie zadań, pobieranie i przypinanie wersji danych, sprawdzanie aktualności i sum kontrolnych"
-
 [operations.find_imgw_stations]
 label = "Wyszukanie stacji IMGW i ČHMÚ"
 description = "Znajdź stacje hydrologiczne albo meteorologiczne IMGW-PIB i ČHMÚ po nazwie, rzece, rodzaju lub dostawcy: kody stacji, nazwy, rzeki, współrzędne; wodowskazy, stacje opadowe, klimatyczne i synoptyczne; z serwera albo z katalogu stacji w magazynie."
@@ -629,191 +625,6 @@ options.chmi.label = "ČHMÚ (Czechy)"
 options.chmi.description = "ČHMÚ, CHMU, CHMI, czeskie stacje, Czechy, Český hydrometeorologický ústav"
 options.unspecified.description = "Polecenie nie ogranicza opisu do jednego dostawcy"
 
-[operations.init_imgw_project]
-label = "Utworzenie projektu danych IMGW"
-description = "Utwórz projekt danych IMGW w folderze projektu (plik imgw-project.json z listą zadań) wskazujący magazyn IMGW z konfiguracji: projekt przypina wersje danych, aby wyniki dało się odtworzyć; założenie projektu, nowy projekt IMGW."
-summary = "Gotowe. Wynik #{number}: projekt danych IMGW utworzony (manifest {manifest})."
-
-[operations.add_imgw_project_task]
-label = "Dodanie zadania do projektu danych IMGW"
-description = "Dodaj zadanie do projektu danych IMGW: wybór szeregów czasowych stacji (stacja albo obszar z pliku GeoJSON, lata, zmienne: przepływy, opady, stany wody) albo komórka PMAXTP dla punktu; zadanie tylko zapisuje się w manifeście projektu, dane pobiera dopiero „Pobierz dane projektu”."
-summary = "Gotowe. Wynik #{number}: dodano zadanie „{task}” do projektu IMGW (zadań w manifeście: {task_count})."
-
-[operations.add_imgw_project_task.params.task]
-label = "Rodzaj zadania"
-question = "Jakie zadanie dodać do projektu: szeregi czasowe stacji czy komórkę PMAXTP?"
-model_question = "Jakiego rodzaju zadanie wymienia polecenie: szeregi czasowe stacji (przepływy, opady, stany wody, temperatury) czy opady maksymalne PMAXTP dla punktu?"
-help = "Zadanie szeregów wybiera stacje, lata i zmienne; zadanie PMAXTP zapisuje komórkę opadów maksymalnych dla punktu."
-options.series.label = "Szeregi czasowe stacji"
-options.series.description = "szeregi stacji, przepływy, opady, stany wody, temperatury, dane ze stacji, lata pomiarów"
-options.pmaxtp.label = "Komórka PMAXTP"
-options.pmaxtp.description = "PMAXTP, opady maksymalne, opady maksymalne prawdopodobne, punkt, współrzędne, komórka siatki"
-options.unspecified.description = "Polecenie nie wskazuje, czy zadanie dotyczy szeregów stacji, czy PMAXTP"
-
-[operations.add_imgw_project_task.params.task_name]
-label = "Nazwa zadania"
-question = "Jak nazwać zadanie? Nazwa: małe litery a–z, cyfry, „_” i „-”, do 64 znaków."
-example = "opady_poznan"
-help = "Nazwa musi być unikalna w projekcie, zaczynać się od litery lub cyfry i mieć tylko małe litery a–z, cyfry, „_” i „-” (np. „opady_poznan”). Nazwy nie poprawiam sam."
-
-[operations.add_imgw_project_task.params.dataset]
-label = "Zbiór danych"
-question = "Z którego zbioru danych wybrać szeregi do zadania?"
-model_question = "Jakiego rodzaju dane i z jakiej sieci stacji dotyczy polecenie?"
-help = "Lista stacji IMGW nie mówi, czy stacja jest opadowa, czy klimatyczna; wskaż zbiór, a stację dopasuję do niego. Dane ČHMÚ dotyczą Czech."
-options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
-options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne; hydro dobowe"
-options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
-options.pl_hydro_monthly.description = "miesięczne dane hydrologiczne: minimalny, średni i maksymalny stan wody, przepływ i temperatura wody w miesiącu; stacje hydrologiczne IMGW-PIB; hydro miesięczne"
-options.pl_hydro_semiannual.label = "Dane hydrologiczne półroczne i roczne IMGW-PIB"
-options.pl_hydro_semiannual.description = "półroczne i roczne dane hydrologiczne: ekstrema stanu wody, przepływu i temperatury wody w półroczu zimowym, letnim i w roku; stacje hydrologiczne IMGW-PIB"
-options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
-options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
-options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
-options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
-options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
-options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
-options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
-options.cz_meteo_daily.description = "czeskie dane meteorologiczne ČHMÚ: opad, temperatura średnia, maksymalna i minimalna; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
-options.unspecified.description = "Polecenie nie wskazuje zbioru danych zadania"
-
-[operations.add_imgw_project_task.params.selection]
-label = "Wybór stacji"
-question = "Czy wskazać stacje nazwą albo kodem, czy wybrać wszystkie stacje leżące w obszarze z pliku GeoJSON?"
-model_question = "Czy polecenie wskazuje stacje (nazwą albo kodem), czy obszar z pliku GeoJSON, w którym leżą stacje?"
-help = "Wybór obszarem czyta stacje z katalogu stacji w magazynie i zapisuje ich listę w zadaniu."
-options.stations.label = "Wskazane stacje (nazwa lub kod)"
-options.stations.description = "stacja, stacje, nazwa stacji, kod stacji, wodowskaz, posterunek, konkretne stacje"
-options.area.label = "Stacje z obszaru (plik GeoJSON)"
-options.area.description = "obszar, plik GeoJSON, geojson, zlewnia, granica, wszystkie stacje w obszarze, stacje w zlewni"
-options.unspecified.description = "Polecenie nie mówi, czy wskazuje stacje, czy obszar"
-
-[operations.add_imgw_project_task.params.stations]
-label = "Stacje"
-question = "Jakie stacje wybrać do zadania? Podaj nazwy albo kody stacji."
-example = "Poznań-Ławica"
-help = "Podaj jedną lub kilka stacji (nazwa albo kod: 9 cyfr dla IMGW-PIB, identyfikator WIGOS dla ČHMÚ)."
-
-[operations.add_imgw_project_task.params.area_file]
-label = "Plik obszaru (GeoJSON)"
-question = "Jaki plik GeoJSON wyznacza obszar, w którym leżą stacje? Plik musi leżeć w folderze projektu."
-example = "zlewnia.geojson"
-help = "GeoJSON w WGS84 (Polygon, MultiPolygon, Feature albo FeatureCollection) w folderze projektu, bez „..” i dowiązań symbolicznych. Wymaga katalogu stacji w magazynie („Zbuduj katalog stacji IMGW”)."
-
-[operations.add_imgw_project_task.params.period]
-label = "Lata zadania"
-question = "Z jakich lat ma być zadanie? Zadanie obejmuje całe lata, np. „2000–2020”."
-example = "2000-2020"
-help = "Zadanie wybiera całe lata (kalendarzowe albo hydrologiczne); okresu z datami (od dnia do dnia) zadanie nie przyjmuje. Podaj zakres lat, np. „2000–2020”."
-
-[operations.add_imgw_project_task.params.year_type]
-label = "Rodzaj roku"
-question = "Czy lata zadania to lata kalendarzowe (od 1 stycznia do 31 grudnia), czy hydrologiczne (od 1 listopada do 31 października)?"
-help = "Rok hydrologiczny „2020” trwa od 1 listopada 2019 do 31 października 2020. Pytam o to zawsze, gdy polecenie nie mówi wprost."
-options.hydrological.label = "Lata hydrologiczne (1 XI – 31 X)"
-options.calendar.label = "Lata kalendarzowe (1 I – 31 XII)"
-
-[operations.add_imgw_project_task.params.variables]
-unset = "wszystkie zmienne zbioru"
-label = "Zmienne"
-question = "Jakie zmienne uwzględnić w zadaniu (np. opad, przepływ, stan wody)?"
-example = "przepływ i stan wody"
-help = "Opcjonalnie zawęż zadanie do wybranych zmiennych zbioru (np. Q, H, P); bez tego zadanie obejmuje wszystkie zmienne zbioru."
-
-[operations.add_imgw_project_task.params.point]
-label = "Punkt"
-question = "Dla jakiego punktu zapisać komórkę PMAXTP? Podaj szerokość i długość geograficzną (WGS84) albo współrzędne w PL-1992."
-example = "52.23, 21.01"
-help = "Punkt musi leżeć w obszarze danych PMAXTP (szerokość 49–55° N, długość 14–24,5° E)."
-
-[operations.add_imgw_project_task.params.method]
-label = "Metoda PMAXTP"
-question = "Którą metodę opadów maksymalnych zastosować: POT czy AMP?"
-model_question = "Jaką metodę opadów maksymalnych wymienia polecenie: POT (przekroczenia progu) czy AMP (maksima roczne)?"
-help = "POT korzysta z przekroczeń progu (seria częściowa), AMP z maksimów rocznych."
-options.pot.label = "POT (przekroczenia progu)"
-options.pot.description = "POT, peaks over threshold, przekroczenia progu, seria częściowa"
-options.amp.label = "AMP (maksima roczne)"
-options.amp.description = "AMP, annual maximum, maksima roczne, seria maksimów rocznych"
-options.unspecified.description = "Polecenie nie wskazuje metody PMAXTP"
-
-[operations.download_imgw_project]
-label = "Pobranie i przypięcie danych projektu IMGW"
-description = "Pobierz do magazynu dane zadań projektu IMGW i zapisz w manifeście przypięte wersje (sumy SHA-256): odtworzenie przypiętych wersji (nowe zadania zostaną pobrane i przypięte po raz pierwszy) albo aktualizacja danych do najnowszych wersji ze zmianą przypięć; pobierz i przypnij dane projektu; zapisuje w magazynie i w manifeście, wymaga sieci."
-summary = "Gotowe. Wynik #{number}: dane projektu IMGW pobrane — zadań przypiętych: {pinned_count} z {task_count}."
-
-[operations.download_imgw_project.check]
-notice = "Zapytam serwery IMGW-PIB albo ČHMÚ (listy plików i nagłówki HEAD) o dane zadań projektu: co jest nowsze albo brakuje i ile to danych. Niczego nie pobieram."
-
-[operations.download_imgw_project.params.update]
-label = "Tryb pobierania"
-question = "Czy odtworzyć przypięte wersje danych (zadania nowe zostaną pobrane i przypięte po raz pierwszy), czy zaktualizować dane do najnowszych wersji i zmienić przypięcia?"
-model_question = "Czy polecenie każe odtworzyć dane zgodnie z przypięciami, czy zaktualizować je do najnowszych wersji (zmienić przypięcia)?"
-help = "Odtworzenie nie zmienia przypięć zadań już przypiętych: brakujące pliki są pobierane ponownie tylko wtedy, gdy mają identyczną sumę SHA-256. Aktualizacja przypina zadania na nowo do najnowszych wersji danych."
-options.pinned.label = "Odtwórz przypięte wersje"
-options.pinned.description = "odtwórz, przywróć, zgodnie z przypięciami, przypięte wersje, pobierz brakujące, pobierz i przypnij, pierwsze pobranie, bez zmiany przypięć"
-options.upgrade.label = "Zaktualizuj dane i zmień przypięcia"
-options.upgrade.description = "zaktualizuj, odśwież, najnowsze wersje, nowsze dane, przepnij, zmień przypięcia, upgrade, aktualizacja danych projektu"
-options.unspecified.description = "Polecenie nie mówi, czy odtworzyć przypięte wersje, czy zaktualizować dane"
-
-[operations.download_imgw_project.params.tasks]
-unset = "wszystkie zadania projektu"
-label = "Zadania projektu"
-question = "Których zadań projektu dotyczy operacja? Podaj ich nazwy."
-example = "opady_poznan, przeplywy_warta"
-help = "Bez wskazania zadań operacja obejmuje wszystkie zadania projektu."
-
-[operations.check_imgw_project]
-label = "Sprawdzenie aktualności danych projektu IMGW"
-description = "Sprawdź w sieci, czy dane zadań projektu IMGW są aktualne: co jest nowsze albo brakuje na serwerach, bez pobierania i bez zmian w magazynie; zapisuje plan do pliku; sprawdź aktualność danych projektu."
-summary = "Gotowe. Wynik #{number}: sprawdzono dane projektu (zadań: {task_count}), do pobrania plików: {to_download} ({size_to_download}); plan zapisano w wyniku."
-
-[operations.check_imgw_project.params.tasks]
-unset = "wszystkie zadania projektu"
-label = "Zadania projektu"
-question = "Których zadań projektu dotyczy sprawdzenie? Podaj ich nazwy."
-example = "opady_poznan, przeplywy_warta"
-help = "Bez wskazania zadań sprawdzam wszystkie zadania projektu."
-
-[operations.verify_imgw_project]
-label = "Weryfikacja przypiętych danych projektu IMGW"
-description = "Zweryfikuj przypięte dane projektu IMGW bez internetu: stan plików (istnienie i opisy) albo pełne sumy kontrolne SHA-256; czy dane projektu nie zostały zmienione ani usunięte z magazynu; weryfikacja sum kontrolnych projektu."
-summary = "Gotowe. Wynik #{number}: raport z weryfikacji projektu zapisano w wyniku (zadań: {task_count}, bez uwag: {tasks_ok}, z uwagami: {tasks_issues})."
-
-[operations.verify_imgw_project.params.depth]
-label = "Zakres weryfikacji"
-question = "Czy sprawdzić tylko stan plików (istnienie i opisy), czy pełne sumy kontrolne SHA-256?"
-model_question = "Czy polecenie każe sprawdzić stan przypiętych plików, czy zweryfikować pełne sumy kontrolne SHA-256?"
-help = "Stan plików jest szybki; pełna weryfikacja liczy SHA-256 każdego przypiętego pliku i może potrwać."
-options.status.label = "Stan plików (szybko)"
-options.status.description = "stan, status, istnienie plików, czy pliki są, szybkie sprawdzenie, bez sum kontrolnych"
-options.verify.label = "Pełne sumy kontrolne SHA-256"
-options.verify.description = "sumy kontrolne, SHA-256, SHA256, zweryfikuj, weryfikacja, integralność, czy dane nie zostały zmienione, dokładne sprawdzenie"
-options.unspecified.description = "Polecenie nie mówi, czy sprawdzić stan plików, czy sumy kontrolne"
-
-[operations.verify_imgw_project.params.tasks]
-unset = "wszystkie zadania projektu"
-label = "Zadania projektu"
-question = "Których zadań projektu dotyczy weryfikacja? Podaj ich nazwy."
-example = "opady_poznan, przeplywy_warta"
-help = "Bez wskazania zadań weryfikuję wszystkie zadania projektu."
-
-[operations.remove_imgw_project_task]
-label = "Usunięcie zadania z projektu danych IMGW"
-description = "Usuń zadanie z projektu danych IMGW (z manifestu imgw-project.json); wersje danych w magazynie zostają nietknięte; usuń zadanie, skasuj zadanie z projektu."
-summary = "Gotowe. Wynik #{number}: usunięto zadanie „{task}” z projektu IMGW (zadań w manifeście: {task_count})."
-
-[operations.remove_imgw_project_task.params.task_name]
-label = "Nazwa zadania"
-question = "Które zadanie usunąć z projektu? Podaj jego nazwę."
-example = "opady_poznan"
-help = "Podaj nazwę zadania dokładnie tak, jak jest w projekcie."
-
-[operations.set_imgw_project_store]
-label = "Wskazanie projektowi bieżącego magazynu IMGW"
-description = "Wskaż projektowi IMGW magazyn z konfiguracji: zmiana magazynu projektu po zweryfikowaniu przypiętych plików w nowym magazynie (sumy SHA-256); przenieś projekt do innego magazynu, ustaw magazyn projektu."
-summary = "Gotowe. Wynik #{number}: projekt IMGW wskazuje teraz magazyn {store}."
-
 # --- Teksty wspólne dla operacji narzędzia ------------------------------------------
 # Kody błędów narzędzia ({detail} to opis narzędzia; {hint}, {option}, {allowed} także).
 [errors]
@@ -825,6 +636,7 @@ source_unavailable = "Serwer danych jest niedostępny: {detail}. Spróbuj ponown
 missing_dependency = "Brakuje dodatku IMGWTools: {detail}. Sprawdź: retman doctor check"
 data_error = "Dane IMGWTools są nieprawidłowe lub niekompletne: {detail}"
 store_unavailable = "Magazyn IMGW jest niedostępny: {detail}. Sprawdź: retman doctor check"
+unsupported = "IMGWTools tego nie obsługuje: {detail}"
 io_error = "Błąd zapisu lub odczytu pliku: {detail}"
 cancelled = "Operację przerwano: {detail}"
 internal_error = "Błąd wewnętrzny IMGWTools: {detail}"
@@ -863,19 +675,6 @@ archives_rejected = "IMGWTools odrzuca wybrany okres albo stację: {detail}"
 arch_plan_other_store = "Plan dotyczy innego magazynu ({plan_store}) niż skonfigurowany ({store}). Wybierz plan sprawdzony dla bieżącego magazynu."
 arch_nothing_to_export = "W magazynie nie ma archiwów zbioru {dataset} z lat {years}. Wybierz inne lata albo zbiór, albo najpierw pobierz dane do magazynu."
 arch_nothing_to_export_all = "W magazynie nie ma archiwów zbioru {dataset}. Wybierz inny zbiór albo najpierw pobierz dane do magazynu."
-proj_manifest_missing = "W folderze projektu nie ma pliku {path}. Najpierw utwórz projekt danych IMGW („Utwórz projekt danych IMGW”)."
-proj_manifest_invalid = "Nie można odczytać manifestu projektu {path} ({detail})."
-proj_inside_store = "Folder projektu ({project}) leży w magazynie IMGW ({store}); projekt musi być poza magazynem."
-proj_other_store = "Projekt wskazuje magazyn {manifest_store}, a w ustawieniach ([retman.tools.imgwtools] store_dir) jest {store}. Wskaż projektowi bieżący magazyn („Wskaż projektowi bieżący magazyn IMGW”) albo zmień ustawienia."
-proj_task_exists = "W projekcie jest już zadanie „{name}” (zadania: {tasks}). Podaj inną nazwę."
-proj_task_missing = "W projekcie nie ma zadania „{name}” (zadania: {tasks})."
-proj_tasks_unknown = "W projekcie nie ma zadań: {names} (zadania projektu: {known})."
-proj_no_tasks = "Projekt nie ma żadnych zadań ({path}). Najpierw dodaj zadanie („Dodaj zadanie do projektu danych IMGW”)."
-proj_area_missing = "Nie znaleziono pliku obszaru {file}."
-proj_area_outside = "Plik obszaru {file} musi leżeć w folderze projektu ({project}), bez „..” w ścieżce i bez dowiązań symbolicznych."
-proj_area_invalid = "Plik {file} nie jest poprawnym plikiem GeoJSON z obszarem (Polygon, MultiPolygon, Feature albo FeatureCollection)."
-proj_catalog_missing = "Wybór stacji obszarem wymaga katalogu stacji dostawcy {provider} w magazynie. Najpierw zbuduj katalog („Zbuduj katalog stacji IMGW”)."
-proj_period_early = "Zbiór {dataset} zaczyna się od roku {first_year}; wybierz późniejsze lata."
 
 # Wiersze podglądu planu (offline).
 [preview.store]
@@ -986,54 +785,6 @@ value = "folder ma układ magazynu, ale nie ma znacznika — układ zostanie spr
 label = "Stan magazynu"
 value = "magazyn już istnieje — operacja niczego nie zmieni"
 
-[preview.proj_manifest_new]
-label = "Manifest projektu"
-value = "{path} — zostanie utworzony"
-
-[preview.proj_manifest_exists]
-label = "Manifest projektu"
-value = "{path} — już istnieje, bez zmian"
-
-[preview.proj_manifest_write]
-label = "Manifest projektu"
-value = "{path} — zostanie zmieniony"
-
-[preview.proj_manifest_read]
-label = "Manifest projektu"
-value = "{path} — tylko odczyt"
-
-[preview.proj_store]
-label = "Magazyn projektu"
-value = "{path} (z manifestu projektu)"
-
-[preview.proj_store_other]
-label = "Magazyn projektu"
-value = "{path} (z manifestu projektu; w konfiguracji jest inny magazyn: {configured})"
-
-[preview.proj_store_same]
-label = "Zmiana magazynu"
-value = "projekt już wskazuje ten magazyn ({path}); przypięte pliki zostaną tylko zweryfikowane"
-
-[preview.proj_year_type_fixed]
-label = "Rodzaj roku"
-value = "hydrologiczny — jedyny, w jakim istnieją szeregi półroczne"
-
-[preview.proj_tasks]
-label = "Zadania w projekcie"
-value = "{count}: {names}"
-
-[preview.proj_download_pinned]
-label = "Przypięcia"
-value = "nowych zadań do pobrania i przypięcia: {new}; przypiętych do odtworzenia (przypięcia bez zmian): {pinned}"
-
-[preview.proj_download_upgrade]
-label = "Przypięcia"
-value = "wszystkie wybrane zadania ({count}) zostaną przypięte na nowo do najnowszych wersji — przypięcia się zmienią"
-
-[preview.proj_task_pinned]
-label = "Przypięte pliki"
-value = "zadanie „{name}” jest przypięte; pliki w magazynie zostają nietknięte"
-
 # Wiersze sprawdzenia dostępności (z siecią, osobna zgoda).
 [check]
 catalog_current = "Katalog stacji w magazynie jest aktualny."
@@ -1054,8 +805,3 @@ arch_unpublished = "Liczba plików, których serwer nie publikuje: {count}."
 arch_no_signal = "Liczba plików bez nagłówków porównania na serwerze: {count}; nie wiadomo, czy są aktualne."
 arch_failed = "Liczba plików, których nie udało się sprawdzić: {count} ({detail})."
 arch_series = "Po pobraniu zostaną zbudowane albo przebudowane szeregi: {names}."
-proj_state_missing = "Zadanie „{name}”: do pobrania i przypięcia ({detail})."
-proj_state_newer = "Zadanie „{name}”: są nowsze dane ({detail})."
-proj_state_current = "Zadanie „{name}”: dane aktualne ({detail})."
-proj_state_unverifiable = "Zadanie „{name}”: aktualności nie da się sprawdzić ({detail})."
-proj_state_failed = "Zadanie „{name}”: sprawdzenie nie powiodło się ({detail})."

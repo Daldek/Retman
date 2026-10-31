@@ -141,3 +141,11 @@ store_dir` to every command and resolves no default root of a tool.
 `6bd35a49b329f99b591ffdee39367daec0e75af7`, the head of the same branch, which is on GitHub. The
 head only flushes stray stdout to stderr before the MCP server leaves stdio; Retman calls the
 command layer, not the MCP server, so nothing in Retman changes.
+
+**Erratum 6 (2026-10-31, IMGWTools `4bf8bb0d`, Nogat ECO-054):** the pin is now IMGWTools
+`4bf8bb0d44ceb27ca84f4f6fa6ffeee46a6b3185`, the head of its branch `feature/archiwista-projects`,
+which is on GitHub. The tool keeps no projects: the `project` commands, the manifest
+`imgw-project/1`, the field `task` of the result items and the status `restored_by_content` are
+gone, so Retman's `imgw_projects` operations are removed and the sentences of item 5 and of
+the Consequences about `project init` and `project set store` no longer apply. The tool's registry
+gains `unsupported`, which has its text in Retman.
