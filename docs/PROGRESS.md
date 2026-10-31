@@ -11,7 +11,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-025) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
-| Kartograf 0.8.0 adapter (5 operations), IMGWTools 3.0.0 adapter (19 operations, two-stage recognition) | done | the `tools` group pins `c31ca04c` (Kartograf, the head of its `feature/data-output`) and `4bf8bb0d` (IMGWTools, the head of its `feature/archiwista-projects`), both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist; the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
+| Kartograf 0.8.0 adapter (5 operations), IMGWTools 3.0.0 adapter (19 operations, two-stage recognition) | done | the `tools` group pins `8ad55ab6` (Kartograf) and `4bf8bb0d` (IMGWTools), the heads of their `feature/archiwista-projects`, both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist; the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
 | Extractors | in progress | missing: numbers with units; the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
@@ -68,9 +68,12 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      `docs/research/` still names the old variables and the project operations, which is
      history. The fixture store of the IMGW tests is removed when the test session ends.
    - **Kartograf: done (the calls, the marker states, the operation that writes the marker, the
-     documents, ADR-025); the pin is the final head.** The `tools` group pins
-     `c31ca04c078ebbee36850d0aa4dcead59dd77a41`, the head of Kartograf `feature/data-output`,
-     which is on GitHub. Done: `root=` and `--root` (client and `DownloadManager(provider,
+     documents, ADR-025); projects are gone (Nogat ECO-054, plan
+     `2026-10-31-archiwista-projects` step 4).** The `tools` group pins
+     `8ad55ab67b1e6e2e2ef3eb52cb6930ed92fecc06`, the head of Kartograf
+     `feature/archiwista-projects`, which is on GitHub. Retman's Kartograf operations used no
+     project command; with projects the task name extractor and the path of an option inside
+     another option went too (ADR-025 erratum 5, ADR-017 erratum 2). Done: `root=` and `--root` (client and `DownloadManager(provider,
      root=...)`), the `kartograf-result/1` envelope and its `files[]`, the command ids `sheet
      parse`, `sheet find` and `store sidecar`, the reader of `retman scaffold` on
      `list_commands` and `command_schema`, the registry codes (`ToolFailure.reason`) and the
@@ -86,8 +89,6 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      is removed (ADR-025 erratum 1). The 16 eval rows of that operation are written, but
      `retman eval run` has not run on them (it needs a model server), and the ambiguous rows
      `imgw-init-store-014` and `-015` now expect IMGW after a question about the operation.
-     Open: re-pin Kartograf at the head without projects (plan `2026-10-31-archiwista-projects`
-     step 4; Kartograf's step 2).
 3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
    `v3.0.0` once they exist (REL-5.3), and in the same change narrow the `supported_versions` of
    both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test of the IMGWTools manifest

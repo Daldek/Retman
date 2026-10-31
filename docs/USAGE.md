@@ -43,12 +43,12 @@ in **one** environment, a running model server, settings and the tools' data sto
 Installation is described in ARCHITECTURE 9.4. Until v0.1.0 is released there is no release tag, and
 the Kartograf `v0.8.0` and IMGWTools `v3.0.0` tags have not been pushed yet, so you install Retman from
 the `develop` branch and the tools from pinned commits (the same ones the tests use, the `tools` group
-in `pyproject.toml`; Kartograf's is the head of its branch `feature/data-output`, IMGWTools' the head
-of its branch `feature/archiwista-projects`, and `docs/PROGRESS.md` says whether they are pushed):
+in `pyproject.toml`; both are the heads of the branches `feature/archiwista-projects` of the tools,
+and `docs/PROGRESS.md` says whether they are pushed):
 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@c31ca04c078ebbee36850d0aa4dcead59dd77a41" \
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@8ad55ab67b1e6e2e2ef3eb52cb6930ed92fecc06" \
     --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@4bf8bb0d44ceb27ca84f4f6fa6ffeee46a6b3185"
 ```
 

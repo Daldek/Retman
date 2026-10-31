@@ -156,7 +156,6 @@ src/retman/
 │   ├── stations.py          # station names and codes → the offline station catalog of the IMGWTools store
 │   ├── places.py            # place and river names as search fragments for the station search
 │   ├── variables.py         # measured variables checked against the chosen dataset
-│   ├── identifiers.py       # names given by the user (e.g. a project task)
 │   ├── paths.py             # file paths mentioned in the command
 │   └── results.py           # result numbers mentioned in the command, e.g. "#3" (section 5.2)
 ├── chains/                  # chain building from input/output dependencies, resolver.py (v0.2; not written yet)
@@ -374,12 +373,8 @@ operation being planned or executed — so that a handler can hand plain catalog
    would execute the operation, without network or writes. A rejection (`ToolError` with the option
    or options affected) is routed to Retman parameters (via `CatalogCall.params` or identical
    names) and becomes a question asked again with a reason (`Plan.reopened`, section 6.3).
-   An option nested inside another option (a command that carries the options of another
-   command) has the path `options.<name>` in `ToolError.option` and in `CatalogCall.params`, so
-   it also reaches its parameter. A rejection that cannot be routed to any parameter is a
-   `ToolDriftError`: the
-   installed tool no longer accepts what the manifest describes (`retman doctor check`,
-   `retman scaffold check`);
+   A rejection that cannot be routed to any parameter is a `ToolDriftError`: the installed tool
+   no longer accepts what the manifest describes (`retman doctor check`, `retman scaffold check`);
 2. if the tool accepted all calls, it calls `preview(params, ctx)`, which returns
    `PreviewOutput` = `{values, rows, problems}`: `values` go only to the audit
    (`result.json["preview"]`), `rows` are additional plan rows (marked
@@ -1207,7 +1202,6 @@ and variables in the manifest) and `lookup` — an offline search in the tool's 
 | `period` | a period: years or dates ("od 1 stycznia 2000 do 31 grudnia 2020" (from 1 January 2000 to 31 December 2020)) | a `years` value or `{type: dates, start, end}` |
 | `year_type` | hydrological or calendar year; when absent from the command, always a question | choice of `hydrological` / `calendar` via `option_values` |
 | `variables` | measurement variables of a dataset (codes or words: "przepływ" (flow), "stan wody" (water level)), checked against `scope["variables"]` | list of variable codes |
-| `identifier` | a name given by the user (e.g. of a project task) | text matching `^[a-z0-9][a-z0-9_-]{0,63}$` — without silent "fixing" |
 | `path` | a file path mentioned in the command | path |
 | `result` | a result number ("#3", section 5.2) | number |
 

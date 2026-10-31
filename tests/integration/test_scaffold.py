@@ -138,56 +138,6 @@ def failing_builder(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCal
     raise KeyError("nothing to build")
 
 
-NESTED = ("resolution", "vertical_crs")
-
-
-def nested_builder(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
-    """The dummy call with the resolution and the height system inside ``settings``.
-
-    As ``project add`` carries the options of another command; the routes of the
-    call name the options by their paths.
-    """
-    from dummy_tool.calls import fetch_dem
-
-    (call,) = fetch_dem(params, ctx)
-    options = {
-        name: value for name, value in call.options.items() if name not in NESTED
-    }
-    options["settings"] = {name: call.options[name] for name in NESTED}
-    routes = {f"settings.{name}": name for name in NESTED}
-    return [replace(call, options=options, params={**call.params, **routes})]
-
-
-def unrouted_builder(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
-    """``nested_builder`` without the routes: no parameter answers the options."""
-    (call,) = nested_builder(params, ctx)
-    return [replace(call, params={})]
-
-
-def nested_rule(call: CatalogCall) -> ToolError | None:
-    """``tool_rule`` for the options inside ``settings``, naming them by path."""
-    settings = call.options["settings"]
-    assert isinstance(settings, dict)
-    rejected = tool_rule(replace(call, options={**call.options, **settings}))
-    if rejected is None:
-        return None
-    named = (name for name in (rejected.option, *rejected.options) if name)
-    paths = tuple(f"settings.{name}" if name in settings else name for name in named)
-    return reject(call, rejected.detail, options=paths)
-
-
-def nested_catalog() -> ToolCatalog:
-    """The catalog of the dummy tool whose download takes the option ``settings``."""
-    catalog = make_catalog()
-    download = catalog.commands["elevation download"]
-    nested = replace(download, options=(*download.options, OptionInfo("settings")))
-    return replace(catalog, commands={**catalog.commands, download.id: nested})
-
-
-def nested_edit(manifest: ManifestSpec) -> None:
-    operation(manifest)["calls"] = "test_scaffold:nested_builder"
-
-
 def row(
     identifier: str, operation: str, params: dict[str, Any], *clarify: str
 ) -> EvalCommand:
@@ -523,51 +473,6 @@ def test_rejection_that_names_no_option_is_drift(
         return reject(call, "something is wrong")
 
     assert "x2_unattributed" in keys(run(dummy, rule=rule), "error")
-
-
-def test_rejection_inside_an_option_that_a_parameter_answers_is_information(
-    dummy: tuple[ManifestSpec, Path],
-) -> None:
-    report = run(dummy, rule=nested_rule, catalog=nested_catalog(), edit=nested_edit)
-
-    assert keys(report, "error") == [] and keys(report, "warning") == []
-    # the paths settings.resolution and settings.vertical_crs are routed like the
-    # plain options of the conforming tool
-    matrix = only(report, "x2_matrix")
-    assert matrix.args["params"] == "resolution, vertical_crs"
-    assert matrix.args["rejected"] == "2"
-
-
-def test_rejection_inside_an_option_that_no_parameter_answers_is_drift(
-    dummy: tuple[ManifestSpec, Path],
-) -> None:
-    def edit(manifest: ManifestSpec) -> None:
-        operation(manifest)["calls"] = "test_scaffold:unrouted_builder"
-
-    report = run(dummy, rule=nested_rule, catalog=nested_catalog(), edit=edit)
-
-    unroutable = only(report, "x2_unroutable")
-    assert unroutable.args["option"] == "settings.resolution, settings.vertical_crs"
-
-
-def test_rejection_of_an_option_the_call_lacks_inside_another_is_drift(
-    dummy: tuple[ManifestSpec, Path],
-) -> None:
-    def rule(call: CatalogCall) -> ToolError | None:
-        return reject(call, "the height is required", option="settings.height")
-
-    report = run(dummy, rule=rule, catalog=nested_catalog(), edit=nested_edit)
-
-    assert only(report, "x2_missing_option").args["option"] == "settings.height"
-
-
-def test_rejection_inside_an_option_the_tool_does_not_know_is_drift(
-    dummy: tuple[ManifestSpec, Path],
-) -> None:
-    # the catalog of the dummy tool has no option "settings"
-    report = run(dummy, rule=nested_rule, edit=nested_edit)
-
-    assert only(report, "x2_unknown_option").args["option"] == "settings.resolution"
 
 
 def test_failure_that_is_no_tool_error_is_reported(

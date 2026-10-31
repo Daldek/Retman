@@ -53,8 +53,7 @@ class CatalogCall:
     ``HandlerOutput.files``). ``params`` maps a tool option to the Retman
     parameter it came from where the names differ, e.g. ``{"sheet": "area",
     "horizontal_crs": "target_crs"}``; it routes a tool's rejection back to the
-    parameter the user must answer again. An option inside another option is
-    keyed by its path (``"options.years": "period"``, see ``ToolError``).
+    parameter the user must answer again.
     """
 
     command: str
@@ -158,9 +157,7 @@ class ToolError(RetmanError):
     ``code`` is the registry code it maps to (:func:`registry_code`) and
     ``details.reason`` keeps the tool's precision (``no_coverage``, ``no_marker``…).
     ``option``/``options`` name the tool options at fault and ``allowed`` what the tool
-    would accept there. An option inside the options a command takes of another command
-    is named by its path (``options.years``), so that ``CatalogCall.params`` can route
-    it like any other.
+    would accept there.
     ``detail`` and ``hint`` are the tool's own wording: the user sees Retman's text
     chosen by ``tool_code`` (see ``tool_error_text``). ``call`` is the command that
     raised (set by the generic runners when the client did not).

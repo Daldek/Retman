@@ -153,24 +153,6 @@ def _texts_of(value: object) -> list[str]:
     return [str(item) for item in items]
 
 
-def _carries(options: Mapping[str, object], path: str) -> bool:
-    """Whether the call gives the option; ``a.b`` is key ``b`` of the option ``a``.
-
-    Some commands take the options of another command as one option (``project
-    add``): a tool that names an option inside it uses the path.
-    """
-    if path in options:
-        return True
-    head, _, rest = path.partition(".")
-    nested = options.get(head)
-    return bool(rest) and isinstance(nested, Mapping) and _carries(nested, rest)
-
-
-def _outermost(path: str, options: Mapping[str, object]) -> str:
-    """Return the option of the command itself a path begins with (``a`` of ``a.b``)."""
-    return path if path in options else path.partition(".")[0]
-
-
 class _Validator:
     """The tool's offline verdict per call, asked once for each distinct call."""
 
@@ -427,7 +409,7 @@ class _Engine:
                     detail=_brief(error.detail),
                 )
                 return ()
-            if not _carries(call.options, option):
+            if option not in call.options:
                 self.add(
                     "X2",
                     "error",
@@ -439,7 +421,7 @@ class _Engine:
                     point=point,
                 )
                 return ()
-            if _outermost(option, call.options) not in known:
+            if option not in known:
                 self.add(
                     "X2",
                     "error",

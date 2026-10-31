@@ -86,7 +86,6 @@ invalid_query = "Give part of a station or river name (at least two letters)."
 invalid_synop_station = "Give a 5-digit synoptic station code or part of its name."
 invalid_variable = "Unknown variable. Give a code (e.g. H, Q, T, P) or a name (e.g. “flow”)."
 variable_not_in_dataset = "The selected dataset does not contain this variable; choose a variable from its list."
-invalid_identifier = "The task name may contain only lowercase letters a–z, digits, “_” and “-” (up to 64 characters) and must start with a letter or digit."
 invalid_years = "Years must be whole numbers (e.g. “2000–2020” or “2010, 2012, 2015”), given in ascending order without repeats."
 years_out_of_range = "The year is outside the data range: from 1887 to the current year."
 years_order = "The first year of the range cannot be later than the last."
@@ -114,9 +113,6 @@ fragment = "phrase “{text}” (from “{raw}”)"
 [extractors.synop_station]
 code = "synoptic station with code {code}"
 name = "synoptic station whose name contains “{name}” (from “{raw}”)"
-
-[extractors.identifier]
-name = "name “{name}”"
 
 # Readings of the period and year type (src/retman/extractors/dates.py). The single-year and single-day texts
 # receive the same arguments as the range texts ({first}, {last} and {start}, {end}).

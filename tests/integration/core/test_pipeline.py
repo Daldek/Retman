@@ -380,31 +380,31 @@ def test_an_optional_parameter_left_unset_is_said_in_the_plan(cutout_app):
     plan = app.plan(
         "Daj NMT z x=530000 y=382000 x=530100 y=382100 w 2180, przelicz do 3045"
     )
-    named = app.plan(
+    masked = app.plan(
         "Daj NMT z x=530000 y=382000 x=530100 y=382100 w 2180, przelicz do 3045, "
-        'nazwij "wycinek_a"'
+        "przytnij do maska_a.shp"
     )
 
     assert not plan.questions
-    assert "name" not in plan.values
+    assert "mask" not in plan.values
     assert (
-        "Nazwa wycinka: bez nazwy (nazwa pliku z prostokąta) ← nie podano w "
+        "Maska wycinka: bez maski (cały prostokąt) ← nie podano w "
         "poleceniu, parametr nieobowiązkowy"
     ) in plan.summary().splitlines()
     assert Plan.from_dict(plan.to_dict()).unset == plan.unset
-    assert named.values["name"].value == "wycinek_a"
-    assert "bez nazwy" not in named.summary()
+    assert masked.values["mask"].value == "maska_a.shp"
+    assert "bez maski" not in masked.summary()
     # An unset parameter can still be chosen with "z"
-    changed = plan.change("name")
-    assert [question.name for question in changed.questions] == ["name"]
-    answered = changed.answer("name", "wycinek_b")
-    assert answered.values["name"].value == "wycinek_b"
-    assert "name" not in answered.unset
+    changed = plan.change("mask")
+    assert [question.name for question in changed.questions] == ["mask"]
+    answered = changed.answer("mask", "maska_b.shp")
+    assert answered.values["mask"].value == "maska_b.shp"
+    assert "mask" not in answered.unset
     app.execute(plan.confirm())
     record = json.loads(
         (app.workspace.root / "001_cut_dem" / "result.json").read_text("utf-8")
     )
-    assert record["unset"] == {"name": "bez nazwy (nazwa pliku z prostokąta)"}
+    assert record["unset"] == {"mask": "bez maski (cały prostokąt)"}
 
 
 def test_system_of_the_rectangle_is_not_taken_for_the_result(cutout_app):

@@ -167,3 +167,18 @@ GitHub. The head keeps a position whose check failed as `check_failed` in a plai
 flushes stray stdout of the MCP server to stderr; Retman plans and writes only in the store
 (`root` from `[retman.tools.kartograf] store_dir`) and calls no MCP server, so nothing in Retman
 changes.
+
+**Erratum 5 (2026-10-31, Kartograf `8ad55ab6`, Nogat ECO-054):** the pin is now Kartograf
+`8ad55ab67b1e6e2e2ef3eb52cb6930ed92fecc06`, the head of its branch `feature/archiwista-projects`,
+which is on GitHub. The tool keeps no projects (Archiwista keeps them): the `project` commands and
+family, their documents, `ProjectLockedError`, the notice `project_geometry_changed`,
+`parse_command(tasks=)` and `check=` of `outcome_of` and `exit_code_of` are gone. Retman's
+operations used none of them, so they are unchanged. X9 of erratum 2 lists 10 commands (no
+`project *`), the reader of `retman scaffold` takes the check of every command as a plan (there is
+no project report any more), and the path of an option inside another option
+(`options.<name>` in `ToolError.option` and `CatalogCall.params`, checked by X2), which only the
+IMGWTools `project add` used, is removed. The head also adds `store_state()` and
+`command_for_file()` (error `CommandNotRebuildableError`, `unsupported`), which Retman does not
+call, and reports a marker whose read fails as `io_error`; a marker that is no JSON stays
+`invalid_layout`, and `tests/unit/test_stores.py` holds `kartograf_store_state` against the check
+of the tool.

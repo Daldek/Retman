@@ -86,7 +86,6 @@ invalid_query = "Podaj fragment nazwy stacji albo rzeki (co najmniej dwie litery
 invalid_synop_station = "Podaj 5-cyfrowy kod stacji synoptycznej albo fragment jej nazwy."
 invalid_variable = "Nieznana zmienna. Podaj kod (np. H, Q, T, P) albo nazwę (np. „przepływ”)."
 variable_not_in_dataset = "Wybrany zbiór danych nie zawiera tej zmiennej; wybierz zmienną z jego listy."
-invalid_identifier = "Nazwa zadania może mieć tylko małe litery a–z, cyfry, „_” i „-” (do 64 znaków) i zaczynać się od litery lub cyfry."
 invalid_years = "Lata muszą być liczbami całkowitymi (np. „2000–2020” albo „2010, 2012, 2015”), podanymi rosnąco i bez powtórzeń."
 years_out_of_range = "Rok jest poza zakresem danych: od 1887 do bieżącego roku."
 years_order = "Pierwszy rok zakresu nie może być późniejszy niż ostatni."
@@ -114,9 +113,6 @@ fragment = "fraza „{text}” (z „{raw}”)"
 [extractors.synop_station]
 code = "stacja synoptyczna o kodzie {code}"
 name = "stacja synoptyczna o nazwie zawierającej „{name}” (z „{raw}”)"
-
-[extractors.identifier]
-name = "nazwa „{name}”"
 
 # Odczyty okresu i typu roku (src/retman/extractors/dates.py). Teksty pojedynczego roku i dnia
 # dostają te same argumenty co teksty zakresów ({first}, {last} oraz {start}, {end}).

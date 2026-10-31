@@ -105,11 +105,11 @@ options.epsg_2180.label = "PL-1992"
 options.epsg_5514.label = "S-JTSK"
 options.epsg_3045.label = "ETRS89 / UTM 33N"
 
-[operations.cut_dem.params.name]
-label = "Nazwa wycinka"
-question = "Jak nazwać wycinek?"
-example = "wycinek_poznan"
-unset = "bez nazwy (nazwa pliku z prostokąta)"
+[operations.cut_dem.params.mask]
+label = "Maska wycinka"
+question = "Którym plikiem przyciąć wycinek?"
+example = "maska.shp"
+unset = "bez maski (cały prostokąt)"
 
 # Teksty ze zwracanych kodów błędów narzędzia ({detail}, {option_label}, {allowed})
 [errors]

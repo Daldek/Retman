@@ -36,11 +36,6 @@ from retman.extractors.dates import (
     validate_year_type,
     validate_years,
 )
-from retman.extractors.identifiers import (
-    extract_identifiers,
-    read_identifier_answer,
-    validate_identifier,
-)
 from retman.extractors.numbers import (
     describe_duration,
     extract_duration,
@@ -99,7 +94,6 @@ EXTRACTORS: dict[str, Reader] = {
     "crs": extract_crs,
     "duration": extract_duration,
     "grid_cell": extract_grid_cell,
-    "identifier": extract_identifiers,
     "path": extract_paths,
     "place_query": extract_place_query,
     "point": extract_point,
@@ -114,7 +108,6 @@ ANSWER_EXTRACTORS: dict[str, Reader] = {
     "crs": read_crs_answer,
     "duration": read_duration_answer,
     "grid_cell": read_grid_cell_answer,
-    "identifier": read_identifier_answer,
     "place_query": read_place_query_answer,
     "point": read_point_answer,
     "probability": read_probability_answer,
@@ -126,7 +119,6 @@ VALIDATORS: dict[str, Callable[[Any], str | None]] = {
     "crs": validate_crs,
     "duration": validate_duration,
     "grid_cell": validate_grid_cell,
-    "identifier": validate_identifier,
     "path": validate_path,
     "place_query": validate_place_query,
     "point": validate_point,

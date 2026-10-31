@@ -175,8 +175,8 @@ def test_validate_manifest_reports_missing_language_option_and_example(dummy):
         )
     # An optional parameter the plan cannot explain when left unset (N-11)
     no_unset = tomllib.loads((folder / "pl.toml").read_text(encoding="utf-8"))
-    del no_unset["operations"]["cut_dem"]["params"]["name"]["unset"]
-    with pytest.raises(ManifestError, match="params.name.unset"):
+    del no_unset["operations"]["cut_dem"]["params"]["mask"]["unset"]
+    with pytest.raises(ManifestError, match="params.mask.unset"):
         validate_manifest(manifest, {"pl": Texts(no_unset, "no unset text")})
 
 

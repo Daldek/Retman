@@ -35,7 +35,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   (ADR-017, ARCHITECTURE 3.4).
 - Extractors: station (offline, from the catalog of the IMGW store), years, period, kind of
   year (calendar or hydrological, always a question when not given), point (WGS84 and
-  PL-1992), PMAXTP grid cell, probability, duration, variables, task name; a SHP or GPKG
+  PL-1992), PMAXTP grid cell, probability, duration, variables; a SHP or GPKG
   geometry file as an area, with a question about the GeoPackage layer (ADR-016, ADR-017).
 - Area extractors (map sheet code in PL-1992 or PL-2000, rectangle with recognition of the
   coordinate system and of the axis order, TERYT code, geometry file), and extractors of paths
@@ -275,6 +275,12 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   A command whose run is read-only in `command_schema` (the source listings, the availability
   reports, `store overview`, `sheet`, `config show`) is no data command for the scaffold; the
   list went from 41 to 14 commands (ADR-025 erratum 2).
+- The `tools` group pins Kartograf `8ad55ab6`, the head of its branch
+  `feature/archiwista-projects`, which is on GitHub; the supported range stays
+  `>=0.8.0.dev0,<0.9`. Kartograf keeps no projects any more (Nogat ECO-054); Retman's Kartograf
+  operations used none, so they are unchanged. `retman scaffold check --tool kartograf` lists 10
+  data commands under X9 (no `project *`) and takes the check of every command as a plan
+  (ADR-025 erratum 5).
 
 ### Removed
 
@@ -292,5 +298,10 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `4bf8bb0d`, the head of its `feature/archiwista-projects`, and the tool's new error code
   `unsupported` has its text. Migration: keep a project in Archiwista; Retman still downloads,
   checks and synchronises the IMGW store (ARCHITECTURE 3.2.11).
+- The task name extractor `identifier` and its text `extractors.errors.invalid_identifier`: its
+  only user was the IMGWTools project task (ADR-017 erratum 2).
+- The path of an option inside another option (`options.<name>` in `ToolError.option` and in
+  `CatalogCall.params`, which X2 of `retman scaffold check` followed into the option): only the
+  IMGWTools `project add` carried the options of another command (ADR-025 erratum 5).
 
 [Unreleased]: https://github.com/Daldek/Retman/commits/develop

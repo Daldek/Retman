@@ -156,7 +156,7 @@ def test_kartograf_unexposed_commands_are_the_ones_whose_run_has_effects(
 
     (finding,) = [f for f in report.findings if f.check == "X9"]
     unexposed = finding.args["commands"].split(", ")
-    assert "soil hsg" in unexposed and "project init" in unexposed
+    assert "soil hsg" in unexposed and "cache clear" in unexposed
     assert not {
         "elevation list-sources",
         "elevation availability",

@@ -50,11 +50,11 @@ def test_extractor_known_covers_both_registries() -> None:
 def test_plain_extractors_are_read_without_looking_at_the_context() -> None:
     context = make_context()
 
-    [match] = read_command("identifier", 'dodaj zadanie "opady"', context)
+    [match] = read_command("crs", "przelicz do 2180", context)
 
-    assert match.readings[0].value == "opady"
-    assert validate_value("identifier", "opady", context) is None
-    assert validate_value("identifier", "Opady", context) is not None
+    assert match.readings[0].value == "EPSG:2180"
+    assert validate_value("crs", "EPSG:2180", context) is None
+    assert validate_value("crs", "2180", context) is not None
 
 
 def test_context_extractors_get_the_context() -> None:
@@ -93,7 +93,7 @@ def test_hint_comes_only_from_extractors_that_have_one() -> None:
 
     assert hint is not None
     assert hint.key == "extractors.hints.station_no_catalog"
-    assert explain_missing("identifier", "zadanie", context) is None
+    assert explain_missing("crs", "układ", context) is None
 
 
 def test_values_are_described_by_extractor_name() -> None:
@@ -112,7 +112,7 @@ def test_values_are_described_by_extractor_name() -> None:
         "POZNAŃ-ŁAWICA (meteo, IMGW-PIB, kod 352160330)"
     )
     assert describe_value("area", {"type": "sheet", "code": "N-34"}, texts) is None
-    assert describe_value("identifier", "opady", texts) is None
+    assert describe_value("crs", "EPSG:2180", texts) is None
 
 
 def _string_constants(path: Path) -> Iterator[str]:

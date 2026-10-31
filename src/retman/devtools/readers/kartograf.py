@@ -32,7 +32,7 @@ _CHECK = "check"
 
 
 def _run_options(kartograf: ModuleType) -> frozenset[str]:
-    """Return the names a run takes besides the task options: store, plan, workers...
+    """Return the names a run takes besides the data options: store, plan, workers...
 
     The catalog lists every argument of the library function of a command; the
     arguments of ``run_command`` and ``check_command`` other than the command and its
@@ -67,14 +67,13 @@ def _example_options(kartograf: ModuleType, call: str) -> Mapping[str, object] |
 
 
 def read_catalog() -> ToolCatalog:
-    """Kartograf's catalog: every command with its task options and effects.
+    """Kartograf's catalog: every command with its data options and effects.
 
     The command layer (``validate_command``, ``run_command``, ``check_command``) takes
     every command of the catalog; a command is ``data`` for the scaffold when its run
     has effects (``effects.read_only`` is false in ``command_schema``), so the source
     listings, the store reads, ``sheet`` and ``config show`` are not unused data
-    commands. The check of a project is the report of its tasks, every other check a
-    plan.
+    commands. The check of a command is a plan.
     """
     kartograf = importlib.import_module("kartograf")
     listed = kartograf.list_commands().to_dict()
@@ -86,7 +85,7 @@ def read_catalog() -> ToolCatalog:
     commands: dict[str, CommandInfo] = {}
     for name, entry in entries.items():
         effects = entry["effects"]
-        has_plan = bool(entry["check"]) and "project" not in entry["families"]
+        has_plan = bool(entry["check"])
         commands[name] = CommandInfo(
             id=name,
             group=name.split()[0],
