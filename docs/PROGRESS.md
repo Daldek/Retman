@@ -11,7 +11,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-025) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
-| Kartograf 0.8.0 adapter (5 operations), IMGWTools 3.0.0 adapter (19 operations, two-stage recognition) | done | the `tools` group pins `8ad55ab6` (Kartograf) and `4bf8bb0d` (IMGWTools), the heads of their `feature/archiwista-projects`, both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist; the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
+| Kartograf 0.8.0 adapter (5 operations), IMGWTools 3.0.0 adapter (19 operations, two-stage recognition) | done | the `tools` group pins `8ad55ab6` (Kartograf) and `4bf8bb0d` (IMGWTools) of their `feature/archiwista-projects`, both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist; Kartograf's head is now `26ee4592` (ADR-058, geometry selection and GeoJSON, not used by Retman's operations), so Retman re-pins before the release (Next 3); the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
 | Extractors | in progress | missing: numbers with units; the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
@@ -23,7 +23,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Nogat standard 2.1, English texts (DEV-2.2, AGI-9.2) | done | `en.toml` for the core and both adapters, `lang = en` and `--lang en`, the answer words in `[answers]`, English texts in the `--json` documents of `doctor check` and `scaffold check` (ADR-022 erratum 1) |
 | Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13), the CHANGELOG, the decision log, README, USAGE, PRD and ARCHITECTURE in English (the README examples run by `tests/contract/test_readme_examples.py`, DOC-2.1, DOC-2.6); open: Next 1.5 (`docs/research/`, `docs/specs/`) |
 | Gate | green | `scripts/gate.sh`: the offline tests, coverage 95%, ruff, mypy strict; run it with `TMPDIR` on a local disk (a network share breaks SQLite and links) |
-| CI (Linux, macOS, Windows) | written, not run | `.github/workflows/ci.yml` and `live.yml`; nothing is pushed |
+| CI (Linux, macOS, Windows) | written, not run | `.github/workflows/ci.yml` and `live.yml`; no run observed yet |
 
 Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 
@@ -33,7 +33,7 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 | Rulesets for `main`, `develop` and `v*` tags, private vulnerability reporting, Dependabot security updates, default branch (DEV-3.6, DEV-13.6, DEV-13.7) | GitHub settings |
 | `docs/CLA.md` | the author's legal text; `CONTRIBUTING.md` and the pull request template already refer to it |
 | Tags, releases, replacing the commit pins of the `tools` group by tags, PyPI name `nogat-retman` (phases 5 and 6) | need the producers' tags and the author's approval |
-| Push of `chore/nogat-2.1`, `feature/imgwtools-data-output`, `feature/kartograf-data-output` and `feature/archiwista-projects`, pull request, merge into `develop` | approvals (DEV-3.3) |
+| Pull request and merge of `feature/archiwista-projects` (pushed at `5c3be44`, gate green; it carries `chore/nogat-2.1`, `feature/imgwtools-data-output` and `feature/kartograf-data-output`) into `develop` | approvals (DEV-3.3) |
 
 ## Next
 
@@ -70,8 +70,8 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
    - **Kartograf: done (the calls, the marker states, the operation that writes the marker, the
      documents, ADR-025); projects are gone (Nogat ECO-054, plan
      `2026-10-31-archiwista-projects` step 4).** The `tools` group pins
-     `8ad55ab67b1e6e2e2ef3eb52cb6930ed92fecc06`, the head of Kartograf
-     `feature/archiwista-projects`, which is on GitHub. Retman's Kartograf operations used no
+     `8ad55ab67b1e6e2e2ef3eb52cb6930ed92fecc06` of Kartograf `feature/archiwista-projects`,
+     which is on GitHub (its head is now `26ee4592`, see Next 3). Retman's Kartograf operations used no
      project command; with projects the task name extractor and the path of an option inside
      another option went too (ADR-025 erratum 5, ADR-017 erratum 2). Done: `root=` and `--root` (client and `DownloadManager(provider,
      root=...)`), the `kartograf-result/1` envelope and its `files[]`, the command ids `sheet
@@ -89,15 +89,16 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      is removed (ADR-025 erratum 1). The 16 eval rows of that operation are written, but
      `retman eval run` has not run on them (it needs a model server), and the ambiguous rows
      `imgw-init-store-014` and `-015` now expect IMGW after a question about the operation.
-3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
-   `v3.0.0` once they exist (REL-5.3), and in the same change narrow the `supported_versions` of
-   both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test of the IMGWTools manifest
-   pins the string), run `uv lock` and the gate.
+3. Re-pin Kartograf to the head of its `feature/archiwista-projects` (`26ee4592` or later)
+   before the release, then replace the commit pins of the `tools` group in `pyproject.toml` by
+   the tags `v0.8.0` and `v3.0.0` once they exist (REL-5.3), and in the same change narrow the
+   `supported_versions` of both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test
+   of the IMGWTools manifest pins the string), run `uv lock` and the gate.
 4. Review `src/retman/eval/commands.jsonl` (501 commands, an agent draft), run `retman-eval`
    with Bielik 11B on it (two-stage recognition, `0_5m` against `5m`), then set the confidence
    thresholds.
 5. Live tests of IMGWTools (none in the `live` set), a smoke run of the CLI on Windows and
-   macOS (hard-link stores), the first CI run after the push.
+   macOS (hard-link stores), the first CI run.
 6. Complete `docs/specs/2026-10-11-retman-eval.md`: geometry placeholder files, the offline
    station catalog, optional parameters never in `expect_clarify`.
 7. `retman collect export` and `retman collect draft` (ADR-011) when the author decides.
