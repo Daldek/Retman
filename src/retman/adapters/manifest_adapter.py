@@ -1,6 +1,7 @@
 """Generic adapter from a validated manifest to a tool's handlers, previews, checks."""
 
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,7 @@ from retman.adapters.catalog import (
 from retman.core.check import CheckReport, CheckStatus
 from retman.core.journal import utc_now
 from retman.core.result import Result
-from retman.exceptions import ManifestError, error_document
+from retman.exceptions import ErrorCode, ManifestError, error_document
 from retman.i18n.loader import Texts
 from retman.kinds import validate_file
 from retman.registry.manifest import (
@@ -33,10 +34,16 @@ _CHECK_STATUSES = ("available", "partial", "unavailable", "unknown")
 
 @dataclass(frozen=True)
 class ResolvedProblem:
-    """A problem of the plan: the parameters to ask again and the text shown."""
+    """A problem of the plan: the parameters to ask again and the text shown.
+
+    A problem without parameters carries the registry ``code`` and the
+    ``details`` (``reason``, ``path``) of the error that ends planning.
+    """
 
     params: tuple[str, ...]
     text: str
+    code: ErrorCode | None = None
+    details: Mapping[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -233,9 +240,20 @@ def preview_operation(
                 f"{operation.id}: preview problem {problem['key']} names "
                 f"{problem['params']}, which are not parameters of the operation"
             )
+        if not problem["params"] and ("code" not in problem or "reason" not in problem):
+            raise ManifestError(
+                f"{operation.id}: preview problem {problem['key']} names no "
+                "parameter, so it needs the code and the reason of its error"
+            )
+        details = {"reason": problem["reason"]} if "reason" in problem else {}
+        if "path" in problem["args"]:
+            details["path"] = problem["args"]["path"]
         problems.append(
             ResolvedProblem(
-                tuple(problem["params"]), _problem_text(operation, texts, problem)
+                tuple(problem["params"]),
+                _problem_text(operation, texts, problem),
+                problem.get("code"),
+                details,
             )
         )
     rows = [

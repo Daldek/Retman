@@ -300,7 +300,11 @@ def test_a_plan_into_a_store_kartograf_refuses_stops_with_the_way_out(
     with pytest.raises(RetmanError) as caught:
         app.plan("Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4")
 
-    assert caught.value.code == "validation_error"
+    assert (caught.value.code, caught.value.details["reason"]) == (
+        "store_unavailable",
+        "no_marker",
+    )
+    assert caught.value.details["path"] == str(store)
     assert "Utwórz magazyn Kartografa" in (caught.value.text or "")
     assert client.network == []
     assert not (store / "kartograf-store.json").exists()

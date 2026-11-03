@@ -380,7 +380,13 @@ operation being planned or executed — so that a handler can hand plain catalog
    (`result.json["preview"]`), `rows` are additional plan rows (marked
    `← podgląd, bez sieci` ("← preview, no network"); texts `[preview.<key>]`), `problems` are
    further reasons to ask again (a non-empty list of operation parameters and a text key from
-   `[problems.<key>]`).
+   `[problems.<key>]`). A problem with an empty list blocks the plan (a store that is missing or
+   refused): no answer solves it, so it names the registry `code` and `reason` of the error that
+   ends planning, with its text and `details.path` (`store_unavailable` with the reasons of
+   `retman doctor check`, `not_initialised` for an Obserwator store not created yet;
+   `missing_dependency`, `pyarrow_missing`). A blocking problem without a `code` is a
+   `ManifestError`; a value given with the command that the tool refuses stays
+   `validation_error` (`invalid_known_value`).
 
 For areas from a geometry file the preview shows e.g. the bounding box and the number of map
 sheets, which Retman computes with the tool's public offline functions, so the plan says what the

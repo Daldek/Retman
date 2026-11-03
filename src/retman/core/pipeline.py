@@ -1017,7 +1017,9 @@ class Retman:
         value is dropped and ``plan.reopened`` keeps ``_populate`` from deriving
         it from the command a second time. Fixed (``known``) values and
         parameters without a value cannot be reopened; when nothing can be, the
-        plan could never become confirmable, so this raises instead of looping.
+        plan could never become confirmable, so this raises instead of looping:
+        the error a problem without parameters names (a store that is missing or
+        refused), else the one of a value given with the command.
         """
         reopened: dict[str, str] = {}
         for problem in preview.problems:
@@ -1025,6 +1027,15 @@ class Retman:
                 if name in plan.values and name not in plan.known:
                     reopened.setdefault(name, problem.text)
         if not reopened:
+            blocking = next((p for p in preview.problems if not p.params), None)
+            if blocking is not None:
+                raise RetmanError(
+                    f"The plan of {operation.id} is blocked "
+                    f"({blocking.details.get('reason')}); no answer can change that",
+                    code=blocking.code,
+                    details=blocking.details,
+                    text=blocking.text,
+                )
             raise _invalid_known(
                 next(iter(preview.problems[0].params), None), preview.problems[0].text
             )

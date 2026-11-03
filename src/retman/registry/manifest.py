@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict
 
+from retman.exceptions import ErrorCode
 from retman.i18n.loader import Texts
 
 ParamType = Literal["choice", "free", "bool"]
@@ -199,12 +200,17 @@ class PreviewProblem(TypedDict):
     the tool's ``[problems]`` table, ``args`` fills its ``{placeholders}``. An
     empty ``params`` is a blocking problem no answer can solve (a store that
     does not exist): when nothing else can be asked again, planning stops with
-    the text of the problem as its error.
+    the text of the problem as its error, whose registry ``code`` and
+    ``reason`` the problem names (both required when ``params`` is empty, e.g.
+    ``store_unavailable`` / ``not_initialised``); ``args["path"]`` becomes
+    ``details.path`` of that error.
     """
 
     params: list[str]
     key: str
     args: dict[str, str]
+    code: NotRequired[ErrorCode]
+    reason: NotRequired[str]
 
 
 class PreviewOutput(TypedDict):

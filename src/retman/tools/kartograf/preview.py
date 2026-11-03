@@ -26,14 +26,15 @@ def _empty() -> PreviewOutput:
     return {"values": {}, "rows": [], "problems": []}
 
 
-# The problem of the plan for each state of a store folder that Kartograf refuses
+# The problem of the plan and the reason of its ``store_unavailable`` (the reasons of
+# ``retman doctor check``) for each state of a store folder that Kartograf refuses
 _STORE_PROBLEMS = {
-    "no_marker": "store_no_marker",
-    "foreign": "store_not_kartograf",
-    "not_a_directory": "store_not_kartograf",
-    "unreadable": "store_marker_unreadable",
-    "unsupported": "store_unsupported",
-    "nested": "store_nested",
+    "no_marker": ("store_no_marker", "no_marker"),
+    "foreign": ("store_not_kartograf", "foreign_folder"),
+    "not_a_directory": ("store_not_kartograf", "not_a_directory"),
+    "unreadable": ("store_marker_unreadable", "marker_unreadable"),
+    "unsupported": ("store_unsupported", "marker_unsupported"),
+    "nested": ("store_nested", "nested_store"),
 }
 
 
@@ -43,13 +44,23 @@ def store_problems(ctx: ToolContext, found: KartografStore) -> list[PreviewProbl
     A missing or an empty folder is marked by the first write, so only a layout without
     its marker, a folder with other files, a marker that cannot be used and a store in
     another store are problems. Each blocks the plan and names no parameter: the folder
-    is a matter of the configuration, not of an answer.
+    is a matter of the configuration, not of an answer, and planning ends with
+    ``store_unavailable``.
     """
-    key = _STORE_PROBLEMS.get(found.state)
-    if key is None:
+    refusal = _STORE_PROBLEMS.get(found.state)
+    if refusal is None:
         return []
+    key, reason = refusal
     args = {"path": str(ctx.store_dir), "schema": found.detail, "other": found.detail}
-    return [{"params": [], "key": key, "args": args}]
+    return [
+        {
+            "params": [],
+            "key": key,
+            "args": args,
+            "code": "store_unavailable",
+            "reason": reason,
+        }
+    ]
 
 
 def _refused(ctx: ToolContext) -> PreviewOutput | None:
