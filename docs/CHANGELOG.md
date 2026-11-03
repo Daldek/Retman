@@ -1,158 +1,307 @@
 # Changelog
 
-Wszystkie istotne zmiany w projekcie są dokumentowane w tym pliku.
+All notable changes to this project are documented in this file.
 
-Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/),
-projekt stosuje [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
+uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). An entry says what changed
+for the user and refers to ADRs, PRD requirements and ARCHITECTURE sections in parentheses;
+a breaking change is marked **Breaking** and carries its migration. Release 0.1.0 is not
+tagged yet, and `develop` carries `0.1.0.dev0`.
 
-<!--
-Szablon wydania — nowe wydanie dodawaj nad poprzednimi; puste podsekcje pomijaj.
-Zmiany w trakcie cyklu trafiają do sekcji `## [X.Y.Z] - Unreleased`, która przy
-wydaniu dostaje datę. Każda pozycja: co się zmieniło z punktu widzenia użytkownika,
-z odsyłaczem (ADR-XXX, PRD W-xx, ARCHITECTURE p. X.Y).
+## [Unreleased]
 
-## [X.Y.Z] - RRRR-MM-DD
+### Added
 
-### Zmiany łamiące (BREAKING)
-
-- ...
-
-### Dodane
-
-- ...
-
-### Zmienione
-
-- ...
-
-### Usunięte
-
-- ...
-
-### Naprawione
-
-- ...
-
-### Przejście z X.Y.Z
-
-- ...
-
-Linki porównań na końcu pliku, od najnowszego:
-
-[X.Y.Z]: https://github.com/Daldek/Retman/compare/vX.Y.W...vX.Y.Z
-[0.1.0]: https://github.com/Daldek/Retman/releases/tag/v0.1.0
--->
-
-## [0.1.0] - Unreleased
-
-### Dodane
-
-- Dokumentacja projektu: wymagania produktowe (`docs/PRD.md`), architektura
-  (`docs/ARCHITECTURE.md`), standardy deweloperskie
-  (`docs/DEVELOPMENT_STANDARDS.md`), rejestr decyzji, dziennik postępu
-  i ten changelog; `README.md`, `CLAUDE.md`, licencja MIT.
-- Pakiet `retman` (Python ≥ 3.12, ADR-002) z zależnością podstawową `httpx` (ADR-005).
-- Plik centralny `retman.toml`: szablon z komentarzami, `retman init`, walidacja
-  wszystkich ustawień naraz; progi `"auto"` odrzucane poza backendem basal
+- Project documentation: product requirements (`docs/PRD.md`), architecture
+  (`docs/ARCHITECTURE.md`), the user guide (`docs/USAGE.md`), the decision log, the progress
+  file and this changelog; `README.md`, `CLAUDE.md`, the MIT licence.
+- The `retman` package (Python 3.12 or newer, ADR-002) with `httpx` as its core dependency
+  (ADR-005).
+- Settings with a commented template written by `retman config init`, validation of all
+  settings at once, and thresholds `"auto"` that are rejected outside the basal backend
   (ARCHITECTURE 6.2, 9.1).
-- Cztery operacje Kartografa 0.8.0 (ADR-001, ADR-012, ADR-013): NMT dla arkusza albo pliku
-  geometrii (wszystkie siatki ASC: 0,15; 0,5; 0,6; 1; 5; 10 m oraz 100 m jako ZIP
-  województwa), arkusze potomne NMT/NMPT/ortofotomapy (NMPT 0,5; 0,6; 1 m z układem
-  wysokościowym; ortofotomapa RGB, CIR albo B-W), wycinek NMT/NMPT 1 m dla prostokąta albo
-  pliku geometrii, BDOT10k dla powiatu, arkusza, prostokąta albo pliku geometrii, w
-  GeoPackage albo Shapefile.
-- Wszystkie operacje IMGWTools 3.0.0 z ČHMÚ — 26 operacji w 6 kategoriach: wyszukiwanie
-  i katalog stacji, dane bieżące i ostrzeżenia, PMAXTP, szeregi stacji, archiwa i magazyn,
-  projekty danych (ADR-017, PRD 7.2).
-- Rozpoznawanie dwustopniowe (kategoria, potem operacja), gdy operacji jest więcej niż 9
+- Five Kartograf 0.8.0 operations (ADR-001, ADR-012, ADR-013): DEM for a map sheet or a
+  geometry file (all ASC grids: 0.15, 0.5, 0.6, 1, 5 and 10 m, and 100 m as a ZIP per
+  voivodeship); child sheets of DEM, DSM and orthophoto (DSM at 0.5, 0.6 and 1 m with a
+  vertical datum; orthophoto in RGB, CIR or B-W); a 1 m DEM or DSM cutout for a rectangle or a
+  geometry file; BDOT10k for a county, a sheet, a rectangle or a geometry file, as GeoPackage
+  or Shapefile; and the creation of the store ("Utwórz magazyn Kartografa", `kartograf store
+  init`: it writes the store marker into a new or an empty folder, or into a layout that has
+  lost it, after the tool has checked the layout; ECO-051).
+- All IMGWTools 3.0.0 operations, ČHMÚ included: 19 operations in 5 categories (station
+  search and catalog, current data and warnings, PMAXTP, station series, archives and the
+  store; ADR-017, PRD 7.2).
+- Two-stage recognition (category, then operation) when there are more than 9 operations
   (ADR-017, ARCHITECTURE 3.4).
-- Ekstraktory: stacja (offline z katalogu magazynu IMGW), lata, okres, rodzaj roku
-  (kalendarzowy/hydrologiczny — zawsze pytanie, gdy niepodany), punkt (WGS84 i PL-1992),
-  komórka siatki PMAXTP, prawdopodobieństwo, czas trwania, zmienne, nazwa zadania; plik
-  geometrii SHP/GPKG jako obszar z pytaniem o warstwę GeoPackage (ADR-016, ADR-017).
-- Rodzaje danych `dem`, `dsm`, `orthophoto`, `topographic_vector`, `dem_archive`,
-  `area_geometry` i 13 rodzajów IMGWTools, z walidacją per rodzaj (ADR-004, ARCHITECTURE
-  3.2.6).
-- Podgląd planu offline: każde wywołanie sprawdza walidacja narzędzia przed potwierdzeniem,
-  a odrzucona wartość wraca jako pytanie; wiersze podglądu (np. liczba arkuszy) w planie
-  (ADR-014, PRD N-12).
-- Sprawdzenie dostępności jako osobny krok: odpowiedź `s` w planie, własna zgoda, raport
-  bez pobierania i bez numeru wyniku; `Retman.check()`, `plan.confirm_check()` (ADR-014,
-  PRD W-17, ARCHITECTURE 6.5).
-- Magazyny narzędzi w `[tools.kartograf]` i `[tools.imgwtools]`; `retman init` tworzy
-  sąsiednie foldery, sprawdza dowiązania twarde i za zgodą inicjuje magazyn IMGW; wyniki
-  wskazują pliki magazynu ścieżką i SHA-256 (ADR-015).
-- `retman doctor`: magazyny, dowiązania twarde w obu magazynach, sonda zapisu IMGW
-  (`--deep`), lekka kontrola zgodności manifestów z zainstalowanymi narzędziami.
-- `retman-scaffold list | draft | --check`: szkice manifestów z katalogów narzędzi i
-  kontrola rozjazdów przez walidację narzędzia offline, z kontrolą pokrycia opcji (ADR-019).
-- Zbiór `retman/eval/commands.jsonl`: 614 poleceń (Kartograf, IMGWTools, spoza zakresu
-  i bliskie zakresowi), z walidacją wpisów na tym samym kodzie ekstraktorów co planowanie;
-  pliki geometrii zastępcze i katalog stacji offline przy planowaniu zbioru (ARCHITECTURE 8.1).
-- Parametry nieobowiązkowe, których polecenie nie podało, mają w planie wiersz z tym, co oznacza
-  ich brak (np. „wszystkie rodzaje stacji”), można je zmienić odpowiedzią `z`, a `result.json`
-  zapisuje je w `unset` (N-11, ARCHITECTURE 6.3).
-- Wiele uwag narzędzia o tym samym kodzie w jednym wywołaniu: wynik pokazuje pierwsze trzy
-  i liczbę pozostałych; pełna lista zostaje w `tool_*.json` (ARCHITECTURE 4.2).
-- Ekstraktory obszaru (godło PL-1992/PL-2000, prostokąt z rozpoznaniem układu i kolejności
-  osi, kod TERYT, plik geometrii), ścieżek i numerów wyników; zapisy niejednoznaczne
-  wywołują pytanie (ARCHITECTURE 6.1).
-- Backend decyzyjny `openai_compatible` (np. LM Studio): wymuszony format odpowiedzi,
-  pewność z `logprobs` albo ze zgodności kilku odpowiedzi (ARCHITECTURE 3.3.3).
-- Rdzeń: rozpoznanie operacji, dopytywanie (jedno pytanie naraz, odpowiedź numerem albo
-  własnymi słowami), plan ze źródłem każdej wartości, obowiązkowe potwierdzenie
-  (`PlanNotConfirmedError`), numerowane wyniki z `result.json` i danymi audytowymi,
-  dziennik `journal.jsonl` (ARCHITECTURE 5–7).
-- CLI: `retman "…"`, sesja `retman`, `--plan-only`, `--explain`, `--config`,
-  `retman init`, `retman results`, `retman log`; kody wyjścia 0–3 (ARCHITECTURE 6.4).
-- Specyfikacja `retman-eval` (`docs/specs/2026-10-11-retman-eval.md`).
-- `retman-eval --config PATH`: planuje zbiór poleceń testowych (bez wykonywania operacji),
-  zapisuje surowe rekordy i raport Markdown z miarami (trafność, błąd przy pewności W-02,
-  ciche zgadywanie, naruszenia W-03, czasy), krzywą progów i zalecanymi progami
-  (`--target-error`); kod 4 przy naruszeniu W-03 (ARCHITECTURE 8).
-- `OutOfScopeError` dla poleceń spoza zakresu, z listą dostępnych operacji (W-03).
-- `retman doctor` (i `--json`): plik centralny, folder projektu i zapis wyników, czytelność
-  `result.json`, adres modelu decyzyjnego, lista modeli serwera, pytanie testowe, metoda
-  pewności i progi, wersje narzędzi na tle obsługiwanego zakresu z poleceniem doinstalowania,
-  komplet tłumaczeń, model tekstowy; każdy problem z podpowiedzią, kod 1 gdy coś blokuje pracę
-  (ARCHITECTURE 7.2). Manifest narzędzia ma pole `source` do podpowiedzi `uv … --with`
-  (ARCHITECTURE 4.1).
-- Przewodnik użytkownika `docs/USAGE.md`: przygotowanie, polecenia, pytania, plan,
-  wyniki i dziennik, sesja i opcje, kody wyjścia, API Pythona, `retman doctor`,
-  `retman-eval`, z przykładami przebiegów.
-- Raporty badań z 2026-10-19 w `docs/research/` (wpływ wydań narzędzi, integracja,
-  sprawdzanie dostępności, plik geometrii, migracja Kartografa, operacje IMGWTools, MCP)
-  i ADR-012–019.
+- Extractors: station (offline, from the catalog of the IMGW store), years, period, kind of
+  year (calendar or hydrological, always a question when not given), point (WGS84 and
+  PL-1992), PMAXTP grid cell, probability, duration, variables; a SHP or GPKG
+  geometry file as an area, with a question about the GeoPackage layer (ADR-016, ADR-017).
+- Area extractors (map sheet code in PL-1992 or PL-2000, rectangle with recognition of the
+  coordinate system and of the axis order, TERYT code, geometry file), and extractors of paths
+  and result numbers; an ambiguous notation raises a question (ARCHITECTURE 6.1).
+- Data kinds `dem`, `dsm`, `orthophoto`, `topographic_vector`, `dem_archive`, `area_geometry`
+  and 13 IMGWTools kinds, each with its validator (ADR-004, ARCHITECTURE 3.2.6).
+- Offline plan preview: the validation of the tool checks every call before confirmation, a
+  rejected value comes back as a question, and preview rows (for example the number of sheets)
+  appear in the plan (ADR-014, PRD N-12).
+- The availability check as a separate step: the answer `s` in the plan, its own consent, a
+  report without downloading and without a result number; `Retman.check()` and
+  `plan.confirm_check()` (ADR-014, PRD W-17, ARCHITECTURE 6.5).
+- Tool stores in `[retman.tools.kartograf]` and `[retman.tools.imgwtools]`; `retman config init`
+  creates the neighbouring folders, checks hard links and, with consent, initialises the IMGW
+  store; results point to the store files by path and SHA-256 (ADR-015).
+- `retman doctor check`: the stores, hard links in both stores, the IMGW write probe
+  (`--deep`) and a light check of the manifests against the installed tools. It also checks
+  the settings file, the project folder and the writing of results, the readability of
+  `result.json`, the address of the decision model, the model list of the server, a test
+  question, the confidence method and thresholds, the tool versions against the supported
+  range with the command to install the missing one, the completeness of the translations and
+  the text model; every problem comes with a hint (ARCHITECTURE 7.2). A tool manifest has the
+  field `source` for the `uv … --with` hint (ARCHITECTURE 4.1).
+- `retman scaffold list|draft|check`: drafts of manifests from the catalogs of the tools and a
+  drift check through the offline validation of the tool, with a coverage check of the options
+  (ADR-019).
+- The command set `src/retman/eval/commands.jsonl`: 630 commands (Kartograf, IMGWTools,
+  out of scope and close to the scope), validated by the same extractor code as planning;
+  placeholder geometry files and an offline station catalog when the set is planned
+  (ARCHITECTURE 8.1).
+- `retman eval run`: plans the test command set without running any operation, writes the raw
+  records and a Markdown report with the measures (accuracy, error at the confidence of W-02,
+  silent guessing, violations of W-03, times), the threshold curve and the recommended
+  thresholds (`--target-error`); the W-03 verdict is a failed unit (ARCHITECTURE 8). The
+  specification is `docs/specs/2026-10-11-retman-eval.md`.
+- Optional parameters that the command did not give have a plan row that says what their
+  absence means (for example "all station kinds"); the answer `z` changes them, and
+  `result.json` records them in `unset` (N-11, ARCHITECTURE 6.3).
+- Several tool notices with the same code in one call: the result shows the first three and the
+  number of the remaining ones; the full list stays in `tool_*.json` (ARCHITECTURE 4.2).
+- Decision backend `openai_compatible` (for example LM Studio): enforced answer format,
+  confidence from `logprobs` or from the agreement of several answers (ARCHITECTURE 3.3.3).
+- The core: operation recognition, questions (one at a time, answered by number or in the
+  user's own words), a plan with the source of every value, mandatory confirmation
+  (`PlanNotConfirmedError`), numbered results with `result.json` and audit data, and the journal
+  `journal.jsonl` (ARCHITECTURE 5 to 7). `OutOfScopeError` answers a command outside the scope
+  and lists the available operations (W-03).
+- The technical log goes to stderr: the library logs through `logging`, and the CLI sets the
+  level with `--verbose` and `--quiet`, the variables `RETMAN_LOG_LEVEL` and `NOGAT_LOG_LEVEL`
+  and the setting `log_level`; the log carries no commands and no answers (DEV-12,
+  ARCHITECTURE 5.4). `.env.example` lists the environment variables.
+- The CLI `retman <group> <verb>` (`plan run`, `config show|init`, `doctor check`,
+  `results list`, `journal show`, `commands list|schema|guide`, `eval run`,
+  `scaffold check|list|draft`) with `--explain`, `--config`, `--json`, `--lang`, `--verbose`
+  and `--quiet` (ARCHITECTURE 6.4, ADR-022).
+- `retman config show [--json]`: the file, every setting with its value and source (default,
+  variable or file), the credential variable of an external model provider as present or
+  missing, and the tool stores with their size; document `retman-config/1`; it also works with
+  a settings file that cannot be used (DEV-18.6, ADR-021). `get_config()` is its library
+  function.
+- `list_commands`, `command_schema`, `validate_command`, `check_command` and `run_command` are
+  the public API, with the error classes and the registry (`retman.__all__`); `AGENTS.md` and
+  `llms.txt` are generated from the catalog; the JSON Schemas of the documents are shipped in
+  `retman/schemas/` (ADR-022).
+- English texts (`lang = en`, `--lang en`, DEV-2.2, AGI-9.2, ADR-022 erratum 1):
+  `src/retman/i18n/en.toml` and an `en.toml` for the Kartograf and the IMGWTools adapter
+  give the questions, the plan, the messages, the reports, `--help` and the prompts that go
+  to the model in English, with the Polish names and abbreviations beside the English words in
+  the descriptions that the model reads. The words that the terminal dialog accepts are the
+  `[answers]` table of each file (`y`, `n`, `c`, `a`, `cancel`, `end` in English). A float
+  that a template formats (`{value:.2f}`) takes the decimal mark of the language.
 
-### Zmienione
+### Changed
 
-- Operacje Kartografa nie mają wartości domyślnych: Retman dopytuje o rozdzielczość,
-  układ wysokościowy i format, jeśli polecenie ich nie podaje (ADR-006).
-- Opcje parametrów mają osobną etykietę dla użytkownika i opis dla modelu, jak operacje:
-  plan i pytania pokazują krótkie nazwy („NMT (numeryczny model terenu)”, „1 m”), a model
-  dopasowuje polecenie i odpowiedzi do opisów z synonymami i nazwami angielskimi (DEM, DTM,
-  DSM, orthophoto, GPKG, SHP) (ADR-007, ARCHITECTURE 4.2).
-- Dziennik projektu zapisuje przy każdym planie wartości ze źródłami, decyzje modelu
-  z pewnością i nazwę zmienianej wartości, a polecenie spoza zakresu — jako osobne zdarzenie
-  z decyzją modelu (ARCHITECTURE 5.4, ADR-010).
-- Zbiór poleceń ze wszystkich projektów w jednym pliku (`[privacy] collect_commands`,
-  `collect_path`), tylko po wyraźnej zgodzie — `retman init` pyta o nią w terminalu
-  (ADR-010, ARCHITECTURE 5.4, rozdz. 10). Nowy klucz `collect_path` jest wymagany w
-  `retman.toml`.
-- Układ wyniku wycinka rozpoznaje kod, nie model: kod EPSG z prefiksem lub bez, nazwa
-  (PL-1992, S-JTSK, ETRS89/TM33 …), rola z kontekstu („wynik”, „do”, „przelicz” — wynik;
-  zaraz po współrzędnych — prostokąt), bez polskich znaków i z jedną literówką w słowach;
-  niejasny zapis kończy się pytaniem (ADR-009, ARCHITECTURE 4.3).
-- Model decyzyjny dostaje osobne pytanie o to, co wymienia polecenie (`model_question`),
-  zamiast pytania dla użytkownika „czy X, czy Y?”; z Bielikiem 11B trafność wartości
-  parametrów wzrosła z 0,55 do 0,78, a rodzaju danych z 16/33 do 32/33 (ADR-008,
+- **Breaking: agent interfaces** (AGI, ADR-022). One executable `retman <group> <verb>`
+  generated from a command catalog; `retman commands list|schema|guide` serve the catalog and
+  the guides for agents; `--json` prints the envelope `retman-result/1` (the outcomes `partial`
+  and `failed` print it too, with `items`); `--lang`, `--verbose` and `--quiet` are the option
+  layer of the settings. Migration: `retman "<text>"` is `retman plan run --text "<text>"`,
+  `--plan-only` is `--check` (and `--yes` runs a complete plan without a terminal),
+  `retman init` is `retman config init`, `retman doctor` is `retman doctor check`,
+  `retman results` is `retman results list`, `retman log` is `retman journal show`,
+  `retman-eval` is `retman eval run` (`--output` and `--report` need `--force` to replace a
+  file) and `retman-scaffold` is `retman scaffold check|list|draft` (`-v` is `--include-info`,
+  a list is given by repeating the flag). The bare JSON of `config show` and `doctor` is the
+  `result` of the envelope.
+- **Breaking: the settings are the `[retman]` tables of `nogat.toml`, read with the `RETMAN_*`
+  variables** (DEV-18, ECO-028, ADR-021). `retman.toml` is no longer read: write the tables as
+  `[retman.decision]`, `[retman.tools.kartograf]` and so on (`retman init` writes them into
+  `nogat.toml` in the user configuration folder of `nogat`, or at `NOGAT_CONFIG` or `--config`,
+  and appends to a file that has no `[retman]` table). Order of sources: variable
+  `RETMAN_<KEY>` (`decision.url` is `RETMAN_DECISION_URL`), shared variable `NOGAT_<KEY>`
+  (`lang`, `log_level`, `data_dir`, `cache_dir`), `[retman]`, `[nogat]`, default. `[ui]
+  language` is `lang` and `[log] diagnostic_level` is `log_level` (an invalid
+  `RETMAN_LOG_LEVEL` is now `invalid_config`). Every setting has a default except the model
+  server (`[retman.decision]`): without it only planning fails (`validation_error`, reason
+  `invalid_config`, the keys in `details.keys`), while `results`, `log`, `config show`, `init`
+  and `doctor` work. The default stores are `<data_dir>/kartograf` and `<data_dir>/imgw` (they
+  were `…/stores/kartograf` and `…/imgwtools` below the data folder of Retman), the Kartograf
+  cache is `<cache_dir>/kartograf/metadata.db`, the IMGWTools reference files are
+  `<cache_dir>/imgw/reference`, the command collection is `<data_dir>/retman/collected.jsonl`;
+  `data_dir` and `cache_dir` default to the user folders of `nogat` (`platformdirs`, a new
+  dependency). `retman-eval --config` is optional. The variables are listed in the README and
+  `.env.example`. Migration: move the tables into `nogat.toml` under `[retman…]` and check the
+  store paths with `retman config show`.
+- **Breaking: exit codes and errors follow the shared Nogat error registry** (ERR-3, ERR-4,
+  ADR-020). Exit codes: 2 is `validation_error` (wrong option, invalid settings, an answer or
+  a confirmation is needed and stdin is not a terminal), 3 is `not_found` (it was "cancelled"),
+  4 is `conflict` (it was the W-03 verdict of `retman-eval`), 15 is `unsupported` (a command
+  outside the scope; it was 1), 130 is `cancelled` (it was 3), 10 and 11 are the outcomes
+  `partial` and `failed` of `retman doctor`, `retman-eval` (W-03) and
+  `retman-scaffold --check`, 143 is SIGTERM; other failures take the code of their registry
+  code (5 model server, 14 no data, 8 store, 9 files, 1 a defect). On an error the last line
+  of stderr is the `retman-error/1` document (`code`, `title`, `message`, `hint`, `details`
+  with `reason`, `exit_code`); a cancelled call prints none. `RetmanError` carries `code`,
+  `message`, `details` and `hint`; `ToolError.code` is now the registry code and the tool's
+  own code is `ToolError.tool_code`; `ConfigError.details` is `problem_details`;
+  `OutOfScopeError.text` is the translated text (`str()` is English); a failed `Result` has
+  `failure`, the error document. `schemas/nogat/` holds the vendored registry and agent
+  schemas, `scripts/generate_errors.py` generates `src/retman/_errors.py`, and a contract test
+  compares them. Migration: scripts that test the exit status read the table in USAGE 8.
+- The Kartograf operations have no default values: Retman asks for the resolution, the
+  vertical datum and the format when the command does not give them (ADR-006).
+- `log_level` (formerly `[log] diagnostic_level`) concerns stderr, defaults to `warning` and
+  also accepts `error`; the log file in the user's log folder was never created and does not
+  exist (ARCHITECTURE 5.4).
+- The options of a parameter have a label for the user and a description for the model, like
+  the operations: the plan and the questions show short names ("DEM (numerical terrain
+  model)", "1 m"), and the model matches the command and the answers to descriptions with
+  synonyms and English names (DEM, DTM, DSM, orthophoto, GPKG, SHP) (ADR-007,
   ARCHITECTURE 4.2).
-- Narzędzia są wołane przez ich warstwę komend (`validate_command`/`run_command`); handler
-  dostaje kontekst narzędzia (`handler(params, inputs, output_dir, ctx)`); komunikaty błędów
-  narzędzi mają teksty Retmana wg kodu błędu (ADR-013, ARCHITECTURE 3.2.4).
-- Wymagane sekcje `[tools.kartograf]` i `[tools.imgwtools]` w `retman.toml` — starsze pliki
-  trzeba wygenerować od nowa (`retman init`) albo uzupełnić (ADR-015).
-- CLI pokazuje ostrzeżenia wyniku („Uwaga: …”), w tym warunki licencji danych.
-- Wczytany plan (`Plan.from_dict`) nigdy nie przywraca potwierdzenia (W-05).
+- The project journal records, with every plan, the values with their sources, the decisions of
+  the model with their confidence and the name of a changed value, and a command outside the
+  scope as a separate event with the decision of the model (ARCHITECTURE 5.4, ADR-010).
+- The collection of commands from all projects in one file (`[privacy] collect_commands`,
+  `collect_path`) only after explicit consent; `retman config init` asks for it in a terminal
+  (ADR-010, ARCHITECTURE 5.4, 10). The new key `collect_path` is required in the settings.
+- The result layout of a cutout is recognised by code, not by the model: an EPSG code with or
+  without a prefix, a name (PL-1992, S-JTSK, ETRS89/TM33 …), the role from the context
+  ("result", "to", "convert" mean the result; right after the coordinates it is the
+  rectangle), without Polish characters and with one typo in the words; an unclear notation
+  ends with a question (ADR-009, ARCHITECTURE 4.3).
+- The decision model gets a separate question about what the command names (`model_question`)
+  instead of the user's question "X or Y?"; with Bielik 11B the accuracy of parameter values
+  rose from 0.55 to 0.78, and that of data kinds from 16/33 to 32/33 (ADR-008,
+  ARCHITECTURE 4.2).
+- The tools are called through their command layer (`validate_command`, `run_command`); a
+  handler gets the context of the tool (`handler(params, inputs, output_dir, ctx)`); error
+  messages of the tools have Retman texts by error code (ADR-013, ARCHITECTURE 3.2.4).
+- The sections `[retman.tools.kartograf]` and `[retman.tools.imgwtools]` are required in the
+  settings: older files have to be generated again (`retman config init`) or completed
+  (ADR-015).
+- The CLI shows the warnings of a result ("Uwaga: …"), the licence conditions of the data
+  included.
+- A loaded plan (`Plan.from_dict`) never restores the confirmation (W-05).
+- Documentation: `CLAUDE.md` is English and follows DOC-3.1; `docs/DEVELOPMENT_STANDARDS.md` is
+  removed (DEV-1.3). The project rules are in `CLAUDE.md`, the checklists for a new operation,
+  data kind, backend, extractor and command are `docs/ARCHITECTURE.md` 13, and the standard
+  itself is the Nogat standard 2.1.
+- **Breaking:** the texts inside the `--json` document of `doctor check` (titles, checks and
+  hints) are English whatever `lang` says; they were in the language of the setting.
+  Migration: match the English text, or `code` and `reason` of the check; the terminal still
+  shows the report in the language of `lang`. `help_language` reads the real command line, so
+  `--lang` decides the language of `--help`.
+- **Breaking: IMGWTools data output** (ECO-051, ADR-024). Retman calls IMGWTools as its branch
+  `feature/data-output` defines it: archive downloads write plain files into the results folder
+  (`output_dir`; the tool stages, verifies and checksums them), exports write the one file given
+  as `output`, the store operations keep `root`, and `reference_data_dir` reaches the tool as
+  `IMGW_REFERENCE_DIR` (it was `IMGW_DATA_DIR`). The values of a result follow the tool: the
+  synchronisation reports `values.new_versions` and `values.new_series` (they were `created` and
+  `series_created`), and the statuses in `values.series`, `values.archives` and
+  `values.store_versions` are `new` and `unchanged` (they were `created` and `reused`).
+  Migration: read the new names in `result.json`; the plan and the settings do not change. The
+  texts of the tool are English and are shown as they come, so a Polish message can quote an
+  English detail, and the licence notice of an IMGW result ends with an English notice. The `tools`
+  group pins IMGWTools `7e2114e`, the head of its branch `feature/data-output`, which is on
+  GitHub (ARCHITECTURE 3.2.11, 9.3; USAGE 5.2; ADR-024 erratum 3).
+- An IMGW store folder can be a layout of a store without its marker (`archives/`, `series/`,
+  `stations/` or `pmaxtp/` and no `imgw-store.json`): `retman doctor check` reports it as
+  `store_unavailable`, reason `no_marker`, and the plan names it and points to the command "Utwórz
+  magazyn IMGW", where IMGWTools checks the layout and writes the marker. A folder that holds only
+  the `api_keys.json` of the IMGWTools server counts as empty, no longer as foreign
+  (ARCHITECTURE 7.2, 9.1; ADR-024).
+- **Breaking: Kartograf data output** (ECO-051, ADR-025). Retman calls Kartograf as its branch
+  `feature/data-output` defines it: the folder `[retman.tools.kartograf] store_dir` is the store
+  `root` of every call (it was `output_dir`, `--output-dir` on the command line of the audit and
+  `DownloadManager(output_dir=...)` of the orthophoto), a run is read from the
+  `kartograf-result/1` envelope (`status`, `items[]`, `notices[]` with `message`, and the
+  `files[]` of its `result` with `size_bytes`), the offline lookups are `sheet parse`,
+  `sheet find` and `store sidecar`, and `retman scaffold` reads `list_commands` and
+  `command_schema`. The errors are the codes of the registry: the `error_code` of a result is
+  `no_data` (it was `no_coverage`), `source_unavailable` (`download_failed`),
+  `validation_error` (`invalid_input`) and so on, and the precision is the `details.reason` of
+  the `failure` of the result; the `[errors]` texts of the tool are keyed by the codes.
+  Migration: read the new codes in `result.json`; the plan and the settings do not change. The
+  first write into a new folder writes the store marker `kartograf-store.json`. Retman always
+  writes to the store (`root`) and offers no plain mode of Kartograf. The `tools` group pins
+  Kartograf `b73aad33`, the head of its branch `feature/data-output`, which is on GitHub
+  (ARCHITECTURE 3.2.4, 3.2.10; USAGE 5.2, 9.1; ADR-012 erratum 3; ADR-025 erratum 1).
+- A Kartograf store folder can be the layout of a store without its marker (files in a product
+  tree such as `nmt/` and no `kartograf-store.json`), a folder with other files, a folder whose
+  marker Kartograf cannot read, or a folder inside another store: `retman doctor check` reports
+  each as `store_unavailable` (reasons `no_marker`, `foreign_folder`, `marker_unreadable`,
+  `marker_unsupported`, `nested_store`), and the plan of every Kartograf operation that writes
+  names it before you confirm (Kartograf itself ends a run into such a store with one error of
+  the command, before any request). A missing or an empty folder stays fine: the first
+  write marks it, and the command "Utwórz magazyn Kartografa" marks a layout that has lost its
+  marker (ARCHITECTURE 3.2.10, 7.2; USAGE 11; ADR-025).
+- The supported ranges admit the development versions of the pending releases while the
+  `tools` group pins commits: Kartograf `>=0.8.0.dev0,<0.9` and IMGWTools `>=3.0.0.dev0,<4`
+  (REL-5.6, ADR-024 erratum 1). The version check of the loader, `retman doctor check` and
+  `retman scaffold check` reads the range as a PEP 440 specifier set
+  (`packaging`, a new core dependency) instead of a comparison of numbers, so `~=` and the
+  other PEP 440 forms are valid in a manifest. The release change that puts the tags in place of
+  the commits narrows the ranges to `>=0.8.0,<0.9` and `>=3.0.0,<4`.
+- The `tools` group pins IMGWTools `7e2114e`, which ships `py.typed`: mypy checks the calls and
+  the tests against its types, and the ignore of `imgwtools` is gone from `pyproject.toml`. The
+  tests that need a ready IMGW store use the fixture store of `imgwtools.testing`, not a marker
+  written by hand (DEV-10.6).
+- The operation "Utwórz magazyn Kartografa" (`init_kartograf_store`) is a catalog call of the
+  shared executor: the command layer of Kartograf takes `store init` (AGI-2.1), so the handler
+  is gone. The document saved as `tool_1_store_init.json` is the envelope `kartograf-result/1`
+  with the marker as its `result` (it was the marker document), and a call gets the workers and
+  the update mode of the settings only when its command declares them (ADR-025 erratum 1).
+- The availability checks of Kartograf and of IMGWTools report a store that the tool turns away
+  (a folder with other files, a store inside another store: the plan of the tool lists the
+  refusal of the root as its one position) as "the tool will refuse to write into this store",
+  status `unavailable`, and no longer as "available" or as 0 files. An IMGW store whose marker
+  cannot be read is named so in the plan; the tool raises `data_error` (`invalid_marker`) for
+  it, and `tests/unit/test_stores.py` holds `imgw_store_state` against the check of the tool
+  (ADR-024 erratum 3, ADR-025 erratum 1).
+- The pins are the final heads of the producers: Kartograf `c31ca04c` and IMGWTools
+  `6bd35a49` (first `45dedf4a` and `3f7de36`). The tool's `project init` refuses a store marker
+  that cannot be read as `data_error` (`invalid_marker`), like `store init` (it was
+  `store_unavailable`) (ADR-024 errata 4 and 5, ADR-025 errata 3 and 4).
+- `retman scaffold check --tool kartograf`: X9 lists only the data commands no operation uses.
+  A command whose run is read-only in `command_schema` (the source listings, the availability
+  reports, `store overview`, `sheet`, `config show`) is no data command for the scaffold; the
+  list went from 41 to 14 commands (ADR-025 erratum 2).
+- The `tools` group pins Kartograf `8ad55ab6`, the head of its branch
+  `feature/archiwista-projects`, which is on GitHub; the supported range stays
+  `>=0.8.0.dev0,<0.9`. Kartograf keeps no projects any more (Nogat ECO-054); Retman's Kartograf
+  operations used none, so they are unchanged. `retman scaffold check --tool kartograf` lists 10
+  data commands under X9 (no `project *`) and takes the check of every command as a plan
+  (ADR-025 erratum 5).
 
-[0.1.0]: https://github.com/Daldek/Retman/commits/develop
+### Removed
+
+- **Breaking:** the executables `retman-eval` and `retman-scaffold`, the positional sentence
+  `retman "<text>"`, the interactive session `retman` without a command, the option
+  `--plan-only`, the commands `retman init`, `retman doctor`, `retman results` and
+  `retman log`, and the file `retman.toml`. Each has its replacement in the migration notes
+  under Changed (ADR-020 to ADR-022).
+- **Breaking:** the Polish commands for IMGWTools data projects: the category "Projekty danych
+  IMGW" (`imgw_projects`) and its seven operations `init_imgw_project`,
+  `add_imgw_project_task`, `remove_imgw_project_task`, `set_imgw_project_store`,
+  `download_imgw_project`, `check_imgw_project` and `verify_imgw_project`, with their
+  previews, texts and eval rows. IMGWTools keeps no projects any more: projects, and the pins
+  of store versions, belong to Archiwista (Nogat ECO-054). The `tools` group pins IMGWTools
+  `4bf8bb0d`, the head of its `feature/archiwista-projects`, and the tool's new error code
+  `unsupported` has its text. Migration: keep a project in Archiwista; Retman still downloads,
+  checks and synchronises the IMGW store (ARCHITECTURE 3.2.11).
+- The task name extractor `identifier` and its text `extractors.errors.invalid_identifier`: its
+  only user was the IMGWTools project task (ADR-017 erratum 2).
+- The path of an option inside another option (`options.<name>` in `ToolError.option` and in
+  `CatalogCall.params`, which X2 of `retman scaffold check` followed into the option): only the
+  IMGWTools `project add` carried the options of another command (ADR-025 erratum 5).
+
+[Unreleased]: https://github.com/Daldek/Retman/commits/develop

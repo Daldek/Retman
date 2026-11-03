@@ -1,13 +1,13 @@
-# Specyfikacja: `retman-eval`
+# Specyfikacja: `retman eval run`
 
 **Status:** przyjęta przez autora (2026-10-12)
 **Data:** 2026-10-11
 **Podstawa:** PRD W-01, W-02, W-03, N-05, N-07, rozdz. 8; ARCHITECTURE 3.4, 6.2, 8.1–8.3, 9.2;
-STANDARDS 6.3, 6.4, 10.4, 17.1
+CLAUDE.md (środowisko i komendy, testy), ARCHITECTURE 13.1
 
 ## 1. Cel
 
-`retman-eval` mierzy, jak dobrze Retman **planuje** polecenia: czy rozpoznaje operację,
+`retman eval run` mierzy, jak dobrze Retman **planuje** polecenia: czy rozpoznaje operację,
 czy poprawnie ustala parametry, kiedy dopytuje i jak często myli się, nie pytając.
 Wynik służy do:
 
@@ -97,7 +97,7 @@ i bliskich zakresowi.
 ## 3. Uruchomienie
 
 ```bash
-retman-eval --config PATH [--commands PATH] [--operations ID[,ID...]] [--tags TAG[,TAG...]]
+retman eval run --config PATH [--commands PATH] [--operations ID[,ID...]] [--tags TAG[,TAG...]]
             [--repeat N] [--target-error P] [--output RAW.jsonl] [--report REPORT.md]
 ```
 
@@ -111,7 +111,7 @@ retman-eval --config PATH [--commands PATH] [--operations ID[,ID...]] [--tags TA
 | `--output` | surowe rekordy (p. 4.3) do dalszej analizy |
 | `--report` | raport Markdown; bez opcji raport trafia na standardowe wyjście |
 
-Raporty z przebiegów na modelach zapisuje się w `docs/research/` (STANDARDS 6.4).
+Raporty z przebiegów na modelach zapisuje się w planie, do którego należą (`docs/plans/`, `CLAUDE.md`); dotychczasowe leżą w `docs/research/`.
 
 **Kody wyjścia:**
 
@@ -237,7 +237,7 @@ są w `retman/i18n/pl.toml` (sekcja `[eval]`), jak wszystkie teksty dla użytkow
 | --- | --- | --- |
 | `OutOfScopeError(RetmanError)` z atrybutem `operations` | `retman/exceptions.py`, `core/pipeline.py`, `cli.py` | eval musi odróżnić „spoza zakresu” od błędu; CLI może wtedy pominąć prefiks „Błąd:” |
 | liczba zapytań do modelu na plan | licznik w pipeline albo opakowanie backendu w eval | miara czasu (p. 5.2) |
-| `retman-eval` w `[project.scripts]` | `pyproject.toml` | ARCHITECTURE 9.3: pakiet podstawowy, bez dodatkowych zależności |
+| `retman eval run` w `[project.scripts]` | `pyproject.toml` | ARCHITECTURE 9.3: pakiet podstawowy, bez dodatkowych zależności |
 | moduły `retman/eval/{runner,metrics,report}.py`, dane `retman/eval/commands.jsonl` | ARCHITECTURE 3.1 | — |
 
 ## 8. Testy (offline, `FakeDecisionBackend`)
@@ -256,11 +256,11 @@ Test `live` (świadomie, `-m live`): jeden przebieg kilku poleceń na serwerze z
 
 ## 9. Kryteria akceptacji
 
-1. `retman-eval --config <plik z LM Studio>` przechodzi cały zbiór Kartografa i tworzy
+1. `retman eval run --config <plik z LM Studio>` przechodzi cały zbiór Kartografa i tworzy
    raport z wszystkimi miarami z p. 5.2 i krzywą z p. 5.3.
 2. Raport z przebiegu Bielik 11B (`logprobs`) trafia do `docs/research/`, z zaleceniem progów
    dla `--target-error 0.01`.
-3. Testy z p. 8 przechodzą offline; bramka STANDARDS 18 czysta.
+3. Testy z p. 8 przechodzą offline; bramka (`scripts/gate.sh`) przechodzi.
 4. Specyfikacja i PROGRESS opisują stan; ARCHITECTURE 8.1–8.2 zostaje bez zmian do decyzji
    z p. 10.1.
 

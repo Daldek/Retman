@@ -1,8 +1,11 @@
-"""Shared fixtures: network isolation for offline tests (STANDARDS 10.4)."""
+"""Shared fixtures: network isolation for offline tests (DEV-10.2)."""
 
 import ipaddress
+import logging
+import os
 import socket
 import sqlite3
+import sys
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import closing
 from dataclasses import replace
@@ -10,6 +13,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+import platformdirs
 import pytest
 
 from retman.adapters.catalog import RunClient
@@ -75,6 +79,41 @@ def _block_network(
     monkeypatch.setattr(socket.socket, "connect", guarded_connect)
     monkeypatch.setattr(socket, "getaddrinfo", guarded_getaddrinfo)
     yield
+
+
+@pytest.fixture(autouse=True)
+def _isolate_logger() -> Iterator[None]:
+    """Undo the handler the command line puts on the logger of Retman (DEV-12.1)."""
+    logger = logging.getLogger("retman")
+    handlers, level, propagate = list(logger.handlers), logger.level, logger.propagate
+    yield
+    logger.handlers[:] = handlers
+    logger.setLevel(level)
+    logger.propagate = propagate
+
+
+@pytest.fixture(autouse=True)
+def user_environment(
+    monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory
+) -> Path:
+    """Keep the user environment of the machine out of every test (DEV-18).
+
+    No ``RETMAN_*`` or ``NOGAT_*`` variable of the machine applies, and the user
+    folders (``nogat.toml``, data, cache) point into a folder of the test, so no
+    test reads or writes the real ones. A test that wants a setting sets the variable
+    or writes the file; the fixture returns the folder that holds the three
+    (``config``, ``data``, ``cache``).
+    """
+    for name in list(os.environ):
+        if name.startswith(("RETMAN_", "NOGAT_")):
+            monkeypatch.delenv(name)
+    home = tmp_path_factory.mktemp("user")
+    monkeypatch.setattr(
+        platformdirs, "user_config_path", lambda *a, **k: home / "config"
+    )
+    monkeypatch.setattr(platformdirs, "user_data_path", lambda *a, **k: home / "data")
+    monkeypatch.setattr(platformdirs, "user_cache_path", lambda *a, **k: home / "cache")
+    return home
 
 
 # --- The dummy tool (tests/fixtures/dummy_tool) for core, adapter and CLI tests.
@@ -174,3 +213,39 @@ def create_app(
         )
 
     return create
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _remove_imgw_fixture_store() -> Iterator[None]:
+    """Delete the IMGWTools fixture store of ``imgw_support`` when the session ends."""
+    yield
+    support = sys.modules.get("imgw_support")
+    if support is not None:
+        support.discard_fixture_store()
+
+
+@pytest.fixture(scope="session")
+def imgw_store_template(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """An IMGWTools store as the tool itself builds it (DEV-10.6), built once.
+
+    Tests copy it; the states the tool never writes (no marker, an unknown schema, a
+    foreign folder) are made from a copy or by hand (``imgw_store_files``).
+    """
+    pytest.importorskip("pyarrow")
+    testing = pytest.importorskip("imgwtools.testing")
+    root = tmp_path_factory.mktemp("imgw-store") / "store"
+    testing.build_fixture_store(root)
+    return root
+
+
+@pytest.fixture(scope="session")
+def kartograf_store_template(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A Kartograf store as the tool itself builds it (DEV-10.6), built once.
+
+    Tests copy it; the states the tool never writes (no marker, an unknown schema, a
+    foreign folder) are made from a copy or by hand (``kartograf_store_files``).
+    """
+    testing = pytest.importorskip("kartograf.testing")
+    root = tmp_path_factory.mktemp("kartograf-store") / "store"
+    testing.build_fixture_store(root)
+    return root

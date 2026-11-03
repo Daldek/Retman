@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-config-init-1.schema.json",
+  "title": "retman-config-init/1",
+  "description": "The settings file `config init` wrote and the folders it chose. It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "config_file",
+    "collect_commands",
+    "collect_path",
+    "stores"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-config-init/1"
+    },
+    "config_file": {
+      "type": "string"
+    },
+    "collect_commands": {
+      "type": "boolean"
+    },
+    "collect_path": {
+      "type": "string"
+    },
+    "stores": {
+      "type": "object",
+      "required": [
+        "kartograf",
+        "imgwtools"
+      ],
+      "properties": {
+        "kartograf": {
+          "type": "string"
+        },
+        "imgwtools": {
+          "type": "string"
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "description": "Files the command wrote (DEV-19.19), added by the envelope.",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "size_bytes",
+          "sha256",
+          "status"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "status": {
+            "enum": [
+              "written",
+              "replaced"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -420,8 +420,8 @@ Plan:
   brak `.prj` / zła warstwa, blokada gniazd dowodząca braku sieci; **test dryfu**: każda
   warstwa z `geometry_layers` jest akceptowana, a obca nazwa odrzucana przez
   `kartograf.get_overall_bbox(layer=)` (zachowanie publiczne, bez wnętrzności); test sumy
-  kontrolnej audytu. `retman/eval/commands.jsonl`: ≥ 5 poleceń z geometrią wg STANDARDS 17.1
-  pkt 7 (w tym wielowarstwowy GPKG, odrzucenie `.geojson`, sformułowanie „wielobok nie jest
+  kontrolnej audytu. `retman/eval/commands.jsonl`: ≥ 5 poleceń z geometrią wg ARCHITECTURE 13.1
+  pkt 10 (w tym wielowarstwowy GPKG, odrzucenie `.geojson`, sformułowanie „wielobok nie jest
   przycinany”).
 
 ## 5. Zmiany w dokumentacji
@@ -474,7 +474,7 @@ Plan:
    konfigurowalna odmowa `max_sheets` możliwa później, nie była wymagana.
 3. **Ścieżki na żywo nieuruchomione** (brak sieci): `download_data(geometry=…)` dla
    arkuszy, wycinka i `download_landcover(geometry=…)` zwalidowane offline i wyczytane z
-   kodu, niewykonane [WNIOSEK]; jeden test live na operację przed wydaniem (STANDARDS 10.4
+   kodu, niewykonane [WNIOSEK]; jeden test live na operację przed wydaniem (DEV-10.1
    `live`).
 4. `validate_command` nie odrzuca obszarów BDOT10k poza PL (sprawdzone) → własna kontrola
    zakresu obwiedni w podglądzie.

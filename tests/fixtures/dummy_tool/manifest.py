@@ -144,7 +144,7 @@ MANIFEST: ManifestSpec = {
                     "required": True,
                 },
                 # Optional: never asked; the plan says what unset means (N-11)
-                {"name": "name", "type": "free", "extractor": "identifier"},
+                {"name": "mask", "type": "free", "extractor": "path"},
             ],
             "handler": "dummy_tool.handlers:make_dem",
         },

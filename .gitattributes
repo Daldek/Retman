@@ -1,2 +1,2 @@
-# Końce linii LF we wszystkich plikach, także na Windows (DEVELOPMENT_STANDARDS 5.5)
+# Line endings (DEV-14.1): LF in the repository and in every working copy, on Windows too.
 * text=auto eol=lf

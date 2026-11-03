@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-scaffold-list-1.schema.json",
+  "title": "retman-scaffold-list/1",
+  "description": "The data commands of the catalog of a tool and the operations that use them. It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "tool",
+    "version",
+    "commands"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-scaffold-list/1"
+    },
+    "tool": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "group",
+          "network",
+          "writes",
+          "operations",
+          "use"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "group": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "network": {
+            "type": "boolean"
+          },
+          "writes": {
+            "type": "boolean"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "use": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

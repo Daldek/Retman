@@ -258,7 +258,7 @@ Argumenty środowiskowe dodaje klient z `ctx.settings`, nigdy builder, i powtarz
 w CWD, czyli zapis w folderze projektu użytkownika: nigdy nie używać domyślnej wartości;
 sprawdzone: `check_command(..., cache=False)` niczego nie tworzy); IMGWTools dodaje `root`, gdy
 komenda ma opcję `root`, a wywołanie jej nie podało. Nigdy nie polegać na zmiennych środowiskowych
-(`IMGW_STORE_ROOT`, `KARTOGRAF_*`): N-11, STANDARDS 6.2. Jeden udokumentowany wyjątek: klient
+(`IMGW_STORE_ROOT`, `KARTOGRAF_*`): N-11, DEV-13.1. Jeden udokumentowany wyjątek: klient
 IMGWTools eksportuje `IMGW_DATA_DIR` z `[tools.imgwtools].reference_data_dir` raz, w konstruktorze
 i przed pierwszym `import imgwtools`, na czas życia procesu, bo narzędzie nie ma opcji dla pliku
 statycznych lokalizacji stacji (ryzyko 19).
@@ -305,7 +305,7 @@ plan.confirm() -> execute(): ToolContext(client=RunClient) -> run_calls / custom
 Koszt podglądu: import narzędzia w czasie planowania tylko dla narzędzia wybranej operacji:
 `import kartograf` ~0,45 s ciepły / 1,15 s zimny, `import imgwtools` ~0,23 s ciepły
 (sprawdzone); `validate_command` ~0,2–0,6 ms na wywołanie (sprawdzone). Mediana czasu planu to
-10,6 s (PROGRESS), start pozostaje bez importów (ARCHITECTURE 3.2.5, STANDARDS 13.3).
+10,6 s (PROGRESS), start pozostaje bez importów (ARCHITECTURE 3.2.5).
 
 Reguła kierowania: `ToolError` staje się pytaniem do użytkownika tylko gdy nazywa parametry
 Retmana (przez `call.params`, `option` lub `options`). Gdy nie da się nazwać żadnego parametru
@@ -408,8 +408,8 @@ reference_data_dir = '/data/retman/imgwtools-reference' # exported as IMGW_DATA_
 * `FakeToolClient` (`retman/testing.py`, jak `FakeDecisionBackend`): zapisuje `(method, call)`,
   zwraca gotowe `ToolRun`/dokumenty; asercje „golden-call” `(command, options)` per operacja;
   asercja braku `run/check/query` przed potwierdzeniem. Nagrane prawdziwe dokumenty leżą w
-  `tests/fixtures/<narzędzie>/` (STANDARDS 10.4 „fixtures from real responses”). Istniejące 8
-  testów przypina usunięte wnętrzności; zastąpić (STANDARDS 10.4: nigdy nie przypinać szczegółów
+  `tests/fixtures/<narzędzie>/` (CLAUDE.md, Tests: fixtures from real responses). Istniejące 8
+  testów przypina usunięte wnętrzności; zastąpić (DEV-10.5: nigdy nie przypinać szczegółów
   implementacji). Zachować testy handlera rozpakowującego SHP.
 * IMGWTools: `imgwtools.testing.build_fixture_store(root, variant=...)` + prawdziwe `run_command`
   offline (sprawdzone: cała sonda, razem z budową magazynu, trwała 1,7 s z `series summary`,
@@ -558,7 +558,7 @@ Powody (każdy z dowodem):
    uzależniłyby metryki i decyzje od instalacji i złamały ARCHITECTURE 3.2.3 pkt 3 („opisy zmieniaja
    sie tylko swiadomie”).
 4. **Ładowanie offline i bez importów.** Loader waliduje manifesty/tłumaczenia bez importowania
-   narzędzi i pomija niezainstalowane (`loader.py:71-93`, ARCHITECTURE 3.2.5, STANDARDS 13.3);
+   narzędzi i pomija niezainstalowane (`loader.py:71-93`, ARCHITECTURE 3.2.5);
    wyprowadzanie importowałoby każde zainstalowane narzędzie w każdym procesie (0,45 s Kartograf,
    0,23 s IMGWTools ciepły) i pozwoliło zepsutemu narzędziu zatruć ładowanie manifestów.
 5. **N-11 nie przemawia za listami dynamicznymi.** ARCHITECTURE 9.1: manifesty i tłumaczenia to
@@ -594,7 +594,7 @@ Konsekwencje dla manifestu:
   sprawdzić, że pierwszy wiersz ma 3 liczby), albo wpisać `100m` do `excluded` z tym powodem do
   czasu wdrożenia. Decyzja autora 3 mówi: wszystkie; rekomendacja = włączyć (rozszerzyć rodzaj);
   decyzja końcowa 7: rodzaj `dem_archive` dla NMT 100 m.
-* Zbiór eval: dodać polecenia dla nowych rozdzielczości (STANDARDS 17.1 pkt 7); scaffold wypisuje,
+* Zbiór eval: dodać polecenia dla nowych rozdzielczości (ARCHITECTURE 13.1 pkt 10); scaffold wypisuje,
   które opcje nie mają polecenia eval.
 
 ### 3.2 Niezmiennik pokrycia
@@ -667,7 +667,7 @@ Użytkownicy z nowszym narzędziem w zakresie zobaczą lukę w `retman doctor` z
   8 i sprawdzonych faktach powyżej; erratum do ADR-003 (zakresy, grupa tools) i ADR-006 (nowe
   wartości pytane; bez wartości domyślnych). Numery ADR: raport MCP proponuje ADR-012; resztę
   przydziela Main.
-* **STANDARDS:** 6.1 (grupa tools), 10.4 (testy handlerów: fałszywy klient, nagrane dokumenty,
+* **Dawne STANDARDS** (usunięte, dziś `CLAUDE.md` i ARCHITECTURE 13): 6.1 (grupa tools), 10.4 (testy handlerów: fałszywy klient, nagrane dokumenty,
   magazyn fikcyjny, zgodność), 17.1 (szkic z katalogu; zgodność), 18 (lista kontrolna).
   **CLAUDE.md:** linia bramki `retman-scaffold --check` bez zmian, dodać „narzędzia wołamy przez ich
   katalog komend”. USAGE, CHANGELOG, PROGRESS.
@@ -794,7 +794,7 @@ Retman: `registry/loader.py:71-94`; `registry/manifest.py:141-159,178-198`;
 `i18n/loader.py:60`; `tools/kartograf/handlers.py:27,75-97,117-118,141,163`;
 `tests/tools/kartograf/test_handlers.py:57-263`; `tests/conftest.py:38`;
 `eval/dataset.py:validate_commands`; `pyproject.toml:40,70`; ARCHITECTURE 3.2.3–3.2.8, 4.1–4.3, 9.1,
-9.3; STANDARDS 10.4, 13.3, 17.1.
+9.3, 13.1; CLAUDE.md.
 Kartograf (`d7b5369e`): `commands.py:185,278,348`; `catalog/model.py:31,85,108`;
 `catalog/build.py:344,388`; `__init__.py:461-488`; `sources/registry.py:304`; `source_info.py:207`;
 `docs/DECISIONS.md:2730-2830,4136+`; `docs/DEVELOPMENT_STANDARDS.md:507-523,843-863`;

@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-plan-1.schema.json",
+  "title": "retman-plan/1",
+  "description": "The plan of a Polish command: the operation, the values and inputs with their source and confidence, the offline preview and the open questions; with `yes` also the `run`. It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "text",
+    "operation",
+    "complete",
+    "confirmed",
+    "values",
+    "inputs",
+    "unset",
+    "preview",
+    "questions"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-plan/1"
+    },
+    "text": {
+      "type": "string"
+    },
+    "operation": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "operation_label": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "operation_confidence": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "operation_unverified": {
+      "type": "boolean"
+    },
+    "complete": {
+      "type": "boolean"
+    },
+    "confirmed": {
+      "type": "boolean"
+    },
+    "values": {
+      "type": "object"
+    },
+    "inputs": {
+      "type": "object"
+    },
+    "unset": {
+      "type": "array"
+    },
+    "preview": {
+      "type": "array"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "text",
+          "options"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "key"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array"
+    },
+    "run": {
+      "type": "object"
+    }
+  }
+}

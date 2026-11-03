@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Daldek/Retman/blob/main/src/retman/schemas/retman-scaffold-draft-1.schema.json",
+  "title": "retman-scaffold-draft/1",
+  "description": "The draft of an operation: Python for the call builder and the translation table, as text. It is the `result` of the envelope retman-result/1. Unknown fields are allowed: adding optional fields keeps the version (AGI-4.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "operation_id",
+    "python",
+    "translations"
+  ],
+  "properties": {
+    "schema": {
+      "const": "retman-scaffold-draft/1"
+    },
+    "operation_id": {
+      "type": "string"
+    },
+    "python": {
+      "type": "string"
+    },
+    "translations": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array",
+      "description": "Files the command wrote (DEV-19.19), added by the envelope.",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "size_bytes",
+          "sha256",
+          "status"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "status": {
+            "enum": [
+              "written",
+              "replaced"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

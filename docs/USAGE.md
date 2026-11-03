@@ -1,181 +1,222 @@
-# Praca z Retmanem
+# Working with Retman
 
-Przewodnik dla użytkownika: jak przygotować Retmana, jak wydawać polecenia, odpowiadać
-na pytania, zatwierdzać plany i odnajdywać wyniki — w terminalu i z Pythona.
+A user guide: how to set up Retman, how to issue commands, answer questions, approve plans and
+find results — in the terminal and from Python.
 
-**Stan:** przed v0.1.0. Działają cztery operacje Kartografa 0.8.0 i 26 operacji IMGWTools 3.0.0
-(p. 9) z modelem decyzyjnym zgodnym z API OpenAI (np. LM Studio); backend basal jeszcze nie powstał.
+**Status:** before v0.1.0. Five Kartograf 0.8.0 operations and 26 IMGWTools 3.0.0 operations work
+(section 9) with a decision model compatible with the OpenAI API (e.g. LM Studio); the basal backend
+does not exist yet.
 
-> **O przykładach.** Przebiegi poniżej zarejestrowano na Retmanie 0.1.0.dev0 z Kartografem 0.8.0
-> i IMGWTools 3.0.0. Decyzje modelu podstawiono w nich atrapą (`FakeDecisionBackend`), więc z prawdziwym
-> modelem Retman może zadać inne lub dodatkowe pytania — np. dopytać o operację albo o jej grupę, gdy
-> model jest niepewny. Teksty pytań, planów i komunikatów są prawdziwe; ścieżki skrócono. Wykonanie
-> w p. 5.2 zapisuje szereg z **magazynu testowego IMGWTools** (stacje fikcyjne, bez sieci); pobrań z GUGiK
-> nie wykonywano, a raport w p. 5.4 powstał z zapisanej odpowiedzi GUGiK.
+> **About the examples.** The runs below were recorded on Retman 0.1.0.dev0 with Kartograf 0.8.0
+> and IMGWTools 3.0.0. The model's decisions were substituted with a stub (`FakeDecisionBackend`), so with
+> a real model Retman may ask different or additional questions — e.g. ask about the operation or its
+> group when the model is uncertain. The texts of questions, plans and messages are real; paths were
+> shortened. The execution in section 5.2 saves a time series from the **IMGWTools test store**
+> (fictional stations, no network); no downloads from GUGiK were performed, and the report in
+> section 5.4 was produced from a saved GUGiK response.
 
-## Spis treści
+## Table of contents
 
-1. [Przygotowanie](#1-przygotowanie)
-2. [Folder projektu](#2-folder-projektu)
-3. [Pierwsze polecenie](#3-pierwsze-polecenie)
-4. [Odpowiadanie na pytania](#4-odpowiadanie-na-pytania)
-5. [Plan, zmiana, sprawdzenie i wykonanie](#5-plan-zmiana-sprawdzenie-i-wykonanie)
-6. [Wyniki i dziennik projektu](#6-wyniki-i-dziennik-projektu)
-7. [Sesja, opcje i praca bez terminala](#7-sesja-opcje-i-praca-bez-terminala)
-8. [Kody wyjścia](#8-kody-wyjścia)
-9. [Co Retman potrafi teraz](#9-co-retman-potrafi-teraz)
-10. [Retman w Pythonie](#10-retman-w-pythonie)
-11. [Diagnostyka: `retman doctor`](#11-diagnostyka-retman-doctor)
-12. [Dostrajanie progów: `retman-eval`](#12-dostrajanie-progów-retman-eval)
-13. [Dobre praktyki i ograniczenia](#13-dobre-praktyki-i-ograniczenia)
+1. [Preparation](#1-preparation)
+2. [Project folder](#2-project-folder)
+3. [First command](#3-first-command)
+4. [Answering questions](#4-answering-questions)
+5. [Plan, change, check and execution](#5-plan-change-check-and-execution)
+6. [Results and project journal](#6-results-and-project-journal)
+7. [Session, options and working without a terminal](#7-session-options-and-working-without-a-terminal)
+8. [Exit codes](#8-exit-codes)
+9. [What Retman Can Do Now](#9-what-retman-can-do-now)
+10. [Retman in Python](#10-retman-in-python)
+11. [Diagnostics: `retman doctor check`](#11-diagnostics-retman-doctor-check)
+12. [Tuning thresholds: `retman eval run`](#12-tuning-thresholds-retman-eval-run)
+13. [Good practices and limitations](#13-good-practices-and-limitations)
 
 ---
 
-## 1. Przygotowanie
+## 1. Preparation
 
-Retman nie zawiera modelu językowego. Potrzebne są cztery rzeczy: Retman z narzędziami
-w **jednym** środowisku, działający serwer modelu, plik konfiguracji i magazyny danych narzędzi.
+Retman does not include a language model. Four things are needed: Retman with the tools
+in **one** environment, a running model server, settings and the tools' data stores.
 
-### 1.1. Instalacja
+### 1.1. Installation
 
-Instalację opisuje ARCHITECTURE 9.4. Do czasu wydania v0.1.0 nie ma tagu wydania, a tagów `v0.8.0`
-Kartografa i `v3.0.0` IMGWTools jeszcze nie wypchnięto, więc instaluje się Retmana z gałęzi `develop`
-i narzędzia z przypiętych commitów (te same, których używają testy, grupa `tools` w `pyproject.toml`):
+Installation is described in ARCHITECTURE 9.4. Until v0.1.0 is released there is no release tag, and
+the Kartograf `v0.8.0` and IMGWTools `v3.0.0` tags have not been pushed yet, so you install Retman from
+the `develop` branch and the tools from pinned commits (the same ones the tests use, the `tools` group
+in `pyproject.toml`; both are the heads of the branches `feature/archiwista-projects` of the tools,
+and `docs/PROGRESS.md` says whether they are pushed):
 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@8e9bcbb058d11f06afae5a65e62f31870f69d169" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@0d98f3babeeeee49b2146a977b62bfa92114beea"
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@8ad55ab67b1e6e2e2ef3eb52cb6930ed92fecc06" \
+    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@4bf8bb0d44ceb27ca84f4f6fa6ffeee46a6b3185"
 ```
 
-Dodatek `store` IMGWTools instaluje `pyarrow` (szeregi czasowe to pliki Parquet). Po wydaniu tagów
-polecenie dostanie wersje `@v0.8.0` i `@v3.0.0`. Narzędzie zainstalowane w innym środowisku jest dla
-Retmana niewidoczne; `retman doctor` (p. 11) podaje wtedy polecenie, które je doda.
+The IMGWTools `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are
+released, the command will get the versions `@v0.8.0` and `@v3.0.0`. A tool installed in a different
+environment is invisible to Retman; `retman doctor check` (section 11) then gives the command that
+will add it.
 
-### 1.2. Serwer modelu
+### 1.2. Model server
 
-Na razie Retman rozmawia z serwerem zgodnym z API OpenAI, np. LM Studio z załadowanym
-modelem (sprawdzony: Bielik 11B, `docs/research/2026-10-11-lm-studio-openai-compatible.md`).
-Serwer uruchamia się osobno, przed pracą z Retmanem.
+For now Retman talks to a server compatible with the OpenAI API, e.g. LM Studio with a loaded
+model (tested: Bielik 11B, `docs/research/2026-10-11-lm-studio-openai-compatible.md`).
+The server is started separately, before working with Retman.
 
-### 1.3. Plik konfiguracji i magazyny danych
+### 1.3. Settings and data stores
+
+Retman's settings are the `[retman]` tables of the `nogat.toml` file, shared by the Nogat tools. It lives
+in the user's settings folder (on Linux `~/.config/nogat/nogat.toml`); a different file is pointed to
+by the `NOGAT_CONFIG` variable or the `--config PATH` option on the command. The file is **optional**:
+every setting has a default value except the model server (`[retman.decision]`), and an environment
+variable overrides the file. A value comes from the first of these places:
+
+1. a command option (`--config`, `--lang`, `--verbose`, `--quiet`);
+2. the `RETMAN_<KEY>` variable — the key with dots replaced by `_`, e.g. `decision.url` is `RETMAN_DECISION_URL`;
+3. the `NOGAT_<KEY>` variable — only for shared keys: `lang`, `log_level`, `data_dir`, `cache_dir`;
+4. the `[retman]` table of the file (subtables: `[retman.decision]`, `[retman.tools.kartograf]` …);
+5. the `[nogat]` table of the file — shared keys only;
+6. the default value.
+
+All variables are listed in the README and `.env.example`. What Retman sees and where it comes from
+is shown by
 
 ```bash
-retman init        # tworzy plik centralny retman.toml i foldery magazynów narzędzi
+retman config show           # text; with --json a retman-config/1 document
 ```
 
-W terminalu `retman init` pyta o zbieranie poleceń (p. 6.4) i o folder na **magazyny danych
-narzędzi**, tworzy foldery, sprawdza, że dysk ma dowiązania twarde, zapisuje plik, a na końcu — za
-Twoją zgodą — tworzy magazyn IMGWTools (bez sieci). Przebieg (Enter przyjmuje wartość domyślną; ścieżki
-skrócono):
+It shows the settings file (even an unreadable one — then with the error description), every key with
+its value and source (default, variable or file), the variable with the model provider's key (`jest`
+"present" or `brak` "missing", never the value) and the tools' stores with their size. Stores and caches
+are by default located in the user's folders: the Kartograf store in `<data_dir>/kartograf`, the
+IMGWTools store in `<data_dir>/imgw`, the Kartograf cache in `<cache_dir>/kartograf/metadata.db`,
+IMGWTools reference data in `<cache_dir>/imgw/reference`, the command set in
+`<data_dir>/retman/collected.jsonl` (`data_dir` and `cache_dir` are the nogat user's data and cache
+folders; on Linux `~/.local/share/nogat` and `~/.cache/nogat`).
+
+```bash
+retman config init   # appends the [retman] tables to nogat.toml and creates the tool store folders
+```
+
+All of this can be left at the defaults, but `retman config init` writes the complete set of settings
+to the file so that nothing is hidden. In the terminal it asks about collecting commands (section 6.4)
+and about the folder for the **tools' data stores**, creates the folders, checks that the disk supports
+hard links, writes the tables, and finally — with your consent — creates the IMGWTools store (no
+network). The run (Enter accepts the default value; paths were shortened):
 
 ```
-$ retman init
-Czy zbierać Twoje polecenia ze wszystkich projektów w jednym pliku (~/.local/share/retman/collected.jsonl)?
+$ retman config init
+Czy zbierać Twoje polecenia ze wszystkich projektów w jednym pliku (~/.local/share/nogat/retman/collected.jsonl)?
 Zapisywane są: polecenie, plan, Twoje odpowiedzi i decyzje modelu — do budowy i strojenia zbioru testowego.
-Plik zostaje na tym komputerze; nic nie jest nigdzie wysyłane. Ustawienie można zmienić w [privacy] collect_commands.
+Plik zostaje na tym komputerze; nic nie jest nigdzie wysyłane. Ustawienie można zmienić w [retman.privacy] collect_commands.
 Zbierać polecenia? [t]ak / [N]ie:
 Gdzie trzymać dane pobierane przez narzędzia (Kartograf, IMGWTools)?
-Magazyny to dwa osobne foldery w wybranym folderze — kartograf i imgwtools — więc oba są na jednym dysku. Wybierz dysk z dużą ilością miejsca: rastry i archiwa zajmują gigabajty, a magazyny są wspólne dla wszystkich projektów.
-Plik cache Kartografa trafi na dysk lokalny użytkownika: ~/.local/share/retman/kartograf_cache.db.
-Folder na magazyny [Enter = ~/.local/share/retman/stores]:
-~/.config/retman/retman.toml
-Zbieranie poleceń wyłączone ([privacy] collect_commands = false).
-Magazyny narzędzi (ustawienia [tools.*] w pliku):
-  Kartograf: ~/.local/share/retman/stores/kartograf
-  IMGWTools: ~/.local/share/retman/stores/imgwtools
-Czy utworzyć teraz magazyn IMGWTools w ~/.local/share/retman/stores/imgwtools?
+Magazyny to dwa osobne foldery w wybranym folderze — kartograf i imgw — więc oba są na jednym dysku. Wybierz dysk z dużą ilością miejsca: rastry i archiwa zajmują gigabajty, a magazyny są wspólne dla wszystkich projektów.
+Plik cache Kartografa trafi na dysk lokalny użytkownika: ~/.cache/nogat/kartograf/metadata.db.
+Folder na magazyny [Enter = ~/.local/share/nogat]:
+~/.config/nogat/nogat.toml
+Zbieranie poleceń wyłączone ([retman.privacy] collect_commands = false).
+Magazyny narzędzi (ustawienia [retman.tools.*] w pliku):
+  Kartograf: ~/.local/share/nogat/kartograf
+  IMGWTools: ~/.local/share/nogat/imgw
+Czy utworzyć teraz magazyn IMGWTools w ~/.local/share/nogat/imgw?
 Tworzenie nie używa sieci: w pustym folderze powstaje znacznik magazynu. Bez magazynu nie działają operacje na danych IMGW, które zapisują się lokalnie.
 Utworzyć magazyn IMGWTools? [t]ak / [N]ie: t
-Magazyn IMGWTools gotowy: ~/.local/share/retman/stores/imgwtools
+Magazyn IMGWTools gotowy: ~/.local/share/nogat/imgw
 ```
 
-`retman init` wypisuje ścieżkę utworzonego pliku i nigdy nie nadpisuje istniejącego. Bez terminala
-zapisuje plik z widocznymi ścieżkami domyślnymi i niczego nie tworzy (Kartograf utworzy swój magazyn
-przy pierwszym pobraniu, a magazyn IMGWTools utworzysz poleceniem „Utwórz magazyn IMGW”). Jeśli dysk
-wybranego folderu **nie ma dowiązań twardych** (FAT/exFAT, część udziałów sieciowych), `retman init`
-kończy się błędem (kod 1) i nie zapisuje pliku — wskaż folder na innym dysku.
+`retman config init` prints the path of the file it wrote the tables to. An existing file stays as it was:
+the `[retman]` tables are appended at the end, and other tables (`[nogat]`, tables of other tools) are not
+touched. If the file already has a `[retman]` table, `retman config init` ends with a `conflict` error
+(code 4) and changes nothing. Without a terminal it writes the tables with the visible default paths and
+creates nothing (Kartograf writes the marker of its store on the first download, and you create the
+IMGWTools store with the command "Utwórz magazyn IMGW" (create the IMGW store)). If the disk of the chosen folder **has no hard
+links** (FAT/exFAT, some network shares), `retman config init` ends with a `store_unavailable` error
+(code 8) and does not write the file — point to a folder on another disk.
 
-Plik ma dwie sekcje magazynów, obie wymagane — plik bez nich Retman odrzuca:
+The store tables in the file, with absolute paths (shortened here to `~`):
 
 ```toml
-[tools.kartograf]
-store_dir = '~/.local/share/retman/stores/kartograf'      # pobrane pliki, wspólne dla wszystkich projektów
-cache_file = '~/.local/share/retman/kartograf_cache.db'   # cache metadanych; dysk LOKALNY, nie udział sieciowy
-workers = 4                                               # równoległe transfery
+[retman.tools.kartograf]
+store_dir = '~/.local/share/nogat/kartograf'              # downloaded files, shared across all projects
+cache_file = '~/.cache/nogat/kartograf/metadata.db'       # metadata cache; LOCAL disk, not a network share
+workers = 4                                               # parallel transfers
 update = "local"                                          # "local" | "upgrade" | "force"
 
-[tools.imgwtools]
-store_dir = '~/.local/share/retman/stores/imgwtools'      # obok magazynu Kartografa, w osobnym folderze
-reference_data_dir = '~/.local/share/retman/imgw-reference'   # opcjonalny plik położeń stacji
+[retman.tools.imgwtools]
+store_dir = '~/.local/share/nogat/imgw'                   # next to the Kartograf store, in a separate folder
+reference_data_dir = '~/.cache/nogat/imgw/reference'      # optional station locations file
 ```
 
-(W prawdziwym pliku ścieżki są bezwzględne i rozwinięte; tu skrócono je do `~`.) Magazyny nie mogą
-leżeć jeden w drugim, a ich ścieżki nie mogą zawierać dowiązań symbolicznych. `update = "local"` oznacza:
-użyj zapisanych wersji i nie pytaj źródeł o nowsze. Szablon pliku jest w `retman/config_template.toml`.
+Stores cannot be nested inside one another, and their paths cannot contain symbolic links.
+`update = "local"` means: use the saved versions and do not ask the sources for newer ones. The table
+template is in `src/retman/config_template.toml`. A copy of a store is made preserving hard links
+(`rsync -aH`); what will not be downloaded again is described in the tool's README.
 
-Szablon jest ustawiony na basal, więc dla LM Studio trzeba zmienić sekcję `[decision]`
-(wartości adresu i modelu — własne):
+**The model server has no default values.** The template is set up for basal, so for LM Studio you have to
+change the `[retman.decision]` table (the address and model values — your own); you can also pass them as
+`RETMAN_DECISION_*` variables and do without the file:
 
 ```toml
-[decision]
+[retman.decision]
 backend = "openai_compatible"
-url = "http://127.0.0.1:1234/v1"   # adres serwera LM Studio
-model = "<nazwa-modelu>"           # nazwa modelu na serwerze
+url = "http://127.0.0.1:1234/v1"   # LM Studio server address
+model = "<model-name>"             # model name on the server
 timeout_s = 30
-confidence = "auto"                # logprobs, a gdy serwer ich nie podaje — zgodność odpowiedzi
+confidence = "auto"                # logprobs, or answer consistency when the server does not provide them
 consistency_runs = 3
 
-[decision.thresholds]
-operation = 0.90                   # progi pewności dostrojone dla modelu (p. 12)
+[retman.decision.thresholds]
+operation = 0.90                   # confidence thresholds tuned for the model (section 12)
 parameter = 0.90
 ```
 
-Progi `"auto"` działają tylko z basalem; z innym backendem trzeba wpisać liczby — Retman
-nie ma ukrytych wartości domyślnych. Wszystkie ustawienia opisuje ARCHITECTURE 9.1.
-Inny plik niż domyślny wskazuje się opcją `--config PATH` przy każdym poleceniu.
+The `"auto"` thresholds work only with basal; with another backend you have to enter numbers. Without the
+model settings, a command with text to recognise ends with a `validation_error` error (reason
+`invalid_config`, code 2) listing the missing keys, while `retman results list`, `retman journal show`, `retman config show` and `retman config init` work without them.
+All settings are described in ARCHITECTURE 9.1 and ADR-021.
 
-### 1.4. Sprawdzenie
+### 1.4. Check
 
 ```bash
-retman doctor
+retman doctor check
 ```
 
-Gdy wszystko jest w porządku, kończy się kodem 0; szczegóły w p. 11.
+When everything is in order, it ends with code 0; details in section 11.
 
 ---
 
-## 2. Folder projektu
+## 2. Project folder
 
-Retman pracuje w **folderze, w którym go uruchomiono** (folder projektu, np. folder jednej
-zlewni). Tam powstaje podfolder wyników (domyślnie `retman-output/`, ustawienie
-`[output] results_dir`) z numerowanymi wynikami i dziennikiem projektu:
+Retman works in **the folder it was started in** (the project folder, e.g. the folder of a single
+catchment). The results subfolder is created there (by default `retman-output/`, setting
+`[retman.output] results_dir`) with the numbered results and the project journal:
 
 ```
 zlewnia-a/
 └── retman-output/
-    ├── journal.jsonl                                  # dziennik: polecenia, pytania, odpowiedzi, plany, sprawdzenia
-    └── 001_export_station_series/                     # wynik #1
-        ├── result.json                                # wartości, ich źródła, wersje, decyzje modelu, ślad narzędzia
+    ├── journal.jsonl                                  # journal: commands, questions, answers, plans, checks
+    └── 001_export_station_series/                     # result #1
+        ├── result.json                                # values, their sources, versions, model decisions, tool trace
         ├── hydro_daily_149190310_2022-11-01_2024-10-31.csv
-        ├── tool_1_series_export.json                  # pełne dokumenty narzędzia (ślad audytowy)
+        ├── tool_1_series_export.json                  # full tool documents (audit trail)
         └── tool_2_series_select.json
 ```
 
-Dane **Kartografa** nie leżą w folderze projektu: Kartograf zapisuje je w swoim magazynie
-(`[tools.kartograf] store_dir`), a wynik wskazuje te pliki ścieżką bezwzględną i sumą SHA-256 (p. 6.2).
-Wynik zawiera wtedy `result.json` i dokumenty narzędzia, a podsumowanie mówi, gdzie są pliki.
+**Kartograf's** data does not live in the project folder: Kartograf saves it in its own store
+(`[retman.tools.kartograf] store_dir`), and the result points to those files by absolute path and SHA-256 checksum (section 6.2).
+The result then contains `result.json` and the tool's documents, and the summary says where the files are.
 
-Uruchamiaj Retmana w folderze projektu, nie w katalogu domowym ani w repozytorium.
+Run Retman in the project folder, not in your home directory or in the repository.
 
 ---
 
-## 3. Pierwsze polecenie
+## 3. First command
 
-Polecenie to zwykłe zdanie po polsku, w cudzysłowie:
+A command is an ordinary sentence in Polish, in quotation marks:
 
 ```
-$ retman "Pobierz NMT 1 m dla arkusza N-34-130-D-d-2-4"
+$ retman plan run --text "Pobierz NMT 1 m dla arkusza N-34-130-D-d-2-4"
 ? W którym układzie wysokościowym pobrać NMT: EVRF2007 czy KRON86?
   1) EVRF2007
   2) KRON86 (tylko 0,5 m i 1 m)
@@ -191,23 +232,23 @@ Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 Plan odrzucony.
 ```
 
-Co się stało:
+What happened:
 
-1. Model wybrał operację z listy dostępnych — operacji jest więcej niż 9, więc najpierw wybrał grupę
-   („Dane przestrzenne GUGiK”), a potem operację w niej (tu: NMT dla arkusza).
-2. Godło arkusza i rozdzielczość odczytał **kod** z treści polecenia — liczb, godeł
-   i współrzędnych nie odgaduje model.
-3. Polecenie nie podawało układu wysokościowego, więc Retman **zapytał**, zamiast przyjąć
-   wartość domyślną (operacje Kartografa nie mają wartości domyślnych, ADR-006).
-4. Plan pokazuje każdą wartość. Wiersz z oznaczeniem `← podgląd, bez sieci` dopowiedział **narzędzie**:
-   Kartograf sprawdził plan offline (czy przyjmuje takie żądanie) i policzył arkusze. Do tego miejsca
-   Retman nie użył sieci narzędzia (PRD N-12).
-5. Nic nie zostało wykonane bez `t`.
+1. The model chose the operation from the list of available ones — there are more than 9 operations, so it
+   first chose a group ("Dane przestrzenne GUGiK", GUGiK spatial data) and then an operation within it (here: DEM (NMT) for a map sheet).
+2. The sheet code (godło) and the resolution were read from the command text by **code** — numbers, sheet
+   codes and coordinates are not guessed by the model.
+3. The command did not give the vertical datum, so Retman **asked** instead of assuming a default value
+   (Kartograf operations have no default values, ADR-006).
+4. The plan shows every value. The row marked `← podgląd, bez sieci` was filled in by the **tool**:
+   Kartograf checked the plan offline (whether it accepts such a request) and counted the map sheets. Up to
+   this point Retman did not use the tool's network access (PRD N-12).
+5. Nothing was executed without `t`.
 
-Im pełniejsze polecenie, tym mniej pytań:
+The more complete the command, the fewer questions:
 
 ```
-$ retman "ściągnij bdot dla powiatu 2264 w gpkg"
+$ retman plan run --text "ściągnij bdot dla powiatu 2264 w gpkg"
 Plan:
 Operacja: Pobranie BDOT10k (bieżące paczki powiatów)
 Obszar BDOT10k: powiat o kodzie TERYT 2264
@@ -215,27 +256,27 @@ Format BDOT10k: GeoPackage (.gpkg)
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 ```
 
-Retman rozumie też nazwy i skróty angielskie używane w praktyce (DEM, DTM, DSM, orthophoto,
-GPKG, SHP) oraz zapis potoczny i bez polskich znaków.
+Retman also understands English names and abbreviations used in practice (DEM, DTM, DSM, orthophoto,
+GPKG, SHP) as well as colloquial spelling and text without Polish diacritics.
 
 ---
 
-## 4. Odpowiadanie na pytania
+## 4. Answering questions
 
-Retman zadaje **jedno pytanie naraz**. Na pytanie można odpowiedzieć:
+Retman asks **one question at a time**. You can answer a question with:
 
-| Odpowiedź | Działanie |
+| Answer | Action |
 | --- | --- |
-| numer opcji, np. `1` | wybiera opcję z listy |
-| własne słowa, np. `kronsztadt` | odpowiedź sprawdzają te same reguły co polecenie; gdy jest niejasna, Retman pyta ponownie |
-| `?` | pokazuje pomoc do pytania (zakres wartości, ograniczenia narzędzia) |
-| `anuluj` | przerywa polecenie (kod 3) |
+| an option number, e.g. `1` | selects the option from the list |
+| your own words, e.g. `kronsztadt` | the answer is checked by the same rules as a command; if it is unclear, Retman asks again |
+| `?` | shows help for the question (value range, tool limitations) |
+| `anuluj` | cancels the command (exit code 130) |
 
-Zapis o kilku możliwych odczytach zawsze kończy się pytaniem. Przykład: współrzędne PL-1992
-bez wskazania kolejności osi — Retman pokazuje oba odczyty i podpowiada format:
+A notation with several possible readings always ends in a question. Example: PL-1992 coordinates
+without an indication of axis order — Retman shows both readings and suggests the format:
 
 ```
-$ retman --plan-only "Wytnij NMT 530000,382000,530100,382100 EPSG:2180 w EVRF2007, wynik w PL-1992"
+$ retman plan run --check --text "Wytnij NMT 530000,382000,530100,382100 EPSG:2180 w EVRF2007, wynik w PL-1992"
 ? Jaki prostokąt współrzędnych albo plik geometrii wyciąć z danych wysokościowych?
   1) prostokąt w PL-1992 (kolejność E, N): E 530000–530100, N 382000–382100
   2) prostokąt w PL-1992 (zamieniona kolejność N, E): E 382000–382100, N 530000–530100
@@ -249,11 +290,12 @@ Układ wysokościowy wycinka: EVRF2007
 Prostokąt lub obszar wycinka: prostokąt w PL-1992 (EPSG:2180): E 530000–530100, N 382000–382100
 ```
 
-Tak samo pytanie dostaje zapis prawdopodobieństwa, który ma dwa odczyty („Q50” to 50% czy okres
-powtarzalności 50 lat?). Wartość podana bez znaku, jak „dla 1”, też zawsze kończy się pytaniem:
+The same question comes up for a probability notation that has two readings (is "Q50" 50% or a return
+period of 50 years?). A value given without a sign, such as "dla 1" ("for 1"), also always ends in
+a question:
 
 ```
-$ retman --plan-only "Opady maksymalne PMAXTP dla punktu 52.23, 21.01 metodą POT dla Q50"
+$ retman plan run --check --text "Opady maksymalne PMAXTP dla punktu 52.23, 21.01 metodą POT dla Q50"
 ? Dla jakiego prawdopodobieństwa przewyższenia zawęzić tabelę (np. 1%, 2%, 10%)?
   1) p = 50%
   2) okres powtarzalności T = 50 lat (p = 2%)
@@ -267,23 +309,25 @@ Zapis w magazynie: Tylko plik wyniku
 Prawdopodobieństwo: 50% (T = 2 lat)
 ```
 
-Odpowiedź spoza listy kończy się komunikatem `Błąd: Wybierz jedną z podanych możliwości.`
-i tym samym pytaniem.
+An answer outside the list ends with the message `Błąd: Wybierz jedną z podanych możliwości.`
+("Error: Choose one of the given options.") and the same question.
 
-### 4.1. Pytania, których model nie rozstrzyga
+### 4.1. Questions the model does not resolve
 
-Retman pyta zawsze, gdy wartość mogłaby zmienić wynik, a polecenie jej nie rozstrzyga:
+Retman always asks when a value could change the result and the command does not resolve it:
 
-- **rodzaj roku** (hydrologiczny od 1 listopada do 31 października czy kalendarzowy) przy szeregach
-  stacji IMGW — nie ma wartości domyślnej, a słowo „hydrologiczne” opisujące dane („dane
-  hydrologiczne z lat 2000–2020”) nie jest odpowiedzią;
-- **stacja podana w formie odmienionej** („na Rabie”, „w Poznaniu”) — Retman pokazuje odczyt i prosi
-  o potwierdzenie wyborem z listy; nazw nie poprawia po literówkach;
-- **okres względny** („ostatnie 10 lat”, „od 2010”) — nie zamienia go na daty, prosi o lata albo daty;
-- **warstwa pliku geometrii** (GeoPackage z kilkoma warstwami):
+- **type of year** (hydrological, from 1 November to 31 October, or calendar) for IMGW station
+  time series — there is no default value, and the word "hydrologiczne" describing the data ("dane
+  hydrologiczne z lat 2000–2020", "hydrological data from 2000–2020") is not an answer;
+- **a station given in an inflected form** ("na Rabie", "w Poznaniu" — "on the Raba", "in Poznań") —
+  Retman shows its reading and asks for confirmation by selecting from a list; it does not correct
+  misspelled names;
+- **a relative period** ("ostatnie 10 lat", "od 2010" — "the last 10 years", "since 2010") — it does not
+  convert it to dates; it asks for years or dates;
+- **the layer of a geometry file** (a GeoPackage with several layers):
 
 ```
-$ retman "Pobierz NMT 1 m w EVRF2007 dla obszaru z pliku zlewnie.gpkg"
+$ retman plan run --text "Pobierz NMT 1 m w EVRF2007 dla obszaru z pliku zlewnie.gpkg"
 ? Która warstwa pliku zlewnie.gpkg wyznacza obszar?
   1) zlewnie
   2) dzialki
@@ -298,19 +342,20 @@ Liczba arkuszy: 1 × 1:10000 (PL-1992) ← podgląd, bez sieci
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 ```
 
-Plik z jedną warstwą (i Shapefile) nie wywołuje pytania. Plany pokazują zdanie o tym, co plik oznacza dla
-danej operacji (np. wycinek to jeden prostokąt obejmujący wszystkie obiekty warstwy, bez przycinania),
-oraz obwiednię i liczbę arkuszy z podglądu. Pliki GeoJSON i GML nie są przyjmowane — geometria musi
-być plikiem SHP albo GPKG.
+A file with a single layer (and a Shapefile) does not trigger a question. Plans show a sentence about
+what the file means for the given operation (e.g. a cutout is a single rectangle covering all objects
+of the layer, without clipping), as well as the bounding box and number of map sheets from the preview.
+GeoJSON and GML files are not accepted — the geometry must be an SHP or GPKG file.
 
-### 4.2. Narzędzie odrzuca wybór
+### 4.2. The tool rejects a choice
 
-Narzędzie sprawdza kompletny plan **offline**. Gdy odrzuci kombinację (np. NMT 5 m dostępny tylko
-w EVRF2007 razem z KRON86), Retman nie ufa już tej wartości i **pyta ponownie** o parametr, który narzędzie
-wskazało, z powodem w pytaniu (tekst narzędzia jest w nim cytatem):
+The tool checks the complete plan **offline**. When it rejects a combination (e.g. DEM (NMT) 5 m is
+available only in EVRF2007 together with KRON86), Retman no longer trusts that value and **asks again**
+about the parameter the tool pointed to, with the reason in the question (the tool's text is quoted
+in it):
 
 ```
-$ retman "Pobierz NMT 5 m w układzie KRON86 dla arkusza N-34-130-D-d-2-4"
+$ retman plan run --text "Pobierz NMT 5 m w układzie KRON86 dla arkusza N-34-130-D-d-2-4"
 ? W jakiej rozdzielczości pobrać NMT: 0,15 m, 0,5 m, 0,6 m, 1 m, 5 m, 10 m czy 100 m?
   1) 0,15 m (tylko EVRF2007)
   2) 0,5 m
@@ -330,26 +375,30 @@ Liczba arkuszy: 1 × 1:10000 (PL-1992) ← podgląd, bez sieci
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 ```
 
-Plan, którego narzędzie nie przyjmuje, nie da się potwierdzić. Odpowiedź na jeden parametr unieważnia
-parametry od niego zależne (tu układ wysokościowy): Retman odczytuje je od nowa z polecenia, a podgląd
-uruchamia się ponownie.
+A plan the tool does not accept cannot be confirmed. Answering one parameter invalidates the parameters
+that depend on it (here the vertical reference system): Retman reads them anew from the command, and
+the preview runs again.
 
 ---
 
-## 5. Plan, zmiana, sprawdzenie i wykonanie
+## 5. Plan, change, check and execution
 
-Po zebraniu wszystkich wartości Retman pokazuje plan i czeka na decyzję:
+After collecting all values, Retman shows the plan and waits for a decision:
 
-| Odpowiedź | Działanie |
+| Answer | Action |
 | --- | --- |
-| `t` | wykonuje plan |
-| `n` | odrzuca plan (kod 3); w dzienniku zostaje „odrzucony” |
-| `z` | zmiana jednej wartości bez wpisywania polecenia od nowa |
-| `s` | sprawdzenie dostępności danych (sieć, osobna zgoda); tylko gdy operacja je oferuje (p. 5.4) |
-| `?` | pomoc |
-| `anuluj` | przerywa (kod 3) |
+| `t` | executes the plan |
+| `n` | rejects the plan (exit code 130); the journal records "rejected" |
+| `z` | changes one value without typing the command again |
+| `s` | checks data availability (network, separate consent); only when the operation offers it (section 5.4) |
+| `?` | help |
+| `anuluj` | cancels (exit code 130) |
 
-### 5.1. Zmiana wartości (`z`)
+These are the Polish words. With `--lang en` the prompts are English and the words are `y` (yes), `n`,
+`c` (change), `a` (availability check) and `cancel`; a session ends with `end` instead of `koniec`. The
+words of each language are the `[answers]` table of its translation file.
+
+### 5.1. Changing a value (`z`)
 
 ```
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
@@ -374,17 +423,17 @@ Układ współrzędnych wyniku: EPSG:5514 (S-JTSK)
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 ```
 
-Po zmianie plan pokazuje się od nowa (z ponownym podglądem offline), a poprzednie potwierdzenie
-i sprawdzenie dostępności przestają obowiązywać. Plan pokazuje prostokąt tak, jak Retman go **odczytał**
-(E, N), żeby pomyłkę w kolejności osi było widać przed wykonaniem.
+After the change the plan is shown again (with a fresh offline preview), and the previous confirmation
+and availability check no longer apply. The plan shows the rectangle as Retman **read** it (E, N), so that
+a mistake in the axis order is visible before execution.
 
-### 5.2. Wykonanie (`t`)
+### 5.2. Execution (`t`)
 
-Przykład z magazynu testowego IMGWTools (fikcyjna stacja „Raba Górna”, bez sieci). Polecenie nie podaje
-rodzaju roku, więc Retman pyta; źródło danych (magazyn) wybrał model:
+An example from the IMGWTools test store (fictional station "Raba Górna", no network). The command does
+not specify the kind of year, so Retman asks; the data source (store) was chosen by the model:
 
 ```
-$ retman "Pobierz dobowe przepływy ze stacji Raba Górna z lat 2023–2024"
+$ retman plan run --text "Pobierz dobowe przepływy ze stacji Raba Górna z lat 2023–2024"
 ? Czy podane lata to lata kalendarzowe (1 I – 31 XII) czy hydrologiczne (1 XI – 31 X)?
   1) Hydrologiczne (1 XI – 31 X)
   2) Kalendarzowe (1 I – 31 XII)
@@ -397,50 +446,62 @@ Okres: 2023–2024
 Źródło danych: Z lokalnego magazynu (bez sieci)
 Zmienne: Q — przepływ
 Rodzaj lat: Hydrologiczne (1 XI – 31 X)
-Magazyn IMGW: ~/.local/share/retman/stores/imgwtools (z konfiguracji) ← podgląd, bez sieci
+Magazyn IMGW: ~/.local/share/nogat/imgw (z ustawień) ← podgląd, bez sieci
 Dane w magazynie: 2024-02-29 – 2024-02-29, luk: 0 ← podgląd, bez sieci
 Okres w magazynie: magazyn pokrywa tylko część wybranego okresu (2024-02-29 – 2024-02-29) ← podgląd, bez sieci
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 > t
 Gotowe. Wynik #1: szereg stacji 149190310 (91 wierszy, 2023-12-01 – 2024-02-29) zapisany w pliku CSV.
-Uwaga: Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wodnej – Państwowy Instytut Badawczy. Dane Instytutu Meteorologii i Gospodarki Wodnej – Państwowego Instytutu Badawczego zostały przetworzone. Do użytku prywatnego i badawczego; inne zastosowania wymagają sprawdzenia warunków IMGW-PIB, także wyjątków dla danych o wysokiej wartości.
+Uwaga: Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wodnej – Państwowy Instytut Badawczy. Dane Instytutu Meteorologii i Gospodarki Wodnej – Państwowego Instytutu Badawczego zostały przetworzone. For private and research use; other uses require checking the IMGW-PIB terms, including the exceptions for high-value data.
 ```
 
-Po podsumowaniu Retman wypisuje **ostrzeżenia** operacji, każde w osobnej linii „Uwaga: …”: uwagi
-narzędzia o jakości danych (np. niepełny lot GUGiK) i licencyjne (IMGW) są pokazywane dosłownie, a wynik
-częściowy jest wynikiem z ostrzeżeniem. Wynik nieudany też dostaje numer i kończy się kodem 1; komunikat
-wybiera Retman po stabilnym kodzie błędu narzędzia, a tekst narzędzia jest tylko cytatem
-(np. „GUGiK nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: …”).
-Pobranie z GUGiK przez Kartografa wygląda tak samo: pliki trafiają do magazynu Kartografa, a podsumowanie
-mówi, gdzie są („Pliki w magazynie narzędzia: …”).
+After the summary Retman prints the operation's **warnings**, each on its own line "Uwaga: …" (Notice: …):
+the tool's notices about data quality (e.g. an incomplete GUGiK flight) and licensing (IMGW) are shown
+verbatim, and a partial result is a result with a warning. A failed result also gets a number, and the run ends with the registry error of its failure (its code is
+the exit code, section 8); Retman chooses the message based on the tool's stable error code, and the tool's text is only
+a quotation (e.g. "GUGiK nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: …"
+— GUGiK has no data for the given area and selected product parameters. Details: …).
+IMGWTools writes its texts in English and Retman shows them as they come, so a Polish message can quote
+an English detail, and the licence notice of an IMGW result is the provider's attribution (Polish, in
+the wording IMGW-PIB requires) followed by the English notice of the tool (as in the example above;
+ADR-024).
+A download from GUGiK via Kartograf looks the same: the files go to Kartograf's store (`store_dir`;
+Retman always calls Kartograf with the store, which all projects share, never with a plain
+folder for its files), and the summary says where they are ("Pliki w magazynie
+narzędzia: …" — Files in the tool's store: …). The error codes of Kartograf are the codes of
+the registry (section 8): GUGiK having no data for the area is `no_data`, and a failed transfer
+is `source_unavailable`.
 
-### 5.3. Podgląd planu (offline)
+### 5.3. Plan preview (offline)
 
-Wiersze z `← podgląd, bez sieci` to to, co narzędzie ustaliło o Twoim planie **bez użycia sieci** i bez
-zapisu: stan magazynu, liczba arkuszy, obwiednia pliku geometrii, zakres danych w magazynie, liczba plików
-archiwów do sprawdzenia. Służą do tego, żebyś widział, co plan faktycznie oznacza, zanim go potwierdzisz.
-Gdy podgląd wykryje, że plan się nie uda (np. brak magazynu IMGW, brak szeregu zbioru w magazynie przy
-źródle „magazyn”, ortofotomapa dla pliku geometrii), Retman pyta ponownie o odpowiednie parametry
-z wyjaśnieniem.
+The rows with `← podgląd, bez sieci` are what the tool determined about your plan **without using the
+network** and without writing anything: the state of the store, the number of map sheets, the bounding box
+of the geometry file, the range of data in the store, the number of archive files to check. They are there
+so that you can see what the plan actually means before you confirm it.
+When the preview detects that the plan will fail (e.g. no IMGW store, no series of the dataset in the
+store with source "magazyn" (store), orthophoto for a geometry file), Retman asks again about the relevant
+parameters with an explanation.
 
-Parametr nieobowiązkowy, którego polecenie nie podało, też ma swój wiersz — z tym, co oznacza jego brak:
+An optional parameter that the command did not provide also has its own row — with what its absence
+means:
 
 ```
 Dostawca danych: obaj dostawcy (IMGW-PIB i ČHMÚ) ← nie podano w poleceniu, parametr nieobowiązkowy
 Rodzaj stacji: wszystkie rodzaje (hydrologiczne i meteorologiczne) ← nie podano w poleceniu, parametr nieobowiązkowy
 ```
 
-Retman o takie parametry nie pyta; jeśli chcesz zawęzić wynik, odpowiedz `z` i wybierz wartość albo
-podaj ją w poleceniu. Gdy narzędzie zgłasza wiele podobnych uwag (np. kilkadziesiąt stacji bez
-położenia), wynik pokazuje pierwsze trzy i liczbę pozostałych; pełna lista jest w pliku `tool_*.json`
-w folderze wyniku.
+Retman does not ask about such parameters; if you want to narrow the result, answer `z` and choose a value
+or give it in the command. When the tool reports many similar notices (e.g. several dozen stations without
+a location), the result shows the first three and the number of remaining ones; the full list is in the
+`tool_*.json` file in the result folder.
 
-### 5.4. Sprawdzenie dostępności (`s`)
+### 5.4. Availability check (`s`)
 
-Podgląd offline wie, czy narzędzie przyjmie żądanie, ale nie wie, **co źródło danych faktycznie ma**:
-które lata i rozdzielczości istnieją, czy pokrycie jest pełne, które archiwa IMGW są już opublikowane.
-Można to sprawdzić — to osobny krok z siecią i **własną zgodą**, jedyny przed potwierdzeniem planu.
-Odpowiedź `s` jest dostępna tylko dla operacji, które oferują sprawdzenie, i tylko przy kompletnym planie:
+The offline preview knows whether the tool will accept the request, but it does not know **what the data
+source actually has**: which years and resolutions exist, whether the coverage is complete, which IMGW
+archives have already been published. You can check this — it is a separate step with network access and
+**its own consent**, the only one before the plan is confirmed.
+The answer `s` is available only for operations that offer a check, and only when the plan is complete:
 
 ```
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
@@ -457,41 +518,45 @@ Sprawdzenie dostępności (kartograf 0.8.0, 2026-10-19 20:11): dane dostępne
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 ```
 
-(Raport powstał z zapisanej odpowiedzi GUGiK dla tego arkusza.) Zasady:
+(The report was produced from a saved GUGiK response for this map sheet.) Rules:
 
-- Każda odpowiedź inna niż `t` w pytaniu o zgodę to **odmowa**: „Sprawdzenie pominięte.” i powrót do planu.
-  Zgoda jest jednorazowa i obejmuje jedno sprawdzenie.
-- Raport **tylko informuje** — niczego w planie nie zmienia. Po nim wraca to samo pytanie o plan:
-  `z` zmienia wartość (np. na rozdzielczość z raportu), `t` potwierdza, `n` rezygnuje. Sprawdzenie
-  cofa wcześniejsze potwierdzenie planu; kolejność to zawsze sprawdzenie, potem potwierdzenie.
-- Status raportu to „dane dostępne”, „dane dostępne częściowo”, „brak danych dla tego wyboru” albo „nie
-  udało się sprawdzić” (brak sieci, błąd usługi — to raport, nie awaria). Plan pokazuje wtedy wiersz
-  „Sprawdzenie dostępności: …”.
-- Wysyłane są wyłącznie wartości z planu (obszar, produkt, lata…) — nigdy treść polecenia ani plik.
-- Sprawdzenie nie zajmuje numeru wyniku. Jest w dzienniku projektu także wtedy, gdy je odrzucisz (p. 6.3).
-- Bez terminala i z `--plan-only` Retman nigdy nie sprawdza (p. 7).
+- Any answer other than `t` to the consent question is a **refusal**: "Sprawdzenie pominięte." (Check
+  skipped.) and return to the plan. Consent is one-off and covers a single check.
+- The report **only informs** — it changes nothing in the plan. After it, the same question about the plan
+  returns: `z` changes a value (e.g. to a resolution from the report), `t` confirms, `n` gives up. The check
+  revokes an earlier confirmation of the plan; the order is always check first, then confirmation.
+- The report status is "dane dostępne" (data available), "dane dostępne częściowo" (data partially
+  available), "brak danych dla tego wyboru" (no data for this selection) or "nie udało się sprawdzić"
+  (could not check: no network, service error — this is a report, not a failure). The plan then shows the
+  row "Sprawdzenie dostępności: …" (Availability check: …).
+- Only values from the plan are sent (area, product, years…) — never the text of the command or a file.
+- The check does not take up a result number. It is recorded in the project journal even when you refuse
+  it (section 6.3).
+- Without a terminal and with `--check` Retman never checks (section 7).
 
-Sprawdzenie oferują m.in. cztery operacje Kartografa (lata, rozdzielczości i kompletność pokrycia; dla
-BDOT10k — powiaty obszaru i paczki już w magazynie) oraz budowa katalogu stacji, eksport szeregu ze źródła
-„serwer”, synchronizacja archiwów i pobranie danych projektu IMGW (ile plików jest nowszych albo brakuje).
+The check is offered by, among others, four Kartograf operations (years, resolutions and completeness of
+coverage; for BDOT10k — the counties of the area and packages already in the store) as well as building
+the station catalog, exporting a series from source "serwer" (server) and synchronising archives (how
+many files are newer or missing).
 
 ---
 
-## 6. Wyniki i dziennik projektu
+## 6. Results and project journal
 
-### 6.1. Lista wyników
+### 6.1. List of results
 
 ```
-$ retman results
+$ retman results list
 Gotowe. Wynik #1: szereg stacji 149190310 (91 wierszy, 2023-12-01 – 2024-02-29) zapisany w pliku CSV.
 ```
 
 ### 6.2. `result.json`
 
-Każdy wynik ma `result.json` z danymi do odtworzenia obliczeń: operację, każdą wartość
-ze **źródłem** (`command` — z polecenia, `user` — z odpowiedzi, `default`, `workspace` — z wcześniejszego
-wyniku, `known` — podana z Pythona), pewność decyzji modelu, pliki z sumami SHA-256, wartości zwrócone
-przez narzędzie, ostrzeżenia, wersje Retmana i narzędzia oraz czasy. Fragment (wynik z p. 5.2):
+Each result has a `result.json` with the data needed to reproduce the computation: the operation, every
+value with its **source** (`command` — from the command, `user` — from an answer, `default`, `workspace`
+— from an earlier result, `known` — passed from Python), the confidence of the decision model, files with
+SHA-256 checksums, values returned by the tool, warnings, Retman and tool versions, and timestamps.
+Excerpt (result from section 5.2):
 
 ```json
 {
@@ -515,29 +580,30 @@ przez narzędzie, ostrzeżenia, wersje Retmana i narzędzia oraz czasy. Fragment
  "tool": {
   "tool": "imgwtools", "version": "3.0.0",
   "calls": [{"command": "series export",
-             "command_line": "imgw series export --root <magazyn> --dataset pl.imgw.hydro_daily --station 149190310 …",
+             "command_line": "imgw series export --root <store> --dataset pl.imgw.hydro_daily --station 149190310 …",
              "status": "ok", "document_file": "tool_1_series_export.json", "sha256": "7b645332…"}]
  }
 }
 ```
 
-Dodatkowe sekcje: `tool` — dokładna linia komendy narzędzia z argumentami środowiskowymi, jej status, pliki
-i suma pełnego dokumentu narzędzia (zapisanego obok jako `tool_<n>_<komenda>.json`); `preview` — wartości
-ustalone przez podgląd (np. obwiednia obszaru, liczba arkuszy); `checks` — raporty sprawdzeń dostępności
-dla końcowego stanu planu; `error_code` — stabilny kod błędu narzędzia, gdy wynik się nie powiódł;
-dla obszaru z pliku geometrii wpis parametru ma `files` — sumy SHA-256 plików geometrii.
+Additional sections: `tool` — the exact tool command line with environment arguments, its status, files
+and the checksum of the full tool document (saved alongside as `tool_<n>_<command>.json`); `preview` —
+values established by the preview (e.g. the bounding box of the area, the number of map sheets);
+`checks` — availability check reports for the final state of the plan; `error_code` — a stable tool error
+code when the result failed; for an area from a geometry file, the parameter entry has `files` — SHA-256
+checksums of the geometry files.
 
-Plik, który narzędzie trzyma w swoim magazynie (Kartograf), wynik wskazuje ścieżką bezwzględną, nazwą
-narzędzia i sumą kontrolną, a nie kopią:
+A file that the tool keeps in its own store (Kartograf) is referenced by the result with an absolute path,
+the tool name and a checksum, not with a copy:
 
 ```json
 "files": {"dem": [{"path": "/dane/retman/stores/kartograf/nmt/…/N-34-130-D-d-2-4.asc", "store": "kartograf", "sha256": "…"}]}
 ```
 
-### 6.3. Dziennik projektu
+### 6.3. Project journal
 
 ```
-$ retman log
+$ retman journal show
 2026-10-19T20:11:10.307989+00:00 polecenie: Pobierz dobowe przepływy ze stacji Raba Górna z lat 2023–2024
 2026-10-19T20:11:10.484466+00:00 pytanie: Czy podane lata to lata kalendarzowe (1 I – 31 XII) czy hydrologiczne (1 XI – 31 X)?
 2026-10-19T20:11:10.484568+00:00 odpowiedź: 1
@@ -546,45 +612,53 @@ $ retman log
 2026-10-19T20:11:10.604695+00:00 wykonanie: 1
 ```
 
-Dziennik jest tylko dopisywany i obejmuje także plany odrzucone, zmienione i przerwane oraz **każde
-sprawdzenie dostępności** — wykonane („wykonane”) albo odrzucone („pominięte”, wtedy bez użycia sieci),
-także przerwane Ctrl+C. Przy każdym planie zapisuje, co Retman zrozumiał: wartości ze źródłami (`values`),
-decyzje modelu z pewnością (`decisions`) i — przy zmianie — którą wartość poprawiono (`changed`); pytanie
-zadane ponownie po odrzuceniu przez narzędzie ma też powód (`reason`). Polecenie spoza zakresu ma własne
-zdarzenie z decyzją modelu. Treść poleceń i odpowiedzi zapisuje się przy `[log] journal_commands = true`
-(domyślnie); przy `false` dziennik nie zawiera też pokazanego planu, powodu ponownego pytania i linii raportu.
+The journal is append-only and also covers rejected, changed and interrupted plans as well as **every
+availability check** — performed ("wykonane") or declined ("pominięte", in which case no network is used),
+including those interrupted with Ctrl+C. For each plan it records what Retman understood: values with their
+sources (`values`), decision-model decisions with confidence (`decisions`) and — on a change — which value
+was corrected (`changed`); a question asked again after the tool rejected the answer also has a reason
+(`reason`). A command outside the scope has its own event with the model's decision. The text of commands
+and answers is recorded when `[retman.log] journal_commands = true` (the default); with `false` the journal
+also omits the displayed plan, the reason for re-asking and the report lines.
 
-### 6.4. Zbiór poleceń (opcjonalny)
+### 6.4. Command set (optional)
 
-Po zgodzie w `retman init` (`[privacy] collect_commands = true`) Retman dopisuje wynik
-każdego planowania ze wszystkich projektów do jednego pliku (`[privacy] collect_path`):
-polecenie, Twoje odpowiedzi, wartości ze źródłami, decyzje modelu, status (zatwierdzony
-z wynikiem wykonania, odrzucony, zmieniony, anulowany, poza zakresem), wersje i nazwę modelu
-— bez adresu serwera i bez ścieżek lokalnych (z pliku geometrii zostaje nazwa). Plik zostaje na Twoim
-komputerze; służy do budowy zbioru testowego `retman-eval` z prawdziwej pracy. Wyłączenie:
+After you consent in `retman config init` (`[retman.privacy] collect_commands = true`), Retman appends the
+result of every planning run from all projects to a single file (`[retman.privacy] collect_path`):
+the command, your answers, values with their sources, model decisions, status (approved
+with the execution result, rejected, changed, cancelled, out of scope), versions and the model name
+— without the server address and without local paths (of a geometry file only the name remains). The file
+stays on your computer; it serves to build a test set for `retman eval run` from real work. To disable:
 `collect_commands = false`.
 
 ---
 
-## 7. Sesja, opcje i praca bez terminala
+## 7. Session, options and working without a terminal
 
-### 7.1. Sesja
+### 7.1. Session
 
-`retman` bez polecenia otwiera sesję: kolejne polecenia wpisuje się po znaku `>`.
-`koniec` zamyka sesję (kod 0), `anuluj` przerywa (kod 3).
+`retman plan run` without `--text` in a terminal opens a session: you type successive commands after the
+`>` prompt. `koniec` ("end"; `end` with `--lang en`) closes the session (exit code 0), `anuluj` ("cancel";
+`cancel` with `--lang en`) aborts it (exit code 130). Every `retman` command is a group and a verb
+(`retman commands list` lists them all); the options of each command are described by
+`retman <group> <verb> --help`.
 
-### 7.2. Opcje
+### 7.2. Options
 
-| Opcja | Działanie |
+| Option | Effect |
 | --- | --- |
-| `--plan-only` | zadaje pytania i pokazuje plan (z podglądem offline), ale go nie wykonuje i nie sprawdza dostępności (kod 0) |
-| `--explain` | pod planem wypisuje decyzje modelu: wybór, pewność, metodę i prawdopodobieństwa opcji |
-| `--config PATH` | inny plik konfiguracji niż domyślny |
-| `--json` | z `retman doctor`: raport w JSON |
-| `--deep` | z `retman doctor`: także wolniejsze sprawdzenia (próbny zapis do magazynu IMGWTools) |
+| `--text TEXT` | the command in Polish (`plan run`); without it a terminal opens a session |
+| `--check` | asks questions and shows the plan (with an offline preview), but does not execute it and does not check availability (exit code 0); with `--json` open questions are in `result.questions`, not an error |
+| `--yes` | confirms a complete plan without asking and executes it; mutually exclusive with `--check` |
+| `--explain` | prints the decision-model decisions below the plan: choice, confidence, method and option probabilities |
+| `--config PATH` | a `nogat.toml` file other than the default (section 1.3) |
+| `--json` | in every command: a single `retman-result/1` envelope on stdout and nothing else; never asks |
+| `--lang pl\|en` | language of the texts for people: `pl` (default) or `en`; the texts inside `--json` documents (for example those of `doctor check` and `scaffold check`) are English whatever `--lang` says |
+| `--verbose`, `--quiet` | technical log level on stderr: `debug` or errors only; without the option `RETMAN_LOG_LEVEL` decides, then `NOGAT_LOG_LEVEL`, then `log_level` in `[retman]` and `[nogat]` (default `warning`); the log contains neither commands nor answers |
+| `--deep` | with `doctor check`: also slower checks (a trial write to the IMGWTools store) |
 
 ```
-$ retman --plan-only "Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4"
+$ retman plan run --check --text "Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4"
 Plan:
 Operacja: Pobranie NMT dla arkusza lub obszaru
 Godło arkusza lub obszar NMT: godło arkusza N-34-130-D-d-2-4
@@ -593,148 +667,180 @@ Układ wysokościowy NMT: EVRF2007
 Liczba arkuszy: 1 × 1:10000 (PL-1992) ← podgląd, bez sieci
 ```
 
-### 7.3. Bez terminala (skrypty, potoki, CI)
+### 7.3. Without a terminal (scripts, pipelines, CI)
 
-Gdy wejście nie jest terminalem, Retman nie zadaje pytań, niczego nie wykonuje i nie sprawdza dostępności
-— wypisuje, czego brakuje, i kończy kodem 2:
+When the input is not a terminal or `--json` is given, Retman asks no questions, executes nothing without
+`--yes` and runs no availability check. A plan with open questions is shown by `--check`; without `--check`
+and `--yes` (or with an open question) the command ends with the error `validation_error` (reason
+`input_required`, code 2; `details.questions` lists the questions, `details.option` — the missing option):
 
 ```
-$ retman "Pobierz NMT dla arkusza N-34-130-D-d-2-4" < /dev/null
+$ retman plan run --text "Pobierz NMT dla arkusza N-34-130-D-d-2-4" --check < /dev/null
 Plan:
 Operacja: Pobranie NMT dla arkusza lub obszaru
 Godło arkusza lub obszar NMT: godło arkusza N-34-130-D-d-2-4
 Brakuje: W jakiej rozdzielczości pobrać NMT: 0,15 m, 0,5 m, 0,6 m, 1 m, 5 m, 10 m czy 100 m?
 ```
 
-Pełny plan bez terminala sprawdza się przez `--plan-only`; wykonanie zawsze wymaga
-potwierdzenia — w terminalu albo z Pythona (p. 10).
+A full plan is executed with `--yes` only after a human has seen it (`--check`); in a terminal
+execution requires confirmation, from Python — see section 10.
 
-### 7.4. Polecenie spoza zakresu
+### 7.4. Command out of scope
 
 ```
-$ retman "Jaka będzie jutro pogoda?"
-Błąd: Polecenie nie dotyczy dostępnych operacji: Stacje i rejestr danych IMGW, Dane bieżące i ostrzeżenia IMGW, Opady maksymalne PMAXTP, Szeregi czasowe stacji IMGW i ČHMÚ, Archiwa i magazyn danych IMGW, Projekty danych IMGW, Dane przestrzenne GUGiK
+$ retman plan run --text "Jaka będzie jutro pogoda?"
+Błąd: Polecenie nie dotyczy dostępnych operacji: Stacje i rejestr danych IMGW, Dane bieżące i ostrzeżenia IMGW, Opady maksymalne PMAXTP, Szeregi czasowe stacji IMGW i ČHMÚ, Archiwa i magazyn danych IMGW, Dane przestrzenne GUGiK
 ```
 
-Przy rozpoznawaniu dwustopniowym Retman wymienia **grupy** operacji, a nie dopasowuje na siłę najbliższej
-operacji (PRD W-03).
+With two-stage recognition Retman lists the **groups** of operations instead of forcing a match to the
+nearest operation (PRD W-03).
 
 ---
 
-## 8. Kody wyjścia
+## 8. Exit codes
 
-| Kod | Znaczenie |
-| --- | --- |
-| 0 | operacja wykonana, plan pokazany przy `--plan-only`, sesja zakończona `koniec` |
-| 1 | błąd: konfiguracja, brak połączenia z modelem, błąd narzędzia, polecenie spoza zakresu; `retman init` — nieutworzony folder albo dysk bez dowiązań twardych |
-| 2 | potrzebne odpowiedzi lub potwierdzenie, a wejście nie jest terminalem |
-| 3 | przerwane przez użytkownika (`anuluj`, `n`, Ctrl+C — także w trakcie sprawdzenia dostępności) |
+Exit codes are codes of the shared Nogat registry ([ERROR_REGISTRY](https://github.com/Daldek/Nogat/blob/main/standards/ERROR_REGISTRY.md)):
+the same code means the same thing in every tool. On error, the last line of stderr is a
+`retman-error/1` document (one line of JSON: `code`, `title`, `message`, `hint`, `details`, `exit_code`);
+`details.reason` narrows the code (e.g. `out_of_scope`, `input_required`, `missing_config`).
+Interruption by the user is not an error and prints no document.
 
-`retman doctor`: 0 — da się pracować, 1 — coś blokuje pracę. `retman-eval`: p. 12.
-
----
-
-## 9. Co Retman potrafi teraz
-
-Operacje są w siedmiu grupach (w tym jednej Kartografa); Retman najpierw wybiera grupę, potem operację.
-
-### 9.1. Kartograf 0.8.0 — dane przestrzenne GUGiK (ADR-001, ADR-012, ADR-016)
-
-Wszystkie pobierają dane z GUGiK do magazynu Kartografa; mają podgląd offline i sprawdzenie dostępności:
-
-| Operacja | Obszar | Parametry (Retman dopyta o brakujące) | Przykładowe polecenie |
-| --- | --- | --- | --- |
-| Pobranie NMT dla arkusza lub obszaru | godło arkusza PL-1992 lub PL-2000; plik geometrii | rozdzielczość 0,15 / 0,5 / 0,6 / 1 / 5 / 10 / 100 m; układ wysokościowy EVRF2007 / KRON86 (KRON86 tylko 0,5 m i 1 m; 100 m bez układu) | `Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4` |
-| Pobranie arkuszy potomnych | godło arkusza nadrzędnego; plik geometrii (nie dla ortofotomapy) | produkt NMT / NMPT / ortofotomapa; skala docelowa 1:10000–1:500 (drobniejsze niż 1:10000 tylko w PL-2000); dla NMT rozdzielczość 0,15–10 m, dla NMPT 0,5 / 0,6 / 1 m; układ wysokościowy; dla ortofotomapy kolor RGB / CIR / B-W | `Rozwiń N-34-130-D-d-2 do 1:10000, ściągnij DSM z arkuszy potomnych` |
-| Wycinek NMT albo NMPT 1 m | prostokąt w PL-1992 (EPSG:2180) albo WGS84 (EPSG:4326); plik geometrii | produkt NMT / NMPT; układ wyniku EPSG:2180 / 5514 / 3045 (kod z prefiksem `EPSG:`, sama liczba albo nazwa, np. `wynik w 2180`, `do S-JTSK`); układ wysokościowy | `wytnij dsm z prostokąta 52.40 16.90 52.41 16.91 do 3045` |
-| Pobranie BDOT10k | powiat (TERYT, 4 cyfry), godło, prostokąt albo plik geometrii | format GeoPackage / Shapefile | `ściągnij bdot dla powiatu 2264 w gpkg` |
-
-Formy zapisu obszaru:
-
-- **godło**: `N-34-130-D-d-2-4` (PL-1992, także 8-członowe `N-34-50-A-c-3-2-3`), `5.123.45` (PL-2000);
-- **TERYT powiatu**: `TERYT 2264`, `powiat 2264`;
-- **prostokąt**: cztery liczby i układ, np. `530000,382000,530100,382100 EPSG:2180` albo
-  `52.40 16.90 52.41 16.91` (WGS84). Przy niejednoznacznej kolejności osi Retman pyta (p. 4);
-- **plik geometrii** SHP albo GPKG (p. 4.1): Kartograf czyta plik sam; Retman pyta o warstwę GeoPackage,
-  gdy jest ich kilka, pokazuje w planie obwiednię i liczbę arkuszy oraz zapisuje sumy SHA-256 plików.
-
-### 9.2. IMGWTools 3.0.0 — dane IMGW-PIB i ČHMÚ (ADR-017)
-
-26 operacji w sześciu grupach. Wszystkie wymagają zainicjowanego magazynu IMGW (p. 1.3); rozpoznawanie
-stacji po nazwie działa offline z katalogu stacji w magazynie. Kolumna „Sieć” mówi, czy wykonanie łączy się
-z serwerem (dopiero po `t`):
-
-| Grupa | Operacje | Sieć |
+| Code | Name | Meaning in Retman |
 | --- | --- | --- |
-| Stacje i rejestr danych IMGW | wyszukanie stacji IMGW i ČHMÚ (po nazwie, rzece, rodzaju); budowa katalogu stacji w magazynie (`s`); lista zbiorów danych i dostawców | wyszukanie ze źródła „serwer” i budowa katalogu |
-| Dane bieżące i ostrzeżenia | aktualne pomiary stacji hydrologicznej, meteorologicznej albo synoptycznej; ostrzeżenia hydrologiczne i meteorologiczne; stany wody (alarmowe i ostrzegawcze) | tak |
-| Opady maksymalne PMAXTP | tabela dla punktu (metoda POT albo AMP; zapis komórki w magazynie albo nie; zawężenie do wybranych prawdopodobieństw i czasów trwania); odczyt zapisanej komórki | pobranie tak, odczyt nie |
-| Szeregi czasowe stacji | eksport szeregu stacji do CSV (zbiór, okres, rodzaj roku, zmienne; źródło „magazyn” albo „serwer”, `s`); pokrycie danych stacji w magazynie; budowa szeregów | źródło „serwer” |
-| Archiwa i magazyn danych IMGW | pobranie archiwów hydrologicznych albo meteorologicznych do folderu wyniku; sprawdzenie archiwów względem magazynu (plan); pobranie archiwów do magazynu (`s`), także według planu z wcześniejszego wyniku (np. „#5”); eksport zapisanych archiwów do CSV albo JSON Lines; utworzenie magazynu; opis magazynu | pobrania i sprawdzenie tak |
-| Projekty danych IMGW | utworzenie projektu; dodanie i usunięcie zadania; wskazanie magazynu; pobranie i przypięcie danych (`s`); sprawdzenie aktualności; weryfikacja przypiętych danych | pobranie i sprawdzenie tak |
+| 0 | `ok` | operation executed, plan shown with `--check`, session ended with `koniec` |
+| 1 | `internal_error` | Retman error or unexpected exception; an error in an operation that the tool did not describe |
+| 2 | `validation_error` | invalid option or variable (`usage`), invalid configuration (`invalid_config`), answers or confirmation needed while the input is not a terminal (`input_required`) |
+| 3 | `not_found` | missing settings file pointed to by `--config` or `NOGAT_CONFIG` (`missing_config`), missing input file or result |
+| 4 | `conflict` | settings file already has a `[retman]` table (`output_exists`), plan not confirmed or changed |
+| 5 | `source_unavailable` | model does not respond (`backend_connection`) or the tool's data source failed |
+| 6 | `missing_dependency` | tool is not installed (`tool_not_installed`) or no operations (`no_operations`) |
+| 7 | `data_error` | file inconsistent with its data kind, bad command set for `eval run` |
+| 8 | `store_unavailable` | tool store does not work (e.g. disk without hard links) |
+| 9 | `io_error` | writing or reading a file failed |
+| 10 | `partial` | result printed, but some of the `items` units did not pass: `doctor check` (something blocks work, some checks passed), `eval run` (some commands to be rejected were planned), `scaffold check` (errors in some tools) |
+| 11 | `failed` | the same, when no check or tool passed |
+| 13 | `calculation_error` | tool cannot compute a result from valid data |
+| 14 | `no_data` | source has no data for the area or period (e.g. GUGiK has none for the area; the `result.json` of a failed result keeps the tool's precision, e.g. `no_coverage`, as the `reason` of its failure) |
+| 15 | `unsupported` | command out of scope (`out_of_scope`) or no availability check (`no_check`) |
+| 130 | `cancelled` | interrupted by the user (`anuluj`, `n`, Ctrl+C — also during an availability check) |
+| 143 | `terminated` | process received SIGTERM |
 
-Przykładowe polecenia (poglądowe; nie wszystkie są jeszcze w zbiorze `retman-eval`): „Znajdź stacje hydrologiczne na Wiśle”,
-„Zbuduj katalog stacji IMGW”, „Jakie dane ma ČHMÚ?”, „Aktualny stan wody na stacji Poznań-Bogdanka”,
-„Jakie są ostrzeżenia hydrologiczne?”, „Opady maksymalne PMAXTP dla punktu 52.23, 21.01 metodą POT”,
-„Pobierz dobowe opady ze stacji Poznań z lat 2000–2020”, „Za jakie lata mam dane stacji Poznań-Ławica?”,
-„Sprawdź, ile trzeba pobrać dla opadów dobowych 2000–2020”, „Utwórz magazyn IMGW”, „Co mam w magazynie IMGW?”.
-
-Zasady operacji IMGWTools:
-
-- **stacje**: kod (9 cyfr dla IMGW-PIB, identyfikator WIGOS dla ČHMÚ) albo nazwa z katalogu w magazynie;
-  odmieniona nazwa wymaga potwierdzenia; bez katalogu Retman czyta tylko kody i podpowiada „Zbuduj katalog
-  stacji IMGW”;
-- **okres**: archiwa biorą lata w numeracji archiwów narzędzia (dla danych hydrologicznych IMGW-PIB — lata
-  hydrologiczne), szeregi biorą lata albo daty i rodzaj roku (zawsze pytanie);
-- **PMAXTP**: prawdopodobieństwo i czas trwania z polecenia zawężają tabelę wyniku; wartość spoza tabeli
-  daje ostrzeżenie, nie jest po cichu pomijana;
-- **licencja**: uwagi dostawcy danych są pokazywane po wykonaniu (p. 5.2);
-- magazyn jest tworzony tylko świadomie (`retman init` albo operacja „Utwórz magazyn IMGW”) — brak magazynu
-  to powód ponownego pytania z podpowiedzią, nie ciche utworzenie.
+Codes 10 and 11 do not mean an error: the result was printed, and the code says whether every unit passed.
+`eval run` and `scaffold check` have the same codes; eval options and measures: see section 12.
 
 ---
 
-## 10. Retman w Pythonie
+## 9. What Retman Can Do Now
 
-Ten sam przebieg — pytania, plan, sprawdzenie, potwierdzenie — jest dostępny z Pythona:
+Operations fall into seven groups (including one for Kartograf); Retman first picks the group, then the
+operation.
+
+### 9.1. Kartograf 0.8.0 — GUGiK spatial data (ADR-001, ADR-012, ADR-016)
+
+Five operations. Four of them download data from GUGiK into the Kartograf store (always the
+store, never plain files in the results folder) and have an offline preview and an availability
+check; the fifth writes the marker of the store:
+
+| Operation | Area | Parameters (Retman asks about missing ones) | Example command |
+| --- | --- | --- | --- |
+| Download DEM (NMT) for a map sheet or area | PL-1992 or PL-2000 sheet code (godło); geometry file | resolution 0.15 / 0.5 / 0.6 / 1 / 5 / 10 / 100 m; vertical datum EVRF2007 / KRON86 (KRON86 only for 0.5 m and 1 m; 100 m without a datum) | `Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4` |
+| Download child map sheets | parent sheet code (godło); geometry file (not for orthophoto) | product DEM (NMT) / DSM (NMPT) / orthophoto; target scale 1:10000–1:500 (finer than 1:10000 only in PL-2000); for DEM resolution 0.15–10 m, for DSM 0.5 / 0.6 / 1 m; vertical datum; for orthophoto colour RGB / CIR / B-W | `Rozwiń N-34-130-D-d-2 do 1:10000, ściągnij DSM z arkuszy potomnych` |
+| Cutout of DEM (NMT) or DSM (NMPT) 1 m | rectangle in PL-1992 (EPSG:2180) or WGS84 (EPSG:4326); geometry file | product DEM (NMT) / DSM (NMPT); result CRS EPSG:2180 / 5514 / 3045 (code with the `EPSG:` prefix, the bare number or a name, e.g. `wynik w 2180`, `do S-JTSK`); vertical datum | `wytnij dsm z prostokąta 52.40 16.90 52.41 16.91 do 3045` |
+| Download BDOT10k | county (TERYT, 4 digits), sheet code (godło), rectangle or geometry file | format GeoPackage / Shapefile | `ściągnij bdot dla powiatu 2264 w gpkg` |
+| Create the Kartograf store | the folder `store_dir` of the settings | none; it writes the store marker `kartograf-store.json` (nothing is downloaded, no check), into a new or an empty folder or into a layout that has lost its marker, after Kartograf has checked the layout; a folder with other files or a store inside another store is refused in the plan | `Utwórz magazyn Kartografa` |
+
+Ways of writing the area:
+
+- **sheet code (godło)**: `N-34-130-D-d-2-4` (PL-1992, also the 8-part `N-34-50-A-c-3-2-3`), `5.123.45`
+  (PL-2000);
+- **county TERYT**: `TERYT 2264`, `powiat 2264`;
+- **rectangle**: four numbers and a CRS, e.g. `530000,382000,530100,382100 EPSG:2180` or
+  `52.40 16.90 52.41 16.91` (WGS84). When the axis order is ambiguous, Retman asks (section 4);
+- **geometry file** SHP or GPKG (section 4.1): Kartograf reads the file itself; Retman asks about the
+  GeoPackage layer when there are several, shows the bounding box and the number of map sheets in the plan,
+  and records the SHA-256 checksums of the files.
+
+### 9.2. IMGWTools 3.0.0 — IMGW-PIB and ČHMÚ data (ADR-017)
+
+19 operations in five groups. All of them require an initialised IMGW store (section 1.3); recognising
+stations by name works offline from the station catalog in the store. The "Network" column says whether
+execution connects to the server (only after `t`):
+
+| Group | Operations | Network |
+| --- | --- | --- |
+| IMGW stations and data registry | search for IMGW and ČHMÚ stations (by name, river, kind); build the station catalog in the store (`s`); list of datasets and providers | search from the "server" source and catalog build |
+| Current data and warnings | current measurements of a hydrological, meteorological or synoptic station; hydrological and meteorological warnings; water levels (alarm and warning) | yes |
+| PMAXTP maximum precipitation | table for a point (POT or AMP method; saving the cell in the store or not; narrowing to selected probabilities and durations); reading a saved cell | download yes, read no |
+| Station time series | export of a station's time series to CSV (dataset, period, year kind, variables; source "store" or "server", `s`); data coverage of a station in the store; building time series | "server" source |
+| IMGW data archives and store | download of hydrological or meteorological archives to the result folder; check of archives against the store (plan); download of archives into the store (`s`), also per a plan from an earlier result (e.g. "#5"); export of stored archives to CSV or JSON Lines; store creation; store description | downloads and check yes |
+
+Example commands (illustrative; not all are in the `retman eval run` set yet): "Znajdź stacje hydrologiczne
+na Wiśle" (find hydrological stations on the Vistula), "Zbuduj katalog stacji IMGW" (build the IMGW station
+catalog), "Jakie dane ma ČHMÚ?" (what data does ČHMÚ have?), "Aktualny stan wody na stacji Poznań-Bogdanka"
+(current water level at the Poznań-Bogdanka station), "Jakie są ostrzeżenia hydrologiczne?" (what are the
+hydrological warnings?), "Opady maksymalne PMAXTP dla punktu 52.23, 21.01 metodą POT" (PMAXTP maximum
+precipitation for point 52.23, 21.01 using the POT method), "Pobierz dobowe opady ze stacji Poznań z lat
+2000–2020" (download daily precipitation from the Poznań station for 2000–2020), "Za jakie lata mam dane
+stacji Poznań-Ławica?" (which years of data do I have for the Poznań-Ławica station?), "Sprawdź, ile trzeba
+pobrać dla opadów dobowych 2000–2020" (check how much needs downloading for daily precipitation 2000–2020),
+"Utwórz magazyn IMGW" (create the IMGW store), "Co mam w magazynie IMGW?" (what is in my IMGW store?).
+
+Rules for IMGWTools operations:
+
+- **stations**: a code (9 digits for IMGW-PIB, WIGOS identifier for ČHMÚ) or a name from the catalog in the
+  store; an inflected name requires confirmation; without a catalog Retman reads only codes and suggests
+  "Zbuduj katalog stacji IMGW";
+- **period**: archives take years in the tool's archive numbering (for IMGW-PIB hydrological data —
+  hydrological years), time series take years or dates plus the year kind (always a question);
+- **PMAXTP**: the probability and duration from the command narrow the result table; a value outside the
+  table gives a warning and is not silently skipped;
+- **licence**: the data provider's notices are shown after execution (section 5.2);
+- the store is created only deliberately (`retman config init` or the "Utwórz magazyn IMGW" operation) — a missing
+  store is a reason to ask again with a hint, not to create it silently.
+
+---
+
+## 10. Retman in Python
+
+The same flow — questions, plan, check, confirmation — is available from Python:
 
 ```python
 from pathlib import Path
 
 from retman import Plan, Retman
 
-retman = Retman.from_config(Path("retman.toml"), project_dir=Path("zlewnia-a"))
+retman = Retman.from_config(Path("nogat.toml"), project_dir=Path("zlewnia-a"))
 
 plan = retman.plan("Pobierz NMT 1 m dla arkusza N-34-130-D-d-2-4")
-for question in plan.questions:          # tu: vertical_crs
-    print(question.text)                 # pytanie w języku użytkownika
+for question in plan.questions:          # here: vertical_crs
+    print(question.text)                 # question in the user's language
     for number, option in enumerate(question.options, start=1):
         print(f"  {number}) {option.label}")
-plan = plan.answer("vertical_crs", "1")  # numer albo własne słowa
+plan = plan.answer("vertical_crs", "1")  # a number or your own words
 
-print(plan.summary())                    # ten sam plan co w terminalu (z wierszami podglądu)
+print(plan.summary())                    # the same plan as in the terminal (with preview rows)
 
-if plan.can_check:                       # operacja oferuje sprawdzenie dostępności
-    print(plan.check_notice())           # co sprawdzenie kontaktuje i co wysyła
-    plan.confirm_check()                 # osobna, jednorazowa zgoda; nie potwierdza planu
-    report = retman.check(plan)          # CheckReport; bez zgody CheckNotConfirmedError
-    print(report.summary())              # status i linie; wartości planu bez zmian
+if plan.can_check:                       # the operation offers an availability check
+    print(plan.check_notice())           # what the check contacts and what it sends
+    plan.confirm_check()                 # separate, one-time consent; does not confirm the plan
+    report = retman.check(plan)          # CheckReport; without consent CheckNotConfirmedError
+    print(report.summary())              # status and lines; plan values unchanged
 
-plan.confirm()                           # bez tego execute() zgłasza PlanNotConfirmedError
+plan.confirm()                           # without this execute() raises PlanNotConfirmedError
 result = retman.execute(plan)
 if result.ok:
     print(result.summary)
-    print(result.files)                  # {"dem": [Path(...)]} — w folderze wyniku albo w magazynie narzędzia
+    print(result.files)                  # {"dem": [Path(...)]} — in the output folder or in the tool's store
 else:
     print(result.error, result.error_code)
-for warning in result.warnings:          # uwagi narzędzia (jakość danych, licencja): pokaż je zawsze
+for warning in result.warnings:          # tool notes (data quality, license): always show them
     print("Uwaga:", warning)
 ```
 
-- `Retman.from_config()` bez ścieżki czyta plik centralny z lokalizacji systemowej,
-  a `project_dir` domyślnie to bieżący folder.
-- Wartości znane z góry podaje się przez `known` — trafiają do planu ze źródłem `known`
-  i nie są nadpisywane przez model ani otwierane ponownie po odrzuceniu przez narzędzie:
+- `Retman.from_config()` without a path reads `nogat.toml` from the system location (or from
+  `NOGAT_CONFIG`) and the `RETMAN_*` variables, and `project_dir` defaults to the current folder.
+- Values known up front are passed through `known` — they go into the plan with source `known`
+  and are neither overwritten by the model nor reopened after the tool rejects them:
 
   ```python
   plan = retman.plan(
@@ -744,56 +850,57 @@ for warning in result.warnings:          # uwagi narzędzia (jakość danych, li
   assert plan.questions == []
   ```
 
-- Plan da się zapisać i wznowić: `plan.to_dict()` (JSON) oraz `Plan.from_dict(state, retman=retman)`.
-  Wczytany plan jest **zawsze niepotwierdzony** (także gdy zapisany stan niesie `confirmed`) i trzeba go
-  potwierdzić od nowa; zgoda na sprawdzenie też nie jest zapisywana.
-- `plan.change(name)` ponownie otwiera jedną wartość (jak `z` w terminalu); każda zmiana planu
-  unieważnia potwierdzenie, zgodę na sprawdzenie i raporty sprawdzeń.
-- `plan.preview_rows`, `plan.preview_values`, `plan.reopened` i `plan.checks` pokazują stan podglądu
-  i sprawdzeń; `retman.record_check(plan, "rejected")` zapisuje w dzienniku odmowę sprawdzenia.
-- Do testów `Retman(config, backend, project_dir, clients={"kartograf": klient})` przyjmuje własnego
-  klienta narzędzia (np. `retman.testing.FakeToolClient`, który zapisuje każde wywołanie).
-- Polecenie spoza zakresu zgłasza `retman.exceptions.OutOfScopeError` z listą dostępnych
-  operacji (albo ich grup) w `operations`.
+- A plan can be saved and resumed: `plan.to_dict()` (JSON) and `Plan.from_dict(state, retman=retman)`.
+  A loaded plan is **always unconfirmed** (even when the saved state carries `confirmed`) and must be
+  confirmed again; consent to the check is not saved either.
+- `plan.change(name)` reopens a single value (like `z` in the terminal); every change to the plan
+  invalidates the confirmation, the consent to the check and the check reports.
+- `plan.preview_rows`, `plan.preview_values`, `plan.reopened` and `plan.checks` show the state of the
+  preview and the checks; `retman.record_check(plan, "rejected")` records a refusal of the check in
+  the journal.
+- For tests, `Retman(config, backend, project_dir, clients={"kartograf": client})` accepts a custom
+  tool client (e.g. `retman.testing.FakeToolClient`, which records every call).
+- A command outside the scope raises `retman.exceptions.OutOfScopeError` with the list of available
+  operations (or their groups) in `operations`.
 
-Pełny opis API: ARCHITECTURE 7.1 i 7.3.
+Full API description: ARCHITECTURE 7.1 and 7.3.
 
 ---
 
-## 11. Diagnostyka: `retman doctor`
+## 11. Diagnostics: `retman doctor check`
 
-`retman doctor` w jednym miejscu pokazuje, co działa, co nie i jak to naprawić:
-plik konfiguracji, folder projektu i zapis wyników, adres serwera modelu (zawsze pokazany,
-bez oceniania), czy model jest na serwerze, pytanie testowe z oczywistą odpowiedzią, metodę
-pewności i progi, zainstalowane narzędzia na tle obsługiwanych wersji, **magazyny danych narzędzi**,
-zgodność opisów z narzędziami i komplet tłumaczeń.
+`retman doctor check` shows in one place what works, what does not and how to fix it:
+the configuration file, the project folder and writing of results, the model server address (always
+shown, without judgement), whether the model is on the server, a test question with an obvious answer,
+the confidence method and thresholds, installed tools against the supported versions, **tool data
+stores**, conformance of the descriptions with the tools and the completeness of translations.
 
 ```
-$ retman doctor
+$ retman doctor check
 Retman 0.1.0.dev0
 
 Konfiguracja
-  ✓ plik centralny: retman.toml
-  ✓ projekt: <folder projektu> → wyniki w retman-output/ (0 wyników, zapis możliwy)
+  ✓ plik ustawień: nogat.toml (istnieje)
+  ✓ projekt: <project folder> → wyniki w retman-output/ (0 wyników, zapis możliwy)
 
 Model decyzyjny
   ✓ adres modelu (openai_compatible): http://127.0.0.1:18731/v1
   ✓ model: bielik-11b dostępny na serwerze
   ✓ pytanie testowe: poprawna odpowiedź (bez pewności)
-  ! pewność: niedostępna (confidence = "none") — wybory modelu w planie są oznaczone jako niezweryfikowane → ustaw confidence = "auto" w retman.toml, jeśli serwer podaje logprobs
+  ! pewność: niedostępna (confidence = "none") — wybory modelu w planie są oznaczone jako niezweryfikowane → ustaw confidence = "auto" w [retman.decision] (nogat.toml), jeśli serwer podaje logprobs
 
 Narzędzia
-  ✓ imgwtools 3.0.0, obsługiwane >=3.0.0,<4, 26 operacji
-  ✓ kartograf 0.8.0, obsługiwane >=0.8.0,<0.9, 4 operacje
+  ✓ imgwtools 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
+  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 5 operacji
 
 Magazyny danych narzędzi
-  ✓ kartograf: magazyn ~/.local/share/retman/stores/kartograf (zapis możliwy, dowiązania twarde działają)
-  ✓ kartograf: cache metadanych ~/.local/share/retman/kartograf_cache.db
-  ✓ imgwtools: magazyn ~/.local/share/retman/stores/imgwtools (znacznik imgw-store.json, schemat imgw-store/1, dowiązania twarde działają)
+  ✓ kartograf: magazyn ~/.local/share/nogat/kartograf (zapis możliwy, dowiązania twarde działają)
+  ✓ kartograf: cache metadanych ~/.cache/nogat/kartograf/metadata.db
+  ✓ imgwtools: magazyn ~/.local/share/nogat/imgw (znacznik imgw-store.json, schemat imgw-store/1, dowiązania twarde działają)
   ✓ imgwtools: pyarrow 26.0.0 (szeregi czasowe)
-  ✓ imgwtools: dane referencyjne ~/.local/share/retman/imgw-reference (hydro_stations_locations.csv: brak)
+  ✓ imgwtools: dane referencyjne ~/.cache/nogat/imgw/reference (hydro_stations_locations.csv: brak)
 
-Zgodność opisów z narzędziami (retman-scaffold --check)
+Zgodność opisów z narzędziami (retman scaffold check)
   ✓ imgwtools 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
   ✓ kartograf 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
 
@@ -801,80 +908,100 @@ Tłumaczenia (pl)
   ✓ komplet
 
 Model tekstowy
-  – wyłączony ([text] backend = "none")
+  – wyłączony ([retman.text] backend = "none")
 ```
 
-(Układ raportu; wartości adresów, wersji i ścieżek zależą od środowiska.) Sekcja „Magazyny” sprawdza
-ścieżki (bez dowiązań symbolicznych), prawo zapisu, **dowiązania twarde w obu magazynach**, cache Kartografa,
-znacznik magazynu IMGWTools, `pyarrow` i folder danych referencyjnych. Brak magazynu IMGW to ostrzeżenie
-z podpowiedzią „utwórz go: retman init”; dysk bez dowiązań twardych albo obcy folder w miejscu magazynu to
-problem blokujący. Sekcja „Zgodność” to lekka wersja `retman-scaffold --check`: ostrzega, gdy zainstalowane
-narzędzie przyjmuje wartość, której opisy ani nie oferują, ani nie wyłączają; nie blokuje pracy.
+(Report layout; the values of addresses, versions and paths depend on the environment.) The "Stores"
+section checks paths (without symbolic links), write permission, **hard links in both stores**, the
+store marker of each tool (`kartograf-store.json`, `imgw-store.json`), the Kartograf cache,
+`pyarrow` and the reference data folder. A missing IMGW store (also a folder that holds only the
+`api_keys.json` of the IMGWTools server) is a warning with the hint "create it: retman config
+init"; a missing or empty Kartograf store is fine, because Kartograf marks it by itself at the
+first download. A disk without hard links, a foreign folder in the store's place, a marker that
+the tool cannot read, a store inside another store and a folder with the layout of a store but no
+marker are blocking problems: for IMGWTools the hint is the command "Utwórz magazyn IMGW", for
+Kartograf the command "Utwórz magazyn Kartografa" (or `kartograf store init --root <folder>`),
+and either makes the tool check the layout and write the marker. The plan of a Kartograf
+operation names the same folder problems before you confirm anything.
+The "Conformance" section is a lightweight version of `retman scaffold check`: it warns when an
+installed tool accepts a value that the descriptions neither offer nor exclude; it does not block
+work.
 
-`retman doctor --deep` dodaje wolniejsze sprawdzenie: próbny zapis do magazynu IMGWTools na wbudowanych
-danych testowych narzędzia, w katalogu tymczasowym i bez sieci:
+`retman doctor check --deep` adds a slower check: a trial write to the IMGWTools store on the tool's
+built-in test data, in a temporary directory and without network access:
 
 ```
   ✓ imgwtools 3.0.0: zapis do magazynu działa na tym systemie (próba na danych testowych)
 ```
 
-Gdy serwer modelu nie działa:
+When the model server is not running:
 
 ```
 Model decyzyjny
-  ✗ serwer modelu nie odpowiada (http://127.0.0.1:18731/v1) → uruchom serwer modelu (np. LM Studio albo basal-serve, instrukcja w README) i sprawdź [decision] url w retman.toml
+  ✗ serwer modelu nie odpowiada (http://127.0.0.1:18731/v1) → uruchom serwer modelu (np. LM Studio albo basal-serve, instrukcja w README) i sprawdź [retman.decision] url w nogat.toml albo zmienną RETMAN_DECISION_URL
 ```
 
-Oznaczenia: `✓` działa, `!` ostrzeżenie (da się pracować), `✗` problem, `–` wyłączone.
-Kod wyjścia 1 oznacza problem blokujący pracę. `retman doctor --json` wypisuje ten sam raport
-w JSON — do wklejenia w zgłoszeniu błędu. Gdy zwykłe polecenie nie może połączyć się
-z modelem, komunikat błędu też podpowiada `retman doctor`.
+Markers: `✓` works, `!` warning (work is possible), `✗` problem, `–` disabled.
+Exit code 10 (`partial`) means a problem blocking work with some checks having passed, and 11
+(`failed`) — that none passed; the report is printed in that case. `retman doctor check --json`
+prints the same report in the `retman-result/1` envelope (each check is an `items` unit) — for pasting
+into a bug report. When an ordinary command cannot connect to the model, the error message also
+suggests `retman doctor check`.
 
 ---
 
-## 12. Dostrajanie progów: `retman-eval`
+## 12. Tuning thresholds: `retman eval run`
 
-Progi pewności decydują, kiedy Retman przyjmuje wybór modelu, a kiedy dopytuje. Dla modelu
-innego niż basal trzeba je dostroić na zbiorze poleceń testowych:
+Confidence thresholds decide when Retman accepts the model's choice and when it asks follow-up
+questions. For a model other than basal they must be tuned on a test command set:
 
 ```bash
-retman-eval --config retman.toml --target-error 0.01 --report raport.md --output rekordy.jsonl
+retman eval run --config nogat.toml --target-error 0.01 --report report.md --output records.jsonl
 ```
 
-`retman-eval` planuje każde polecenie ze zbioru (bez wykonywania operacji i bez sieci narzędzi) i raportuje
-trafność operacji i parametrów, błędy przyjęte bez pytania (W-02), ciche zgadywanie,
-naruszenia W-03, czasy oraz **zalecane progi** dla zadanego odsetka błędów. Przy rozpoznawaniu
-dwustopniowym pytanie o grupę operacji liczy się jako dopytanie użytkownika. Zalecanych progów
-nie zapisuje sam — wpisuje się je do `[decision.thresholds]`. Kody wyjścia: 0 — przebieg
-zakończony, 1 — błąd konfiguracji, zbioru albo modelu, 3 — przerwany, 4 — wystąpiło
-naruszenie W-03. Opcje i miary: `docs/specs/2026-10-11-retman-eval.md`.
+`retman eval run` plans every command in the set (without executing operations and without tool network
+access) and reports operation and parameter accuracy, errors accepted without asking (W-02), silent
+guessing, W-03 violations, timings and **recommended thresholds** for a given error rate. With two-stage
+recognition, the question about the operation group counts as asking the user. It does not save the
+recommended thresholds itself — you enter them in `[retman.decision.thresholds]`. Exit codes: 0 — run
+completed, 10 — a W-03 violation occurred (run completed), 2 — invalid arguments,
+3 — the specified settings file does not exist, 5 — the model does not respond, 130 — interrupted; full
+list in section 8. Options and metrics: `docs/specs/2026-10-11-retman-eval.md`.
 
 ---
 
-## 13. Dobre praktyki i ograniczenia
+## 13. Good practices and limitations
 
-- **Podawaj w poleceniu wszystko, co wiesz** — rozdzielczość, układ, format, rodzaj roku. Retman nie
-  przyjmuje wartości domyślnych za użytkownika; czego brakuje, o to zapyta.
-- **Czytaj plan przed `t`.** Wartości z odpowiedzi i z polecenia są tam w postaci, w jakiej
-  Retman je zrozumiał; wiersze `← podgląd, bez sieci` mówią, co narzędzie ustaliło offline; wybory
-  modelu bez pewności są oznaczone „wybór modelu niezweryfikowany”.
-- **Sprawdź dostępność, gdy nie jesteś pewien danych** (`s`): lata, rozdzielczości i kompletność pokrycia
-  GUGiK albo to, ile archiwów IMGW trzeba pobrać — zanim potwierdzisz pobranie. Raport tylko informuje.
-- **Współrzędne PL-1992**: przy zapisie bez wskazania kolejności osi Retman pyta, który
-  odczyt jest właściwy (p. 4).
-- **Układ wyniku wycinka** rozpoznaje kod, nie model: po słowach „wynik”, „do”, „przelicz”,
-  „zapisz”, „docelowy” (także bez polskich znaków i z jedną literówką). Układ podany zaraz
-  po współrzędnych (`… 382100 PL-1992`) Retman traktuje jako układ prostokąta i pyta
-  o układ wyniku; tak samo przy literówce w samym kodzie (`2108`).
-- **Plik geometrii**: tylko SHP i GPKG; plik nie jest przycinany do kształtu — operacje arkuszowe biorą
-  arkusze, których obwiednia styka się z obwiednią któregokolwiek obiektu, a wycinek to jeden prostokąt
-  wszystkich obiektów. Ortofotomapy nie pobiera się dla pliku (tylko dla godła).
-- **BDOT10k** dla godła, prostokąta lub pliku pobiera pełne pakiety każdego przecinanego powiatu,
-  bez przycinania — pliki mogą być duże (Kartograf odrzuca obszar o ponad 100 pakietach lub ponad 10 GB).
-- **Magazyny**: dane Kartografa i IMGWTools są wspólne dla wszystkich projektów i leżą poza folderem
-  projektu; wymagają dysku z dowiązaniami twardymi (nie FAT/exFAT), a cache Kartografa — dysku lokalnego.
-  Folder projektu na udziale sieciowym (np. CIFS) nie jest już problemem dla cache (cache jest poza projektem).
-- Pobierany jest najnowszy dostępny materiał GUGiK; wyboru rocznika i kampanii jeszcze nie ma. Kartograf
-  w trybie `update = "local"` używa zapisanych wersji i nie pyta źródeł o nowsze.
-- Retman nie wysyła poleceń poza skonfigurowany model; narzędzia łączą się z usługami danych dopiero po `t`
-  albo, na życzenie, w sprawdzeniu dostępności, które wysyła tylko wartości z planu.
+- **Put everything you know into the command** — resolution, coordinate system, format, type of year.
+  Retman does not assume default values on the user's behalf; whatever is missing, it asks for.
+- **Read the plan before `t`.** Values from answers and from the command appear there in the form in
+  which Retman understood them; rows marked `← podgląd, bez sieci` (preview, no network) say what the
+  tool determined offline; model choices without confidence are marked "wybór modelu niezweryfikowany"
+  (model choice unverified).
+- **Check availability when you are unsure about the data** (`s`): years, resolutions and completeness
+  of GUGiK coverage, or how many IMGW archives need to be downloaded — before you confirm the download.
+  The report is informational only.
+- **PL-1992 coordinates**: when written without indicating the axis order, Retman asks which
+  reading is correct (section 4).
+- **The coordinate system of the cutout result** is recognised by code, not by the model: after the
+  words "wynik", "do", "przelicz", "zapisz", "docelowy" (also without Polish diacritics and with a single
+  typo). A coordinate system given right after the coordinates (`… 382100 PL-1992`) Retman treats as
+  the system of the rectangle and asks about the result system; likewise with a typo in the code itself
+  (`2108`).
+- **Geometry file**: SHP and GPKG only; the file is not clipped to the shape — sheet operations take
+  the map sheets whose bounding box touches the bounding box of any feature, and the cutout is a single
+  rectangle covering all features. Orthophotos are not downloaded for a file (only for a sheet code).
+- **BDOT10k** for a sheet code, rectangle or file downloads the full packages of every intersected county,
+  without clipping — the files can be large (Kartograf rejects an area with more than 100 packages or
+  more than 10 GB).
+- **Stores**: Kartograf and IMGWTools data are shared by all projects and live outside the project
+  folder; they require a disk with hard links (not FAT/exFAT), and the Kartograf cache — a local disk.
+  A project folder on a network share (e.g. CIFS) is no longer a problem for the cache (the cache is
+  outside the project).
+- **Texts of IMGWTools are English**: the part of a message that quotes the tool (the detail of an
+  error, the data-quality and licence notices) is not translated, whatever `lang` says; the documents
+  saved with the result (`tool_<n>_<command>.json`) keep the tool's own words.
+- The latest available GUGiK material is downloaded; selecting a year and campaign is not yet available.
+  Kartograf in `update = "local"` mode uses saved versions and does not ask the sources for newer ones.
+- Retman does not send commands anywhere other than the configured model; tools connect to data services
+  only after `t` or, on request, in the availability check, which sends only values from the plan.
