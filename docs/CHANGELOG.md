@@ -343,4 +343,29 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `CatalogCall.params`, which X2 of `retman scaffold check` followed into the option): only the
   IMGWTools `project add` carried the options of another command (ADR-025 erratum 5).
 
+### Fixed
+
+- Planning an Obserwator operation when its store has not been created yet ends with
+  `store_unavailable` (reason `not_initialised`, `details.path` the store folder) and the text
+  "Magazyn Obserwatora (…) nie jest jeszcze utworzony…", no longer with `validation_error`
+  `invalid_known_value` ("A value given with the command cannot be used"), which blamed a value
+  the user never gave. A store folder that Obserwator or Kartograf refuses ends the plan the same
+  way with the reasons of `retman doctor check` (`no_marker`, `foreign_folder`,
+  `marker_unreadable`, `marker_unsupported`, `nested_store`), a missing `pyarrow` with
+  `missing_dependency` (`pyarrow_missing`), and a plan file of another store with
+  `validation_error` (`plan_other_store`). A preview problem without parameters now names the
+  code and the reason of its error (ARCHITECTURE 3.2.4).
+- Without a station catalog, a station named in words ("Pobierz aktualne dane hydrologiczne ze
+  stacji Racibórz-Miedonia.") is no longer dropped: the plan asked nothing and fetched every
+  station instead of the one named (W-02). The name is now a question about the station with the
+  reason "Nie ma katalogu stacji IMGW, więc rozpoznaję tylko kody stacji… Katalog tworzy polecenie
+  „Zbuduj katalog stacji IMGW”", answered with the code; a required station that got no reading
+  is asked about with the same reason, which was never shown (ARCHITECTURE 3.2.11).
+- An input with no earlier result of its kind ("Pobierz do magazynu według planu #1" in a project
+  without a plan) no longer asks "Wybierz jedną z podanych możliwości." with no options to choose
+  from: the question says that the project has no result of that kind (or no result #1 of it)
+  and names the operations that make one, e.g. „Sprawdzenie archiwów względem magazynu”, or
+  asks for a file path when no operation makes it, also when the answer names a missing result
+  (ARCHITECTURE 5.3).
+
 [Unreleased]: https://github.com/Daldek/Retman/commits/develop

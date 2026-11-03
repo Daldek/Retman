@@ -235,18 +235,27 @@ def test_a_tool_that_cannot_be_loaded_is_an_error_with_advice(create_app):
     )
 
 
-def test_a_problem_without_parameters_stops_planning_with_its_text(
+def test_a_problem_without_parameters_stops_planning_with_its_own_error(
     create_app, monkeypatch
 ):
     def blocked(params, ctx):
-        problem = {"params": [], "key": "sheet_unavailable", "args": {"code": "X"}}
+        problem = {
+            "params": [],
+            "key": "sheet_unavailable",
+            "args": {"code": "X", "path": "/magazyn"},
+            "code": "store_unavailable",
+            "reason": "not_initialised",
+        }
         return {"values": {}, "rows": [], "problems": [problem]}
 
     monkeypatch.setattr("dummy_tool.hooks.preview_fetch_dem", blocked)
     app = create_app(RULES, clients={"dummy_tool": FakeToolClient()})
 
-    # No parameter can be asked again, so the plan could never become confirmable
+    # No parameter can be asked again, so the plan could never become confirmable;
+    # no value of the command is at fault, so the error is the problem's own
     with pytest.raises(RetmanError) as caught:
         app.plan(f"Pobierz NMT dla {SHEET} 1 m")
 
+    assert caught.value.code == "store_unavailable"
+    assert caught.value.details == {"reason": "not_initialised", "path": "/magazyn"}
     assert "Arkusz X nie jest dostępny" in str(caught.value.text)

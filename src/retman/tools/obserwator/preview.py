@@ -16,6 +16,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from retman.adapters.catalog import CatalogCall, ToolContext, ToolError
+from retman.exceptions import ErrorCode
 from retman.extractors.dates import period_dates
 from retman.registry.manifest import PreviewOutput, PreviewProblem, PreviewRow
 from retman.stores import (
@@ -45,6 +46,34 @@ def _problem(key: str, params: list[str], **args: object) -> PreviewProblem:
     }
 
 
+def blocking_problem(
+    key: str, code: ErrorCode, reason: str, **args: object
+) -> PreviewProblem:
+    """Build a problem no answer solves; planning ends with ``code``/``reason``."""
+    return {**_problem(key, [], **args), "code": code, "reason": reason}
+
+
+# The problem of the plan and the reason of its ``store_unavailable`` (the reasons of
+# ``retman doctor check``) for each state of a store folder Obserwator cannot use
+STORE_PROBLEMS: dict[str, tuple[str, str]] = {
+    "missing": ("store_missing", "not_initialised"),
+    "empty": ("store_missing", "not_initialised"),
+    "no_marker": ("store_no_marker", "no_marker"),
+    "unreadable": ("store_marker_unreadable", "marker_unreadable"),
+    "unsupported": ("store_unsupported", "marker_unsupported"),
+    "foreign": ("store_not_obserwator", "foreign_folder"),
+    "not_a_directory": ("store_not_obserwator", "not_a_directory"),
+}
+
+
+def store_problem(state: str, ctx: ToolContext, **args: object) -> PreviewProblem:
+    """Build the blocking problem of a store folder in ``state`` (STORE_PROBLEMS)."""
+    key, reason = STORE_PROBLEMS[state]
+    return blocking_problem(
+        key, "store_unavailable", reason, path=ctx.store_dir, **args
+    )
+
+
 def _output(
     rows: list[PreviewRow] | None = None,
     problems: list[PreviewProblem] | None = None,
@@ -68,32 +97,28 @@ def store_problems(ctx: ToolContext, *, write: bool) -> list[PreviewProblem]:
     operations also need ``pyarrow`` (Parquet series), which the tool imports on
     demand.
     """
-    folder = str(ctx.store_dir)
     document = ctx.client.lookup(CatalogCall("store info", {}))
     result: Any = document.get("result")
     info: dict[str, Any] = result if isinstance(result, dict) else {}
     problems: list[PreviewProblem] = []
     if not info.get("exists"):
-        problems.append(_problem("store_missing", [], path=folder))
+        problems.append(store_problem("missing", ctx))
     elif not info.get("supported"):
         schema = info.get("schema")
         if schema:
-            problems.append(
-                _problem("store_unsupported", [], path=folder, schema=schema)
-            )
+            problems.append(store_problem("unsupported", ctx, schema=schema))
         else:
             # An empty folder is only not initialised and a layout without its marker
             # waits for ``store init``; a marker that cannot be read is named as such;
             # any other file means a folder the tool refuses to turn into a store
             state = obserwator_store_state(ctx.store_dir).state
-            key = {
-                "empty": "store_missing",
-                "no_marker": "store_no_marker",
-                "unreadable": "store_marker_unreadable",
-            }.get(state, "store_not_obserwator")
-            problems.append(_problem(key, [], path=folder))
+            if state not in ("empty", "no_marker", "unreadable"):
+                state = "foreign"
+            problems.append(store_problem(state, ctx))
     if write and not problems and not tool_installed("pyarrow"):
-        problems.append(_problem("pyarrow_missing", []))
+        problems.append(
+            blocking_problem("pyarrow_missing", "missing_dependency", "pyarrow_missing")
+        )
     return problems
 
 

@@ -9,6 +9,7 @@ from retman.adapters.catalog import (
     ToolError,
 )
 from retman.adapters.manifest_adapter import preview_operation, run_check
+from retman.exceptions import ManifestError
 from retman.i18n.loader import load_core_texts
 from retman.testing import FakeToolClient, tool_context
 
@@ -164,13 +165,13 @@ def test_a_check_given_only_the_planning_client_cannot_reach_the_network(operati
     assert client.calls == []
 
 
+SHEET_UNAVAILABLE = {"params": [], "key": "sheet_unavailable", "args": {"code": "X"}}
+
+
 def blocked_preview(params, ctx):
     """A preview whose only problem needs no answer of the user (a missing store)."""
-    return {
-        "values": {},
-        "rows": [],
-        "problems": [{"params": [], "key": "sheet_unavailable", "args": {"code": "X"}}],
-    }
+    problem = SHEET_UNAVAILABLE | {"code": "store_unavailable", "reason": "missing"}
+    return {"values": {}, "rows": [], "problems": [problem]}
 
 
 def test_a_problem_without_parameters_blocks_the_plan_and_asks_nothing(
@@ -183,3 +184,18 @@ def test_a_problem_without_parameters_blocks_the_plan_and_asks_nothing(
     (problem,) = result.problems
     assert problem.params == ()
     assert problem.text == "Arkusz X nie jest dostępny w usłudze."
+    assert (problem.code, problem.details) == (
+        "store_unavailable",
+        {"reason": "missing"},
+    )
+
+
+def test_a_problem_without_parameters_must_name_its_error(operations, monkeypatch):
+    def unnamed(params, ctx):
+        return {"values": {}, "rows": [], "problems": [SHEET_UNAVAILABLE]}
+
+    monkeypatch.setattr("dummy_tool.hooks.preview_fetch_dem", unnamed)
+
+    # Planning would otherwise end with an error that blames no one
+    with pytest.raises(ManifestError, match="sheet_unavailable"):
+        preview(operations, PARAMS)

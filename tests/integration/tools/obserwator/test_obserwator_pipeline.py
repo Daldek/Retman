@@ -13,10 +13,12 @@ from pathlib import Path
 import pytest
 from obserwator_support import isolate_environment
 
+from retman.adapters.catalog import CatalogCall, ToolDocument, ToolError
 from retman.backends.base import Decision
 from retman.config import init_config, load_config
 from retman.core.pipeline import Retman
 from retman.eval.stations import synthetic_station_document
+from retman.exceptions import RetmanError
 from retman.registry.loader import load_operations
 from retman.testing import FakeDecisionBackend, FakeToolClient
 from retman.tools.obserwator import manifest as obserwator_manifest
@@ -35,7 +37,11 @@ def _environment(monkeypatch: pytest.MonkeyPatch) -> None:
     isolate_environment(monkeypatch)
 
 
-def make_app(tmp_path: Path) -> tuple[Retman, FakeToolClient]:
+def make_app(
+    tmp_path: Path,
+    store: dict[str, object] | None = None,
+    rules: dict[str, str | Decision] = RULES,
+) -> tuple[Retman, FakeToolClient]:
     operations = load_operations(
         "pl",
         manifests=[
@@ -46,7 +52,7 @@ def make_app(tmp_path: Path) -> tuple[Retman, FakeToolClient]:
     client = FakeToolClient(
         documents={
             "stations find": lambda call: synthetic_station_document(call.options),
-            "store info": {"result": {"exists": True, "supported": True}},
+            "store info": {"result": store or {"exists": True, "supported": True}},
             "series summary": {"result": {"items": []}},
             "datasets files": {
                 "result": {
@@ -63,7 +69,7 @@ def make_app(tmp_path: Path) -> tuple[Retman, FakeToolClient]:
     config = load_config(init_config(tmp_path / "config.toml"))
     app = Retman(
         config,
-        FakeDecisionBackend(RULES),
+        FakeDecisionBackend(rules),
         project,
         operations=operations,
         clients={"obserwator": client},
@@ -101,3 +107,62 @@ def test_a_complete_plan_is_previewed_offline_and_offers_the_check(tmp_path):
     assert client.network_calls == []
     assert {method for method, _ in client.calls} <= {"validate", "lookup"}
     assert not plan.confirmed
+
+
+def test_a_store_that_does_not_exist_ends_planning_with_store_unavailable(tmp_path):
+    rules: dict[str, str | Decision] = {
+        "obserwator_series": "obserwator_series",
+        "build_obserwator_series": "build_obserwator_series",
+        "pl_meteo_precip_daily": "pl_meteo_precip_daily",
+    }
+    app, _ = make_app(tmp_path, {"exists": False, "supported": False}, rules)
+
+    with pytest.raises(RetmanError) as caught:
+        app.plan("Zbuduj szereg dobowych opadów")
+
+    # No value of the command is at fault: the store is a matter of the configuration
+    assert caught.value.code == "store_unavailable"
+    assert caught.value.details["reason"] == "not_initialised"
+    text = str(caught.value.text)
+    assert f"({caught.value.details['path']})" in text
+    assert "nie jest jeszcze utworzony" in text and "Utwórz magazyn Obserwatora" in text
+
+
+def no_catalog(call: CatalogCall) -> ToolDocument:
+    raise ToolError("obserwator", "not_found", "no station catalog", call=call)
+
+
+def test_a_station_named_without_a_catalog_is_asked_for_not_widened(tmp_path):
+    rules: dict[str, str | Decision] = {
+        "obserwator_current": "obserwator_current",
+        "fetch_current_observations": "fetch_current_observations",
+        "hydro": "hydro",
+    }
+    app, client = make_app(tmp_path, rules=rules)
+    client.documents = {**client.documents, "stations find": no_catalog}
+
+    plan = app.plan("Pobierz aktualne dane hydrologiczne ze stacji Racibórz-Miedonia.")
+
+    # The station is optional (no station: all of them), but a name was given
+    (question,) = plan.questions
+    assert question.name == "station"
+    assert "Nie ma katalogu stacji IMGW" in str(question.error)
+    assert "Zbuduj katalog stacji IMGW" in str(question.error)
+    assert "station" not in plan.values
+
+    plan = plan.answer("station", "150180060")
+
+    assert plan.questions == []
+    assert plan.values["station"].value["code"] == "150180060"
+
+
+def test_a_required_station_without_a_catalog_says_why_only_codes_are_read(
+    tmp_path,
+):
+    app, client = make_app(tmp_path)
+    client.documents = {**client.documents, "stations find": no_catalog}
+
+    plan = app.plan("Pobierz dobowe opady z lat 2000–2020")
+
+    question = next(q for q in plan.questions if q.name == "station")
+    assert "rozpoznaję tylko kody stacji" in str(question.error)

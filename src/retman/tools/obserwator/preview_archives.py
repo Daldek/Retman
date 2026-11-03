@@ -35,7 +35,12 @@ from retman.tools.obserwator.plans import (
     plan_check_output,
     plan_summary,
 )
-from retman.tools.obserwator.preview import store_problems, store_rows
+from retman.tools.obserwator.preview import (
+    blocking_problem,
+    store_problem,
+    store_problems,
+    store_rows,
+)
 
 
 def _blocked(problems: list[PreviewProblem]) -> PreviewOutput:
@@ -154,14 +159,13 @@ def preview_sync_obserwator_store_by_plan(
     if not same_folder(plan.get("root"), ctx.store_dir):
         return _blocked(
             [
-                {
-                    "params": [],
-                    "key": "arch_plan_other_store",
-                    "args": {
-                        "plan_store": str(plan.get("root")),
-                        "store": str(ctx.store_dir),
-                    },
-                }
+                blocking_problem(
+                    "arch_plan_other_store",
+                    "validation_error",
+                    "plan_other_store",
+                    plan_store=plan.get("root"),
+                    store=ctx.store_dir,
+                )
             ]
         )
     summary = plan_summary(plan)
@@ -249,22 +253,18 @@ def preview_init_obserwator_store(
     """
     folder = str(ctx.store_dir)
     state = obserwator_store_state(ctx.store_dir)
-    if state.state in ("foreign", "not_a_directory"):
-        return _blocked(
-            [{"params": [], "key": "store_not_obserwator", "args": {"path": folder}}]
-        )
+    if state.state in ("foreign", "not_a_directory", "unsupported"):
+        return _blocked([store_problem(state.state, ctx, schema=state.detail)])
     if state.state == "unreadable":
-        return _blocked(
-            [{"params": [], "key": "store_marker_unreadable", "args": {"path": folder}}]
-        )
-    if state.state == "unsupported":
+        # ``store init`` reads the marker itself and ends with this error
         return _blocked(
             [
-                {
-                    "params": [],
-                    "key": "store_unsupported",
-                    "args": {"path": folder, "schema": state.detail},
-                }
+                blocking_problem(
+                    "store_marker_unreadable",
+                    "data_error",
+                    "invalid_marker",
+                    path=folder,
+                )
             ]
         )
     return {

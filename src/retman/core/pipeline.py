@@ -51,6 +51,7 @@ from retman.exceptions import (
 from retman.extractors import (
     EXTRACTORS,
     describe_value,
+    explain_missing,
     read_answer,
     read_command,
     validate_value,
@@ -686,8 +687,18 @@ class Retman:
             if "default" in spec:
                 self._set_param(plan, operation, spec, spec["default"], "default")
                 return None
-            return (
-                self._param_question(operation, spec) if spec.get("required") else None
+            if not spec.get("required"):
+                return None
+            # Why nothing was read, e.g. no station catalog to read a name with
+            hint = explain_missing(
+                spec["extractor"],
+                plan.command,
+                self._extraction_context(plan, operation),
+            )
+            return self._param_question(
+                operation,
+                spec,
+                error=self.texts.get(hint.key, **hint.args) if hint else None,
             )
         if any(match.ambiguous for match in matches) or (
             len(matches) > 1 and not spec.get("multiple")
@@ -808,6 +819,24 @@ class Retman:
         )
         return None
 
+    def _no_inputs(self, kind: str, number: int | None = None) -> str:
+        """Say that the project has no result of ``kind`` and what makes one."""
+        makers = [
+            self.texts.get("dialog.input_maker", label=operation.text("label"))
+            for operation in self.operations.values()
+            if kind in operation.spec["outputs"]
+        ]
+        how = (
+            self.texts.get("dialog.input_made_by", operations=", ".join(makers))
+            if makers
+            else self.texts.get("dialog.input_path_only")
+        )
+        if number is None:
+            return self.texts.get("dialog.input_none", kind=kind, how=how)
+        return self.texts.get(
+            "dialog.input_no_result", number=number, kind=kind, how=how
+        )
+
     def _input_question(
         self,
         name: str,
@@ -832,12 +861,13 @@ class Retman:
                 error=error,
                 help=self.texts.get("dialog.help_fallback"),
             )
+        # Nothing to offer: say so and what makes such a result, never "choose one"
         return Question(
             name,
             "value",
             self.texts.get("dialog.input_missing", kind=kind),
             example=self.texts.get("dialog.example_path"),
-            error=error,
+            error=error or self._no_inputs(kind),
             help=self.texts.get("dialog.help_fallback"),
         )
 
@@ -878,11 +908,15 @@ class Retman:
                     if error
                     else None
                 )
+            if specific or candidates:
+                return self._input_question(
+                    name,
+                    kind,
+                    specific or candidates,
+                    error=None if specific else self.texts.get("dialog.invalid_choice"),
+                )
             return self._input_question(
-                name,
-                kind,
-                specific or candidates,
-                error=self.texts.get("dialog.invalid_choice") if not specific else None,
+                name, kind, [], error=self._no_inputs(kind, number)
             )
         if paths:
             path = Path(paths[0].readings[0].value)
@@ -1017,7 +1051,9 @@ class Retman:
         value is dropped and ``plan.reopened`` keeps ``_populate`` from deriving
         it from the command a second time. Fixed (``known``) values and
         parameters without a value cannot be reopened; when nothing can be, the
-        plan could never become confirmable, so this raises instead of looping.
+        plan could never become confirmable, so this raises instead of looping:
+        the error a problem without parameters names (a store that is missing or
+        refused), else the one of a value given with the command.
         """
         reopened: dict[str, str] = {}
         for problem in preview.problems:
@@ -1025,6 +1061,15 @@ class Retman:
                 if name in plan.values and name not in plan.known:
                     reopened.setdefault(name, problem.text)
         if not reopened:
+            blocking = next((p for p in preview.problems if not p.params), None)
+            if blocking is not None:
+                raise RetmanError(
+                    f"The plan of {operation.id} is blocked "
+                    f"({blocking.details.get('reason')}); no answer can change that",
+                    code=blocking.code,
+                    details=blocking.details,
+                    text=blocking.text,
+                )
             raise _invalid_known(
                 next(iter(preview.problems[0].params), None), preview.problems[0].text
             )
@@ -1257,7 +1302,9 @@ class Retman:
                 if result_matches:
                     number = result_matches[0].readings[0].value
                     candidates = self.workspace.resolve_result(number, kind)
-                    if len(candidates) != 1:
+                    if not candidates and not self.workspace.find_by_kind(kind):
+                        error = self._no_inputs(kind, number)
+                    elif len(candidates) != 1:
                         error = self.texts.get("dialog.invalid_choice")
                     else:
                         path = candidates[0].path

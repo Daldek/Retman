@@ -790,7 +790,8 @@ Rules for Obserwator operations:
 
 - **stations**: a code (9 digits for IMGW-PIB, WIGOS identifier for ČHMÚ) or a name from the catalog in the
   store; an inflected name requires confirmation; without a catalog Retman reads only codes and suggests
-  "Zbuduj katalog stacji IMGW";
+  "Zbuduj katalog stacji IMGW": a station named in words ("ze stacji Racibórz-Miedonia") is then a question
+  for its code, never a request for every station;
 - **period**: archives take years in the tool's archive numbering (for IMGW-PIB hydrological data —
   hydrological years), time series take years or dates plus the year kind (always a question);
 - **PMAXTP**: the probability and duration from the command narrow the result table; a value outside the
