@@ -12,8 +12,8 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from document_schemas import violations
-from imgw_store_files import write_server_state
 from kartograf_store_files import write_marker
+from obserwator_store_files import write_server_state
 
 from retman import cli
 from retman.backends.base import Decision
@@ -304,7 +304,7 @@ def store_tools(dummy):
     manifest, folder = dummy[0]
     sources = {
         "kartograf": "git+https://github.com/Daldek/Kartograf",
-        "imgwtools": "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools",
+        "obserwator": "obserwator[store] @ git+https://github.com/Daldek/IMGWTools",
     }
     tools = []
     for tool, source in sources.items():
@@ -320,25 +320,27 @@ def pyarrow(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _make_stores(
-    tmp_path: Path, imgw_store_template: Path, **skip: bool
+    tmp_path: Path, obserwator_store_template: Path, **skip: bool
 ) -> dict[str, Path]:
     """Create the folders a healthy installation has; ``skip`` leaves one out.
 
-    The IMGWTools store is a copy of the fixture store the tool builds itself.
+    The Obserwator store is a copy of the fixture store the tool builds itself.
     """
     paths = {
         "kartograf": tmp_path / "stores" / "kartograf",
         "cache": tmp_path / "cache" / "kartograf" / "metadata.db",
-        "imgwtools": tmp_path / "stores" / "imgw",
-        "reference": tmp_path / "cache" / "imgw" / "reference",
+        "obserwator": tmp_path / "stores" / "obserwator",
+        "reference": tmp_path / "cache" / "obserwator" / "reference",
     }
     for name, path in paths.items():
         if skip.get(name):
             continue
         folder = path.parent if name == "cache" else path
         folder.mkdir(parents=True)
-    if not skip.get("imgwtools"):
-        shutil.copytree(imgw_store_template, paths["imgwtools"], dirs_exist_ok=True)
+    if not skip.get("obserwator"):
+        shutil.copytree(
+            obserwator_store_template, paths["obserwator"], dirs_exist_ok=True
+        )
     return paths
 
 
@@ -385,9 +387,9 @@ def _run_stores(
 
 
 def test_healthy_stores_are_listed_and_the_slow_probe_is_not_run(
-    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
+    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
 ):
-    paths = _make_stores(tmp_path, imgw_store_template)
+    paths = _make_stores(tmp_path, obserwator_store_template)
     calls: list[str] = []
 
     report, _ = _run_stores(tmp_path, store_tools, probe=_probe(calls))
@@ -399,8 +401,8 @@ def test_healthy_stores_are_listed_and_the_slow_probe_is_not_run(
     for expected in (
         f"magazyn {paths['kartograf']} (zapis możliwy, dowiązania twarde działają)",
         f"cache metadanych {paths['cache']}",
-        f"magazyn {paths['imgwtools']} (znacznik imgw-store.json",
-        "schemat imgw-store/1, dowiązania twarde działają)",
+        f"magazyn {paths['obserwator']} (znacznik obserwator-store.json",
+        "schemat obserwator-store/1, dowiązania twarde działają)",
         "pyarrow 26.0.0",
         f"dane referencyjne {paths['reference']} (hydro_stations_locations.csv: brak)",
     ):
@@ -421,7 +423,7 @@ def test_stores_not_created_yet_warn_with_a_hint_and_do_not_block(
     assert [s for s, line in stores if "pyarrow" not in line] == ["warning"] * 4
     assert "Kartograf utworzy go przy pierwszym pobraniu" in text
     assert (
-        "nie został jeszcze utworzony (brak imgw-store.json) → utwórz go: "
+        "nie został jeszcze utworzony (brak obserwator-store.json) → utwórz go: "
         "retman config init" in text
     )
     # Nothing was created while looking
@@ -432,28 +434,31 @@ def test_stores_not_created_yet_warn_with_a_hint_and_do_not_block(
 @pytest.mark.parametrize(
     ("marker", "expected"),
     [
-        (None, "nie jest pusty i nie jest magazynem IMGWTools"),
-        ('{"schema": "imgw-store/2"}', "nieobsługiwany schemat (imgw-store/2)"),
+        (None, "nie jest pusty i nie jest magazynem Obserwatora"),
+        (
+            '{"schema": "obserwator-store/2"}',
+            "nieobsługiwany schemat (obserwator-store/2)",
+        ),
         ("{", "jest nieczytelny"),
     ],
     ids=["foreign_files", "unsupported_schema", "unreadable_marker"],
 )
-def test_imgw_folder_that_is_not_a_usable_store_blocks_work(
+def test_obserwator_folder_that_is_not_a_usable_store_blocks_work(
     tmp_path: Path,
-    imgw_store_template: Path,
+    obserwator_store_template: Path,
     store_tools,
     pyarrow,
     marker: str | None,
     expected: str,
 ):
-    paths = _make_stores(tmp_path, imgw_store_template)
-    store = paths["imgwtools"]
+    paths = _make_stores(tmp_path, obserwator_store_template)
+    store = paths["obserwator"]
     if marker is None:
         shutil.rmtree(store)
         store.mkdir()
         (store / "notes.txt").write_text("not a store", encoding="utf-8")
     else:
-        (store / "imgw-store.json").write_text(marker, encoding="utf-8")
+        (store / "obserwator-store.json").write_text(marker, encoding="utf-8")
 
     report, _ = _run_stores(tmp_path, store_tools)
     problems = [text for status, text in _stores(report) if status == "error"]
@@ -462,11 +467,11 @@ def test_imgw_folder_that_is_not_a_usable_store_blocks_work(
     assert len(problems) == 1 and expected in problems[0]
 
 
-def test_imgw_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
-    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
+def test_obserwator_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
+    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
 ):
-    store = _make_stores(tmp_path, imgw_store_template)["imgwtools"]
-    (store / "imgw-store.json").unlink()
+    store = _make_stores(tmp_path, obserwator_store_template)["obserwator"]
+    (store / "obserwator-store.json").unlink()
 
     report, texts = _run_stores(tmp_path, store_tools)
     (problem,) = [
@@ -484,8 +489,11 @@ def test_imgw_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
         "no_marker",
     )
     text = report.to_text(texts)
-    assert "ma układ magazynu IMGWTools, ale nie ma znacznika imgw-store.json" in text
-    assert "zapisz znacznik poleceniem „Utwórz magazyn IMGW”" in text
+    assert (
+        "ma układ magazynu Obserwatora, ale nie ma znacznika obserwator-store.json"
+        in text
+    )
+    assert "zapisz znacznik poleceniem „Utwórz magazyn Obserwatora”" in text
     # Looking changes nothing in a folder that may hold data: no probe, no marker
     assert {path.name for path in store.iterdir()} == {
         ".incoming",
@@ -495,10 +503,10 @@ def test_imgw_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
     }
 
 
-def test_imgw_folder_with_only_the_key_file_of_the_server_is_not_created_yet(
-    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
+def test_obserwator_folder_with_only_the_key_file_of_the_server_is_not_created_yet(
+    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
 ):
-    store = _make_stores(tmp_path, imgw_store_template)["imgwtools"]
+    store = _make_stores(tmp_path, obserwator_store_template)["obserwator"]
     shutil.rmtree(store)
     store.mkdir()
     write_server_state(store)
@@ -511,19 +519,19 @@ def test_imgw_folder_with_only_the_key_file_of_the_server_is_not_created_yet(
     assert [
         status
         for status, text in stores
-        if "imgwtools: magazyn" in text and "nie został jeszcze utworzony" in text
+        if "obserwator: magazyn" in text and "nie został jeszcze utworzony" in text
     ] == ["warning"]
     assert [path.name for path in store.iterdir()] == ["api_keys.json"]
 
 
 def test_kartograf_store_with_its_marker_is_listed_with_it(
     tmp_path: Path,
-    imgw_store_template: Path,
+    obserwator_store_template: Path,
     kartograf_store_template: Path,
     store_tools,
     pyarrow,
 ):
-    paths = _make_stores(tmp_path, imgw_store_template)
+    paths = _make_stores(tmp_path, obserwator_store_template)
     shutil.copytree(kartograf_store_template, paths["kartograf"], dirs_exist_ok=True)
 
     report, _ = _run_stores(tmp_path, store_tools)
@@ -556,14 +564,14 @@ def test_kartograf_store_with_its_marker_is_listed_with_it(
 )
 def test_kartograf_folder_that_is_not_a_usable_store_blocks_work(
     tmp_path: Path,
-    imgw_store_template: Path,
+    obserwator_store_template: Path,
     store_tools,
     pyarrow,
     setup: str,
     reason: str,
     expected: str,
 ):
-    store = _make_stores(tmp_path, imgw_store_template)["kartograf"]
+    store = _make_stores(tmp_path, obserwator_store_template)["kartograf"]
     if setup == "foreign_files":
         (store / "notes.txt").write_text("not a store", encoding="utf-8")
     elif setup == "unsupported_schema":
@@ -594,12 +602,12 @@ def test_kartograf_folder_that_is_not_a_usable_store_blocks_work(
 
 def test_kartograf_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
     tmp_path: Path,
-    imgw_store_template: Path,
+    obserwator_store_template: Path,
     kartograf_store_template: Path,
     store_tools,
     pyarrow,
 ):
-    store = _make_stores(tmp_path, imgw_store_template)["kartograf"]
+    store = _make_stores(tmp_path, obserwator_store_template)["kartograf"]
     shutil.copytree(kartograf_store_template, store, dirs_exist_ok=True)
     (store / "kartograf-store.json").unlink()
     held = set(store.rglob("*"))
@@ -630,9 +638,9 @@ def test_kartograf_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
 
 
 def test_store_path_that_is_a_file_blocks_work(
-    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
+    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
 ):
-    paths = _make_stores(tmp_path, imgw_store_template, kartograf=True)
+    paths = _make_stores(tmp_path, obserwator_store_template, kartograf=True)
     paths["kartograf"].write_text("a file", encoding="utf-8")
 
     report, _ = _run_stores(tmp_path, store_tools)
@@ -644,8 +652,8 @@ def test_store_path_that_is_a_file_blocks_work(
     )
 
 
-def test_symlink_in_a_store_path_is_refused_by_imgwtools_but_tolerated_by_kartograf(
-    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
+def test_symlink_in_a_store_path_is_refused_by_obserwator_but_tolerated_by_kartograf(
+    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
 ):
     real = tmp_path / "real"
     real.mkdir()
@@ -653,30 +661,32 @@ def test_symlink_in_a_store_path_is_refused_by_imgwtools_but_tolerated_by_kartog
         (tmp_path / "stores").symlink_to(real, target_is_directory=True)
     except OSError:
         pytest.skip("symbolic links are not available")
-    _make_stores(tmp_path, imgw_store_template)
+    _make_stores(tmp_path, obserwator_store_template)
 
     # init writes resolved paths, so the symlink comes from a hand-edited config
     rewrite = (str(real), str(tmp_path / "stores"))
     report, texts = _run_stores(tmp_path, store_tools, rewrite=rewrite)
     stores = _stores(report)
     kartograf = [item for item in stores if item[1].startswith("kartograf: w ścieżce")]
-    imgwtools = [item for item in stores if item[1].startswith("imgwtools: w ścieżce")]
+    obserwator = [
+        item for item in stores if item[1].startswith("obserwator: w ścieżce")
+    ]
 
     assert [status for status, _ in kartograf] == ["warning"]
-    assert [status for status, _ in imgwtools] == ["error"]
+    assert [status for status, _ in obserwator] == ["error"]
     assert report.exit_code == 10
     # The hint names the real path to write into the config
-    assert f"wpisz ścieżkę rzeczywistą {real}/imgw" in report.to_text(texts)
+    assert f"wpisz ścieżkę rzeczywistą {real}/obserwator" in report.to_text(texts)
 
 
 def test_a_file_system_without_hard_links_blocks_both_stores(
     tmp_path: Path,
-    imgw_store_template: Path,
+    obserwator_store_template: Path,
     store_tools,
     pyarrow,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _make_stores(tmp_path, imgw_store_template)
+    _make_stores(tmp_path, obserwator_store_template)
     refusal = OSError(errno.EPERM, "Operation not permitted")
     monkeypatch.setattr("retman.doctor.hardlink_error", lambda folder: refusal)
 
@@ -690,25 +700,25 @@ def test_a_file_system_without_hard_links_blocks_both_stores(
         "nie obsługuje dowiązań twardych (Operation not permitted)" in r
         for r in refused
     )
-    assert {line.split(":")[0] for line in refused} == {"kartograf", "imgwtools"}
+    assert {line.split(":")[0] for line in refused} == {"kartograf", "obserwator"}
     text = report.to_text(texts)
     assert (
         "[retman.tools.kartograf] store_dir" in text
-        and "[retman.tools.imgwtools] store_dir" in text
+        and "[retman.tools.obserwator] store_dir" in text
     )
     # No "all is well" line next to the problem
     assert not any("zapis możliwy" in line for _, line in stores)
     assert not any("dowiązania twarde działają" in line for _, line in stores)
 
 
-def test_hard_links_are_tried_where_a_missing_imgw_store_will_be_created(
+def test_hard_links_are_tried_where_a_missing_obserwator_store_will_be_created(
     tmp_path: Path,
-    imgw_store_template: Path,
+    obserwator_store_template: Path,
     store_tools,
     pyarrow,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    paths = _make_stores(tmp_path, imgw_store_template, imgwtools=True)
+    paths = _make_stores(tmp_path, obserwator_store_template, obserwator=True)
     tried: list[Path] = []
 
     def record(folder: Path) -> None:
@@ -718,7 +728,7 @@ def test_hard_links_are_tried_where_a_missing_imgw_store_will_be_created(
 
     report, _ = _run_stores(tmp_path, store_tools)
 
-    # The Kartograf store itself, and for the missing IMGWTools store the closest
+    # The Kartograf store itself, and for the missing Obserwator store the closest
     # existing folder: the same disk
     assert tried == [paths["kartograf"], paths["kartograf"].parent]
     assert report.exit_code == 0
@@ -726,11 +736,11 @@ def test_hard_links_are_tried_where_a_missing_imgw_store_will_be_created(
 
 def test_missing_pyarrow_disables_series_and_skips_the_probe(
     tmp_path: Path,
-    imgw_store_template: Path,
+    obserwator_store_template: Path,
     store_tools,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _make_stores(tmp_path, imgw_store_template)
+    _make_stores(tmp_path, obserwator_store_template)
     monkeypatch.setitem(sys.modules, "pyarrow", None)
     calls: list[str] = []
 
@@ -742,17 +752,17 @@ def test_missing_pyarrow_disables_series_and_skips_the_probe(
         for status, text in _stores(report)
     )
     assert (
-        "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools"
+        "obserwator[store] @ git+https://github.com/Daldek/IMGWTools"
         in report.to_text(texts)
     )
     assert calls == []
 
 
 @pytest.mark.parametrize("deep", [False, True])
-def test_imgwtools_write_probe_runs_only_with_deep(
-    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow, deep: bool
+def test_obserwator_write_probe_runs_only_with_deep(
+    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow, deep: bool
 ):
-    _make_stores(tmp_path, imgw_store_template)
+    _make_stores(tmp_path, obserwator_store_template)
     calls: list[str] = []
 
     report, _ = _run_stores(tmp_path, store_tools, probe=_probe(calls), deep=deep)
@@ -765,9 +775,9 @@ def test_imgwtools_write_probe_runs_only_with_deep(
 
 
 def test_failed_write_probe_blocks_work_and_quotes_the_tool(
-    tmp_path: Path, imgw_store_template: Path, store_tools, pyarrow
+    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
 ):
-    _make_stores(tmp_path, imgw_store_template)
+    _make_stores(tmp_path, obserwator_store_template)
     refusal = ToolOutcome("refused", "System plików nie zapewnia atomowego zapisu")
 
     report, texts = _run_stores(
@@ -777,8 +787,8 @@ def test_failed_write_probe_blocks_work_and_quotes_the_tool(
 
     assert report.exit_code == 10
     assert (
-        "✗ imgwtools 1.2.0: zapis do magazynu nie działa na tym systemie: System plików"
-        in text
+        "✗ obserwator 1.2.0: zapis do magazynu nie działa na tym systemie: "
+        "System plików" in text
     )
     assert "wyłącz narzędzie w [retman.adapters] enabled" in text
 
@@ -787,7 +797,7 @@ def test_stores_of_tools_that_are_not_in_use_are_not_checked(
     tmp_path: Path, store_tools, pyarrow
 ):
     def lookup(name: str) -> str:
-        if name == "imgwtools":
+        if name == "obserwator":
             raise importlib.metadata.PackageNotFoundError(name)
         return "1.2.0"
 
@@ -798,7 +808,7 @@ def test_stores_of_tools_that_are_not_in_use_are_not_checked(
     )
 
     assert calls == []
-    assert all("imgwtools" not in text for _, text in _stores(report))
+    assert all("obserwator" not in text for _, text in _stores(report))
     assert any("kartograf" in text for _, text in _stores(report))
 
 

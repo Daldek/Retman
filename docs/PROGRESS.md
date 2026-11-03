@@ -11,11 +11,11 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-025) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
-| Kartograf 0.8.0 adapter (5 operations), IMGWTools 3.0.0 adapter (19 operations, two-stage recognition) | done | the `tools` group pins `dbcfe5bb` (Kartograf) and `8cd6844c` (IMGWTools) of their `feature/archiwista-projects`, both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist; Kartograf's head is now `eab8612d` (ADR-058, geometry selection and GeoJSON, not used by Retman's operations), so Retman re-pins before the release (Next 3); the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
+| Kartograf 0.8.0 adapter (5 operations), Obserwator 3.0.0 adapter (formerly IMGWTools; 19 operations, two-stage recognition) | done | the `tools` group pins `9deaa314` (Kartograf, the head of its `develop`, with `eab8612d` and the marker `obserwator-store.json`) and `651d4d73` (Obserwator, the head of its `feature/obserwator`), both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist (Next 3); the names of the tool in Retman follow Nogat ECO-057 (CHANGELOG, ADR-024 erratum 7); the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags |
 | Extractors | in progress | missing: numbers with units; the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
-| `retman eval run` and the 501-command set | in progress | code done; the last run was on the old 83-command set |
+| `retman eval run` and the 502-command set | in progress | code done; the last run was on the old 83-command set |
 | Nogat standard 2.1, structure and tooling | done | on `develop` (merged from `chore/nogat-2.1`): gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
 | Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
 | Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
@@ -52,26 +52,28 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
       ARCHITECTURE are English; PRD N-09 follows the Nogat plan (`nogat-retman` on PyPI in
       phase 6, with the author's approval).
 2. **Migrate the calls to the changing producer APIs** (ECO-051, data-output plan step 5).
-   - **IMGWTools: done (the calls, the marker states, the documents, ADR-024); projects are
-     gone (Nogat ECO-054, plan `2026-10-31-archiwista-projects` step 4).** The `tools` group
-     pins `8cd6844c493d27e6a8792c29dfc64528d68a2998`, the head of IMGWTools
-     `feature/archiwista-projects`, which is on GitHub, so `uv lock` and `uv sync` resolve it
-     normally. IMGWTools keeps no projects there, so the category `imgw_projects` and its seven
-     operations are removed; projects belong to Archiwista. Retman sets no
-     `IMGW_STORE_ROOT` or `IMGW_ROOT` and uses no `imgw_*` operation id of the MCP and REST
-     surfaces: it calls the command layer by command name and passes `root` from `store_dir`.
+   - **Obserwator (formerly IMGWTools): done (the calls, the marker states, the documents,
+     ADR-024); projects are gone (Nogat ECO-054, plan `2026-10-31-archiwista-projects` step 4);
+     the tool is renamed (Nogat ECO-057, plan `2026-11-03-imgwtools-to-obserwator` step 3).**
+     The `tools` group pins `651d4d73dc6e6a2a2a75ec8476a35ee050ed787d`, the head of Obserwator
+     `feature/obserwator`, which is on GitHub (repository `Daldek/IMGWTools` until its rename),
+     so `uv lock` and `uv sync` resolve it normally. The tool keeps no projects, so the category
+     `imgw_projects` and its seven operations are removed; projects belong to Archiwista. Retman
+     sets no `OBSERWATOR_ROOT` and uses no `obserwator_*` tool of the MCP and REST surfaces: it
+     calls the command layer by command name and passes `root` from `store_dir`.
      The texts of the tool stay English inside Polish messages (decided, ADR-024, USAGE 13). The
      refusals of that head are read (ADR-024 erratum 3): the availability checks report a root
      that the tool turns away (`not_empty`, `nested_store`) as `store_refused`, the plans name a
      marker that cannot be read (`data_error`, `invalid_marker`), and `tests/unit/test_stores.py`
-     holds `imgw_store_state` against the check of the tool. Not part of the migration:
-     `docs/research/` still names the old variables and the project operations, which is
-     history. The fixture store of the IMGW tests is removed when the test session ends.
+     holds `obserwator_store_state` against the check of the tool. Not part of the migration:
+     `docs/research/` still names the old variables, the project operations and IMGWTools, which
+     is history. The fixture store of the Obserwator tests is removed when the test session ends.
    - **Kartograf: done (the calls, the marker states, the operation that writes the marker, the
      documents, ADR-025); projects are gone (Nogat ECO-054, plan
      `2026-10-31-archiwista-projects` step 4).** The `tools` group pins
-     `dbcfe5bb687e20a4f19d54b45202f212901bf2e7` of Kartograf `feature/archiwista-projects`,
-     which is on GitHub (its head is now `eab8612d`, see Next 3). Retman's Kartograf operations used no
+     `9deaa314c88f89ea2d9308481e0c0b04751fc792`, the head of Kartograf `develop`, which is on
+     GitHub; it carries `feature/archiwista-projects` up to `eab8612d` and the marker
+     `obserwator-store.json` of Nogat ECO-057 (ADR-025 erratum 6). Retman's Kartograf operations used no
      project command; with projects the task name extractor and the path of an option inside
      another option went too (ADR-025 erratum 5, ADR-017 erratum 2). Done: `root=` and `--root` (client and `DownloadManager(provider,
      root=...)`), the `kartograf-result/1` envelope and its `files[]`, the command ids `sheet
@@ -88,16 +90,18 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      and `store init` is a catalog call of the shared executor: `handlers.init_kartograf_store`
      is removed (ADR-025 erratum 1). The 16 eval rows of that operation are written, but
      `retman eval run` has not run on them (it needs a model server), and the ambiguous rows
-     `imgw-init-store-014` and `-015` now expect IMGW after a question about the operation.
-3. Re-pin Kartograf to the head of its `feature/archiwista-projects` (`eab8612d` or later)
-   before the release, then replace the commit pins of the `tools` group in `pyproject.toml` by
-   the tags `v0.8.0` and `v3.0.0` once they exist (REL-5.3), and in the same change narrow the
-   `supported_versions` of both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test
-   of the IMGWTools manifest pins the string), run `uv lock` and the gate.
-4. Review `src/retman/eval/commands.jsonl` (501 commands, an agent draft), run `retman-eval`
-   with Bielik 11B on it (two-stage recognition, `0_5m` against `5m`), then set the confidence
-   thresholds.
-5. Live tests of IMGWTools (none in the `live` set), a smoke run of the CLI on Windows and
+     `obserwator-init-store-014` and `-015` now expect the Obserwator store after a question
+     about the operation.
+3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
+   `v3.0.0` once they exist (REL-5.3), and in the same change narrow the `supported_versions` of
+   both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test of the Obserwator
+   manifest pins the string), run `uv lock` and the gate. When the author renames the repository
+   `IMGWTools`, its URL follows in the pin, the manifest `source` and the install commands.
+4. Review `src/retman/eval/commands.jsonl` (502 commands, an agent draft), run `retman-eval`
+   with Bielik 11B on it (two-stage recognition, `0_5m` against `5m`; the keys the model reads
+   for Obserwator are `obserwator_*` since ECO-057, and the store descriptions name both
+   „magazyn Obserwatora” and „magazyn IMGW”), then set the confidence thresholds.
+5. Live tests of Obserwator (none in the `live` set), a smoke run of the CLI on Windows and
    macOS (hard-link stores), the first CI run.
 6. Complete `docs/specs/2026-10-11-retman-eval.md`: geometry placeholder files, the offline
    station catalog, optional parameters never in `expect_clarify`.

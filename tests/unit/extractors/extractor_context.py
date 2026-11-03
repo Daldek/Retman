@@ -67,7 +67,7 @@ def station_document(items: list[dict[str, Any]] | None = None) -> dict[str, Any
     """A ``stations find`` document as the tool returns it."""
     found = station_items() if items is None else items
     return {
-        "schema": "imgw-result/1",
+        "schema": "obserwator-result/1",
         "command": "stations find",
         "status": "ok",
         "result": {"items": found, "total": len(found), "limit": None, "offset": 0},
@@ -87,7 +87,7 @@ def make_context(
     if index is not None:
         memo[STATION_INDEX_KEY] = index
     return ExtractionContext(
-        tool="imgwtools",
+        tool="obserwator",
         settings={},
         project_dir=Path("."),
         scope=scope or {},

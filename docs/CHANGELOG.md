@@ -28,12 +28,12 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   or Shapefile; and the creation of the store ("Utwórz magazyn Kartografa", `kartograf store
   init`: it writes the store marker into a new or an empty folder, or into a layout that has
   lost it, after the tool has checked the layout; ECO-051).
-- All IMGWTools 3.0.0 operations, ČHMÚ included: 19 operations in 5 categories (station
+- All Obserwator 3.0.0 (formerly IMGWTools) operations, ČHMÚ included: 19 operations in 5 categories (station
   search and catalog, current data and warnings, PMAXTP, station series, archives and the
   store; ADR-017, PRD 7.2).
 - Two-stage recognition (category, then operation) when there are more than 9 operations
   (ADR-017, ARCHITECTURE 3.4).
-- Extractors: station (offline, from the catalog of the IMGW store), years, period, kind of
+- Extractors: station (offline, from the catalog of the Obserwator store), years, period, kind of
   year (calendar or hydrological, always a question when not given), point (WGS84 and
   PL-1992), PMAXTP grid cell, probability, duration, variables; a SHP or GPKG
   geometry file as an area, with a question about the GeoPackage layer (ADR-016, ADR-017).
@@ -41,17 +41,17 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   coordinate system and of the axis order, TERYT code, geometry file), and extractors of paths
   and result numbers; an ambiguous notation raises a question (ARCHITECTURE 6.1).
 - Data kinds `dem`, `dsm`, `orthophoto`, `topographic_vector`, `dem_archive`, `area_geometry`
-  and 13 IMGWTools kinds, each with its validator (ADR-004, ARCHITECTURE 3.2.6).
+  and 13 Obserwator kinds, each with its validator (ADR-004, ARCHITECTURE 3.2.6).
 - Offline plan preview: the validation of the tool checks every call before confirmation, a
   rejected value comes back as a question, and preview rows (for example the number of sheets)
   appear in the plan (ADR-014, PRD N-12).
 - The availability check as a separate step: the answer `s` in the plan, its own consent, a
   report without downloading and without a result number; `Retman.check()` and
   `plan.confirm_check()` (ADR-014, PRD W-17, ARCHITECTURE 6.5).
-- Tool stores in `[retman.tools.kartograf]` and `[retman.tools.imgwtools]`; `retman config init`
-  creates the neighbouring folders, checks hard links and, with consent, initialises the IMGW
+- Tool stores in `[retman.tools.kartograf]` and `[retman.tools.obserwator]`; `retman config init`
+  creates the neighbouring folders, checks hard links and, with consent, initialises the Obserwator
   store; results point to the store files by path and SHA-256 (ADR-015).
-- `retman doctor check`: the stores, hard links in both stores, the IMGW write probe
+- `retman doctor check`: the stores, hard links in both stores, the Obserwator write probe
   (`--deep`) and a light check of the manifests against the installed tools. It also checks
   the settings file, the project folder and the writing of results, the readability of
   `result.json`, the address of the decision model, the model list of the server, a test
@@ -62,7 +62,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 - `retman scaffold list|draft|check`: drafts of manifests from the catalogs of the tools and a
   drift check through the offline validation of the tool, with a coverage check of the options
   (ADR-019).
-- The command set `src/retman/eval/commands.jsonl`: 630 commands (Kartograf, IMGWTools,
+- The command set `src/retman/eval/commands.jsonl`: 630 commands (Kartograf, Obserwator,
   out of scope and close to the scope), validated by the same extractor code as planning;
   placeholder geometry files and an offline station catalog when the set is planned
   (ARCHITECTURE 8.1).
@@ -101,7 +101,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `llms.txt` are generated from the catalog; the JSON Schemas of the documents are shipped in
   `retman/schemas/` (ADR-022).
 - English texts (`lang = en`, `--lang en`, DEV-2.2, AGI-9.2, ADR-022 erratum 1):
-  `src/retman/i18n/en.toml` and an `en.toml` for the Kartograf and the IMGWTools adapter
+  `src/retman/i18n/en.toml` and an `en.toml` for the Kartograf and the Obserwator adapter
   give the questions, the plan, the messages, the reports, `--help` and the prompts that go
   to the model in English, with the Polish names and abbreviations beside the English words in
   the descriptions that the model reads. The words that the terminal dialog accepts are the
@@ -133,10 +133,10 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `RETMAN_LOG_LEVEL` is now `invalid_config`). Every setting has a default except the model
   server (`[retman.decision]`): without it only planning fails (`validation_error`, reason
   `invalid_config`, the keys in `details.keys`), while `results`, `log`, `config show`, `init`
-  and `doctor` work. The default stores are `<data_dir>/kartograf` and `<data_dir>/imgw` (they
-  were `…/stores/kartograf` and `…/imgwtools` below the data folder of Retman), the Kartograf
-  cache is `<cache_dir>/kartograf/metadata.db`, the IMGWTools reference files are
-  `<cache_dir>/imgw/reference`, the command collection is `<data_dir>/retman/collected.jsonl`;
+  and `doctor` work. The default stores are `<data_dir>/kartograf` and `<data_dir>/obserwator`
+  (they were `…/stores/kartograf` and `…/imgwtools` below the data folder of Retman), the
+  Kartograf cache is `<cache_dir>/kartograf/metadata.db`, the Obserwator reference files are
+  `<cache_dir>/obserwator/reference`, the command collection is `<data_dir>/retman/collected.jsonl`;
   `data_dir` and `cache_dir` default to the user folders of `nogat` (`platformdirs`, a new
   dependency). `retman-eval --config` is optional. The variables are listed in the README and
   `.env.example`. Migration: move the tables into `nogat.toml` under `[retman…]` and check the
@@ -185,7 +185,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 - The tools are called through their command layer (`validate_command`, `run_command`); a
   handler gets the context of the tool (`handler(params, inputs, output_dir, ctx)`); error
   messages of the tools have Retman texts by error code (ADR-013, ARCHITECTURE 3.2.4).
-- The sections `[retman.tools.kartograf]` and `[retman.tools.imgwtools]` are required in the
+- The sections `[retman.tools.kartograf]` and `[retman.tools.obserwator]` are required in the
   settings: older files have to be generated again (`retman config init`) or completed
   (ADR-015).
 - The CLI shows the warnings of a result ("Uwaga: …"), the licence conditions of the data
@@ -200,11 +200,11 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   Migration: match the English text, or `code` and `reason` of the check; the terminal still
   shows the report in the language of `lang`. `help_language` reads the real command line, so
   `--lang` decides the language of `--help`.
-- **Breaking: IMGWTools data output** (ECO-051, ADR-024). Retman calls IMGWTools as its branch
+- **Breaking: Obserwator data output** (ECO-051, ADR-024). Retman calls Obserwator as its branch
   `feature/data-output` defines it: archive downloads write plain files into the results folder
   (`output_dir`; the tool stages, verifies and checksums them), exports write the one file given
   as `output`, the store operations keep `root`, and `reference_data_dir` reaches the tool as
-  `IMGW_REFERENCE_DIR` (it was `IMGW_DATA_DIR`). The values of a result follow the tool: the
+  `OBSERWATOR_REFERENCE_DIR` (it was `IMGW_DATA_DIR`). The values of a result follow the tool: the
   synchronisation reports `values.new_versions` and `values.new_series` (they were `created` and
   `series_created`), and the statuses in `values.series`, `values.archives` and
   `values.store_versions` are `new` and `unchanged` (they were `created` and `reused`).
@@ -213,11 +213,11 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   English detail, and the licence notice of an IMGW result ends with an English notice. The `tools`
   group pins IMGWTools `b0ef83c`, the head of its branch `feature/data-output`, which is on
   GitHub (ARCHITECTURE 3.2.11, 9.3; USAGE 5.2; ADR-024 erratum 3).
-- An IMGW store folder can be a layout of a store without its marker (`archives/`, `series/`,
-  `stations/` or `pmaxtp/` and no `imgw-store.json`): `retman doctor check` reports it as
-  `store_unavailable`, reason `no_marker`, and the plan names it and points to the command "Utwórz
-  magazyn IMGW", where IMGWTools checks the layout and writes the marker. A folder that holds only
-  the `api_keys.json` of the IMGWTools server counts as empty, no longer as foreign
+- An Obserwator store folder can be a layout of a store without its marker (`archives/`,
+  `series/`, `stations/` or `pmaxtp/` and no `obserwator-store.json`): `retman doctor check`
+  reports it as `store_unavailable`, reason `no_marker`, and the plan names it and points to the
+  command "Utwórz magazyn Obserwatora", where Obserwator checks the layout and writes the marker. A
+  folder that holds only the `api_keys.json` of the Obserwator server counts as empty, no longer as foreign
   (ARCHITECTURE 7.2, 9.1; ADR-024).
 - **Breaking: Kartograf data output** (ECO-051, ADR-025). Retman calls Kartograf as its branch
   `feature/data-output` defines it: the folder `[retman.tools.kartograf] store_dir` is the store
@@ -245,7 +245,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   write marks it, and the command "Utwórz magazyn Kartografa" marks a layout that has lost its
   marker (ARCHITECTURE 3.2.10, 7.2; USAGE 11; ADR-025).
 - The supported ranges admit the development versions of the pending releases while the
-  `tools` group pins commits: Kartograf `>=0.8.0.dev0,<0.9` and IMGWTools `>=3.0.0.dev0,<4`
+  `tools` group pins commits: Kartograf `>=0.8.0.dev0,<0.9` and Obserwator `>=3.0.0.dev0,<4`
   (REL-5.6, ADR-024 erratum 1). The version check of the loader, `retman doctor check` and
   `retman scaffold check` reads the range as a PEP 440 specifier set
   (`packaging`, a new core dependency) instead of a comparison of numbers, so `~=` and the
@@ -253,19 +253,19 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   the commits narrows the ranges to `>=0.8.0,<0.9` and `>=3.0.0,<4`.
 - The `tools` group pins IMGWTools `b0ef83c`, which ships `py.typed`: mypy checks the calls and
   the tests against its types, and the ignore of `imgwtools` is gone from `pyproject.toml`. The
-  tests that need a ready IMGW store use the fixture store of `imgwtools.testing`, not a marker
+  tests that need a ready Obserwator store use the fixture store of `obserwator.testing`, not a marker
   written by hand (DEV-10.6).
 - The operation "Utwórz magazyn Kartografa" (`init_kartograf_store`) is a catalog call of the
   shared executor: the command layer of Kartograf takes `store init` (AGI-2.1), so the handler
   is gone. The document saved as `tool_1_store_init.json` is the envelope `kartograf-result/1`
   with the marker as its `result` (it was the marker document), and a call gets the workers and
   the update mode of the settings only when its command declares them (ADR-025 erratum 1).
-- The availability checks of Kartograf and of IMGWTools report a store that the tool turns away
+- The availability checks of Kartograf and of Obserwator report a store that the tool turns away
   (a folder with other files, a store inside another store: the plan of the tool lists the
   refusal of the root as its one position) as "the tool will refuse to write into this store",
-  status `unavailable`, and no longer as "available" or as 0 files. An IMGW store whose marker
-  cannot be read is named so in the plan; the tool raises `data_error` (`invalid_marker`) for
-  it, and `tests/unit/test_stores.py` holds `imgw_store_state` against the check of the tool
+  status `unavailable`, and no longer as "available" or as 0 files. An Obserwator store whose
+  marker cannot be read is named so in the plan; the tool raises `data_error` (`invalid_marker`)
+  for it, and `tests/unit/test_stores.py` holds `obserwator_store_state` against the check of the tool
   (ADR-024 erratum 3, ADR-025 erratum 1).
 - The pins are the final heads of the producers: Kartograf `d11f6219` and IMGWTools
   `71bae778` (first `c655639b` and `4faf884`). The tool's `project init` refuses a store marker
@@ -281,6 +281,42 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   operations used none, so they are unchanged. `retman scaffold check --tool kartograf` lists 10
   data commands under X9 (no `project *`) and takes the check of every command as a plan
   (ADR-025 erratum 5).
+- **Breaking: IMGWTools is called Obserwator** (Nogat ECO-057; the tool's ADR-009; ADR-024
+  erratum 7, ADR-025 erratum 6). The `tools` group pins Obserwator `651d4d73`, the head of its
+  branch `feature/obserwator` (distribution and import package `obserwator`, the extra
+  `obserwator[store]`; the repository keeps its URL `github.com/Daldek/IMGWTools`), and Kartograf
+  `9deaa314`, the head of its `develop`, whose `STORE_MARKERS` name `obserwator-store.json`.
+  Retman follows the tool's name map: the settings table `[retman.tools.imgwtools]` is
+  `[retman.tools.obserwator]` (variables `RETMAN_TOOLS_OBSERWATOR_STORE_DIR` and
+  `RETMAN_TOOLS_OBSERWATOR_REFERENCE_DATA_DIR`), the default store is `<data_dir>/obserwator` and
+  the reference data `<cache_dir>/obserwator/reference` (they were `<data_dir>/imgw` and
+  `<cache_dir>/imgw/reference`), `reference_data_dir` reaches the tool as
+  `OBSERWATOR_REFERENCE_DIR`, and the documents and the marker that Retman reads are
+  `obserwator-result/1`, `obserwator-plan/1`, `obserwator-store/1` and `obserwator-store.json`.
+  The tool id is `obserwator` (the key of the store in `retman-config/1` and
+  `retman-config-init/1`, `tools` in `result.json`, `ToolError.tool`, `[retman.adapters] enabled`,
+  `retman scaffold --tool obserwator`); the categories are `obserwator_catalog`,
+  `obserwator_current`, `obserwator_pmaxtp`, `obserwator_series` and `obserwator_archives`; the
+  operations `find_imgw_stations`, `build_imgw_station_catalog`, `list_imgw_datasets`,
+  `build_imgw_series`, `check_imgw_archives`, `sync_imgw_store`, `sync_imgw_store_by_plan`,
+  `export_imgw_archive`, `init_imgw_store` and `inspect_imgw_store` are
+  `find_obserwator_stations`, `build_obserwator_station_catalog`, `list_obserwator_datasets`,
+  `build_obserwator_series`, `check_obserwator_archives`, `sync_obserwator_store`,
+  `sync_obserwator_store_by_plan`, `export_obserwator_archive`, `init_obserwator_store` and
+  `inspect_obserwator_store`; the data kinds `imgw_archive`, `imgw_plan` and `imgw_report` are
+  `obserwator_archive`, `obserwator_plan` and `obserwator_report`; the rows of the command set are
+  `obserwator-*` (they were `imgw-*`), and a row says „Utwórz magazyn Obserwatora”. The plan,
+  the questions and the messages name the tool and its store Obserwator („magazyn Obserwatora”,
+  „Utwórz magazyn Obserwatora”, `obserwator:` in `doctor check`). The institute keeps its names:
+  IMGW and IMGW-PIB in the texts, the provider option `imgw_pib`, the datasets `pl.imgw.*`, and
+  the operation `fetch_imgw_warnings` with its kind `imgw_warnings` (the warnings of IMGW-PIB);
+  a command that says "magazyn IMGW" still finds the store. Migration: install
+  `obserwator[store]` instead of `imgwtools[store]`; rename the table `[retman.tools.imgwtools]`
+  of `nogat.toml` to `[retman.tools.obserwator]` and the variables `RETMAN_TOOLS_IMGWTOOLS_*` to
+  `RETMAN_TOOLS_OBSERWATOR_*` (an old table or variable is ignored, ECO-056); a store with
+  `imgw-store.json`, written by a development build, is not read: download the data again into a
+  new store (`retman config init` or „Utwórz magazyn Obserwatora”); read the new tool id,
+  operation ids and kinds in `result.json`, the journal and the records of `retman eval run`.
 
 ### Removed
 
@@ -297,7 +333,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   of store versions, belong to Archiwista (Nogat ECO-054). The `tools` group pins IMGWTools
   `8cd6844c`, the head of its `feature/archiwista-projects`, and the tool's new error code
   `unsupported` has its text. Migration: keep a project in Archiwista; Retman still downloads,
-  checks and synchronises the IMGW store (ARCHITECTURE 3.2.11).
+  checks and synchronises the Obserwator store (ARCHITECTURE 3.2.11).
 - The task name extractor `identifier` and its text `extractors.errors.invalid_identifier`: its
   only user was the IMGWTools project task (ADR-017 erratum 2).
 - The path of an option inside another option (`options.<name>` in `ToolError.option` and in

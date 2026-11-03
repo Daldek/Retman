@@ -183,7 +183,7 @@ def _config_init() -> Schema:
             "collect_commands": BOOLEAN,
             "collect_path": STRING,
             "stores": _record(
-                {"kartograf": STRING, "imgwtools": STRING}, ["kartograf", "imgwtools"]
+                {"kartograf": STRING, "obserwator": STRING}, ["kartograf", "obserwator"]
             ),
             "files": FILES,
         },

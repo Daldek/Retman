@@ -1,9 +1,9 @@
-"""``retman config init`` in a terminal: questions, store folders, the IMGWTools store.
+"""``retman config init`` in a terminal: questions, store folders, the Obserwator store.
 
 The tables themselves are written by the operation
 :func:`retman.operations.config_init` (also without a terminal); here a terminal
 session asks what the options did not answer, makes the folders the tables will name
-and offers to initialise the IMGWTools store (ADR-010 for the command collection, the
+and offers to initialise the Obserwator store (ADR-010 for the command collection, the
 same rule for the folders and the store: nothing is done without the user's word).
 """
 
@@ -22,7 +22,7 @@ from retman.exceptions import RetmanError
 from retman.i18n.loader import Texts
 from retman.operations.config import init_lines
 from retman.outcomes import report_error
-from retman.stores import hardlink_error, init_imgw_store, tool_installed
+from retman.stores import hardlink_error, init_obserwator_store, tool_installed
 
 
 def _ask_stores_dir(texts: Texts, env: Environment) -> Path:
@@ -44,7 +44,7 @@ def _ask_stores_dir(texts: Texts, env: Environment) -> Path:
 def _create_folders(paths: ToolPaths, texts: Texts) -> int | None:
     """Create the folders the settings will name and check the disk for hard links.
 
-    Both stores need hard links; the IMGWTools store itself is left to the tool,
+    Both stores need hard links; the Obserwator store itself is left to the tool,
     which writes its marker into an empty folder and into a folder that already has
     the layout of a store (after verifying it). Returns ``None`` when all is usable,
     else the exit code of the error that was reported (``io_error`` for a folder
@@ -53,7 +53,7 @@ def _create_folders(paths: ToolPaths, texts: Texts) -> int | None:
     folders = (
         paths.kartograf_store,
         paths.kartograf_cache.parent,
-        paths.imgwtools_reference,
+        paths.obserwator_reference,
     )
     for folder in folders:
         try:
@@ -79,28 +79,32 @@ def _create_folders(paths: ToolPaths, texts: Texts) -> int | None:
     return None
 
 
-def _offer_imgw_store(store: Path, texts: Texts) -> int:
-    """Initialise the IMGWTools store after the user's consent (never silently)."""
-    if not tool_installed("imgwtools"):
-        print(texts.get("init.imgw_not_installed", path=store))
+def _offer_obserwator_store(store: Path, texts: Texts) -> int:
+    """Initialise the Obserwator store after the user's consent (never silently)."""
+    if not tool_installed("obserwator"):
+        print(texts.get("init.obserwator_not_installed", path=store))
         return 0
-    print(texts.get("init.imgw_question", path=store))
-    if input(texts.get("init.imgw_prompt")).strip().lower() not in texts.lines(
+    print(texts.get("init.obserwator_question", path=store))
+    if input(texts.get("init.obserwator_prompt")).strip().lower() not in texts.lines(
         "answers.yes"
     ):
-        print(texts.get("init.imgw_declined"))
+        print(texts.get("init.obserwator_declined"))
         return 0
-    outcome = init_imgw_store(store)
+    outcome = init_obserwator_store(store)
     if outcome.status in ("ok", "existing"):
-        print(texts.get(f"init.imgw_{outcome.status}", path=store))
+        print(texts.get(f"init.obserwator_{outcome.status}", path=store))
         return 0
     if outcome.status == "tool_missing":
-        print(texts.get("init.imgw_not_installed", path=store))
+        print(texts.get("init.obserwator_not_installed", path=store))
         return 0
-    key = "imgw_not_atomic" if outcome.reason == "not_atomic" else "imgw_refused"
+    key = (
+        "obserwator_not_atomic"
+        if outcome.reason == "not_atomic"
+        else "obserwator_refused"
+    )
     text = texts.get(f"init.{key}", path=store, detail=outcome.detail)
     refused = RetmanError(
-        f"IMGWTools refused the store {store}: {outcome.detail}",
+        f"Obserwator refused the store {store}: {outcome.detail}",
         code="store_unavailable",
         details={"reason": outcome.reason or "refused", "path": str(store)},
         hint="Choose a folder on a disk with hard links; both store_dir settings "
@@ -119,8 +123,8 @@ def run_init(
     """Write the ``[retman]`` tables after the questions of a terminal session.
 
     The user is asked whether to collect commands (ADR-010) and which folder should
-    hold the stores of the tools (Kartograf's and IMGWTools', side by side on one
-    disk), unless the options already say; then whether to initialise the IMGWTools
+    hold the stores of the tools (Kartograf's and Obserwator's, side by side on one
+    disk), unless the options already say; then whether to initialise the Obserwator
     store. The folders are created before the file is written, so an unusable folder
     leaves no settings behind.
 
@@ -140,7 +144,7 @@ def run_init(
     -------
     int
         Exit code: ``0``, or the code of the error that was reported when a folder
-        or the IMGWTools store could not be created.
+        or the Obserwator store could not be created.
 
     Raises
     ------
@@ -172,4 +176,4 @@ def run_init(
             )
         )
     )
-    return _offer_imgw_store(paths.imgwtools_store, texts)
+    return _offer_obserwator_store(paths.obserwator_store, texts)

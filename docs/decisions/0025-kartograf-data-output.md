@@ -182,3 +182,13 @@ IMGWTools `project add` used, is removed. The head also adds `store_state()` and
 call, and reports a marker whose read fails as `io_error`; a marker that is no JSON stays
 `invalid_layout`, and `tests/unit/test_stores.py` holds `kartograf_store_state` against the check
 of the tool.
+
+**Erratum 6 (2026-11-03, Kartograf `9deaa314`, Nogat ECO-057):** the pin is now Kartograf
+`9deaa314c88f89ea2d9308481e0c0b04751fc792`, the head of its `develop`, which is on GitHub. Its
+`kartograf.marker.STORE_MARKERS` name `obserwator-store.json` instead of `imgw-store.json`
+(IMGWTools is called Obserwator, ADR-024 erratum 7), so Retman's `STORE_MARKERS` follows and
+`tests/unit/test_stores.py` holds both against the tool. The head also carries `eab8612d` (sheets
+selected by the features of `--geometry`, not their envelopes), the paths of a plan and of an
+`io_error` document written as POSIX paths, and the Windows fixes of `write_atomic` and of the
+size of a hard-linked store file; Retman's operations and the version (0.8.0.dev0) are
+unchanged.

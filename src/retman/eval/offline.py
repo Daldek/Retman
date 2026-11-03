@@ -2,7 +2,7 @@
 
 Planning calls the tool offline: it validates every call, looks up a station
 catalog or what a store holds, and previews. An evaluation must not depend on
-the user's stores, so IMGWTools gets a client that answers those lookups from
+the user's stores, so Obserwator gets a client that answers those lookups from
 fixed documents (``retman.eval.stations`` for the stations) and leaves
 validation and the pure catalog commands to the real tool. Running, checking
 or querying is never allowed: evaluation plans and never executes.
@@ -23,11 +23,16 @@ from retman.config import Config
 from retman.eval.stations import synthetic_station_document, synthetic_station_items
 from retman.exceptions import RetmanError
 from retman.registry.operation import Operation
-from retman.tools.imgwtools.params import DATASETS
+from retman.tools.obserwator.params import DATASETS
 
 _COVERAGE_FIRST = "1951-01-01"
 _COVERAGE_LAST = "2025-12-31"
-_ENVELOPE = {"schema": "imgw-result/1", "check": False, "status": "ok", "notices": []}
+_ENVELOPE = {
+    "schema": "obserwator-result/1",
+    "check": False,
+    "status": "ok",
+    "notices": [],
+}
 
 
 def _document(command: str, result: object) -> ToolDocument:
@@ -39,8 +44,8 @@ def _page(command: str, items: list[dict[str, Any]]) -> ToolDocument:
     return _document(command, result)
 
 
-class OfflineImgwClient:
-    """The real IMGWTools client for validation, fixed answers for the store.
+class OfflineObserwatorClient:
+    """The real Obserwator client for validation, fixed answers for the store.
 
     The store is "initialised and complete": ``store info`` says so, ``series
     summary`` covers every requested station for the whole dataset, a PMAXTP
@@ -67,7 +72,7 @@ class OfflineImgwClient:
         if call.command == "store info":
             return _document(
                 "store info",
-                {"exists": True, "supported": True, "schema": "imgw-store/1"},
+                {"exists": True, "supported": True, "schema": "obserwator-store/1"},
             )
         if call.command == "series summary":
             return self._summary(call)
@@ -151,20 +156,20 @@ def offline_clients(
 ) -> dict[str, RunClient]:
     """Offline clients for the tools among ``operations`` that have one.
 
-    Only IMGWTools needs a stand-in; the other tools' clients are built from
+    Only Obserwator needs a stand-in; the other tools' clients are built from
     their manifests as usual.
     """
     clients: dict[str, RunClient] = {}
     for operation in operations.values():
         if (
-            operation.tool == "imgwtools"
+            operation.tool == "obserwator"
             and operation.client is not None
-            and "imgwtools" not in clients
+            and "obserwator" not in clients
         ):
-            settings = config.tools.get("imgwtools")
+            settings = config.tools.get("obserwator")
             if settings is None:
-                raise RetmanError("[retman.tools.imgwtools] is missing in the config")
-            clients["imgwtools"] = OfflineImgwClient(
+                raise RetmanError("[retman.tools.obserwator] is missing in the config")
+            clients["obserwator"] = OfflineObserwatorClient(
                 create_client(operation.client, settings)
             )
     return clients

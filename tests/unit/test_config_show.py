@@ -152,8 +152,8 @@ def test_retman_has_no_store_of_its_own_and_reports_the_stores_of_the_tools(
         "exists": True,
         "size_bytes": 100,
     }
-    assert document["stores"]["imgwtools"]["exists"] is False
-    assert document["stores"]["imgwtools"]["size_bytes"] is None
+    assert document["stores"]["obserwator"]["exists"] is False
+    assert document["stores"]["obserwator"]["size_bytes"] is None
 
 
 def test_the_text_report_shows_each_key_with_its_source() -> None:

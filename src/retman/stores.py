@@ -2,7 +2,7 @@
 
 The tools keep their data in stores outside the project (ARCHITECTURE 9.1). This
 module only looks at folders and files: the marker states of both stores are judged
-here by the rules of each tool, which the tests hold against the tools; IMGWTools is
+here by the rules of each tool, which the tests hold against the tools; Obserwator is
 imported lazily, and only to initialise a store or to probe whether the tool can write
 one on this system (ARCHITECTURE 3.2.5: no tool is imported at start).
 """
@@ -16,24 +16,24 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-# IMGWTools marks a folder as its store with this file (schema ``imgw-store/1``)
-IMGW_MARKER = "imgw-store.json"
-IMGW_SCHEMA = "imgw-store/1"
+# Obserwator marks a folder as its store with this file (schema ``obserwator-store/1``)
+OBSERWATOR_MARKER = "obserwator-store.json"
+OBSERWATOR_SCHEMA = "obserwator-store/1"
 # The trees whose presence is the layout of a store, marked or not (the tool's
 # ``_LAYOUT_TREES``): ``store init`` verifies such a folder and writes its marker
-IMGW_LAYOUT_TREES = ("archives", "series", "stations", "pmaxtp")
+OBSERWATOR_LAYOUT_TREES = ("archives", "series", "stations", "pmaxtp")
 # State files of the tool's REST server, kept in the default store folder; they are
 # not store content, so a folder holding only them counts as empty
-IMGW_STATE_FILES = ("api_keys.json",)
-# The static station locations IMGWTools reads from ``reference_data_dir``
-IMGW_REFERENCE_FILE = "hydro_stations_locations.csv"
+OBSERWATOR_STATE_FILES = ("api_keys.json",)
+# The static station locations Obserwator reads from ``reference_data_dir``
+OBSERWATOR_REFERENCE_FILE = "hydro_stations_locations.csv"
 
 # Kartograf marks a folder as its store with this file (schema ``kartograf-store/1``)
 KARTOGRAF_MARKER = "kartograf-store.json"
 KARTOGRAF_SCHEMA = "kartograf-store/1"
 # The marker files of the stores of the Nogat tools: a tool knows the store of another
 # by the file name alone, and a store never lies in, holds or is another one (DEV 19)
-STORE_MARKERS = (KARTOGRAF_MARKER, IMGW_MARKER)
+STORE_MARKERS = (KARTOGRAF_MARKER, OBSERWATOR_MARKER)
 # The top folders Kartograf writes into a store, one per product and ``hsg`` (the
 # tool's ``managed_trees()``, which a test holds this set against): files in them are
 # the layout of a store, marked or not
@@ -62,7 +62,7 @@ KARTOGRAF_TREES = frozenset(
 # Where Kartograf stages a version before it publishes it: not store content
 KARTOGRAF_STAGING = ".incoming"
 
-ImgwStoreState = Literal[
+ObserwatorStoreState = Literal[
     "missing",
     "not_a_directory",
     "empty",
@@ -87,8 +87,8 @@ Outcome = Literal["ok", "existing", "tool_missing", "refused"]
 
 
 @dataclass(frozen=True)
-class ImgwStore:
-    """What a configured IMGWTools store folder holds.
+class ObserwatorStore:
+    """What a configured Obserwator store folder holds.
 
     ``detail`` is the schema named by the marker (``ready`` and ``unsupported``) and
     empty otherwise. ``empty`` also covers a folder that holds only the state file of
@@ -96,7 +96,7 @@ class ImgwStore:
     no marker (``store init`` verifies the layout and writes it).
     """
 
-    state: ImgwStoreState
+    state: ObserwatorStoreState
     detail: str = ""
 
 
@@ -118,13 +118,13 @@ class KartografStore:
 
 @dataclass(frozen=True)
 class ToolOutcome:
-    """Result of a call into IMGWTools that Retman makes outside an operation.
+    """Result of a call into Obserwator that Retman makes outside an operation.
 
     ``tool_missing``: the package cannot be imported (``detail`` says why);
-    ``refused``: IMGWTools raised an error, quoted verbatim in ``detail``, with
+    ``refused``: Obserwator raised an error, quoted verbatim in ``detail``, with
     the ``details.reason`` it named in ``reason`` (``not_atomic``: the file system
     has no hard links); ``existing``: the store was already initialised
-    (``init_imgw_store`` only).
+    (``init_obserwator_store`` only).
     """
 
     status: Outcome
@@ -217,8 +217,8 @@ def hardlink_error(folder: Path) -> OSError | None:
     return None
 
 
-def imgw_store_state(folder: Path) -> ImgwStore:
-    """Whether ``folder`` is an initialised IMGWTools store, judged without the tool.
+def obserwator_store_state(folder: Path) -> ObserwatorStore:
+    """Whether ``folder`` is an initialised Obserwator store, judged without the tool.
 
     The rules are those of ``store init`` (offline, in the tool): it writes the marker
     into an empty folder, where the state files of its REST server do not count, and
@@ -227,22 +227,24 @@ def imgw_store_state(folder: Path) -> ImgwStore:
     without the marker is ``foreign``. The verification itself is left to the tool.
     """
     if not folder.exists():
-        return ImgwStore("missing")
+        return ObserwatorStore("missing")
     if not folder.is_dir():
-        return ImgwStore("not_a_directory")
-    marker = folder / IMGW_MARKER
+        return ObserwatorStore("not_a_directory")
+    marker = folder / OBSERWATOR_MARKER
     if marker.exists():
         try:
             schema = json.loads(marker.read_text(encoding="utf-8"))["schema"]
         except (OSError, ValueError, KeyError, TypeError):
-            return ImgwStore("unreadable")
-        if schema != IMGW_SCHEMA:
-            return ImgwStore("unsupported", str(schema))
-        return ImgwStore("ready", IMGW_SCHEMA)
-    if any((folder / tree).is_dir() for tree in IMGW_LAYOUT_TREES):
-        return ImgwStore("no_marker")
-    content = any(entry.name not in IMGW_STATE_FILES for entry in folder.iterdir())
-    return ImgwStore("foreign" if content else "empty")
+            return ObserwatorStore("unreadable")
+        if schema != OBSERWATOR_SCHEMA:
+            return ObserwatorStore("unsupported", str(schema))
+        return ObserwatorStore("ready", OBSERWATOR_SCHEMA)
+    if any((folder / tree).is_dir() for tree in OBSERWATOR_LAYOUT_TREES):
+        return ObserwatorStore("no_marker")
+    content = any(
+        entry.name not in OBSERWATOR_STATE_FILES for entry in folder.iterdir()
+    )
+    return ObserwatorStore("foreign" if content else "empty")
 
 
 def _holds_files(folder: Path) -> bool:
@@ -356,30 +358,30 @@ def kartograf_store_state(folder: Path) -> KartografStore:
     return KartografStore("foreign" if has_other_files else "empty")
 
 
-def init_imgw_store(folder: Path) -> ToolOutcome:
-    """Initialise an IMGWTools store in ``folder`` through the tool (``store init``).
+def init_obserwator_store(folder: Path) -> ToolOutcome:
+    """Initialise an Obserwator store in ``folder`` through the tool (``store init``).
 
-    Offline and idempotent: an initialised store is left as it is. IMGWTools
+    Offline and idempotent: an initialised store is left as it is. Obserwator
     refuses a folder with other files, a layout that is not that of its store, a
     path with a symbolic link, a place inside another store and a file system
     without hard links; the refusal is returned, not raised.
     """
     try:
-        imgwtools = importlib.import_module("imgwtools")
+        obserwator = importlib.import_module("obserwator")
     except ImportError as error:
         return ToolOutcome("tool_missing", str(error))
-    existed = (folder / IMGW_MARKER).exists()
+    existed = (folder / OBSERWATOR_MARKER).exists()
     try:
-        imgwtools.run_command("store init", options={"root": str(folder)})
-    except (imgwtools.IMGWError, OSError) as error:
-        return _refused(error, imgwtools.__version__)
+        obserwator.run_command("store init", options={"root": str(folder)})
+    except (obserwator.ObserwatorError, OSError) as error:
+        return _refused(error, obserwator.__version__)
     return ToolOutcome(
-        "existing" if existed else "ok", version=str(imgwtools.__version__)
+        "existing" if existed else "ok", version=str(obserwator.__version__)
     )
 
 
-def probe_imgw_write() -> ToolOutcome:
-    """Check that IMGWTools can write a store on this system (end to end).
+def probe_obserwator_write() -> ToolOutcome:
+    """Check that Obserwator can write a store on this system (end to end).
 
     Lets the tool build its packaged offline fixture store (no network): an
     initialised store, archives, a series and a station catalog, in a temporary
@@ -387,16 +389,16 @@ def probe_imgw_write() -> ToolOutcome:
     publishes versions on this operating system.
     """
     try:
-        testing = importlib.import_module("imgwtools.testing")
-        imgwtools = importlib.import_module("imgwtools")
+        testing = importlib.import_module("obserwator.testing")
+        obserwator = importlib.import_module("obserwator")
     except ImportError as error:
         return ToolOutcome("tool_missing", str(error))
-    version = str(imgwtools.__version__)
-    # A symbolic link in the path would be refused by IMGWTools (macOS: /var, /tmp)
-    folder = Path(tempfile.mkdtemp(prefix="retman-imgw-probe-")).resolve()
+    version = str(obserwator.__version__)
+    # A symbolic link in the path would be refused by Obserwator (macOS: /var, /tmp)
+    folder = Path(tempfile.mkdtemp(prefix="retman-obserwator-probe-")).resolve()
     try:
         testing.build_fixture_store(folder / "store")
-    except (imgwtools.IMGWError, OSError) as error:
+    except (obserwator.ObserwatorError, OSError) as error:
         return _refused(error, version)
     finally:
         shutil.rmtree(folder, ignore_errors=True)

@@ -403,7 +403,7 @@ def test_the_capabilities_table_lists_every_command_of_the_catalog() -> None:
 
 def test_the_capabilities_table_counts_the_operations_of_the_registry() -> None:
     pytest.importorskip("kartograf")
-    pytest.importorskip("imgwtools")
+    pytest.importorskip("obserwator")
     capabilities = section(README.read_text(encoding="utf-8"), "Capabilities")
     cells = [line.split("|") for line in capabilities.splitlines() if line[:1] == "|"]
     listed = {

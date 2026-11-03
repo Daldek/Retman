@@ -18,11 +18,11 @@ from typing import Any, Final, Literal, cast
 
 from retman.environment import (
     COLLECT_PATH,
-    IMGWTOOLS_REFERENCE,
-    IMGWTOOLS_STORE_NAME,
     KARTOGRAF_CACHE,
     KARTOGRAF_STORE_NAME,
     KEYS,
+    OBSERWATOR_REFERENCE,
+    OBSERWATOR_STORE_NAME,
     TOOL,
     ConfigFile,
     Environment,
@@ -51,11 +51,11 @@ _OPENAI_REQUIRED: Final[tuple[str, ...]] = (
 )
 _STORE_KEYS: Final[tuple[str, ...]] = (
     "tools.kartograf.store_dir",
-    "tools.imgwtools.store_dir",
+    "tools.obserwator.store_dir",
 )
 _SIDE_KEYS: Final[tuple[str, ...]] = (
     "tools.kartograf.cache_file",
-    "tools.imgwtools.reference_data_dir",
+    "tools.obserwator.reference_data_dir",
 )
 
 
@@ -155,7 +155,7 @@ def _check_values(env: Environment, problems: _Problems, *, model: bool) -> None
 def _check_paths(env: Environment, problems: _Problems) -> None:
     """Check that the stores are siblings and the side files lie outside them.
 
-    IMGWTools refuses a store inside or around a Kartograf store, and a store scan
+    Obserwator refuses a store inside or around a Kartograf store, and a store scan
     reports foreign files.
     """
     stores = {name: Path(env.setting(name).value) for name in _STORE_KEYS}
@@ -234,9 +234,9 @@ def _settings(env: Environment) -> Settings:
                 "workers": value("tools.kartograf.workers"),
                 "update": value("tools.kartograf.update"),
             },
-            "imgwtools": {
-                "store_dir": text("tools.imgwtools.store_dir"),
-                "reference_data_dir": text("tools.imgwtools.reference_data_dir"),
+            "obserwator": {
+                "store_dir": text("tools.obserwator.store_dir"),
+                "reference_data_dir": text("tools.obserwator.reference_data_dir"),
             },
         },
     )
@@ -337,14 +337,14 @@ class ToolPaths:
 
     kartograf_store: Path
     kartograf_cache: Path
-    imgwtools_store: Path
-    imgwtools_reference: Path
+    obserwator_store: Path
+    obserwator_reference: Path
 
 
 def default_stores_dir(env: Environment) -> Path:
     """Folder offered by ``retman config init`` for the stores of all tools.
 
-    The tool stores are two folders inside it (``kartograf`` and ``imgw``), so
+    The tool stores are two folders inside it (``kartograf`` and ``obserwator``), so
     they share one disk; the user may choose another folder.
     """
     return env.data_dir
@@ -360,7 +360,7 @@ def tool_paths(env: Environment, stores_dir: Path | None = None) -> ToolPaths:
 
     Both stores are folders inside ``stores_dir`` (one disk, two folders); the
     cache and the reference files stay in the cache folder, a local disk. Paths
-    are resolved: IMGWTools refuses a symbolic link in a store path.
+    are resolved: Obserwator refuses a symbolic link in a store path.
 
     Parameters
     ----------
@@ -374,8 +374,8 @@ def tool_paths(env: Environment, stores_dir: Path | None = None) -> ToolPaths:
     return ToolPaths(
         kartograf_store=stores / KARTOGRAF_STORE_NAME,
         kartograf_cache=KARTOGRAF_CACHE(env).expanduser().resolve(),
-        imgwtools_store=stores / IMGWTOOLS_STORE_NAME,
-        imgwtools_reference=IMGWTOOLS_REFERENCE(env).expanduser().resolve(),
+        obserwator_store=stores / OBSERWATOR_STORE_NAME,
+        obserwator_reference=OBSERWATOR_REFERENCE(env).expanduser().resolve(),
     )
 
 
@@ -408,7 +408,7 @@ def config_template(
     collect_commands : bool, optional
         The user's answer about collecting commands (ADR-010).
     stores_dir : Path, optional
-        Folder holding both tool stores as ``kartograf`` and ``imgw``;
+        Folder holding both tool stores as ``kartograf`` and ``obserwator``;
         :func:`default_stores_dir` by default.
     env : Environment, optional
         The sources of ``data_dir`` and ``cache_dir``; the process environment by
@@ -421,8 +421,8 @@ def config_template(
         "@COLLECT_PATH@": _toml_string(str(default_collect_path(env))),
         "@KARTOGRAF_STORE_DIR@": _toml_string(str(paths.kartograf_store)),
         "@KARTOGRAF_CACHE_FILE@": _toml_string(str(paths.kartograf_cache)),
-        "@IMGWTOOLS_STORE_DIR@": _toml_string(str(paths.imgwtools_store)),
-        "@IMGWTOOLS_REFERENCE_DIR@": _toml_string(str(paths.imgwtools_reference)),
+        "@OBSERWATOR_STORE_DIR@": _toml_string(str(paths.obserwator_store)),
+        "@OBSERWATOR_REFERENCE_DIR@": _toml_string(str(paths.obserwator_reference)),
     }
     text = (
         resources.files("retman")
@@ -477,7 +477,7 @@ def init_config(
         The user's explicit answer about collecting commands (ADR-010);
         disabled unless the user agreed.
     stores_dir : Path, optional
-        Folder for the stores of the tools (``kartograf`` and ``imgw`` are
+        Folder for the stores of the tools (``kartograf`` and ``obserwator`` are
         created inside it); :func:`default_stores_dir` by default.
     environ : Mapping[str, str], optional
         The process environment; ``os.environ`` by default.

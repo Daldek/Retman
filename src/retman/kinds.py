@@ -41,19 +41,19 @@ _ZIP_SIGNATURE = b"PK\x03\x04"
 _SHAPEFILE_CODE = (9994).to_bytes(4, "big")
 _UTF8_BOM = b"\xef\xbb\xbf"
 
-_RESULT_SCHEMA = "imgw-result/1"
-_PLAN_SCHEMA = "imgw-plan/1"
+_RESULT_SCHEMA = "obserwator-result/1"
+_PLAN_SCHEMA = "obserwator-plan/1"
 _RESULT_SCHEMA_START = re.compile(
     rb'\s*\{\s*"schema"\s*:\s*"' + re.escape(_RESULT_SCHEMA.encode()) + rb'"'
 )
 
-# IMGWTools series export: ``date,year,<variable> [<unit>],<variable>_flag,...,
+# Obserwator series export: ``date,year,<variable> [<unit>],<variable>_flag,...,
 # attribution_source,attribution_processed``; ČHMÚ adds ``_quality`` and
 # ``_source_flag`` columns after each variable
 _SERIES_START = ("date", "year")
 _SERIES_END = ("attribution_source", "attribution_processed")
 _MEASUREMENT_COLUMN = re.compile(r"^(?P<variable>\S+) \[(?P<unit>[^\]]+)\]$")
-# Hydrological variables of IMGWTools: H, Q and T, with optional _min/_mean/_max
+# Hydrological variables of Obserwator: H, Q and T, with optional _min/_mean/_max
 _HYDRO_VARIABLE = re.compile(r"^(H|Q|T)(_|$)")
 
 _STATION_LIST_COLUMNS = (
@@ -152,7 +152,7 @@ def _csv_check(required: Iterable[str]) -> Check:
 
 
 def _series_check(*, hydrological: bool) -> Check:
-    """IMGWTools station series (``series export``): hydrological or meteorological."""
+    """Obserwator station series (``series export``): hydrological or meteorological."""
 
     def check(path: Path) -> str | None:
         head = _csv_head(path)
@@ -196,7 +196,7 @@ def _first_json_line(path: Path) -> object:
 
 
 def _check_archive_records(path: Path) -> str | None:
-    """IMGWTools ``store export``: CSV with a header or JSON Lines with records."""
+    """Obserwator ``store export``: CSV with a header or JSON Lines with records."""
     if path.suffix.lower() != ".jsonl":
         return _csv_check(_ARCHIVE_RECORD_FIELDS)(path)
     try:
@@ -216,8 +216,8 @@ def _first_text(path: Path) -> bytes:
         return source.read(_TEXT_PROBE_BYTES).removeprefix(_UTF8_BOM)
 
 
-def _check_imgw_archive(path: Path) -> str | None:
-    """IMGWTools ``datasets download``: ZIP, JSON or plain text as published."""
+def _check_obserwator_archive(path: Path) -> str | None:
+    """Obserwator ``datasets download``: ZIP, JSON or plain text as published."""
     suffix = path.suffix.lower()
     if suffix == ".zip":
         return _check_signature(path)
@@ -248,8 +248,8 @@ def _json_document_check(schema: str) -> Check:
     return check
 
 
-def _check_imgw_report(path: Path) -> str | None:
-    """IMGWTools ``imgw-result/1`` document: the first key is ``schema``."""
+def _check_obserwator_report(path: Path) -> str | None:
+    """Obserwator ``obserwator-result/1`` document: the first key is ``schema``."""
     head = _first_text(path)
     if not head.strip():
         return "empty_file"
@@ -270,7 +270,7 @@ KINDS: dict[str, Kind] = _kinds(
     Kind("dem_archive", (".zip",), _check_signature),
     # A user's file with the area geometry, checked like topographic_vector
     Kind("area_geometry", (".gpkg", ".shp"), _check_signature),
-    # IMGWTools: station lists, series, PMAXTP, live data, archives and reports
+    # Obserwator: station lists, series, PMAXTP, live data, archives and reports
     Kind("station_list", (".csv",), _csv_check(_STATION_LIST_COLUMNS)),
     Kind("hydro_series", (".csv",), _series_check(hydrological=True)),
     Kind("meteo_series", (".csv",), _series_check(hydrological=False)),
@@ -299,9 +299,13 @@ KINDS: dict[str, Kind] = _kinds(
         _csv_check(("station_code", "name", "water_state")),
     ),
     Kind("archive_records", (".csv", ".jsonl"), _check_archive_records),
-    Kind("imgw_archive", (".zip", ".json", ".csv", ".txt"), _check_imgw_archive),
-    Kind("imgw_plan", (".json",), _json_document_check(_PLAN_SCHEMA)),
-    Kind("imgw_report", (".json",), _check_imgw_report),
+    Kind(
+        "obserwator_archive",
+        (".zip", ".json", ".csv", ".txt"),
+        _check_obserwator_archive,
+    ),
+    Kind("obserwator_plan", (".json",), _json_document_check(_PLAN_SCHEMA)),
+    Kind("obserwator_report", (".json",), _check_obserwator_report),
 )
 
 

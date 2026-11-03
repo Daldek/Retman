@@ -1,9 +1,9 @@
 # Retman: instructions for agents developing the project
 
 Retman turns a task written in Polish into a checked plan for the tools of the Nogat ecosystem
-(Kartograf and IMGWTools today; Hydrolog and Hydrograf are planned): it recognises the
-operation, asks for what is missing, shows the plan and, once confirmed, calls the public
-Python API of the tool. It is a CLI (`retman`) and a Python library; the language model is a
+(Kartograf and Obserwator, formerly IMGWTools, today; Hydrolog and Hydrograf are planned): it
+recognises the operation, asks for what is missing, shows the plan and, once confirmed, calls
+the public Python API of the tool. It is a CLI (`retman`) and a Python library; the language model is a
 separate service (basal-serve or any OpenAI-compatible server). Profile `tool` (DEV-1.1).
 User documentation: [README.md](README.md). Nogat standard 2.1:
 [DEVELOPMENT_STANDARDS](https://github.com/Daldek/Nogat/blob/main/standards/DEVELOPMENT_STANDARDS.md),
@@ -17,7 +17,7 @@ Product rules. Changing one needs the author. The open questions of PRD 11 and A
 and every `[TO BE COMPLETED]` are the author's decisions: report them, do not settle them.
 
 - **The tools know nothing about Retman** (PRD N-03, ARCHITECTURE 3.2.1). Never edit the
-  repositories of Hydrograf, Kartograf, IMGWTools, Hydrolog or other tools; a need there is a
+  repositories of Hydrograf, Kartograf, Obserwator, Hydrolog or other tools; a need there is a
   `request` issue in that repository (DEV-17.5). Retman calls only their public Python API, not
   their MCP servers (ADR-018). Manifests, call builders, clients, handlers and texts live in
   `src/retman/tools/<tool>/`. Manifests are static: never derive options from an installed
@@ -75,7 +75,7 @@ Process rules.
 ## Environment and commands
 
 ```bash
-uv sync --locked --all-extras     # .venv with the dev tools and the `tools` group (Kartograf, IMGWTools)
+uv sync --locked --all-extras     # .venv with the dev tools and the `tools` group (Kartograf, Obserwator)
 scripts/gate.sh                   # ruff format, ruff check, mypy, pytest + coverage, commit step
 uv run pytest tests/unit -q       # a part of the tests; `-m live` runs the live ones, deliberately
 uv run pytest tests --collect-only -q   # the number of tests (never copy it into documents)
@@ -131,7 +131,7 @@ src/retman/
 ├── core/           # pipeline, plan, dialog, result, check, journal, workspace, collection, geometry
 ├── registry/       # operation model, manifest schema, loader of tool descriptions
 ├── adapters/       # command layer of the tools (catalog.py), generic manifest adapter
-├── tools/<tool>/   # kartograf, imgwtools: manifest, calls, client, preview, check, handlers, texts
+├── tools/<tool>/   # kartograf, obserwator: manifest, calls, client, preview, check, handlers, texts
 ├── backends/       # DecisionBackend and TextBackend; openai_compatible.py
 ├── extractors/     # numbers, dates, coordinates, areas, stations... (code, no model)
 ├── i18n/           # translation loader, pl.toml and en.toml (core texts); the tools carry their own
@@ -178,7 +178,7 @@ texts under `[catalog.<operation_id>]` in `pl.toml` and its schema in
 
 Registry entry:
 [ecosystem.yaml](https://github.com/Daldek/Nogat/blob/main/ecosystem.yaml) (Retman). Retman
-consumes Kartograf and IMGWTools through their Python libraries; Hydrolog and Hydrograf are
+consumes Kartograf and Obserwator through their Python libraries; Hydrolog and Hydrograf are
 planned (PRD roadmap). No tool imports Retman. A change that spans projects is planned in Nogat
 (DEV-3.4); PROGRESS Next 2 lists the calls to migrate when the producers adopt DEV §19.
 

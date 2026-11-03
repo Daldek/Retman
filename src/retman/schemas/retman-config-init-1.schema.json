@@ -28,13 +28,13 @@
       "type": "object",
       "required": [
         "kartograf",
-        "imgwtools"
+        "obserwator"
       ],
       "properties": {
         "kartograf": {
           "type": "string"
         },
-        "imgwtools": {
+        "obserwator": {
           "type": "string"
         }
       }

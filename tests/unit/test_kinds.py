@@ -1,4 +1,4 @@
-"""Format validators of data kinds: Kartograf signatures and IMGWTools files."""
+"""Format validators of data kinds: Kartograf signatures and Obserwator files."""
 
 import json
 from pathlib import Path
@@ -12,8 +12,8 @@ from retman.kinds import KINDS, validate_file
 SHAPEFILE = (9994).to_bytes(4, "big")
 GEOPACKAGE = b"SQLite format 3\x00"
 
-# Columns and one data row of a good file of each IMGWTools CSV kind; the
-# headers are those written by IMGWTools 3.0.0 and by Retman's own mappers
+# Columns and one data row of a good file of each Obserwator CSV kind; the
+# headers are those written by Obserwator 3.0.0 and by Retman's own mappers
 ATTRIBUTION = ("Źródło danych: IMGW-PIB", "Dane zostały przetworzone")
 CSV_FILES: dict[str, tuple[list[str], list[str]]] = {
     "station_list": (
@@ -314,10 +314,10 @@ def test_archive_records_accept_json_lines_and_reject_damaged_ones(
         ("opis.txt", "Opis zbioru danych\r\n".encode("iso-8859-2")),
     ],
 )
-def test_imgw_archive_accepts_files_as_published_by_the_source(
+def test_obserwator_archive_accepts_files_as_published_by_the_source(
     tmp_path: Path, name: str, content: bytes
 ) -> None:
-    validate_file("imgw_archive", _write(tmp_path, name, content))
+    validate_file("obserwator_archive", _write(tmp_path, name, content))
 
 
 @pytest.mark.parametrize(
@@ -332,20 +332,25 @@ def test_imgw_archive_accepts_files_as_published_by_the_source(
         ("data.xml", b"<a/>", "unsupported_extension"),
     ],
 )
-def test_imgw_archive_rejects_error_pages_and_binary_text(
+def test_obserwator_archive_rejects_error_pages_and_binary_text(
     tmp_path: Path, name: str, content: bytes, reason: str
 ) -> None:
-    assert _reason("imgw_archive", _write(tmp_path, name, content)) == reason
+    assert _reason("obserwator_archive", _write(tmp_path, name, content)) == reason
 
 
 @pytest.mark.parametrize(
     ("kind", "schema", "other", "not_json"),
     [
-        ("imgw_plan", "imgw-plan/1", "imgw-result/1", "invalid_json"),
-        ("imgw_report", "imgw-result/1", "imgw-plan/1", "invalid_schema"),
+        ("obserwator_plan", "obserwator-plan/1", "obserwator-result/1", "invalid_json"),
+        (
+            "obserwator_report",
+            "obserwator-result/1",
+            "obserwator-plan/1",
+            "invalid_schema",
+        ),
     ],
 )
-def test_imgw_documents_need_their_schema(
+def test_obserwator_documents_need_their_schema(
     tmp_path: Path, kind: str, schema: str, other: str, not_json: str
 ) -> None:
     good = json.dumps({"schema": schema, "items": []}, indent=2).encode()
@@ -365,11 +370,16 @@ def test_imgw_documents_need_their_schema(
     )
 
 
-def test_imgw_plan_must_be_complete_json_describing_an_object(tmp_path: Path) -> None:
-    broken = b'{"schema": "imgw-plan/1", "items": ['
+def test_obserwator_plan_must_be_complete_json_describing_an_object(
+    tmp_path: Path,
+) -> None:
+    broken = b'{"schema": "obserwator-plan/1", "items": ['
 
-    assert _reason("imgw_plan", _write(tmp_path, "cut.json", broken)) == "invalid_json"
-    assert _reason("imgw_plan", _write(tmp_path, "list.json", b"[1]")) == (
+    assert (
+        _reason("obserwator_plan", _write(tmp_path, "cut.json", broken))
+        == "invalid_json"
+    )
+    assert _reason("obserwator_plan", _write(tmp_path, "list.json", b"[1]")) == (
         "invalid_schema"
     )
 

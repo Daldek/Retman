@@ -51,14 +51,14 @@ def test_without_any_file_the_settings_follow_the_user_folders(
     settings = load_settings()
 
     kartograf = settings.tools["kartograf"]
-    imgwtools = settings.tools["imgwtools"]
+    obserwator = settings.tools["obserwator"]
     assert kartograf["store_dir"] == str(user_environment / "data" / "kartograf")
     assert kartograf["cache_file"] == str(
         user_environment / "cache" / "kartograf" / "metadata.db"
     )
-    assert imgwtools["store_dir"] == str(user_environment / "data" / "imgw")
-    assert imgwtools["reference_data_dir"] == str(
-        user_environment / "cache" / "imgw" / "reference"
+    assert obserwator["store_dir"] == str(user_environment / "data" / "obserwator")
+    assert obserwator["reference_data_dir"] == str(
+        user_environment / "cache" / "obserwator" / "reference"
     )
     assert settings.collect_path == user_environment / "data" / "retman" / (
         "collected.jsonl"
@@ -82,7 +82,9 @@ def test_a_shared_data_directory_moves_both_stores_and_the_collection(
     assert settings.tools["kartograf"]["store_dir"] == str(
         tmp_path / "shared/kartograf"
     )
-    assert settings.tools["imgwtools"]["store_dir"] == str(tmp_path / "shared/imgw")
+    assert settings.tools["obserwator"]["store_dir"] == str(
+        tmp_path / "shared/obserwator"
+    )
     assert settings.collect_path == tmp_path / "shared" / "retman" / "collected.jsonl"
 
 
@@ -249,14 +251,14 @@ def test_init_writes_both_tool_stores_in_full_next_to_each_other(
 
     config = load_config(init_config(tmp_path / "nogat.toml", stores_dir=stores))
     kartograf = config.tools["kartograf"]
-    imgwtools = config.tools["imgwtools"]
+    obserwator = config.tools["obserwator"]
 
     assert kartograf["store_dir"] == str(stores / "kartograf")
-    assert imgwtools["store_dir"] == str(stores / "imgw")
+    assert obserwator["store_dir"] == str(stores / "obserwator")
     assert kartograf["workers"] == 4
     assert kartograf["update"] == "local"
     # Cache and reference files stay on the local disk, outside the shared stores
-    for path in (kartograf["cache_file"], imgwtools["reference_data_dir"]):
+    for path in (kartograf["cache_file"], obserwator["reference_data_dir"]):
         assert Path(path).is_absolute()
         assert not Path(path).is_relative_to(stores)
     # No hidden defaults (N-11): the paths are in the file
@@ -342,12 +344,12 @@ def test_the_template_names_only_known_keys_and_every_key_with_a_default() -> No
     ("key", "folder"),
     [
         # the same folder, inside the other store and around it
-        ("tools.imgwtools.store_dir", "data/kartograf"),
-        ("tools.imgwtools.store_dir", "data/kartograf/imgw"),
-        ("tools.imgwtools.store_dir", "data"),
+        ("tools.obserwator.store_dir", "data/kartograf"),
+        ("tools.obserwator.store_dir", "data/kartograf/obserwator"),
+        ("tools.obserwator.store_dir", "data"),
         # the cache and the reference files are not store content
         ("tools.kartograf.cache_file", "data/kartograf/cache.db"),
-        ("tools.imgwtools.reference_data_dir", "data/imgw/reference"),
+        ("tools.obserwator.reference_data_dir", "data/obserwator/reference"),
     ],
 )
 def test_stores_must_be_siblings_and_hold_nothing_but_their_data(
@@ -372,12 +374,12 @@ def test_folders_with_a_common_name_prefix_are_not_nested(tmp_path: Path) -> Non
     file = write(
         tmp_path,
         f"[retman.tools.kartograf]\nstore_dir = '{tmp_path / 'data/kartograf'}'\n"
-        f"[retman.tools.imgwtools]\nstore_dir = '{tmp_path / 'data/kartograf-2'}'\n",
+        f"[retman.tools.obserwator]\nstore_dir = '{tmp_path / 'data/kartograf-2'}'\n",
     )
 
     settings = load_settings(file)
 
-    assert settings.tools["imgwtools"]["store_dir"] == str(
+    assert settings.tools["obserwator"]["store_dir"] == str(
         tmp_path / "data" / "kartograf-2"
     )
 

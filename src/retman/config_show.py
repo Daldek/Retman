@@ -34,7 +34,7 @@ SCHEMA: Final = "retman-config/1"
 _CREDENTIAL_WORDS: Final = ("key", "token", "secret", "password", "credential")
 _STORES: Final = {
     "kartograf": "tools.kartograf.store_dir",
-    "imgwtools": "tools.imgwtools.store_dir",
+    "obserwator": "tools.obserwator.store_dir",
 }
 
 

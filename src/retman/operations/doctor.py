@@ -12,7 +12,7 @@ from retman.catalog.envelope import Output
 from retman.doctor import run_doctor
 from retman.environment import OptionValue
 from retman.registry.manifest import ManifestSpec
-from retman.stores import ToolOutcome, probe_imgw_write
+from retman.stores import ToolOutcome, probe_obserwator_write
 
 if TYPE_CHECKING:
     from retman.devtools.light import LightCheck
@@ -26,7 +26,7 @@ def doctor_check(
     client: httpx.Client | None = None,
     manifests: Iterable[tuple[ManifestSpec, Path]] | None = None,
     version_lookup: Callable[[str], str] = importlib.metadata.version,
-    probe: Callable[[], ToolOutcome] = probe_imgw_write,
+    probe: Callable[[], ToolOutcome] = probe_obserwator_write,
     conformance: "LightCheck | None" = None,
     project_dir: Path | None = None,
     overrides: Mapping[str, OptionValue] | None = None,
@@ -42,7 +42,7 @@ def doctor_check(
     config : str, optional
         The settings file.
     deep : bool, optional
-        Also run the slow checks (a trial write to the IMGWTools store).
+        Also run the slow checks (a trial write to the Obserwator store).
     backend, client, manifests, version_lookup, probe, conformance, project_dir
         Injections of the caller for offline tests: see
         :func:`retman.doctor.run_doctor`.

@@ -1,6 +1,6 @@
 """Place names that become search fragments for the tool's station search.
 
-IMGWTools searches station names by a case- and diacritics-insensitive fragment,
+Obserwator searches station names by a case- and diacritics-insensitive fragment,
 so a Polish inflected form ("na Wiśle", "w Poznaniu") must be reduced to a stem
 that is still a part of the nominative. The synoptic ``station_name`` option is
 a plain case-insensitive fragment: it keeps the user's letters, only the ending

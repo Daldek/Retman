@@ -1,7 +1,7 @@
 <!-- BEGIN retman -->
 ## Retman
 
-Retman turns a data task written in Polish into a plan for Kartograf and IMGWTools, shows the plan, and runs it once confirmed; results go to the project folder. Not for exact tool calls (use the tool) or for other languages.
+Retman turns a data task written in Polish into a plan for Kartograf and Obserwator, shows the plan, and runs it once confirmed; results go to the project folder. Not for exact tool calls (use the tool) or for other languages.
 
 Rule: discover, check, run, read.
 

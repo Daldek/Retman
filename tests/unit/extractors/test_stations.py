@@ -29,7 +29,7 @@ def _only(matches: list[Match]) -> Match:
 
 
 def _error(code: str) -> ToolError:
-    return ToolError("imgwtools", code, "test")
+    return ToolError("obserwator", code, "test")
 
 
 # --- loading the catalog -----------------------------------------------------
@@ -81,7 +81,7 @@ def test_load_maps_tool_errors_to_an_empty_index_with_a_reason(
     [
         ({"result": {"items": []}}, "no_catalog"),
         ({"result": {}}, "unreadable"),
-        ({"schema": "imgw-result/1"}, "unreadable"),
+        ({"schema": "obserwator-result/1"}, "unreadable"),
     ],
 )
 def test_load_distinguishes_an_empty_catalog_from_an_unexpected_document(

@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 MARKER = "kartograf-store.json"
-IMGW_MARKER = "imgw-store.json"
+OBSERWATOR_MARKER = "obserwator-store.json"
 
 
 def write_product_files(folder: Path, tree: str = "nmt") -> None:
@@ -34,7 +34,7 @@ def write_marker(folder: Path, schema: str = "kartograf-store/1") -> None:
 
 
 def write_other_marker(folder: Path) -> None:
-    """Write the marker of an IMGWTools store: the file name is what tools look at."""
+    """Write the marker of an Obserwator store: the file name is what tools look at."""
     folder.mkdir(parents=True, exist_ok=True)
-    fields = {"schema": "imgw-store/1", "tool": "imgwtools"}
-    (folder / IMGW_MARKER).write_text(json.dumps(fields), encoding="utf-8")
+    fields = {"schema": "obserwator-store/1", "tool": "obserwator"}
+    (folder / OBSERWATOR_MARKER).write_text(json.dumps(fields), encoding="utf-8")

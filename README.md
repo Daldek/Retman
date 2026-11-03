@@ -1,17 +1,17 @@
 # Retman: Polish natural-language commands for the Nogat hydrology tools
 
-Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial data of GUGiK) and IMGWTools (measurements of IMGW-PIB and ČHMÚ). You write a data task in Polish; Retman recognises the operation, asks for what is missing, shows a plan to confirm and then runs the tool. CLI and Python library; the language model is a separate server.
+Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial data of GUGiK) and Obserwator (formerly IMGWTools; measurements of IMGW-PIB and ČHMÚ). You write a data task in Polish; Retman recognises the operation, asks for what is missing, shows a plan to confirm and then runs the tool. CLI and Python library; the language model is a separate server.
 
 ## When to use
 
 - A person or a program states a data task in Polish and wants to see a checked plan before anything is fetched, for example `Pobierz NMT 1 m dla arkusza N-34-130-D-d-2-4` ("download the 1 m digital elevation model for map sheet N-34-130-D-d-2-4").
 - Spatial data of GUGiK through Kartograf: digital elevation model (DEM, Polish NMT), digital surface model (DSM, NMPT), orthophoto and the topographic database BDOT10k, for a map sheet, a rectangle, a county (TERYT code) or a geometry file (SHP, GPKG).
-- Measurements of IMGW-PIB and ČHMÚ through IMGWTools: station search and catalog, current data and warnings, PMAXTP maximum precipitation, station series, archives and the data store.
+- Measurements of IMGW-PIB and ČHMÚ through Obserwator: station search and catalog, current data and warnings, PMAXTP maximum precipitation, station series, archives and the data store.
 - Work that has to be confirmed and traceable: every run needs the user's confirmation, and results are numbered and kept in the project folder with a journal.
 
 ## When not to use
 
-- The exact call and its options are known: use the tool itself (`kartograf`, `imgw`), or its MCP server.
+- The exact call and its options are known: use the tool itself (`kartograf`, `obserwator`), or its MCP server.
 - The command is not in Polish: other languages are not recognised.
 - Hydrological computation (design rainfall, hydrographs, runoff): use [Hydrolog](https://github.com/Daldek/Hydrolog); Retman only fetches data today.
 - GIS processing of the downloaded files: use QGIS or GDAL.
@@ -20,13 +20,13 @@ Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial
 
 ## Install
 
-Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf) and `v3.0.0` (IMGWTools) exist, the commits that Retman is tested with are named (both are the heads of the branches `feature/archiwista-projects` of the tools, [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) says whether they are pushed):
+Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf) and `v3.0.0` (Obserwator) exist, the commits that Retman is tested with are named (Kartograf's is the head of its `develop`, Obserwator's the head of its branch `feature/obserwator`, [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) says whether they are pushed):
 
 ```sh
 # CLI
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@dbcfe5bb687e20a4f19d54b45202f212901bf2e7" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@8cd6844c493d27e6a8792c29dfc64528d68a2998"
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@9deaa314c88f89ea2d9308481e0c0b04751fc792" \
+    --with "obserwator[store] @ git+https://github.com/Daldek/IMGWTools@651d4d73dc6e6a2a2a75ec8476a35ee050ed787d"
 
 # Python library (name the same tools in the project's own dependencies)
 uv add "retman @ git+https://github.com/Daldek/Retman@develop"
@@ -173,11 +173,11 @@ The operations that a Polish command can select, 24 operations in 6 categories (
 | Category | Id | Tool | Operations | Data source |
 |---|---|---|---|---|
 | Spatial data: DEM, DSM, orthophoto, BDOT10k, the store | `spatial_data` | Kartograf 0.8.0 | 5 | GUGiK |
-| Stations and data register | `imgw_catalog` | IMGWTools 3.0.0 | 3 | IMGW-PIB, ČHMÚ |
-| Current data and warnings | `imgw_current` | IMGWTools 3.0.0 | 3 | IMGW-PIB |
-| Maximum precipitation PMAXTP | `imgw_pmaxtp` | IMGWTools 3.0.0 | 2 | IMGW-PIB |
-| Station time series | `imgw_series` | IMGWTools 3.0.0 | 3 | IMGW-PIB, ČHMÚ |
-| Archives and the data store | `imgw_archives` | IMGWTools 3.0.0 | 8 | IMGW-PIB, ČHMÚ |
+| Stations and data register | `obserwator_catalog` | Obserwator 3.0.0 | 3 | IMGW-PIB, ČHMÚ |
+| Current data and warnings | `obserwator_current` | Obserwator 3.0.0 | 3 | IMGW-PIB |
+| Maximum precipitation PMAXTP | `obserwator_pmaxtp` | Obserwator 3.0.0 | 2 | IMGW-PIB |
+| Station time series | `obserwator_series` | Obserwator 3.0.0 | 3 | IMGW-PIB, ČHMÚ |
+| Archives and the data store | `obserwator_archives` | Obserwator 3.0.0 | 8 | IMGW-PIB, ČHMÚ |
 
 ## For AI agents
 
@@ -192,11 +192,11 @@ Retman is built to be driven by agents as well as by people. [llms.txt](https://
 ## Related tools
 
 - [Kartograf](https://github.com/Daldek/Kartograf) downloads Polish and Czech geodata into a versioned store; Retman calls its Python library (command lists `kartograf-command-list/1` and `kartograf-commands/1`).
-- [IMGWTools](https://github.com/Daldek/IMGWTools) provides IMGW-PIB and ČHMÚ hydro-meteorological data, PMAXTP and a versioned store; Retman calls its Python library.
+- [Obserwator](https://github.com/Daldek/IMGWTools) provides IMGW-PIB and ČHMÚ hydro-meteorological data, PMAXTP and a versioned store; Retman calls its Python library.
 - [Hydrolog](https://github.com/Daldek/Hydrolog) (hydrological calculations) and [Hydrograf](https://github.com/Daldek/Hydrograf) (watershed delineation and design hydrographs) are planned Retman tools.
-- [Archiwista](https://github.com/Daldek/Archiwista) browses and manages the stores of Kartograf and IMGWTools.
+- [Archiwista](https://github.com/Daldek/Archiwista) browses and manages the stores of Kartograf and Obserwator.
 - [Nogat](https://github.com/Daldek/Nogat) is the hub of the ecosystem: the standards, the registry of the tools and the shared settings file `nogat.toml`.
-- When the exact call is known, the CLI of the tool is shorter; when an assistant has to call the tools in any language through MCP, use the MCP servers of Kartograf and IMGWTools. Retman is for Polish sentences and a plan that a person confirms.
+- When the exact call is known, the CLI of the tool is shorter; when an assistant has to call the tools in any language through MCP, use the MCP servers of Kartograf and Obserwator. Retman is for Polish sentences and a plan that a person confirms.
 
 ## Errors and exit codes
 
@@ -212,7 +212,7 @@ Exit codes are the codes of the [shared Nogat error registry](https://github.com
 
 ## Data and licensing
 
-Retman holds no data. The tools download it: Kartograf and IMGWTools write the files into their own versioned stores, `<data_dir>/kartograf` and `<data_dir>/imgw` by default, and Retman records their paths and SHA-256 sums in its results. What Retman itself writes goes to the project folder where it runs: the numbered results in `retman-output/`, the project journal and, only with your consent, the collection of commands. The terms of every source (IMGW-PIB regulations, ČHMÚ licence CC BY 4.0, GUGiK open data) are those of the source; the tools put the licence into the sidecar of each file, and Retman shows their licence and data-quality notes as warnings after the result and keeps them in `notices`. The duty to attribute the source when publishing results is the user's.
+Retman holds no data. The tools download it: Kartograf and Obserwator write the files into their own versioned stores, `<data_dir>/kartograf` and `<data_dir>/obserwator` by default, and Retman records their paths and SHA-256 sums in its results. What Retman itself writes goes to the project folder where it runs: the numbered results in `retman-output/`, the project journal and, only with your consent, the collection of commands. The terms of every source (IMGW-PIB regulations, ČHMÚ licence CC BY 4.0, GUGiK open data) are those of the source; the tools put the licence into the sidecar of each file, and Retman shows their licence and data-quality notes as warnings after the result and keeps them in `notices`. The duty to attribute the source when publishing results is the user's.
 
 The stores are versioned on hard links: copy them with the links preserved (`rsync -aH`), not by copying files one by one, and note that data that the source has removed cannot be downloaded again (details in the README of each tool).
 
@@ -237,8 +237,8 @@ The settings are the `[retman]` tables of `nogat.toml`, which the Nogat tools sh
 | `RETMAN_TOOLS_KARTOGRAF_STORE_DIR` | the Kartograf store (default `<data_dir>/kartograf`) |
 | `RETMAN_TOOLS_KARTOGRAF_CACHE_FILE` | the metadata cache of Kartograf (default `<cache_dir>/kartograf/metadata.db`) |
 | `RETMAN_TOOLS_KARTOGRAF_WORKERS`, `RETMAN_TOOLS_KARTOGRAF_UPDATE` | parallel transfers; update mode `local`, `upgrade` or `force` |
-| `RETMAN_TOOLS_IMGWTOOLS_STORE_DIR` | the IMGWTools store (default `<data_dir>/imgw`) |
-| `RETMAN_TOOLS_IMGWTOOLS_REFERENCE_DATA_DIR` | the reference data of IMGWTools (default `<cache_dir>/imgw/reference`) |
+| `RETMAN_TOOLS_OBSERWATOR_STORE_DIR` | the Obserwator store (default `<data_dir>/obserwator`) |
+| `RETMAN_TOOLS_OBSERWATOR_REFERENCE_DATA_DIR` | the reference data of Obserwator (default `<cache_dir>/obserwator/reference`) |
 | `RETMAN_LOG_JOURNAL_COMMANDS` | whether the project journal records the text of commands and answers (default `true`) |
 | `RETMAN_PRIVACY_COLLECT_COMMANDS`, `RETMAN_PRIVACY_COLLECT_PATH` | collection of commands from all projects, with consent only (default off), and its file |
 
@@ -258,6 +258,6 @@ Rules, commands and the documentation map for people and agents who work on the 
 
 ## Status, licence, author
 
-Under construction (before v0.1.0). Working: five Kartograf 0.8.0 operations (DEM for a map sheet or an area from a file, child sheets with the orthophoto in three colour variants, a DEM or DSM cutout, BDOT10k, and the creation of the store) and 26 IMGWTools 3.0.0 operations (two-stage recognition: category, then operation), from the CLI and from Python, with a decision model on any OpenAI-compatible server (for example Bielik 11B in LM Studio); the offline plan preview, the availability check on request, `retman doctor check`, `retman eval run` and `retman scaffold`. The `basal` backend does not exist yet. Versions 0.x are public but not recommended for production before 1.0.0.
+Under construction (before v0.1.0). Working: five Kartograf 0.8.0 operations (DEM for a map sheet or an area from a file, child sheets with the orthophoto in three colour variants, a DEM or DSM cutout, BDOT10k, and the creation of the store) and 26 Obserwator 3.0.0 operations (two-stage recognition: category, then operation), from the CLI and from Python, with a decision model on any OpenAI-compatible server (for example Bielik 11B in LM Studio); the offline plan preview, the availability check on request, `retman doctor check`, `retman eval run` and `retman scaffold`. The `basal` backend does not exist yet. Versions 0.x are public but not recommended for production before 1.0.0.
 
 MIT licence, see [LICENSE](https://github.com/Daldek/Retman/blob/main/LICENSE). Author: [Piotr de Bever](https://www.linkedin.com/in/piotr-de-bever/).

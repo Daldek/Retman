@@ -20,7 +20,7 @@ from retman.i18n.loader import (
 PACKAGES = {
     "core": "retman.i18n",
     "kartograf": "retman.tools.kartograf",
-    "imgwtools": "retman.tools.imgwtools",
+    "obserwator": "retman.tools.obserwator",
 }
 
 

@@ -1,4 +1,4 @@
-"""Folders of the tool stores: ``retman doctor check`` and IMGWTools set-up."""
+"""Folders of the tool stores: ``retman doctor check`` and Obserwator set-up."""
 
 import errno
 import os
@@ -8,28 +8,28 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from imgw_store_files import write_layout, write_server_state
 from kartograf_store_files import (
     MARKER,
     write_marker,
     write_other_marker,
     write_product_files,
 )
+from obserwator_store_files import write_layout, write_server_state
 
 from retman.stores import (
-    IMGW_MARKER,
     KARTOGRAF_MARKER,
     KARTOGRAF_SCHEMA,
     KARTOGRAF_STAGING,
     KARTOGRAF_TREES,
+    OBSERWATOR_MARKER,
     STORE_MARKERS,
-    ImgwStore,
     KartografStore,
+    ObserwatorStore,
     hardlink_error,
-    imgw_store_state,
-    init_imgw_store,
+    init_obserwator_store,
     kartograf_store_state,
-    probe_imgw_write,
+    obserwator_store_state,
+    probe_obserwator_write,
     symlink_component,
 )
 
@@ -49,27 +49,27 @@ def test_symlink_component_finds_a_link_in_any_part_of_the_path(tmp_path: Path):
     assert symlink_component(link / "new" / "store") == link
 
 
-IMGW_STATES = [
-    ("missing", ImgwStore("missing")),
-    ("file", ImgwStore("not_a_directory")),
-    ("empty", ImgwStore("empty")),
-    ("ready", ImgwStore("ready", "imgw-store/1")),
-    ("foreign", ImgwStore("foreign")),
-    ("unreadable", ImgwStore("unreadable")),
-    ("no_schema", ImgwStore("unreadable")),
-    ("newer", ImgwStore("unsupported", "imgw-store/2")),
+OBSERWATOR_STATES = [
+    ("missing", ObserwatorStore("missing")),
+    ("file", ObserwatorStore("not_a_directory")),
+    ("empty", ObserwatorStore("empty")),
+    ("ready", ObserwatorStore("ready", "obserwator-store/1")),
+    ("foreign", ObserwatorStore("foreign")),
+    ("unreadable", ObserwatorStore("unreadable")),
+    ("no_schema", ObserwatorStore("unreadable")),
+    ("newer", ObserwatorStore("unsupported", "obserwator-store/2")),
     # A layout is a store that lost its marker (or never had one): `store init`
-    ("layout", ImgwStore("no_marker")),
-    ("layout_and_notes", ImgwStore("no_marker")),
-    ("tree_is_a_file", ImgwStore("foreign")),
+    ("layout", ObserwatorStore("no_marker")),
+    ("layout_and_notes", ObserwatorStore("no_marker")),
+    ("tree_is_a_file", ObserwatorStore("foreign")),
     # The key file of the REST server lives in the default store folder
-    ("server_state", ImgwStore("empty")),
-    ("server_state_and_notes", ImgwStore("foreign")),
+    ("server_state", ObserwatorStore("empty")),
+    ("server_state_and_notes", ObserwatorStore("foreign")),
 ]
 
 # What the check of a write into a store says of a folder in each state, by the tool:
 # the ``code/reason`` of the error it raises or of the one conflict it plans (DEV-19.10)
-IMGW_VERDICTS = {
+OBSERWATOR_VERDICTS = {
     "missing": "ok",
     "empty": "ok",
     "ready": "ok",
@@ -81,24 +81,26 @@ IMGW_VERDICTS = {
 }
 
 
-def make_imgw_folder(setup: str, root: Path, request: pytest.FixtureRequest) -> Path:
+def make_obserwator_folder(
+    setup: str, root: Path, request: pytest.FixtureRequest
+) -> Path:
     """Build the scenario ``setup`` as the folder ``root/store``; return it."""
     folder = root / "store"
     raw_markers = {
         "unreadable": "{",
-        "no_schema": '{"created_by": "imgwtools 3.0.0"}',
-        "newer": '{"schema": "imgw-store/2"}',
+        "no_schema": '{"created_by": "obserwator 3.0.0"}',
+        "newer": '{"schema": "obserwator-store/2"}',
     }
     if setup == "ready":
         # The store as the tool builds it, not a marker written by hand
-        template = request.getfixturevalue("imgw_store_template")
+        template = request.getfixturevalue("obserwator_store_template")
         shutil.copytree(template, folder)
     elif setup == "file":
         folder.write_text("x", encoding="utf-8")
     elif setup != "missing":
         folder.mkdir()
     if setup in raw_markers:
-        (folder / IMGW_MARKER).write_text(raw_markers[setup], encoding="utf-8")
+        (folder / OBSERWATOR_MARKER).write_text(raw_markers[setup], encoding="utf-8")
     if setup in ("layout", "layout_and_notes"):
         write_layout(folder, "series")
     if setup in ("server_state", "server_state_and_notes"):
@@ -111,48 +113,50 @@ def make_imgw_folder(setup: str, root: Path, request: pytest.FixtureRequest) -> 
 
 
 @pytest.mark.parametrize(
-    ("setup", "expected"), IMGW_STATES, ids=[setup for setup, _ in IMGW_STATES]
+    ("setup", "expected"),
+    OBSERWATOR_STATES,
+    ids=[setup for setup, _ in OBSERWATOR_STATES],
 )
-def test_imgw_store_state_tells_what_the_folder_holds(
+def test_obserwator_store_state_tells_what_the_folder_holds(
     tmp_path: Path,
     setup: str,
-    expected: ImgwStore,
+    expected: ObserwatorStore,
     request: pytest.FixtureRequest,
 ):
-    folder = make_imgw_folder(setup, tmp_path, request)
+    folder = make_obserwator_folder(setup, tmp_path, request)
 
-    assert imgw_store_state(folder) == expected
+    assert obserwator_store_state(folder) == expected
 
 
-@pytest.mark.parametrize("setup", [setup for setup, _ in IMGW_STATES])
-def test_imgw_store_state_agrees_with_the_check_of_a_write_by_the_tool(
+@pytest.mark.parametrize("setup", [setup for setup, _ in OBSERWATOR_STATES])
+def test_obserwator_store_state_agrees_with_the_check_of_a_write_by_the_tool(
     tmp_path: Path, request: pytest.FixtureRequest, setup: str
 ):
-    imgwtools = pytest.importorskip("imgwtools")
-    folder = make_imgw_folder(setup, tmp_path, request)
-    options = imgwtools.validate_command(
+    obserwator = pytest.importorskip("obserwator")
+    folder = make_obserwator_folder(setup, tmp_path, request)
+    options = obserwator.validate_command(
         "series build", options={"root": str(folder), "dataset": "pl.imgw.hydro_daily"}
     )
 
     # The plan of a series build reads the store only: no request, whatever the folder
     try:
-        plan = imgwtools.check_command("series build", options=options)
+        plan = obserwator.check_command("series build", options=options)
         actions = plan.to_json(root=folder)["result"].get("actions", [])
         refusals = [item for item in actions if item.get("action") == "conflict"]
         verdict = f"conflict/{refusals[0]['reason']}" if refusals else "ok"
-    except imgwtools.IMGWError as error:
+    except obserwator.ObserwatorError as error:
         verdict = f"{error.code}/{error.details.get('reason')}"
 
-    assert verdict == IMGW_VERDICTS[imgw_store_state(folder).state]
+    assert verdict == OBSERWATOR_VERDICTS[obserwator_store_state(folder).state]
 
 
 @pytest.mark.parametrize("tree", ["archives", "series", "stations", "pmaxtp"])
-def test_imgw_store_state_sees_the_layout_in_every_tree_of_a_store(
+def test_obserwator_store_state_sees_the_layout_in_every_tree_of_a_store(
     tmp_path: Path, tree: str
 ):
     write_layout(tmp_path, tree)
 
-    assert imgw_store_state(tmp_path) == ImgwStore("no_marker")
+    assert obserwator_store_state(tmp_path) == ObserwatorStore("no_marker")
 
 
 # The product trees of Kartograf, spelled out: not taken from ``retman.stores``
@@ -200,9 +204,9 @@ KARTOGRAF_STATES = [
     ("layout_and_notes", "no_marker", ""),
     # A store never lies in, is or holds the store of another tool or place
     ("in_a_kartograf_store", "nested", "outer"),
-    ("in_an_imgw_store", "nested", "outer"),
-    ("is_an_imgw_store", "nested", "store"),
-    ("holds_an_imgw_store", "nested", "store/imports"),
+    ("in_an_obserwator_store", "nested", "outer"),
+    ("is_an_obserwator_store", "nested", "store"),
+    ("holds_an_obserwator_store", "nested", "store/imports"),
     # The product trees of a store are its own data: they are not searched
     ("marker_in_a_tree", "ready", "kartograf-store/1"),
 ]
@@ -226,7 +230,7 @@ BUILT_BY_THE_TOOL = (
     "ready",
     "layout",
     "layout_and_notes",
-    "holds_an_imgw_store",
+    "holds_an_obserwator_store",
     "marker_in_a_tree",
 )
 
@@ -278,12 +282,12 @@ def make_kartograf_folder(
         case "in_a_kartograf_store":
             write_marker(root / "outer")
             folder = root / "outer" / "inner"
-        case "in_an_imgw_store":
+        case "in_an_obserwator_store":
             write_other_marker(root / "outer")
             folder = root / "outer" / "inner"
-        case "is_an_imgw_store":
+        case "is_an_obserwator_store":
             write_other_marker(folder)
-        case "holds_an_imgw_store":
+        case "holds_an_obserwator_store":
             write_other_marker(folder / "imports")
         case "marker_in_a_tree":
             write_other_marker(folder / "nmt" / "a_copy")
@@ -373,98 +377,104 @@ def test_hardlink_test_raises_when_the_folder_takes_no_files(tmp_path: Path):
         hardlink_error(tmp_path / "absent")
 
 
-def test_missing_imgwtools_is_reported_not_raised(
+def test_missing_obserwator_is_reported_not_raised(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    monkeypatch.setitem(sys.modules, "imgwtools", None)
+    monkeypatch.setitem(sys.modules, "obserwator", None)
 
-    assert init_imgw_store(tmp_path / "store").status == "tool_missing"
-    assert probe_imgw_write().status == "tool_missing"
+    assert init_obserwator_store(tmp_path / "store").status == "tool_missing"
+    assert probe_obserwator_write().status == "tool_missing"
     assert not (tmp_path / "store").exists()
 
 
-# The tests below run the real IMGWTools: offline, no network
+# The tests below run the real Obserwator: offline, no network
 
 
 @pytest.fixture
-def imgwtools():
+def obserwator():
     pytest.importorskip("pyarrow")
-    return pytest.importorskip("imgwtools")
+    return pytest.importorskip("obserwator")
 
 
-def test_init_imgw_store_creates_the_marker_once(tmp_path: Path, imgwtools):
-    store = tmp_path / "data" / "imgwtools"
+def test_init_obserwator_store_creates_the_marker_once(tmp_path: Path, obserwator):
+    store = tmp_path / "data" / "obserwator"
 
-    first = init_imgw_store(store)
-    second = init_imgw_store(store)
+    first = init_obserwator_store(store)
+    second = init_obserwator_store(store)
 
     assert (first.status, second.status) == ("ok", "existing")
-    assert first.version == str(imgwtools.__version__)
-    assert imgw_store_state(store).state == "ready"
+    assert first.version == str(obserwator.__version__)
+    assert obserwator_store_state(store).state == "ready"
 
 
-def test_init_imgw_store_returns_the_refusal_of_the_tool(tmp_path: Path, imgwtools):
+def test_init_obserwator_store_returns_the_refusal_of_the_tool(
+    tmp_path: Path, obserwator
+):
     store = tmp_path / "store"
     store.mkdir()
     (store / "notes.txt").write_text("not a store", encoding="utf-8")
 
-    outcome = init_imgw_store(store)
+    outcome = init_obserwator_store(store)
 
     assert outcome.status == "refused"
     assert str(store) in outcome.detail
-    assert not (store / IMGW_MARKER).exists()
+    assert not (store / OBSERWATOR_MARKER).exists()
 
 
-def test_init_imgw_store_marks_a_layout_whose_marker_is_gone_and_keeps_its_files(
-    tmp_path: Path, imgwtools
+def test_init_obserwator_store_marks_a_layout_whose_marker_is_gone_and_keeps_its_files(
+    tmp_path: Path, obserwator
 ):
-    from imgwtools.testing import build_fixture_store
+    from obserwator.testing import build_fixture_store
 
     store = tmp_path / "store"
     build_fixture_store(store)
-    (store / IMGW_MARKER).unlink()
+    (store / OBSERWATOR_MARKER).unlink()
     files = {path.relative_to(store) for path in store.rglob("*")}
-    assert imgw_store_state(store).state == "no_marker"
+    assert obserwator_store_state(store).state == "no_marker"
 
-    outcome = init_imgw_store(store)
+    outcome = init_obserwator_store(store)
 
     assert outcome.status == "ok"
-    assert imgw_store_state(store) == ImgwStore("ready", "imgw-store/1")
+    assert obserwator_store_state(store) == ObserwatorStore(
+        "ready", "obserwator-store/1"
+    )
     marked = {path.relative_to(store) for path in store.rglob("*")}
-    assert marked == files | {Path(IMGW_MARKER)}
+    assert marked == files | {Path(OBSERWATOR_MARKER)}
 
 
-def test_init_imgw_store_refuses_a_layout_with_a_foreign_file_beside_its_trees(
-    tmp_path: Path, imgwtools
+def test_init_obserwator_store_refuses_a_layout_with_a_foreign_file_beside_its_trees(
+    tmp_path: Path, obserwator
 ):
-    from imgwtools.testing import build_fixture_store
+    from obserwator.testing import build_fixture_store
 
     store = tmp_path / "store"
     build_fixture_store(store)
-    (store / IMGW_MARKER).unlink()
+    (store / OBSERWATOR_MARKER).unlink()
     (store / "notes.txt").write_text("not a store", encoding="utf-8")
-    assert imgw_store_state(store).state == "no_marker"
+    assert obserwator_store_state(store).state == "no_marker"
 
-    outcome = init_imgw_store(store)
+    outcome = init_obserwator_store(store)
 
     assert (outcome.status, outcome.reason) == ("refused", "invalid_layout")
-    assert not (store / IMGW_MARKER).exists()
+    assert not (store / OBSERWATOR_MARKER).exists()
 
 
-def test_init_imgw_store_takes_a_folder_that_holds_only_the_key_file_of_the_server(
-    tmp_path: Path, imgwtools
+def test_init_obserwator_store_takes_a_folder_holding_only_the_key_file_of_the_server(
+    tmp_path: Path, obserwator
 ):
     write_server_state(tmp_path)
-    assert imgw_store_state(tmp_path).state == "empty"
+    assert obserwator_store_state(tmp_path).state == "empty"
 
-    outcome = init_imgw_store(tmp_path)
+    outcome = init_obserwator_store(tmp_path)
 
     assert outcome.status == "ok"
-    assert imgw_store_state(tmp_path).state == "ready"
+    assert obserwator_store_state(tmp_path).state == "ready"
     assert (tmp_path / "api_keys.json").read_text(encoding="utf-8") == "{}"
 
 
-def test_init_imgw_store_refuses_a_path_through_a_symlink(tmp_path: Path, imgwtools):
+def test_init_obserwator_store_refuses_a_path_through_a_symlink(
+    tmp_path: Path, obserwator
+):
     real = tmp_path / "real"
     real.mkdir()
     link = tmp_path / "link"
@@ -473,53 +483,55 @@ def test_init_imgw_store_refuses_a_path_through_a_symlink(tmp_path: Path, imgwto
     except OSError:
         pytest.skip("symbolic links are not available")
 
-    outcome = init_imgw_store(link / "store")
+    outcome = init_obserwator_store(link / "store")
 
     assert outcome.status == "refused"
     assert not (real / "store").exists()
 
 
 def test_write_probe_builds_a_store_and_removes_it(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, imgwtools
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, obserwator
 ):
     scratch = tmp_path / "tmp"
     scratch.mkdir()
     monkeypatch.setattr(tempfile, "tempdir", str(scratch))
 
-    outcome = probe_imgw_write()
+    outcome = probe_obserwator_write()
 
     assert outcome.status == "ok"
     assert list(scratch.iterdir()) == []
 
 
 def test_write_probe_returns_the_error_of_the_tool_and_cleans_up(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, imgwtools
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, obserwator
 ):
     scratch = tmp_path / "tmp"
     scratch.mkdir()
     monkeypatch.setattr(tempfile, "tempdir", str(scratch))
 
     def unsupported(root: object, **options: object) -> None:
-        raise imgwtools.IMGWStoreConflictError("System plików nie zapewnia zapisu")
+        raise obserwator.ObserwatorStoreConflictError(
+            "System plików nie zapewnia zapisu"
+        )
 
-    monkeypatch.setattr("imgwtools.testing.build_fixture_store", unsupported)
+    monkeypatch.setattr("obserwator.testing.build_fixture_store", unsupported)
 
-    outcome = probe_imgw_write()
+    outcome = probe_obserwator_write()
 
     assert outcome.status == "refused"
     assert outcome.detail == "System plików nie zapewnia zapisu"
     assert list(scratch.iterdir()) == []
 
 
-def test_init_imgw_store_names_the_reason_when_the_disk_has_no_hard_links(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, imgwtools
+def test_init_obserwator_store_names_the_reason_when_the_disk_has_no_hard_links(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, obserwator
 ):
     def refuse(source: object, target: object) -> None:
         raise OSError(errno.EOPNOTSUPP, "Operation not supported")
 
     monkeypatch.setattr(os, "link", refuse)
 
-    outcome = init_imgw_store(tmp_path / "store")
+    outcome = init_obserwator_store(tmp_path / "store")
 
     assert (outcome.status, outcome.reason) == ("refused", "not_atomic")
     assert "Operation not supported" in outcome.detail

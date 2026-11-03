@@ -5,7 +5,7 @@ has no real catalog to be matched against. This module is that catalog: real
 place and river names (so commands read naturally and inflection, ambiguity and
 typos are exercised), invented codes (they only follow the shape of the real
 ones and do not denote any station), in the structure of the ``stations find``
-document of IMGWTools. The dataset check and the evaluation run both serve it
+document of Obserwator. The dataset check and the evaluation run both serve it
 through ``catalog_lookup``.
 """
 
@@ -157,7 +157,7 @@ def synthetic_station_document(options: Mapping[str, object]) -> ToolDocument:
             if needle in _fold(str(item["name"])) + " " + _fold(str(item["river"]))
         ]
     return {
-        "schema": "imgw-result/1",
+        "schema": "obserwator-result/1",
         "command": "stations find",
         "check": False,
         "status": "ok",
