@@ -149,3 +149,21 @@ which is on GitHub. The tool keeps no projects: the `project` commands, the mani
 gone, so Retman's `imgw_projects` operations are removed and the sentences of item 5 and of
 the Consequences about `project init` and `project set store` no longer apply. The tool's registry
 gains `unsupported`, which has its text in Retman.
+
+**Erratum 7 (2026-11-03, Obserwator `651d4d73`, Nogat ECO-057):** IMGWTools is called Obserwator
+(its ADR-009, plan `2026-11-03-imgwtools-to-obserwator` of Nogat); this ADR keeps the names of
+its day and reads through the tool's name map. The pin is now Obserwator
+`651d4d73dc6e6a2a2a75ec8476a35ee050ed787d`, the head of its branch `feature/obserwator`, which is
+on GitHub (repository `Daldek/IMGWTools` until it is renamed): the distribution and the import
+package are `obserwator` (`obserwator[store]`), the exceptions `ObserwatorError` and its
+subclasses, the catalog extensions `x-obserwator`, the variable of the reference data
+`OBSERWATOR_REFERENCE_DIR`, the documents `obserwator-result/1`, `obserwator-plan/1` and
+`obserwator-store/1`, the marker `obserwator-store.json`, and the tool's defaults
+`<data_dir>/obserwator` and `<cache_dir>/obserwator/reference`. The tool changes no behaviour,
+layout or version (3.0.0), so the calls, the marker states and the documents of this ADR stand
+under the new names. Retman's names of the tool follow, without an alias (ECO-056): the tool id
+and the settings table `[retman.tools.obserwator]`, the default store folder `obserwator`, the
+categories `obserwator_*`, the operations whose id named the tool (`init_obserwator_store` and
+nine more), the kinds `obserwator_archive`, `obserwator_plan` and `obserwator_report`, and the
+texts („magazyn Obserwatora”). The operation `fetch_imgw_warnings`, its kind `imgw_warnings`, the
+provider option `imgw_pib` and the datasets `pl.imgw.*` name the institute and stay.

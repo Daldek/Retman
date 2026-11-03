@@ -75,7 +75,7 @@ _PLAN_RUN: Final = Command(
     description=(
         "Recognises the operation in a Polish command, fills in the values it states "
         "and lists open questions; with `yes` runs the complete plan. Use it to get "
-        "or prepare data from Kartograf and IMGWTools in Polish words. Not for other "
+        "or prepare data from Kartograf and Obserwator in Polish words. Not for other "
         "languages or for exact calls of a tool (use the tool itself)."
     ),
     function="retman.operations.plan_run",
@@ -204,8 +204,8 @@ _CONFIG_INIT: Final = Command(
         Option(
             "stores_dir",
             "path",
-            "Folder that holds the stores of both tools (`kartograf` and `imgw` inside "
-            "it); default: the data folder of nogat.",
+            "Folder that holds the stores of both tools (`kartograf` and `obserwator` "
+            "inside it); default: the data folder of nogat.",
             path_role="output",
         ),
         _CHECK,
@@ -239,7 +239,7 @@ _DOCTOR_CHECK: Final = Command(
         "their stores, drift of the tool descriptions, translations. Each check is "
         "a unit in `items`; a failed one has a registry code and a hint. Use it when "
         "a command fails or after installing a tool; not for planning (`plan run`). "
-        "`deep` adds a trial write to the IMGWTools store."
+        "`deep` adds a trial write to the Obserwator store."
     ),
     function="retman.operations.doctor_check",
     options=(
@@ -247,7 +247,7 @@ _DOCTOR_CHECK: Final = Command(
         Option(
             "deep",
             "boolean",
-            "Also run the slower checks: a trial write to the IMGWTools store on the "
+            "Also run the slower checks: a trial write to the Obserwator store on the "
             "tool's own test data, in a temporary folder, without the network.",
         ),
     ),

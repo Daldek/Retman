@@ -63,7 +63,7 @@ def init_lines(
         texts.get(
             "init.stores_summary",
             kartograf=paths.kartograf_store,
-            imgwtools=paths.imgwtools_store,
+            obserwator=paths.obserwator_store,
         ),
     ]
     if not created:
@@ -129,7 +129,7 @@ def config_init(
         "collect_path": str(collect_path),
         "stores": {
             "kartograf": str(paths.kartograf_store),
-            "imgwtools": str(paths.imgwtools_store),
+            "obserwator": str(paths.obserwator_store),
         },
     }
     return Output(

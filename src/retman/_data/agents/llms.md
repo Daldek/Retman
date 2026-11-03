@@ -1,8 +1,8 @@
 # Retman
 
-> A CLI and Python library that turns a data task written in Polish into a plan for Kartograf and IMGWTools, asks for what is missing, shows the plan and, once confirmed, runs it and saves the result in the project folder.
+> A CLI and Python library that turns a data task written in Polish into a plan for Kartograf and Obserwator, asks for what is missing, shows the plan and, once confirmed, runs it and saves the result in the project folder.
 
-Retman is not for exact calls of a tool with known options (use Kartograf or IMGWTools directly), for commands in other languages, or for hydrological computation (Hydrolog). A language model on a separate OpenAI-compatible server only chooses between listed options; code reads numbers, dates, coordinates and identifiers.
+Retman is not for exact calls of a tool with known options (use Kartograf or Obserwator directly), for commands in other languages, or for hydrological computation (Hydrolog). A language model on a separate OpenAI-compatible server only chooses between listed options; code reads numbers, dates, coordinates and identifiers.
 
 Interfaces: Python (<!-- retman:python_example -->) and the CLI (`retman <group> <verb> --option value --json`); no MCP server, no REST API. Install with `pip install "retman @ git+https://github.com/Daldek/Retman.git"`; the tools are separate installs and the model server is set in `nogat.toml` (`retman config init`, `retman doctor check`).
 

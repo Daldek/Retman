@@ -216,24 +216,24 @@ def create_app(
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _remove_imgw_fixture_store() -> Iterator[None]:
-    """Delete the IMGWTools fixture store of ``imgw_support`` when the session ends."""
+def _remove_obserwator_fixture_store() -> Iterator[None]:
+    """Delete the fixture store of ``obserwator_support`` when the session ends."""
     yield
-    support = sys.modules.get("imgw_support")
+    support = sys.modules.get("obserwator_support")
     if support is not None:
         support.discard_fixture_store()
 
 
 @pytest.fixture(scope="session")
-def imgw_store_template(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """An IMGWTools store as the tool itself builds it (DEV-10.6), built once.
+def obserwator_store_template(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """An Obserwator store as the tool itself builds it (DEV-10.6), built once.
 
     Tests copy it; the states the tool never writes (no marker, an unknown schema, a
-    foreign folder) are made from a copy or by hand (``imgw_store_files``).
+    foreign folder) are made from a copy or by hand (``obserwator_store_files``).
     """
     pytest.importorskip("pyarrow")
-    testing = pytest.importorskip("imgwtools.testing")
-    root = tmp_path_factory.mktemp("imgw-store") / "store"
+    testing = pytest.importorskip("obserwator.testing")
+    root = tmp_path_factory.mktemp("obserwator-store") / "store"
     testing.build_fixture_store(root)
     return root
 

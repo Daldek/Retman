@@ -40,15 +40,15 @@ from retman.outcomes import EXIT_FAILED, EXIT_OK, EXIT_PARTIAL
 from retman.registry.loader import discover_manifests, version_matches
 from retman.registry.manifest import ManifestSpec, validate_manifest
 from retman.stores import (
-    IMGW_MARKER,
-    IMGW_REFERENCE_FILE,
     KARTOGRAF_MARKER,
+    OBSERWATOR_MARKER,
+    OBSERWATOR_REFERENCE_FILE,
     ToolOutcome,
     hardlink_error,
-    imgw_store_state,
     kartograf_store_state,
     nearest_existing,
-    probe_imgw_write,
+    obserwator_store_state,
+    probe_obserwator_write,
     symlink_component,
 )
 
@@ -731,32 +731,34 @@ def _kartograf_checks(
     return checks
 
 
-def _imgw_store_checks(store: Path, texts: Texts, config_path: Path) -> list[Check]:
-    """IMGWTools marks a store folder with a file, which ``store init`` writes.
+def _obserwator_store_checks(
+    store: Path, texts: Texts, config_path: Path
+) -> list[Check]:
+    """Obserwator marks a store folder with a file, which ``store init`` writes.
 
     An empty folder is only not created yet; a folder with the layout of a store and
     no marker, and a folder with other files, are errors, because the tool refuses
     to use them.
     """
     checks, state = _store_folder(
-        "imgwtools", store, texts, config_path, symlinks_refused=True
+        "obserwator", store, texts, config_path, symlinks_refused=True
     )
     if state == "broken":
         return checks
-    found = imgw_store_state(store)
-    args = {"path": store, "marker": IMGW_MARKER, "schema": found.detail}
+    found = obserwator_store_state(store)
+    args = {"path": store, "marker": OBSERWATOR_MARKER, "schema": found.detail}
     config = {"config": config_path}
     if found.state in ("missing", "empty"):
         checks.append(
             Check(
                 "warning",
-                texts.get("doctor.stores.imgw_not_initialised", **args),
-                texts.get("doctor.stores.hint_imgw_init"),
+                texts.get("doctor.stores.obserwator_not_initialised", **args),
+                texts.get("doctor.stores.hint_obserwator_init"),
             )
         )
     elif found.state == "foreign":
-        text = texts.get("doctor.stores.imgw_foreign", **args)
-        hint = texts.get("doctor.stores.hint_imgw_foreign", **config)
+        text = texts.get("doctor.stores.obserwator_foreign", **args)
+        hint = texts.get("doctor.stores.hint_obserwator_foreign", **config)
         checks.append(
             Check(
                 "error",
@@ -768,8 +770,8 @@ def _imgw_store_checks(store: Path, texts: Texts, config_path: Path) -> list[Che
             )
         )
     elif found.state == "no_marker":
-        text = texts.get("doctor.stores.imgw_no_marker", **args)
-        hint = texts.get("doctor.stores.hint_imgw_no_marker")
+        text = texts.get("doctor.stores.obserwator_no_marker", **args)
+        hint = texts.get("doctor.stores.hint_obserwator_no_marker")
         checks.append(
             Check(
                 "error",
@@ -781,8 +783,8 @@ def _imgw_store_checks(store: Path, texts: Texts, config_path: Path) -> list[Che
             )
         )
     elif found.state in ("unreadable", "unsupported"):
-        text = texts.get(f"doctor.stores.imgw_{found.state}", **args)
-        hint = texts.get("doctor.stores.hint_imgw_marker", **config)
+        text = texts.get(f"doctor.stores.obserwator_{found.state}", **args)
+        hint = texts.get("doctor.stores.hint_obserwator_marker", **config)
         checks.append(
             Check(
                 "error",
@@ -795,14 +797,14 @@ def _imgw_store_checks(store: Path, texts: Texts, config_path: Path) -> list[Che
         )
     if found.state in ("missing", "empty", "ready"):
         where = store if state == "ok" else nearest_existing(store)
-        checks.extend(_hardlink_checks("imgwtools", where, texts, config_path))
+        checks.extend(_hardlink_checks("obserwator", where, texts, config_path))
     if found.state == "ready" and not checks:
-        checks.append(Check("ok", texts.get("doctor.stores.imgw_ready", **args)))
+        checks.append(Check("ok", texts.get("doctor.stores.obserwator_ready", **args)))
     return checks
 
 
 def _pyarrow_check(texts: Texts, source: str) -> Check:
-    """Check ``pyarrow``: IMGWTools series are Parquet files (``imgwtools[store]``)."""
+    """Check ``pyarrow``: Obserwator series are Parquet (``obserwator[store]``)."""
     try:
         pyarrow = importlib.import_module("pyarrow")
     except ImportError:
@@ -823,13 +825,13 @@ def _reference_check(folder: Path, texts: Texts, config_path: Path) -> Check:
             texts.get("doctor.stores.reference_missing", path=folder),
             texts.get("doctor.stores.hint_reference", config=config_path),
         )
-    present = (folder / IMGW_REFERENCE_FILE).is_file()
+    present = (folder / OBSERWATOR_REFERENCE_FILE).is_file()
     return Check(
         "ok",
         texts.get(
             "doctor.stores.reference_ok",
             path=folder,
-            file=IMGW_REFERENCE_FILE,
+            file=OBSERWATOR_REFERENCE_FILE,
             state=texts.get(
                 "doctor.stores.reference_present"
                 if present
@@ -866,11 +868,11 @@ def _store_checks(
     checks: list[Check] = []
     if "kartograf" in active and "kartograf" in config.tools:
         checks.extend(_kartograf_checks(config.tools["kartograf"], texts, config.path))
-    if "imgwtools" in active and "imgwtools" in config.tools:
-        manifest, version = active["imgwtools"]
-        settings = config.tools["imgwtools"]
+    if "obserwator" in active and "obserwator" in config.tools:
+        manifest, version = active["obserwator"]
+        settings = config.tools["obserwator"]
         checks.extend(
-            _imgw_store_checks(Path(settings["store_dir"]), texts, config.path)
+            _obserwator_store_checks(Path(settings["store_dir"]), texts, config.path)
         )
         arrow = _pyarrow_check(texts, manifest["source"])
         checks.append(arrow)
@@ -956,7 +958,7 @@ def run_doctor(
     manifests: Iterable[tuple[ManifestSpec, Path]] | None = None,
     version_lookup: Callable[[str], str] = importlib.metadata.version,
     deep: bool = False,
-    probe: Callable[[], ToolOutcome] = probe_imgw_write,
+    probe: Callable[[], ToolOutcome] = probe_obserwator_write,
     conformance: "LightCheck | None" = None,
     options: Mapping[str, OptionValue] | None = None,
 ) -> tuple[DoctorReport, Texts]:
@@ -973,9 +975,9 @@ def run_doctor(
         Injections for offline tests; by default the configured backend,
         a new HTTP client, all tool manifests and installed package versions.
     deep : bool, optional
-        Also run the slow checks: whether IMGWTools can write a store here.
+        Also run the slow checks: whether Obserwator can write a store here.
     probe : Callable, optional
-        The IMGWTools write probe; an injection for offline tests.
+        The Obserwator write probe; an injection for offline tests.
     conformance : LightCheck, optional
         The light drift check of the tools in use; by default the one of
         ``retman.devtools`` on the discovered tools. With injected ``manifests``

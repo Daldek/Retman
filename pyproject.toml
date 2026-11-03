@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "retman"
 dynamic = ["version"]
-description = "Polish natural-language commands for the Nogat hydrology tools (Kartograf, IMGWTools): recognises the operation, asks for what is missing, shows a plan to confirm, then runs it."
+description = "Polish natural-language commands for the Nogat hydrology tools (Kartograf, Obserwator): recognises the operation, asks for what is missing, shows a plan to confirm, then runs it."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -19,6 +19,7 @@ keywords = [
     "command-line",
     "assistant",
     "kartograf",
+    "obserwator",
     "imgw",
 ]
 classifiers = [
@@ -56,14 +57,15 @@ dev = [
 ]
 # Tools used by handler tests and manual smoke runs (ARCHITECTURE 3.2.7, ADR-003).
 # Not a runtime dependency of Retman (ARCHITECTURE 9.3). Commits until the tags v0.8.0
-# and v3.0.0 exist; then pin the tags. Both commits are the heads of the branches
-# feature/archiwista-projects of the tools (projects moved to Archiwista, ECO-054),
-# pushed to GitHub.
+# and v3.0.0 exist; then pin the tags. The Kartograf commit is the head of its develop
+# (the marker obserwator-store.json, Nogat ECO-057), the Obserwator commit the head of
+# its branch feature/obserwator (IMGWTools renamed, ECO-057); both are pushed to GitHub,
+# and the repository of Obserwator keeps its URL until it is renamed.
 # The supported ranges of both tools admit their development versions while the commits
 # are pinned (REL-5.6).
 tools = [
-    "kartograf @ git+https://github.com/Daldek/Kartograf@dbcfe5bb687e20a4f19d54b45202f212901bf2e7",
-    "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@8cd6844c493d27e6a8792c29dfc64528d68a2998",
+    "kartograf @ git+https://github.com/Daldek/Kartograf@9deaa314c88f89ea2d9308481e0c0b04751fc792",
+    "obserwator[store] @ git+https://github.com/Daldek/IMGWTools@651d4d73dc6e6a2a2a75ec8476a35ee050ed787d",
 ]
 
 [tool.uv]
@@ -104,13 +106,13 @@ strict = true
 files = ["src", "tests"]
 # Folders without __init__.py are no packages: tests/integration/tools/<tool>/
 # carries the tool's name, and as a PEP 420 namespace package it would shadow the
-# installed tool, so `import imgwtools` in a test would resolve to the test folder
+# installed tool, so `import obserwator` in a test would resolve to the test folder
 # and every attribute of the tool would be "missing"
 namespace_packages = false
 
 [[tool.mypy.overrides]]
 # jsonschema (contract tests) ships no usable type information; its imports are not
-# checked. IMGWTools and Kartograf ship py.typed and are checked like Retman's own code
+# checked. Obserwator and Kartograf ship py.typed and are checked like Retman's own code
 module = [
     "jsonschema",
     "jsonschema.*",
@@ -135,20 +137,20 @@ module = [
     "test_factory",
     "test_fake_decision",
     "test_geometry",
-    "test_imgw_archives_runs",
-    "test_imgw_calls",
-    "test_imgw_check",
-    "test_imgw_client",
-    "test_imgw_coverage",
-    "test_imgw_describe",
-    "test_imgw_eval",
-    "test_imgw_manifest",
-    "test_imgw_pipeline",
-    "test_imgw_preview",
     "test_initialize",
     "test_kartograf_calls",
     "test_loader",
     "test_manifest_adapter",
+    "test_obserwator_archives_runs",
+    "test_obserwator_calls",
+    "test_obserwator_check",
+    "test_obserwator_client",
+    "test_obserwator_coverage",
+    "test_obserwator_describe",
+    "test_obserwator_eval",
+    "test_obserwator_manifest",
+    "test_obserwator_pipeline",
+    "test_obserwator_preview",
     "test_openai_compatible",
     "test_openai_compatible_live",
     "test_pipeline",

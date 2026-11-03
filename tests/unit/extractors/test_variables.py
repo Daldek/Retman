@@ -15,7 +15,7 @@ from retman.extractors.variables import (
 )
 from retman.i18n.loader import load_core_texts
 
-# Variables of the IMGW datasets (imgwtools.datasets())
+# Variables of the Obserwator datasets (obserwator.datasets())
 HYDRO_DAILY = ["H", "Q", "T"]
 HYDRO_MONTHLY = [f"{v}_{s}" for v in "HQT" for s in ("min", "mean", "max")]
 CLIMATE_DAILY = ["Tmax", "Tmin", "Tmean", "Tground", "P", "snow_cover"]
@@ -156,7 +156,7 @@ def test_before_the_dataset_is_known_names_give_plain_variables() -> None:
     assert _read("temperatura", None) == [["Tmax", "Tmin", "Tmean", "Tground", "T"]]
 
 
-def test_validator_without_dataset_knows_the_imgw_codes() -> None:
+def test_validator_without_dataset_knows_the_obserwator_codes() -> None:
     context = make_context()
 
     assert all(validate_variables(code, context) is None for code in KNOWN_VARIABLES)

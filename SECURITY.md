@@ -18,7 +18,7 @@ credited in the CHANGELOG unless you prefer otherwise.
 ## Scope
 
 Retman sends the text of a command to the model server that the user configures, and
-calls Kartograf and IMGWTools only after the user has confirmed a plan. Reports about
+calls Kartograf and Obserwator only after the user has confirmed a plan. Reports about
 the confirmation gate (a way to run a tool without a confirmed plan), the handling of
 paths and geometry files, text of commands or answers reaching the technical log or the
 collection file without consent, or the supply chain of the package are in scope. The

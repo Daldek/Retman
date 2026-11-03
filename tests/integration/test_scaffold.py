@@ -1710,7 +1710,7 @@ def gated_catalog(
     methods: tuple[str, ...] = ("POT", "AMP"),
     variables: tuple[str, ...] = ("H", "Q", "T"),
 ) -> ToolCatalog:
-    """Like IMGWTools in miniature: a ``method`` on two commands, a gated ``params``."""
+    """Like Obserwator in miniature: ``method`` on two commands, a gated ``params``."""
     catalog = make_catalog()
     method = (OptionInfo("method", allowed=methods),)
     extra = (

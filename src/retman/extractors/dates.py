@@ -1,6 +1,6 @@
 """Years, periods and the kind of year named in a command (ADR-009 pattern).
 
-Three parameters of the IMGW operations are read here, all by code:
+Three parameters of the Obserwator operations are read here, all by code:
 
 * ``years`` — archive years in the tool's own numbering (``2000–2020``,
   ``2010, 2012 i 2015``, ``z 2015 roku``);

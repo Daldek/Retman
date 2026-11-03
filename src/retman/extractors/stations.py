@@ -1,4 +1,4 @@
-"""Stations named in a command, read against the offline IMGW station catalog.
+"""Stations named in a command, read against the offline station catalog of Obserwator.
 
 Station codes are recognised by their shape and need no catalog. Names are
 matched against the catalog the tool keeps in its store (``stations find`` with
@@ -24,7 +24,7 @@ MAX_CANDIDATES = 9
 # Key of ``ExtractionContext.memo`` under which the loaded ``StationIndex`` is kept.
 # A test or ``retman eval run`` may put a prepared index there instead of serving a
 # ``stations find`` document through ``ctx.lookup``.
-STATION_INDEX_KEY = "imgw_station_index"
+STATION_INDEX_KEY = "obserwator_station_index"
 # Tool error codes meaning "there is no station catalog (yet)", as opposed to
 # a catalog that exists but cannot be read.
 _NO_CATALOG_CODES = frozenset({"not_found", "store_unavailable"})
@@ -478,7 +478,7 @@ def extract_station(text: str, ctx: ExtractionContext) -> list[Match]:
     ...       "kind": "meteo", "provider": "IMGW-PIB"}]
     ... )
     >>> ctx = ExtractionContext(
-    ...     tool="imgwtools", settings={}, project_dir=Path("."), scope={},
+    ...     tool="obserwator", settings={}, project_dir=Path("."), scope={},
     ...     lookup=lambda call: {}, today=date(2026, 10, 19),
     ...     memo={STATION_INDEX_KEY: index},
     ... )

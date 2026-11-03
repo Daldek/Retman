@@ -31,7 +31,7 @@ TODAY = date(2026, 10, 19)
 
 def _context(today: date = TODAY) -> ExtractionContext:
     return ExtractionContext(
-        tool="imgwtools",
+        tool="obserwator",
         settings={},
         project_dir=Path("."),
         scope={},

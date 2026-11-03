@@ -85,7 +85,7 @@ def test_answer_reader_is_used_when_the_extractor_has_one() -> None:
 
 def test_hint_comes_only_from_extractors_that_have_one() -> None:
     def no_catalog(call: Any) -> Any:
-        raise ToolError("imgwtools", "not_found", "no catalog")
+        raise ToolError("obserwator", "not_found", "no catalog")
 
     context = make_context(lookup=no_catalog)
 

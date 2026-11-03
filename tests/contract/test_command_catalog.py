@@ -284,9 +284,9 @@ class TestExamples:
     def test_a_list_option_is_given_by_repeating_its_flag(self) -> None:
         command = next(c for c in COMMANDS if c.name == "scaffold check")
 
-        line = command.command_line({"tool": ["kartograf", "imgwtools"]})
+        line = command.command_line({"tool": ["kartograf", "obserwator"]})
 
-        assert line == "retman scaffold check --tool kartograf --tool imgwtools"
+        assert line == "retman scaffold check --tool kartograf --tool obserwator"
 
 
 def _contains(actual: object, excerpt: object) -> list[str]:

@@ -11,6 +11,9 @@ of facts and further findings are appended at the end of the entry as errata
 amendment is also noted on the `**Status:**` line at the top of the amended ADR, with its date
 and the amending ADR. Template for a new entry: [New ADR template](#new-adr-template).
 
+The tool IMGWTools is called Obserwator since 2026-11-03 (Nogat ECO-057, ADR-024 erratum 7);
+the entries keep the names of their day (IMGWTools, `imgwtools`, `imgw_*`, `imgw-*/1`).
+
 **Status vocabulary** (the `**Status:**` line of each entry, DOC-8.1):
 
 - `proposed`: not decided yet;

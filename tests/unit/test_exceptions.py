@@ -45,7 +45,7 @@ def test_tool_error_maps_the_code_of_the_tool_to_the_registry(
 
 
 def test_tool_error_keeps_the_reason_the_tool_gives_for_a_registry_code() -> None:
-    error = ToolError("imgwtools", "conflict", "x", details={"reason": "not_atomic"})
+    error = ToolError("obserwator", "conflict", "x", details={"reason": "not_atomic"})
 
     assert (error.code, error.details["reason"]) == ("conflict", "not_atomic")
     assert error.details["tool_details"] == {"reason": "not_atomic"}

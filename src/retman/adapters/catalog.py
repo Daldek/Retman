@@ -114,7 +114,7 @@ class ToolRun:
 # Registry code and ``details.reason`` of the codes only Retman's clients use (ERR §4).
 # Every code of the registry passes through unchanged, with the tool's
 # ``details.reason`` as its precision: ``not_offline`` and ``not_read_only`` are raised
-# by the clients themselves, ``store_write_unsupported`` is the IMGWTools client's word
+# by the clients themselves, ``store_write_unsupported`` is the Obserwator client's word
 # for a ``conflict`` whose reason is ``not_atomic``.
 _TOOL_CODES: Mapping[str, tuple[ErrorCode, str | None]] = {
     "store_write_unsupported": ("store_unavailable", "store_write_unsupported"),

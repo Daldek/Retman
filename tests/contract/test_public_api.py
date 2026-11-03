@@ -116,7 +116,7 @@ class TestImport:
         "matplotlib",
         "osgeo",
         "kartograf",
-        "imgwtools",
+        "obserwator",
     )
 
     def test_importing_the_package_loads_no_heavy_library_and_no_tool(self) -> None:

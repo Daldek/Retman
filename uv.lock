@@ -565,22 +565,6 @@ wheels = [
 ]
 
 [[package]]
-name = "imgwtools"
-version = "3.0.0"
-source = { git = "https://github.com/Daldek/IMGWTools?rev=8cd6844c493d27e6a8792c29dfc64528d68a2998#8cd6844c493d27e6a8792c29dfc64528d68a2998" }
-dependencies = [
-    { name = "httpx" },
-    { name = "platformdirs" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-]
-
-[package.optional-dependencies]
-store = [
-    { name = "pyarrow" },
-]
-
-[[package]]
 name = "iniconfig"
 version = "2.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -619,7 +603,7 @@ wheels = [
 [[package]]
 name = "kartograf"
 version = "0.8.0.dev0"
-source = { git = "https://github.com/Daldek/Kartograf?rev=dbcfe5bb687e20a4f19d54b45202f212901bf2e7#dbcfe5bb687e20a4f19d54b45202f212901bf2e7" }
+source = { git = "https://github.com/Daldek/Kartograf?rev=9deaa314c88f89ea2d9308481e0c0b04751fc792#9deaa314c88f89ea2d9308481e0c0b04751fc792" }
 dependencies = [
     { name = "numpy" },
     { name = "platformdirs" },
@@ -867,6 +851,22 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/b5/4da41c328788f575838f97a098fe8ca691ebc6f6fd73ad4a262ee40b184d/numpy-2.5.4-cp315-cp315t-win32.whl", hash = "sha256:ad62a416ddcf863bf44bba76fbf6b53366ab0692e294f51cae4b5fbe0d246788", size = 6335804, upload-time = "2026-10-10T20:05:19.921Z" },
     { url = "https://files.pythonhosted.org/packages/98/94/6482ddfa3d312490cb9358f375bf2ad56427dbea8769187158e94d653753/numpy-2.5.4-cp315-cp315t-win_amd64.whl", hash = "sha256:38f47be9f74ab870d2633b5456ae519c43758a8d1fd05342f0ce4ecc034396ee", size = 12890095, upload-time = "2026-10-10T20:05:21.875Z" },
     { url = "https://files.pythonhosted.org/packages/48/7f/c2d1b436b6e7cfebac140c2579a298344b85f2991a2ce5c3615cefb29400/numpy-2.5.4-cp315-cp315t-win_arm64.whl", hash = "sha256:7a14a461d9340f1b46b8648578aed9cdb8b3b018a8fac6c1dde2c9192a01a87f", size = 10883718, upload-time = "2026-10-10T20:05:28.547Z" },
+]
+
+[[package]]
+name = "obserwator"
+version = "3.0.0"
+source = { git = "https://github.com/Daldek/IMGWTools?rev=651d4d73dc6e6a2a2a75ec8476a35ee050ed787d#651d4d73dc6e6a2a2a75ec8476a35ee050ed787d" }
+dependencies = [
+    { name = "httpx" },
+    { name = "platformdirs" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+]
+
+[package.optional-dependencies]
+store = [
+    { name = "pyarrow" },
 ]
 
 [[package]]
@@ -1370,8 +1370,8 @@ dev = [
     { name = "ruff" },
 ]
 tools = [
-    { name = "imgwtools", extra = ["store"] },
     { name = "kartograf" },
+    { name = "obserwator", extra = ["store"] },
 ]
 
 [package.metadata]
@@ -1390,8 +1390,8 @@ dev = [
     { name = "ruff", specifier = ">=0.6" },
 ]
 tools = [
-    { name = "imgwtools", extras = ["store"], git = "https://github.com/Daldek/IMGWTools?rev=8cd6844c493d27e6a8792c29dfc64528d68a2998" },
-    { name = "kartograf", git = "https://github.com/Daldek/Kartograf?rev=dbcfe5bb687e20a4f19d54b45202f212901bf2e7" },
+    { name = "kartograf", git = "https://github.com/Daldek/Kartograf?rev=9deaa314c88f89ea2d9308481e0c0b04751fc792" },
+    { name = "obserwator", extras = ["store"], git = "https://github.com/Daldek/IMGWTools?rev=651d4d73dc6e6a2a2a75ec8476a35ee050ed787d" },
 ]
 
 [[package]]

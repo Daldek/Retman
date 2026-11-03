@@ -3,15 +3,15 @@
 A user guide: how to set up Retman, how to issue commands, answer questions, approve plans and
 find results — in the terminal and from Python.
 
-**Status:** before v0.1.0. Five Kartograf 0.8.0 operations and 26 IMGWTools 3.0.0 operations work
+**Status:** before v0.1.0. Five Kartograf 0.8.0 operations and 26 Obserwator 3.0.0 (formerly IMGWTools) operations work
 (section 9) with a decision model compatible with the OpenAI API (e.g. LM Studio); the basal backend
 does not exist yet.
 
 > **About the examples.** The runs below were recorded on Retman 0.1.0.dev0 with Kartograf 0.8.0
-> and IMGWTools 3.0.0. The model's decisions were substituted with a stub (`FakeDecisionBackend`), so with
+> and Obserwator 3.0.0. The model's decisions were substituted with a stub (`FakeDecisionBackend`), so with
 > a real model Retman may ask different or additional questions — e.g. ask about the operation or its
 > group when the model is uncertain. The texts of questions, plans and messages are real; paths were
-> shortened. The execution in section 5.2 saves a time series from the **IMGWTools test store**
+> shortened. The execution in section 5.2 saves a time series from the **Obserwator test store**
 > (fictional stations, no network); no downloads from GUGiK were performed, and the report in
 > section 5.4 was produced from a saved GUGiK response.
 
@@ -41,18 +41,18 @@ in **one** environment, a running model server, settings and the tools' data sto
 ### 1.1. Installation
 
 Installation is described in ARCHITECTURE 9.4. Until v0.1.0 is released there is no release tag, and
-the Kartograf `v0.8.0` and IMGWTools `v3.0.0` tags have not been pushed yet, so you install Retman from
+the Kartograf `v0.8.0` and Obserwator `v3.0.0` tags have not been pushed yet, so you install Retman from
 the `develop` branch and the tools from pinned commits (the same ones the tests use, the `tools` group
-in `pyproject.toml`; both are the heads of the branches `feature/archiwista-projects` of the tools,
-and `docs/PROGRESS.md` says whether they are pushed):
+in `pyproject.toml`; Kartograf's is the head of its `develop`, Obserwator's the head of its branch
+`feature/obserwator`, and `docs/PROGRESS.md` says whether they are pushed):
 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@dbcfe5bb687e20a4f19d54b45202f212901bf2e7" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@8cd6844c493d27e6a8792c29dfc64528d68a2998"
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@9deaa314c88f89ea2d9308481e0c0b04751fc792" \
+    --with "obserwator[store] @ git+https://github.com/Daldek/IMGWTools@651d4d73dc6e6a2a2a75ec8476a35ee050ed787d"
 ```
 
-The IMGWTools `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are
+The Obserwator `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are
 released, the command will get the versions `@v0.8.0` and `@v3.0.0`. A tool installed in a different
 environment is invisible to Retman; `retman doctor check` (section 11) then gives the command that
 will add it.
@@ -89,8 +89,8 @@ It shows the settings file (even an unreadable one — then with the error descr
 its value and source (default, variable or file), the variable with the model provider's key (`jest`
 "present" or `brak` "missing", never the value) and the tools' stores with their size. Stores and caches
 are by default located in the user's folders: the Kartograf store in `<data_dir>/kartograf`, the
-IMGWTools store in `<data_dir>/imgw`, the Kartograf cache in `<cache_dir>/kartograf/metadata.db`,
-IMGWTools reference data in `<cache_dir>/imgw/reference`, the command set in
+Obserwator store in `<data_dir>/obserwator`, the Kartograf cache in `<cache_dir>/kartograf/metadata.db`,
+Obserwator reference data in `<cache_dir>/obserwator/reference`, the command set in
 `<data_dir>/retman/collected.jsonl` (`data_dir` and `cache_dir` are the nogat user's data and cache
 folders; on Linux `~/.local/share/nogat` and `~/.cache/nogat`).
 
@@ -101,7 +101,7 @@ retman config init   # appends the [retman] tables to nogat.toml and creates the
 All of this can be left at the defaults, but `retman config init` writes the complete set of settings
 to the file so that nothing is hidden. In the terminal it asks about collecting commands (section 6.4)
 and about the folder for the **tools' data stores**, creates the folders, checks that the disk supports
-hard links, writes the tables, and finally — with your consent — creates the IMGWTools store (no
+hard links, writes the tables, and finally — with your consent — creates the Obserwator store (no
 network). The run (Enter accepts the default value; paths were shortened):
 
 ```
@@ -110,19 +110,19 @@ Czy zbierać Twoje polecenia ze wszystkich projektów w jednym pliku (~/.local/s
 Zapisywane są: polecenie, plan, Twoje odpowiedzi i decyzje modelu — do budowy i strojenia zbioru testowego.
 Plik zostaje na tym komputerze; nic nie jest nigdzie wysyłane. Ustawienie można zmienić w [retman.privacy] collect_commands.
 Zbierać polecenia? [t]ak / [N]ie:
-Gdzie trzymać dane pobierane przez narzędzia (Kartograf, IMGWTools)?
-Magazyny to dwa osobne foldery w wybranym folderze — kartograf i imgw — więc oba są na jednym dysku. Wybierz dysk z dużą ilością miejsca: rastry i archiwa zajmują gigabajty, a magazyny są wspólne dla wszystkich projektów.
+Gdzie trzymać dane pobierane przez narzędzia (Kartograf, Obserwator)?
+Magazyny to dwa osobne foldery w wybranym folderze — kartograf i obserwator — więc oba są na jednym dysku. Wybierz dysk z dużą ilością miejsca: rastry i archiwa zajmują gigabajty, a magazyny są wspólne dla wszystkich projektów.
 Plik cache Kartografa trafi na dysk lokalny użytkownika: ~/.cache/nogat/kartograf/metadata.db.
 Folder na magazyny [Enter = ~/.local/share/nogat]:
 ~/.config/nogat/nogat.toml
 Zbieranie poleceń wyłączone ([retman.privacy] collect_commands = false).
 Magazyny narzędzi (ustawienia [retman.tools.*] w pliku):
   Kartograf: ~/.local/share/nogat/kartograf
-  IMGWTools: ~/.local/share/nogat/imgw
-Czy utworzyć teraz magazyn IMGWTools w ~/.local/share/nogat/imgw?
+  Obserwator: ~/.local/share/nogat/obserwator
+Czy utworzyć teraz magazyn Obserwatora w ~/.local/share/nogat/obserwator?
 Tworzenie nie używa sieci: w pustym folderze powstaje znacznik magazynu. Bez magazynu nie działają operacje na danych IMGW, które zapisują się lokalnie.
-Utworzyć magazyn IMGWTools? [t]ak / [N]ie: t
-Magazyn IMGWTools gotowy: ~/.local/share/nogat/imgw
+Utworzyć magazyn Obserwatora? [t]ak / [N]ie: t
+Magazyn Obserwatora gotowy: ~/.local/share/nogat/obserwator
 ```
 
 `retman config init` prints the path of the file it wrote the tables to. An existing file stays as it was:
@@ -130,7 +130,7 @@ the `[retman]` tables are appended at the end, and other tables (`[nogat]`, tabl
 touched. If the file already has a `[retman]` table, `retman config init` ends with a `conflict` error
 (code 4) and changes nothing. Without a terminal it writes the tables with the visible default paths and
 creates nothing (Kartograf writes the marker of its store on the first download, and you create the
-IMGWTools store with the command "Utwórz magazyn IMGW" (create the IMGW store)). If the disk of the chosen folder **has no hard
+Obserwator store with the command "Utwórz magazyn Obserwatora" (create the Obserwator store)). If the disk of the chosen folder **has no hard
 links** (FAT/exFAT, some network shares), `retman config init` ends with a `store_unavailable` error
 (code 8) and does not write the file — point to a folder on another disk.
 
@@ -143,9 +143,9 @@ cache_file = '~/.cache/nogat/kartograf/metadata.db'       # metadata cache; LOCA
 workers = 4                                               # parallel transfers
 update = "local"                                          # "local" | "upgrade" | "force"
 
-[retman.tools.imgwtools]
-store_dir = '~/.local/share/nogat/imgw'                   # next to the Kartograf store, in a separate folder
-reference_data_dir = '~/.cache/nogat/imgw/reference'      # optional station locations file
+[retman.tools.obserwator]
+store_dir = '~/.local/share/nogat/obserwator'                   # next to the Kartograf store, in a separate folder
+reference_data_dir = '~/.cache/nogat/obserwator/reference'      # optional station locations file
 ```
 
 Stores cannot be nested inside one another, and their paths cannot contain symbolic links.
@@ -429,7 +429,7 @@ a mistake in the axis order is visible before execution.
 
 ### 5.2. Execution (`t`)
 
-An example from the IMGWTools test store (fictional station "Raba Górna", no network). The command does
+An example from the Obserwator test store (fictional station "Raba Górna", no network). The command does
 not specify the kind of year, so Retman asks; the data source (store) was chosen by the model:
 
 ```
@@ -446,7 +446,7 @@ Okres: 2023–2024
 Źródło danych: Z lokalnego magazynu (bez sieci)
 Zmienne: Q — przepływ
 Rodzaj lat: Hydrologiczne (1 XI – 31 X)
-Magazyn IMGW: ~/.local/share/nogat/imgw (z ustawień) ← podgląd, bez sieci
+Magazyn Obserwatora: ~/.local/share/nogat/obserwator (z ustawień) ← podgląd, bez sieci
 Dane w magazynie: 2024-02-29 – 2024-02-29, luk: 0 ← podgląd, bez sieci
 Okres w magazynie: magazyn pokrywa tylko część wybranego okresu (2024-02-29 – 2024-02-29) ← podgląd, bez sieci
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
@@ -461,7 +461,7 @@ verbatim, and a partial result is a result with a warning. A failed result also 
 the exit code, section 8); Retman chooses the message based on the tool's stable error code, and the tool's text is only
 a quotation (e.g. "GUGiK nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: …"
 — GUGiK has no data for the given area and selected product parameters. Details: …).
-IMGWTools writes its texts in English and Retman shows them as they come, so a Polish message can quote
+Obserwator writes its texts in English and Retman shows them as they come, so a Polish message can quote
 an English detail, and the licence notice of an IMGW result is the provider's attribution (Polish, in
 the wording IMGW-PIB requires) followed by the English notice of the tool (as in the example above;
 ADR-024).
@@ -478,7 +478,7 @@ The rows with `← podgląd, bez sieci` are what the tool determined about your 
 network** and without writing anything: the state of the store, the number of map sheets, the bounding box
 of the geometry file, the range of data in the store, the number of archive files to check. They are there
 so that you can see what the plan actually means before you confirm it.
-When the preview detects that the plan will fail (e.g. no IMGW store, no series of the dataset in the
+When the preview detects that the plan will fail (e.g. no Obserwator store, no series of the dataset in the
 store with source "magazyn" (store), orthophoto for a geometry file), Retman asks again about the relevant
 parameters with an explanation.
 
@@ -578,9 +578,9 @@ Excerpt (result from section 5.2):
  "values": {"rows": 91, "first_date": "2023-12-01", "last_date": "2024-02-29", "dataset": "pl.imgw.hydro_daily"},
  "warnings": ["Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wodnej …"],
  "tool": {
-  "tool": "imgwtools", "version": "3.0.0",
+  "tool": "obserwator", "version": "3.0.0",
   "calls": [{"command": "series export",
-             "command_line": "imgw series export --root <store> --dataset pl.imgw.hydro_daily --station 149190310 …",
+             "command_line": "obserwator series export --root <store> --dataset pl.imgw.hydro_daily --station 149190310 …",
              "status": "ok", "document_file": "tool_1_series_export.json", "sha256": "7b645332…"}]
  }
 }
@@ -655,7 +655,7 @@ stays on your computer; it serves to build a test set for `retman eval run` from
 | `--json` | in every command: a single `retman-result/1` envelope on stdout and nothing else; never asks |
 | `--lang pl\|en` | language of the texts for people: `pl` (default) or `en`; the texts inside `--json` documents (for example those of `doctor check` and `scaffold check`) are English whatever `--lang` says |
 | `--verbose`, `--quiet` | technical log level on stderr: `debug` or errors only; without the option `RETMAN_LOG_LEVEL` decides, then `NOGAT_LOG_LEVEL`, then `log_level` in `[retman]` and `[nogat]` (default `warning`); the log contains neither commands nor answers |
-| `--deep` | with `doctor check`: also slower checks (a trial write to the IMGWTools store) |
+| `--deep` | with `doctor check`: also slower checks (a trial write to the Obserwator store) |
 
 ```
 $ retman plan run --check --text "Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4"
@@ -689,7 +689,7 @@ execution requires confirmation, from Python — see section 10.
 
 ```
 $ retman plan run --text "Jaka będzie jutro pogoda?"
-Błąd: Polecenie nie dotyczy dostępnych operacji: Stacje i rejestr danych IMGW, Dane bieżące i ostrzeżenia IMGW, Opady maksymalne PMAXTP, Szeregi czasowe stacji IMGW i ČHMÚ, Archiwa i magazyn danych IMGW, Dane przestrzenne GUGiK
+Błąd: Polecenie nie dotyczy dostępnych operacji: Stacje i rejestr danych IMGW, Dane bieżące i ostrzeżenia IMGW, Opady maksymalne PMAXTP, Szeregi czasowe stacji IMGW i ČHMÚ, Archiwa danych IMGW i magazyn Obserwatora, Dane przestrzenne GUGiK
 ```
 
 With two-stage recognition Retman lists the **groups** of operations instead of forcing a match to the
@@ -760,9 +760,9 @@ Ways of writing the area:
   GeoPackage layer when there are several, shows the bounding box and the number of map sheets in the plan,
   and records the SHA-256 checksums of the files.
 
-### 9.2. IMGWTools 3.0.0 — IMGW-PIB and ČHMÚ data (ADR-017)
+### 9.2. Obserwator 3.0.0 — IMGW-PIB and ČHMÚ data (ADR-017)
 
-19 operations in five groups. All of them require an initialised IMGW store (section 1.3); recognising
+19 operations in five groups. All of them require an initialised Obserwator store (section 1.3); recognising
 stations by name works offline from the station catalog in the store. The "Network" column says whether
 execution connects to the server (only after `t`):
 
@@ -772,7 +772,7 @@ execution connects to the server (only after `t`):
 | Current data and warnings | current measurements of a hydrological, meteorological or synoptic station; hydrological and meteorological warnings; water levels (alarm and warning) | yes |
 | PMAXTP maximum precipitation | table for a point (POT or AMP method; saving the cell in the store or not; narrowing to selected probabilities and durations); reading a saved cell | download yes, read no |
 | Station time series | export of a station's time series to CSV (dataset, period, year kind, variables; source "store" or "server", `s`); data coverage of a station in the store; building time series | "server" source |
-| IMGW data archives and store | download of hydrological or meteorological archives to the result folder; check of archives against the store (plan); download of archives into the store (`s`), also per a plan from an earlier result (e.g. "#5"); export of stored archives to CSV or JSON Lines; store creation; store description | downloads and check yes |
+| IMGW data archives and the Obserwator store | download of hydrological or meteorological archives to the result folder; check of archives against the store (plan); download of archives into the store (`s`), also per a plan from an earlier result (e.g. "#5"); export of stored archives to CSV or JSON Lines; store creation; store description | downloads and check yes |
 
 Example commands (illustrative; not all are in the `retman eval run` set yet): "Znajdź stacje hydrologiczne
 na Wiśle" (find hydrological stations on the Vistula), "Zbuduj katalog stacji IMGW" (build the IMGW station
@@ -783,9 +783,10 @@ precipitation for point 52.23, 21.01 using the POT method), "Pobierz dobowe opad
 2000–2020" (download daily precipitation from the Poznań station for 2000–2020), "Za jakie lata mam dane
 stacji Poznań-Ławica?" (which years of data do I have for the Poznań-Ławica station?), "Sprawdź, ile trzeba
 pobrać dla opadów dobowych 2000–2020" (check how much needs downloading for daily precipitation 2000–2020),
-"Utwórz magazyn IMGW" (create the IMGW store), "Co mam w magazynie IMGW?" (what is in my IMGW store?).
+"Utwórz magazyn Obserwatora" (create the Obserwator store), "Co mam w magazynie IMGW?" (what is in my
+Obserwator store?; a command may still name the store after the IMGW data).
 
-Rules for IMGWTools operations:
+Rules for Obserwator operations:
 
 - **stations**: a code (9 digits for IMGW-PIB, WIGOS identifier for ČHMÚ) or a name from the catalog in the
   store; an inflected name requires confirmation; without a catalog Retman reads only codes and suggests
@@ -795,7 +796,7 @@ Rules for IMGWTools operations:
 - **PMAXTP**: the probability and duration from the command narrow the result table; a value outside the
   table gives a warning and is not silently skipped;
 - **licence**: the data provider's notices are shown after execution (section 5.2);
-- the store is created only deliberately (`retman config init` or the "Utwórz magazyn IMGW" operation) — a missing
+- the store is created only deliberately (`retman config init` or the "Utwórz magazyn Obserwatora" operation) — a missing
   store is a reason to ask again with a hint, not to create it silently.
 
 ---
@@ -890,18 +891,18 @@ Model decyzyjny
   ! pewność: niedostępna (confidence = "none") — wybory modelu w planie są oznaczone jako niezweryfikowane → ustaw confidence = "auto" w [retman.decision] (nogat.toml), jeśli serwer podaje logprobs
 
 Narzędzia
-  ✓ imgwtools 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
+  ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
   ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 5 operacji
 
 Magazyny danych narzędzi
   ✓ kartograf: magazyn ~/.local/share/nogat/kartograf (zapis możliwy, dowiązania twarde działają)
   ✓ kartograf: cache metadanych ~/.cache/nogat/kartograf/metadata.db
-  ✓ imgwtools: magazyn ~/.local/share/nogat/imgw (znacznik imgw-store.json, schemat imgw-store/1, dowiązania twarde działają)
-  ✓ imgwtools: pyarrow 26.0.0 (szeregi czasowe)
-  ✓ imgwtools: dane referencyjne ~/.cache/nogat/imgw/reference (hydro_stations_locations.csv: brak)
+  ✓ obserwator: magazyn ~/.local/share/nogat/obserwator (znacznik obserwator-store.json, schemat obserwator-store/1, dowiązania twarde działają)
+  ✓ obserwator: pyarrow 26.0.0 (szeregi czasowe)
+  ✓ obserwator: dane referencyjne ~/.cache/nogat/obserwator/reference (hydro_stations_locations.csv: brak)
 
 Zgodność opisów z narzędziami (retman scaffold check)
-  ✓ imgwtools 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
+  ✓ obserwator 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
   ✓ kartograf 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
 
 Tłumaczenia (pl)
@@ -913,13 +914,13 @@ Model tekstowy
 
 (Report layout; the values of addresses, versions and paths depend on the environment.) The "Stores"
 section checks paths (without symbolic links), write permission, **hard links in both stores**, the
-store marker of each tool (`kartograf-store.json`, `imgw-store.json`), the Kartograf cache,
-`pyarrow` and the reference data folder. A missing IMGW store (also a folder that holds only the
-`api_keys.json` of the IMGWTools server) is a warning with the hint "create it: retman config
+store marker of each tool (`kartograf-store.json`, `obserwator-store.json`), the Kartograf cache,
+`pyarrow` and the reference data folder. A missing Obserwator store (also a folder that holds only the
+`api_keys.json` of the Obserwator server) is a warning with the hint "create it: retman config
 init"; a missing or empty Kartograf store is fine, because Kartograf marks it by itself at the
 first download. A disk without hard links, a foreign folder in the store's place, a marker that
 the tool cannot read, a store inside another store and a folder with the layout of a store but no
-marker are blocking problems: for IMGWTools the hint is the command "Utwórz magazyn IMGW", for
+marker are blocking problems: for Obserwator the hint is the command "Utwórz magazyn Obserwatora", for
 Kartograf the command "Utwórz magazyn Kartografa" (or `kartograf store init --root <folder>`),
 and either makes the tool check the layout and write the marker. The plan of a Kartograf
 operation names the same folder problems before you confirm anything.
@@ -927,11 +928,11 @@ The "Conformance" section is a lightweight version of `retman scaffold check`: i
 installed tool accepts a value that the descriptions neither offer nor exclude; it does not block
 work.
 
-`retman doctor check --deep` adds a slower check: a trial write to the IMGWTools store on the tool's
+`retman doctor check --deep` adds a slower check: a trial write to the Obserwator store on the tool's
 built-in test data, in a temporary directory and without network access:
 
 ```
-  ✓ imgwtools 3.0.0: zapis do magazynu działa na tym systemie (próba na danych testowych)
+  ✓ obserwator 3.0.0: zapis do magazynu działa na tym systemie (próba na danych testowych)
 ```
 
 When the model server is not running:
@@ -994,11 +995,11 @@ list in section 8. Options and metrics: `docs/specs/2026-10-11-retman-eval.md`.
 - **BDOT10k** for a sheet code, rectangle or file downloads the full packages of every intersected county,
   without clipping — the files can be large (Kartograf rejects an area with more than 100 packages or
   more than 10 GB).
-- **Stores**: Kartograf and IMGWTools data are shared by all projects and live outside the project
+- **Stores**: Kartograf and Obserwator data are shared by all projects and live outside the project
   folder; they require a disk with hard links (not FAT/exFAT), and the Kartograf cache — a local disk.
   A project folder on a network share (e.g. CIFS) is no longer a problem for the cache (the cache is
   outside the project).
-- **Texts of IMGWTools are English**: the part of a message that quotes the tool (the detail of an
+- **Texts of Obserwator are English**: the part of a message that quotes the tool (the detail of an
   error, the data-quality and licence notices) is not translated, whatever `lang` says; the documents
   saved with the result (`tool_<n>_<command>.json`) keep the tool's own words.
 - The latest available GUGiK material is downloaded; selecting a year and campaign is not yet available.

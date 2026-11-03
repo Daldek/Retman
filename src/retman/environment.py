@@ -73,7 +73,7 @@ KARTOGRAF_UPDATE_MODES: Final[tuple[str, ...]] = ("local", "upgrade", "force")
 
 # Folder names of the two tool stores inside the folder chosen in ``config init``
 KARTOGRAF_STORE_NAME: Final = "kartograf"
-IMGWTOOLS_STORE_NAME: Final = "imgw"
+OBSERWATOR_STORE_NAME: Final = "obserwator"
 
 _TRUE_WORDS: Final = frozenset({"1", "true", "yes", "on"})
 _FALSE_WORDS: Final = frozenset({"0", "false", "no", "off"})
@@ -122,8 +122,8 @@ def _in_cache(*parts: str) -> Callable[["Environment"], Path]:
 # Where the files of Retman and of the tools go when no setting says otherwise
 KARTOGRAF_STORE = _in_data(KARTOGRAF_STORE_NAME)
 KARTOGRAF_CACHE = _in_cache(KARTOGRAF_STORE_NAME, "metadata.db")
-IMGWTOOLS_STORE = _in_data(IMGWTOOLS_STORE_NAME)
-IMGWTOOLS_REFERENCE = _in_cache(IMGWTOOLS_STORE_NAME, "reference")
+OBSERWATOR_STORE = _in_data(OBSERWATOR_STORE_NAME)
+OBSERWATOR_REFERENCE = _in_cache(OBSERWATOR_STORE_NAME, "reference")
 COLLECT_PATH = _in_data(TOOL, "collected.jsonl")
 
 KEYS: Final[tuple[Key, ...]] = (
@@ -152,8 +152,8 @@ KEYS: Final[tuple[Key, ...]] = (
         KARTOGRAF_UPDATE_MODES,
         default=lambda _: "local",
     ),
-    Key("tools.imgwtools.store_dir", "path", default=IMGWTOOLS_STORE),
-    Key("tools.imgwtools.reference_data_dir", "path", default=IMGWTOOLS_REFERENCE),
+    Key("tools.obserwator.store_dir", "path", default=OBSERWATOR_STORE),
+    Key("tools.obserwator.reference_data_dir", "path", default=OBSERWATOR_REFERENCE),
     Key("log.journal_commands", "flag", default=lambda _: True),
     Key("privacy.collect_commands", "flag", default=lambda _: False),
     Key("privacy.collect_path", "path", default=COLLECT_PATH),

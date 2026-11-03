@@ -170,7 +170,7 @@ def test_a_value_that_cannot_be_used_is_dropped_and_explained(tmp_path: Path) ->
         ("tools.kartograf.store_dir", "relative/store"),
         ("tools.kartograf.store_dir", "/data/../elsewhere"),
         ("log.journal_commands", "maybe"),
-        ("adapters.enabled", "kartograf,,imgwtools"),
+        ("adapters.enabled", "kartograf,,obserwator"),
     ],
 )
 def test_a_bad_variable_is_reported_with_the_variable_name(key: str, raw: str) -> None:
@@ -193,7 +193,7 @@ def test_a_bad_variable_is_reported_with_the_variable_name(key: str, raw: str) -
         ("decision.thresholds.parameter", "AUTO", "auto"),
         ("log.journal_commands", "No", False),
         ("privacy.collect_commands", "1", True),
-        ("adapters.enabled", "kartograf, imgwtools", ("kartograf", "imgwtools")),
+        ("adapters.enabled", "kartograf, obserwator", ("kartograf", "obserwator")),
         ("tools.kartograf.store_dir", "/data/k", Path("/data/k")),
     ],
 )

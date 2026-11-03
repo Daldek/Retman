@@ -84,7 +84,7 @@ from the Poznań station for the years 2000–2020)
 | ③ | extractors | station "Poznań" → matched against the IMGW station list; period = 2000-01-01 – 2020-12-31 |
 | ④ | validator, tool | all required parameters are present, confidences above thresholds; if several stations matched the name "Poznań", Retman would ask which one is meant; the tool checks the complete plan offline (e.g. a year before the start of the series) |
 | ⑤ | Retman | shows the plan (with preview rows) and waits for confirmation; the user may first request an availability check (`s`) |
-| ⑥ | IMGWTools call executor in Retman | executes the IMGWTools catalog commands, saves the result in the workspace (chapter 5) |
+| ⑥ | Obserwator call executor in Retman | executes the Obserwator catalog commands, saves the result in the workspace (chapter 5) |
 
 > The example is illustrative: operation and parameter names will be fixed together with the list of operations (PRD).
 
@@ -131,7 +131,7 @@ src/retman/
 │   ├── catalog.py           # command layer: CatalogCall, ToolRun, ToolError, PlanClient/RunClient, ToolContext, run_calls (section 3.2.4)
 │   └── manifest_adapter.py  # generic adapter: params → handler/calls → Result; offline preview, availability check
 ├── tools/                   # descriptions, call builders, clients and handlers for each supported tool (section 3.2.2)
-│   ├── imgwtools/
+│   ├── obserwator/
 │   ├── kartograf/
 │   └── hydrograf/, hydrolog/, basichydraulics/   # planned (v0.2)
 ├── devtools/                # retman scaffold: readers of the tool catalogs, draft, drift check, the light check of doctor (section 3.2.3)
@@ -153,7 +153,7 @@ src/retman/
 │   ├── numbers.py           # Polish numerals and durations (15 min, 2 godziny)
 │   ├── probability.py       # exceedance probability and return period (section 4.4)
 │   ├── dates.py             # years, periods and the kind of year (hydrological or calendar)
-│   ├── stations.py          # station names and codes → the offline station catalog of the IMGWTools store
+│   ├── stations.py          # station names and codes → the offline station catalog of the Obserwator store
 │   ├── places.py            # place and river names as search fragments for the station search
 │   ├── variables.py         # measured variables checked against the chosen dataset
 │   ├── paths.py             # file paths mentioned in the command
@@ -172,7 +172,7 @@ src/retman/
 ├── config.py                # the settings: [retman] of nogat.toml, checked and written out (section 9.1)
 ├── config_show.py           # retman config show (DEV-18.6)
 ├── config_template.toml     # the commented template that `retman config init` writes (section 9.1)
-├── initialize.py            # retman config init in a terminal: questions, store folders, IMGWTools store (section 9.1)
+├── initialize.py            # retman config init in a terminal: questions, store folders, Obserwator store (section 9.1)
 ├── doctor.py                # retman doctor check: environment check (section 7.2)
 ├── stores.py                # tool stores on disk: checks for doctor, set-up for config init (section 9.1)
 ├── logs.py                  # the technical log: one handler on stderr (DEV-12, section 5.4)
@@ -189,7 +189,7 @@ src/retman/
 The tools contain no code, files or dependencies related to Retman.
 Everything Retman needs lives in the Retman repo, and it uses the tools exclusively
 through their **public Python API** — just like any other user of these libraries.
-The tools' MCP servers (`kartograf-mcp`, `imgw mcp`) are not used (ADR-018): they are a thin layer
+The tools' MCP servers (`kartograf-mcp`, `obserwator mcp`) are not used (ADR-018): they are a thin layer
 over the same library calls, they would add dependencies, and the W-05 and N-12 gates would have
 to be maintained in a separate process with its own write policy.
 
@@ -197,7 +197,7 @@ From the tools Retman expects only good practices that are beneficial regardless
 - a **stable public API** and semantic versioning (a compatibility-breaking change = new major version),
 - a **machine-readable command catalog** (command names, options with allowed values, effects:
   network and writes), **offline validation** (`validate_command`), JSON result documents with a
-  `schema` field and stable error codes — Kartograf 0.8.0 and IMGWTools 3.0.0 have these, and the
+  `schema` field and stable error codes — Kartograf 0.8.0 and Obserwator 3.0.0 have these, and the
   command layer builds on them (section 3.2.4),
 - for tools without a catalog: **type hints**, especially `Literal` (or `Enum`) for choices
   and `Path` for files, plus **NumPy-style docstrings**.
@@ -212,7 +212,7 @@ src/retman/tools/hydrolog/
 └── en.toml        # English texts, the same keys (section 4.2)
 ```
 
-A tool with a command catalog (Kartograf, IMGWTools) additionally has, in the same folder,
+A tool with a command catalog (Kartograf, Obserwator) additionally has, in the same folder,
 call builders, a client, and preview and check functions (section 3.2.4).
 
 | Element | Role |
@@ -251,7 +251,7 @@ and checks the conformance of its descriptions**. They are not read at runtime, 
 
 **The developer tool `retman scaffold`** (package `retman.devtools`, for the author, not for
 the end user; a command group of the `retman` executable, with no dependencies of its own) reads the machine
-catalogs of the tools (Kartograf's and IMGWTools' `list_commands` and `command_schema`) through
+catalogs of the tools (Kartograf's and Obserwator's `list_commands` and `command_schema`) through
 small readers in `src/retman/devtools/readers/` — with no network access:
 
 ```bash
@@ -271,12 +271,12 @@ when errors were found in some or in all tools, and `2` for incorrect usage (ADR
 
 | Information | From the tool catalog? |
 | --- | --- |
-| parameters, their types and whether required | yes (Kartograf: command parameter description; IMGWTools: command JSON schema) |
+| parameters, their types and whether required | yes (Kartograf: command parameter description; Obserwator: command JSON schema) |
 | allowed choices | yes (`allowed`, `enum`), but as a sum across products and countries — the values valid for an operation are narrowed by a trial through `validate_command`; lists longer than 9 have to be split |
 | default values | yes, but Retman does not adopt them: there are no hidden default values (ADR-006) |
-| value ranges | IMGWTools yes (`minimum`, `maximum`); Kartograf usually has to be added by hand |
+| value ranges | Obserwator yes (`minimum`, `maximum`); Kartograf usually has to be added by hand |
 | dependencies between parameters | partially (description of constraints); they are enforced by `validate_command` |
-| description in English | IMGWTools yes; Kartograf only in Polish, without diacritics |
+| description in English | Obserwator yes; Kartograf only in Polish, without diacritics |
 | command side effects (network, writes) | yes |
 | input and output files | only as product names; the data kind (`kind`) has to be added by hand |
 | Polish texts and synonyms | no — have to be added by hand |
@@ -309,7 +309,7 @@ The check runs in pytest and in Retman's CI (section 3.2.7).
 Translating "Retman's language" into a call to the tool's public API lives in Retman and takes
 two forms; an operation declares at least one of them (section 4.3):
 
-- **`calls` — the command layer.** For tools with a command catalog (Kartograf, IMGWTools): a pure
+- **`calls` — the command layer.** For tools with a command catalog (Kartograf, Obserwator): a pure
   *call builder* turns the parameters into a list of catalog command calls, and a shared executor
   runs them through a *tool client* (`src/retman/adapters/catalog.py`). Reason: the catalog is the
   declared source of truth for these tools — it has offline validation with the same rules as a
@@ -404,7 +404,7 @@ referenced in the result by absolute path and SHA-256 checksum, without copying 
 **Messages.** The user sees Retman's own text, selected by the tool's error code, a code of the
 shared registry (`[errors.<code>]`, section 4.2; the tool's precision is its `details.reason`, which
 stays in the `failure` of the result, ADR-025), and the tool's text only as a quotation (`{detail}`): Kartograf's
-is often Polish without diacritics and with command-line flags, IMGWTools' is English. Notices about
+is often Polish without diacritics and with command-line flags, Obserwator's is English. Notices about
 data quality and licensing are shown verbatim, because tool documents do not provide structured
 numbers or legal wording for them; `info` notices remain in the audit trail. Retman does not
 translate the tool's texts: a tool document carries the text, and no message key crosses the
@@ -509,7 +509,7 @@ Kartograf data kinds (ADR-004, ADR-016) — the format is whatever Kartograf ret
 | `dem_archive` | DEM 100 m: ZIP archive with an XYZ file per voivodeship (`.zip`) | ZIP signature |
 | `area_geometry` | user file with area geometry: GeoPackage or Shapefile | as `topographic_vector`; validates the area from a file in the plan (section 6.1), also reserved as the output kind of future operations (chains, v0.2) |
 
-IMGWTools data kinds (ADR-017) — tabular files and JSON documents; validators read only the
+Obserwator data kinds (ADR-017) — tabular files and JSON documents; validators read only the
 beginning of the file (header and the first few rows):
 
 | `kind` | Format | The validator checks, among others |
@@ -524,9 +524,9 @@ beginning of the file (header and the first few rows):
 | `imgw_warnings` | IMGW warnings (CSV) | columns `id`, `kind`, `level` |
 | `hydro_states` | water states at stations (CSV) | columns `station_code`, `name`, `water_state` |
 | `archive_records` | records exported from the archive store (CSV or JSON Lines) | fields `station_code`, `dataset`, `date` (CSV header or first record) |
-| `imgw_archive` | IMGW archive as published (`.zip`, `.json`, `.csv`, `.txt`) | ZIP signature, JSON start (`{` or `[`) or non-binary text |
-| `imgw_plan` | IMGWTools download or synchronisation plan (JSON) | document with `schema` equal to `imgw-plan/1` |
-| `imgw_report` | IMGWTools report (JSON) | `imgw-result/1` document — the first key is `schema` |
+| `obserwator_archive` | IMGW archive as published (`.zip`, `.json`, `.csv`, `.txt`) | ZIP signature, JSON start (`{` or `[`) or non-binary text |
+| `obserwator_plan` | Obserwator download or synchronisation plan (JSON) | document with `schema` equal to `obserwator-plan/1` |
+| `obserwator_report` | Obserwator report (JSON) | `obserwator-result/1` document — the first key is `schema` |
 
 The kinds of the remaining tools (Hydrolog, Hydrograf, BasicHydraulics) are an open question
 (chapter 12).
@@ -537,7 +537,7 @@ Guarding conformance is Retman's job, not the tools'. Tools evolve independently
 and Retman adapts to them:
 
 - Each tool has a **supported version range** in its manifest: Kartograf `>=0.8.0.dev0,<0.9`
-  (0.x releases may break compatibility), IMGWTools `>=3.0.0.dev0,<4` (semantic versioning and
+  (0.x releases may break compatibility), Obserwator `>=3.0.0.dev0,<4` (semantic versioning and
   `/1` document contracts; ADR-012). The range corresponds to release tags in the tool's
   repository on GitHub; until the `v0.8.0` and `v3.0.0` tags are pushed, the `tools` dependency
   group pins commits (section 9.3) and the range starts at the development version of the pending
@@ -560,8 +560,8 @@ All tool-related tests live in the Retman repo:
 - call builders and result mappers on **recorded real documents** from the tools
   (`tests/fixtures/<tool>/`), with a `FakeToolClient` stub instead of monkeypatching
   the tool's internals (section 8.3),
-- tests on real tools with small data, offline (IMGWTools: its packaged fixture store,
-  `imgwtools.testing.build_fixture_store`); skipped (`pytest.importorskip`) when the tool is
+- tests on real tools with small data, offline (Obserwator: its packaged fixture store,
+  `obserwator.testing.build_fixture_store`); skipped (`pytest.importorskip`) when the tool is
   absent, plus `live` tests run deliberately,
 - conformance check against the current API (`retman scaffold check`).
 
@@ -570,13 +570,13 @@ All tool-related tests live in the Retman repo:
 | Tool | Operation scope | Depends on | Status |
 | --- | --- | --- | --- |
 | Kartograf | downloading spatial data (DEM (NMT), DSM (NMPT), orthophoto, BDOT10k) | — | v0.1, version 0.8.0 |
-| IMGWTools | IMGW-PIB and ČHMÚ measurement data: stations, current data, PMAXTP, time series, archives and store | — | v0.1, version 3.0.0 |
+| Obserwator (formerly IMGWTools) | IMGW-PIB and ČHMÚ measurement data: stations, current data, PMAXTP, time series, archives and store | — | v0.1, version 3.0.0 |
 | Hydrolog | hydrological calculations (flows, methods) | — | planned (v0.2) |
 | BasicHydraulics | simple hydraulic calculations | — | planned (v0.2) |
 | Hydrograf | catchment delineation, composite procedures | Hydrolog (and others) | planned (v0.2) |
 
 The concrete operations are set by the PRD (section 7.2); descriptions of the Kartograf and
-IMGWTools operations: sections 3.2.10 and 3.2.11. Third-party tools are handled the same way:
+Obserwator operations: sections 3.2.10 and 3.2.11. Third-party tools are handled the same way:
 a description, builders or handlers, and a client in `src/retman/tools/`.
 
 #### 3.2.10. Kartograf 0.8.0 operations
@@ -667,9 +667,9 @@ it asks the PRG service which counties the area intersects and how many of their
 already in the store (for a TERYT code, with no network). DEM (NMT) 100 m (voivodeship files) and the
 CIR and black-and-white variants have no index — the check then checks nothing and says so plainly.
 
-#### 3.2.11. IMGWTools 3.0.0 operations
+#### 3.2.11. Obserwator 3.0.0 operations
 
-All of IMGWTools in v0.1 (ADR-017): 19 operations in five categories, on IMGW-PIB and ČHMÚ data.
+All of Obserwator in v0.1 (ADR-017): 19 operations in five categories, on IMGW-PIB and ČHMÚ data.
 Together with Kartograf's `spatial_data` category there are six of them (none with more than 9
 operations), so recognition is two-stage (section 3.4). All operations go through the command layer;
 those that connect to a server do so only after the plan is confirmed. Operations marked `check`
@@ -677,45 +677,45 @@ offer an availability check (section 6.5).
 
 | Category (`id`) | Operation (`id`) — what it does | Result kind | Network and writes |
 | --- | --- | --- | --- |
-| `imgw_catalog` — stations and data registry | `find_imgw_stations` — search for stations by name, river, provider and kind | `station_list` | from the store without network; from the server network |
-| | `build_imgw_station_catalog` — build the station catalog in the store, optionally with a locations file; `check` | — | network; writes to the store |
-| | `list_imgw_datasets` — datasets and providers | `imgw_report` | no network |
-| `imgw_current` — current data and warnings | `fetch_current_observations` — current measurements of a hydrological, meteorological or synoptic station | `current_hydro`, `current_meteo`, `current_synop` | network |
+| `obserwator_catalog` — stations and data registry | `find_obserwator_stations` — search for stations by name, river, provider and kind | `station_list` | from the store without network; from the server network |
+| | `build_obserwator_station_catalog` — build the station catalog in the store, optionally with a locations file; `check` | — | network; writes to the store |
+| | `list_obserwator_datasets` — datasets and providers | `obserwator_report` | no network |
+| `obserwator_current` — current data and warnings | `fetch_current_observations` — current measurements of a hydrological, meteorological or synoptic station | `current_hydro`, `current_meteo`, `current_synop` | network |
 | | `fetch_imgw_warnings` — hydrological and meteorological warnings | `imgw_warnings` | network |
 | | `fetch_hydro_states` — water levels at stations (alarm and warning levels) | `hydro_states` | network |
-| `imgw_pmaxtp` — PMAXTP maximum precipitation | `get_pmaxtp` — table of maximum precipitation for a point (POT or AMP method; filters: probability and duration; cell saved in the store or not) | `pmaxtp_table` | network; with saving also the store |
+| `obserwator_pmaxtp` — PMAXTP maximum precipitation | `get_pmaxtp` — table of maximum precipitation for a point (POT or AMP method; filters: probability and duration; cell saved in the store or not) | `pmaxtp_table` | network; with saving also the store |
 | | `read_stored_pmaxtp` — read a saved grid cell | `pmaxtp_table` | no network |
-| `imgw_series` — station time series | `export_station_series` — station series (dataset, period, year type, variables) to CSV; `check` | `hydro_series`, `meteo_series` | from the store without network; from the server download of archives to the store (network, writes) |
-| | `show_station_coverage` — data coverage of a station in the store (years, gaps) | `imgw_report` | no network |
-| | `build_imgw_series` — build dataset series from archives in the store | — | writes to the store |
-| `imgw_archives` — archives and store | `download_hydro_archives`, `download_meteo_archives` — download archives as plain files to the results folder (`output_dir`), without the store | `imgw_archive` | network |
-| | `check_imgw_archives` — plan: what needs to be downloaded relative to the store | `imgw_plan` | network |
-| | `sync_imgw_store` — download archives to the store; `check` | — | network; writes to the store |
-| | `sync_imgw_store_by_plan` — download per a plan from the result of `check_imgw_archives` (input `imgw_plan`, e.g. "#5") | — | network; writes to the store |
-| | `export_imgw_archive` — export saved archives to CSV or JSON Lines | `archive_records` | no network |
-| | `init_imgw_store` — create the store | — | writes (store marker) |
-| | `inspect_imgw_store` — description of the store (entries, versions, problems) | `imgw_report` | no network |
+| `obserwator_series` — station time series | `export_station_series` — station series (dataset, period, year type, variables) to CSV; `check` | `hydro_series`, `meteo_series` | from the store without network; from the server download of archives to the store (network, writes) |
+| | `show_station_coverage` — data coverage of a station in the store (years, gaps) | `obserwator_report` | no network |
+| | `build_obserwator_series` — build dataset series from archives in the store | — | writes to the store |
+| `obserwator_archives` — archives and store | `download_hydro_archives`, `download_meteo_archives` — download archives as plain files to the results folder (`output_dir`), without the store | `obserwator_archive` | network |
+| | `check_obserwator_archives` — plan: what needs to be downloaded relative to the store | `obserwator_plan` | network |
+| | `sync_obserwator_store` — download archives to the store; `check` | — | network; writes to the store |
+| | `sync_obserwator_store_by_plan` — download per a plan from the result of `check_obserwator_archives` (input `obserwator_plan`, e.g. "#5") | — | network; writes to the store |
+| | `export_obserwator_archive` — export saved archives to CSV or JSON Lines | `archive_records` | no network |
+| | `init_obserwator_store` — create the store | — | writes (store marker) |
+| | `inspect_obserwator_store` — description of the store (entries, versions, problems) | `obserwator_report` | no network |
 
 Operations that write only to the store (no result kind) leave
 `result.json` and the tool's documents in the results folder; the others write CSV files and reports in the
-results folder — IMGWTools never points to store files in a result. Operations whose result is
+results folder — Obserwator never points to store files in a result. Operations whose result is
 a document without a file (lists, tables) save it as CSV (tables) or JSON.
 
-**Rules common to IMGWTools operations:**
+**Rules common to Obserwator operations:**
 
-- **Store** (`[retman.tools.imgwtools] store_dir`, section 9.1) is the `root` option of the commands
+- **Store** (`[retman.tools.obserwator] store_dir`, section 9.1) is the `root` option of the commands
   that read or write it; the client adds it unless the call names plain files (the next rule). A
   missing store, a folder with the layout of a store but no marker, a foreign folder or a store with
   an unsupported schema is a **preview problem**; the problem of a missing store comes with the
-  repair commands ("Utwórz magazyn IMGW" (create the IMGW store), `retman config init`), and that of
+  repair commands ("Utwórz magazyn Obserwatora" (create the Obserwator store), `retman config init`), and that of
   a layout without a marker with the first one, which makes the tool check the layout and write the
   marker (`retman config init` does not run again on a settings file that has its tables); a folder
   that holds only the `api_keys.json` of the tool's server counts as a missing store, not as a
   foreign folder; no operation creates a store silently. The client exports `reference_data_dir`
-  once as the `IMGW_REFERENCE_DIR` variable before the first import of the tool — the only
+  once as the `OBSERWATOR_REFERENCE_DIR` variable before the first import of the tool — the only
   exception to the "no environment variables" rule, because the tool has no option for the static
   station positions file; the value comes from the settings, not from the environment.
-- **Output: plain files or the store** (the data output convention ECO-051, ADR-024). IMGWTools
+- **Output: plain files or the store** (the data output convention ECO-051, ADR-024). Obserwator
   writes either plain files into a directory (`output_dir`) or a versioned store (`root`), never
   both: its catalog declares such options `exclusive`, and the client adds `root` only to a call that
   names none of the options of a group that holds it. The two download operations pass the **results
@@ -726,18 +726,18 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
   dataset the store does not hold (`retman scaffold check` reports such a dataset as a dead option,
   X3, section 3.2.3), so the **project folder stands in** for `output_dir` in the offline validation;
   the tool only validates the option and writes nothing there. The exports (`export_station_series`,
-  `export_imgw_archive`) pass the file as `output` (it was `path`) and take it from `files[]` in the
+  `export_obserwator_archive`) pass the file as `output` (it was `path`) and take it from `files[]` in the
   same way. The store operations keep `root`. Their results use the statuses of the tool, `new`,
   `unchanged`, `relabeled` and `failed`, and the synchronisation counts `new_versions` and
   `new_series` (they were `created`, `series_created`; CHANGELOG).
 - **Not published.** A file that the server does not publish (a year without an archive) is an item
   of the plan with the status `unverifiable` and the error `not published`, the English text of the
   tool; Retman compares it with one constant (`plans.UNPUBLISHED`), and a test holds that constant
-  against `imgwtools.fetch.UNPUBLISHED`.
+  against `obserwator.fetch.UNPUBLISHED`.
 - **Stations** are read by the `station` extractor **offline from the catalog in the store** (codes:
   9 IMGW-PIB digits, ČHMÚ WIGOS identifier; names with Polish inflection, an inflected name requires
   confirmation, section 6.1). Without a catalog Retman reads only codes and points to the
-  `build_imgw_station_catalog` operation (explicit, confirmed, with network); until then it does not
+  `build_obserwator_station_catalog` operation (explicit, confirmed, with network); until then it does not
   search for stations over the network while asking questions.
 - **Period: two semantics, never mixed.** Archive operations take `years` — years in the numbering of
   the tool's archives (for IMGW-PIB hydrological datasets these are hydrological years). Series
@@ -771,15 +771,15 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
   a series (with the "server" source: how many archives must be downloaded; with the "store" source the
   check does not connect to the network and says so explicitly) and synchronising archives (how many
   files are newer or missing and how much data that is — HEAD requests without downloading). Point
-  and "live" operations and the artifact operation `check_imgw_archives` have no `check`: the check
-  would say nothing that the execution itself would not say, and the result of `check_imgw_archives`
-  is a plan (`imgw_plan`) that the user confirms and executes (`sync_imgw_store_by_plan`).
-- **Excluded catalog commands** (8 of 30, each reachable through the IMGWTools CLI and API): `datasets
+  and "live" operations and the artifact operation `check_obserwator_archives` have no `check`: the check
+  would say nothing that the execution itself would not say, and the result of `check_obserwator_archives`
+  is a plan (`obserwator_plan`) that the user confirms and executes (`sync_obserwator_store_by_plan`).
+- **Excluded catalog commands** (8 of 30, each reachable through the Obserwator CLI and API): `datasets
   files`, `pmaxtp url`, `pmaxtp check` and `series select` are offline lookups used by previews and
   mappers, not separate operations; `series read` yields the same records as the series export (and a
   file with license columns is produced by `export_station_series`); `commands list`, `commands schema`
   and `commands guide` describe the catalog itself (Retman reads schemas only in `retman scaffold`).
-  IMGWTools keeps no projects: they belong to Archiwista (Nogat ECO-054).
+  Obserwator keeps no projects: they belong to Archiwista (Nogat ECO-054).
 
 ### 3.3. Models: Retman contains no model [N-01], [N-02], [N-10]
 
@@ -898,7 +898,7 @@ models, because they simplify their task.
 
 1. **Max. 10 options per question.** The operation question contains the operations and the
    `out_of_scope` option (item 6), so one question handles up to 9 operations. There are more
-   operations (from v0.1 Kartograf and all of IMGWTools), so recognition is **two-stage**: the
+   operations (from v0.1 Kartograf and all of Obserwator), so recognition is **two-stage**: the
    model first picks a **category** (options: categories and `out_of_scope`), then an
    **operation within the category** (options: that category's operations and `out_of_scope`).
    The decisions are named `category` and `operation` (section 5.4); an uncertain category
@@ -983,7 +983,7 @@ MANIFEST = {
 }
 ```
 
-An operation of a tool with a command catalog (Kartograf, IMGWTools) has a call builder
+An operation of a tool with a command catalog (Kartograf, Obserwator) has a call builder
 instead of a handler, plus a preview and a check. A fragment of the Kartograf manifest:
 
 ```python
@@ -1184,7 +1184,7 @@ project folder, today's date (constant within a single `Retman`, so planning is 
 `scope` — the merged `option_meta` of options already selected in `choice` parameters (e.g.
 provider, kind and variables of a dataset; the dataset parameter must therefore precede the station
 and variables in the manifest) and `lookup` — an offline search in the tool's catalog
-(`PlanClient.lookup`; the only such search is the station list from the IMGWTools store,
+(`PlanClient.lookup`; the only such search is the station list from the Obserwator store,
 `stations find` with `source=store`). They do not import tools and do not use the network.
 
 | Extractor | What it reads | Value |
@@ -1208,7 +1208,7 @@ and variables in the manifest) and `lookup` — an offline search in the tool's 
 ### 4.4. Probability and return period [W-08]
 
 Probability is a **number**, because the calculations can be done for any value.
-The `probability` extractor pulls it out in code, without the model. In PMAXTP operations (IMGWTools)
+The `probability` extractor pulls it out in code, without the model. In PMAXTP operations (Obserwator)
 it serves as an **output filter**: the request to the tool does not accept a probability, and the
 result table contains many of them, so the value from the command is not silently lost (the same
 applies to rainfall duration, extractor `duration`).
@@ -1479,7 +1479,7 @@ on macOS `~/Library/Application Support/nogat/retman/collected.jsonl`, on Window
 | Extractor found nothing | Asks for the value and gives an example of the format |
 | Extractor found several matches (e.g. several stations with similar names) | Shows the candidates to choose from |
 | Inexact match: station name only in an inflected form ("w Poznaniu", "z Opola" — "in Poznań", "from Opole") | Shows the reading and asks for its confirmation by choosing from a list; an inflected name is not accepted silently. Names are not corrected after typos either |
-| Station given by name, but the IMGWTools store has no station catalog | The catalog exists only after the operation that builds it (network, after confirmation), so until then Retman reads only station codes (9 digits, WIGOS) and asks for the code |
+| Station given by name, but the Obserwator store has no station catalog | The catalog exists only after the operation that builds it (network, after confirmation), so until then Retman reads only station codes (9 digits, WIGOS) and asks for the code |
 | Year type (hydrological or calendar) not stated in the command | **Always** asks — there is no default value. The word "hydrologiczne" describing the data ("dane hydrologiczne z lat 2000–2020" — "hydrological data from the years 2000–2020") is not an answer |
 | Relative or open period ("ostatnie 10 lat", "od 2010" — "the last 10 years", "since 2010") | Does not guess dates: asks for years or dates. A bare four-digit number is not a year (it may be a TERYT code, a sheet code (godło) or an EPSG code) |
 | The project has several matching results (e.g. several catchments) | Asks which one to use (section 5.3) |
@@ -1864,7 +1864,7 @@ The source of each value in the plan: `command` (from the command), `default` (d
 | Decision model | **server address**; whether it responds; which model is loaded; a **test question** with an obvious answer (whether the model answers sensibly); where the confidence comes from (`basal`, `logprobs`, agreement, unavailable) and the thresholds (`"auto"` with a backend other than `basal` is a configuration error, section 6.2) |
 | Text model | whether it is enabled; **server address**; whether it responds |
 | Tools | which are installed; whether their versions fall within the supported range; number of available operations |
-| Tool data stores | for tools in use (installed, in a supported version, not disabled): store path without symbolic links (IMGWTools does not accept one: error; Kartograf: warning), the folder exists or can be created and is writable, **hard links work in both stores** (attempted in the store or in the nearest existing folder on the same disk); Kartograf: the `kartograf-store.json` marker and its schema (a missing or an empty folder is only not marked yet, the first write marks it; a folder with the layout of a store, that is files in a product tree such as `nmt/`, but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn Kartografa", which runs `store init`), a folder with other files (`foreign_folder`), a marker that is corrupted or has another schema (`marker_unreadable`, `marker_unsupported`) and a folder that lies in, is or holds the store of another tool or place (`nested_store`) are errors), metadata cache (missing is a warning — Kartograf runs slower); IMGWTools: the `imgw-store.json` marker and its schema (a missing store, or a folder that holds only the `api_keys.json` of the tool's server, is a warning with a hint; a folder with the layout of a store but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn IMGW", which runs `store init`), a foreign folder or a corrupted marker is an error), `pyarrow` (time series), reference data folder; with `--deep` also a trial write to the IMGWTools store |
+| Tool data stores | for tools in use (installed, in a supported version, not disabled): store path without symbolic links (Obserwator does not accept one: error; Kartograf: warning), the folder exists or can be created and is writable, **hard links work in both stores** (attempted in the store or in the nearest existing folder on the same disk); Kartograf: the `kartograf-store.json` marker and its schema (a missing or an empty folder is only not marked yet, the first write marks it; a folder with the layout of a store, that is files in a product tree such as `nmt/`, but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn Kartografa", which runs `store init`), a folder with other files (`foreign_folder`), a marker that is corrupted or has another schema (`marker_unreadable`, `marker_unsupported`) and a folder that lies in, is or holds the store of another tool or place (`nested_store`) are errors), metadata cache (missing is a warning — Kartograf runs slower); Obserwator: the `obserwator-store.json` marker and its schema (a missing store, or a folder that holds only the `api_keys.json` of the tool's server, is a warning with a hint; a folder with the layout of a store but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn IMGW", which runs `store init`), a foreign folder or a corrupted marker is an error), `pyarrow` (time series), reference data folder; with `--deep` also a trial write to the Obserwator store |
 | Conformance of descriptions with tools | a light version of `retman scaffold check` (section 3.2.3) for tools in use: the commands from the manifest are in the installed tool's catalog, and the tool does not offer a value that the manifest neither offers nor disables (e.g. "kartograf 0.8.1 accepts a resolution of 0.3 m"); operations without a row in the `retman eval run` set are reported as unchecked. These lines warn but do not block work (exit code unchanged) |
 | Translations | complete set of texts for the language from the `lang` setting |
 | Workspace | results folder of the current project; number of results; whether the `result.json` files can be read |
@@ -1886,18 +1886,18 @@ Model decyzyjny
   ! progi pewności: "auto" — zalecane dostrojenie na własnym zbiorze testowym (retman eval run, ARCHITECTURE 6.2)
 
 Narzędzia
-  ✓ imgwtools 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
+  ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
   ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 5 operacji
 
 Magazyny danych narzędzi
   ✓ kartograf: magazyn /dane/retman/stores/kartograf (zapis możliwy, dowiązania twarde działają)
   ✓ kartograf: cache metadanych /home/ola/.local/share/retman/kartograf_cache.db
-  ✓ imgwtools: magazyn /dane/retman/stores/imgwtools (znacznik imgw-store.json, schemat imgw-store/1, dowiązania twarde działają)
-  ✓ imgwtools: pyarrow 18.1.0 (szeregi czasowe)
-  ✓ imgwtools: dane referencyjne /home/ola/.local/share/retman/imgw-reference (hydro_stations_locations.csv: brak)
+  ✓ obserwator: magazyn /dane/retman/stores/obserwator (znacznik obserwator-store.json, schemat obserwator-store/1, dowiązania twarde działają)
+  ✓ obserwator: pyarrow 18.1.0 (szeregi czasowe)
+  ✓ obserwator: dane referencyjne /home/ola/.local/share/retman/obserwator-reference (hydro_stations_locations.csv: brak)
 
 Zgodność opisów z narzędziami (retman scaffold check)
-  ✓ imgwtools 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
+  ✓ obserwator 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
   ✓ kartograf 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
 
 Tłumaczenia (pl)
@@ -1917,7 +1917,7 @@ Model decyzyjny
   ✗ serwer modelu nie odpowiada (http://127.0.0.1:8000) → uruchom serwer modelu (np. LM Studio albo basal-serve, instrukcja w README) i sprawdź [retman.decision] url w ~/.config/nogat/nogat.toml albo zmienną RETMAN_DECISION_URL
 
 Magazyny danych narzędzi
-  ✗ imgwtools: system plików magazynu (/mnt/usb/imgw) nie obsługuje dowiązań twardych (Operation not permitted) → oba magazyny narzędzi wymagają dowiązań twardych (nie ma ich FAT/exFAT ani część udziałów sieciowych); wskaż magazyn na innym dysku w [retman.tools.imgwtools] store_dir (~/.config/nogat/nogat.toml)
+  ✗ obserwator: system plików magazynu (/mnt/usb/obserwator) nie obsługuje dowiązań twardych (Operation not permitted) → oba magazyny narzędzi wymagają dowiązań twardych (nie ma ich FAT/exFAT ani część udziałów sieciowych); wskaż magazyn na innym dysku w [retman.tools.obserwator] store_dir (~/.config/nogat/nogat.toml)
 ```
 
 Rules:
@@ -1926,7 +1926,7 @@ Rules:
   work (e.g. no model, no operations at all, or a store in which the tool cannot write data) and some checks passed,
   `11` (`failed`) when none passed; the report is printed in both cases (ADR-022).
 - `retman doctor check --json` — the same report in a format to paste into a bug report.
-- `retman doctor check --deep` — additional, slower checks: a trial write to the IMGWTools store
+- `retman doctor check --deep` — additional, slower checks: a trial write to the Obserwator store
   using the tool's built-in test data, in a temporary directory and without network access (store
   initialisation, archives, a time series, the station catalog). It shows that the installed tool
   version writes the store on this system; requires `pyarrow`.
@@ -2125,7 +2125,7 @@ mandatory for backends other than basal (section 6.2).
   messages for the tool's error codes), call builders and result mappers on recorded real tool
   documents (`tests/fixtures/<tool>/`), conformance with the installed tool's catalog by
   execution (`retman scaffold check`, section 3.2.3) and tests on real tools with small data, and
-  for IMGWTools on the package's fictitious store (`imgwtools.testing.build_fixture_store`),
+  for Obserwator on the package's fictitious store (`obserwator.testing.build_fixture_store`),
   offline (sections 3.2.7–3.2.8).
 - Workspace: writing and reading `result.json`, result numbering, input selection rules from
   section 5.3 (including the question when there are several candidates).
@@ -2174,27 +2174,27 @@ named but does not exist ends every command with the same error.
 - **Project-dependent things are not in the settings.** Results and the journal go to the project folder
   (chapter 5, a deviation from DEV-18.2: the settings hold only the name of the results subfolder
   `output.results_dir`).
-- **Tool stores** [ADR-015, ADR-021]: Kartograf and IMGWTools keep downloaded data in a store
+- **Tool stores** [ADR-015, ADR-021]: Kartograf and Obserwator keep downloaded data in a store
   outside the results folders, shared by all projects. The client takes the tools' environment
   arguments (store, thread count, cache, update mode) exclusively from the
   `[retman.tools.<tool>]` tables (section 3.2.4); they have default values: Kartograf store
-  `<data_dir>/kartograf`, IMGWTools store `<data_dir>/imgw`, Kartograf cache
-  `<cache_dir>/kartograf/metadata.db`, IMGWTools reference data `<cache_dir>/imgw/reference`,
+  `<data_dir>/kartograf`, Obserwator store `<data_dir>/obserwator`, Kartograf cache
+  `<cache_dir>/kartograf/metadata.db`, Obserwator reference data `<cache_dir>/obserwator/reference`,
   command set `<data_dir>/retman/collected.jsonl`. `data_dir` and `cache_dir` are the nogat user data
   and cache folders (`platformdirs.user_data_path("nogat")`, `user_cache_path("nogat")`;
   on Linux `~/.local/share/nogat` and `~/.cache/nogat`). Paths are absolute, without `..`; the
-  Kartograf and IMGWTools stores are two separate folders side by side on one disk, and neither
-  contains the other (the Kartograf cache and the IMGWTools reference data do not lie in the store
+  Kartograf and Obserwator stores are two separate folders side by side on one disk, and neither
+  contains the other (the Kartograf cache and the Obserwator reference data do not lie in the store
   either). The disk must support hard links (FAT/exFAT and some network shares do not); the Kartograf
   metadata cache must lie on a local disk. Kartograf `update`: `local` — use the saved versions and do
   not ask the sources for newer ones, `upgrade` — also download newer ones, `force` — download again.
   In a terminal `retman config init` asks about command collection (section 5.4) and about the folder for
   tool stores (default `data_dir`), creates the folders (Kartograf store, cache and reference data
   folder), checks that the disk supports hard links, and only then writes the tables; at the end, with
-  consent, it initialises the IMGWTools store (`store init`, without network). Without a terminal it
+  consent, it initialises the Obserwator store (`store init`, without network). Without a terminal it
   writes the tables with visible default paths and creates nothing. A disk without hard links ends
   `retman config init` with an error before writing (exit code 8 or 9), and a refusal of `store init` by
-  IMGWTools for this reason leaves the file in place and suggests changing both `store_dir`. From the
+  Obserwator for this reason leaves the file in place and suggests changing both `store_dir`. From the
   easy release (0.5+) `retman config init` works as a wizard: it also asks where the model runs, checks the
   connection and writes the file (section 9.4).
 - **Language** (`lang`, `pl` or `en`): the language of the texts for people: questions, plan, messages,
@@ -2248,19 +2248,19 @@ results_dir = "retman-output"  # results folder created inside the project folde
 [retman.tools.kartograf]
 # The store: every downloaded file is kept here as an immutable version and shared by all
 # projects. Absolute path without symbolic links, on a disk with hard links (not FAT/exFAT).
-# Keep it on the same disk as the IMGWTools store, in a separate folder.
+# Keep it on the same disk as the Obserwator store, in a separate folder.
 store_dir = '/home/<user>/.local/share/nogat/kartograf'
 # Metadata cache (SQLite). Keep it on a LOCAL disk, never on a network share.
 cache_file = '/home/<user>/.cache/nogat/kartograf/metadata.db'
 workers = 4         # parallel transfers
 update = "local"    # "local" = use stored versions, ask no source | "upgrade" = also download newer versions | "force" = download again
 
-[retman.tools.imgwtools]
-# The IMGWTools store (archives, series, station catalog): a separate folder next to the
+[retman.tools.obserwator]
+# The Obserwator store (archives, series, station catalog): a separate folder next to the
 # Kartograf store; neither store may contain the other. Absolute path without symbolic links.
-store_dir = '/home/<user>/.local/share/nogat/imgw'
+store_dir = '/home/<user>/.local/share/nogat/obserwator'
 # Optional reference files for the station catalog (hydro_stations_locations.csv); may stay empty.
-reference_data_dir = '/home/<user>/.cache/nogat/imgw/reference'
+reference_data_dir = '/home/<user>/.cache/nogat/obserwator/reference'
 
 [retman.log]
 journal_commands = true    # store command texts and answers in the project journal
@@ -2322,10 +2322,9 @@ a GPU. The results go into the documentation as guidance for model selection (PR
   nor `mypy src tests` depends on what is installed.
 - The `tools` dependency group in `pyproject.toml` serves tests and manual runs; it is not
   a dependency of the user's environment. Until the tags `v0.8.0` (Kartograf) and `v3.0.0`
-  (IMGWTools) it pins commits: Kartograf `d6c0ca69` and IMGWTools with the `store` extra
-  (`97c1057`), the heads of the branches `feature/data-output` of the two tools, not pushed yet:
-  `uv lock` resolves them only where the git cache holds them, until the author pushes both
-  tools; PROGRESS Next 2); after release it switches to tags (ADR-012, ADR-024). The IMGWTools `store`
+  (Obserwator) it pins commits: Kartograf `9deaa314`, the head of its `develop`, and Obserwator
+  with the `store` extra (`651d4d73`), the head of its branch `feature/obserwator`, both on GitHub
+  (PROGRESS Next 3); after release it switches to tags (ADR-012, ADR-024). The Obserwator `store`
   extra installs `pyarrow` (time series are Parquet files).
 - Retman **has no extras that install tools** (`retman[hydrograf]` etc.). Dependencies pointing
   directly to Git repositories would force fixed versions instead of ranges and would block any
@@ -2364,10 +2363,10 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 2. Retman together with the tools you need, in ONE environment
 #    (@v0.1.0 = a tagged release, so testers have a stable version).
-#    imgwtools[store] brings pyarrow: its time series are Parquet files
+#    obserwator[store] brings pyarrow: its time series are Parquet files
 uv tool install "git+https://github.com/Daldek/Retman@v0.1.0" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@v0.8.0" \
-    --with "imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@v3.0.0"
+    --with "obserwator[store] @ git+https://github.com/Daldek/IMGWTools@v3.0.0"
 
 # 3. Model server: installed separately, following basal's instructions, then started
 basal-serve --model Remek/basal-1.5-mini --mode <depends on hardware>
@@ -2383,7 +2382,7 @@ retman doctor check
   (section 9.3).
 - **Tool stores** are created at `retman config init` (section 9.1); `retman doctor check` checks their
   paths, write permissions, hard links, `pyarrow` and reference data, and with `--deep` also
-  a trial write to the IMGWTools store (section 7.2).
+  a trial write to the Obserwator store (section 7.2).
 - **basal-serve** must be started before working with Retman; if it is not running, `retman doctor check`
   and the error message suggest how to start it (section 7.2).
 
@@ -2412,7 +2411,7 @@ retman doctor check
 #### Checking in CI
 
 - **Installation test on clean systems** (Windows, Linux, macOS): installation of Retman with all
-  tools, then `retman doctor check --deep` (with a trial write to the IMGWTools store on each system).
+  tools, then `retman doctor check --deep` (with a trial write to the Obserwator store on each system).
   Tool dependencies (e.g. geospatial libraries) were deemed unproblematic — the test confirms this
   on each system before the problem reaches the testers.
 - From the easy version on, the same test covers the installation scripts.
@@ -2438,8 +2437,8 @@ retman doctor check
   itself writes to the tool store, through its client, in the folder from
   `[retman.tools.<tool>] store_dir`; Retman changes or deletes nothing in it.
 - **Tool stores** (section 9.1): paths are absolute, without `..` and without a component that is
-  a symbolic link (IMGWTools does not accept such a path; `retman doctor check` reports it also for
-  Kartograf), stores are siblings (none lies inside another; the Kartograf cache and the IMGWTools
+  a symbolic link (Obserwator does not accept such a path; `retman doctor check` reports it also for
+  Kartograf), stores are siblings (none lies inside another; the Kartograf cache and the Obserwator
   reference data do not lie in the store) and they lie on a disk with hard links (section 7.2).
   Files from the store are referenced in the result by absolute path and SHA-256 sum
   (section 5.4).
@@ -2481,7 +2480,7 @@ in which version.
 
 | Version | Components |
 | --- | --- |
-| **0.1** | core pipeline, `basal` backend (default) and `openai_compatible` (alternative), extractors (including probability, stations, periods, points, geometry file), shared adapter with command layer (`calls`, tool clients, offline preview, availability check), adapters for Kartograf 0.8.0 and all of IMGWTools 3.0.0 with two-stage operation recognition, tool stores in the configuration, `retman scaffold` (`list`, `draft`, `check`), CI with tests on supported tool versions, translation files (PL, EN), CLI and Python API (including the plan as data and `known`), `retman doctor check`, workspace in the project folder (numbered results, input selection without guessing, `retman results list`), central file and `retman config init`, project journal and audit trail (`retman journal show`), `retman eval run`, response time measurements (section 9.2), CI on Windows, Linux and macOS, including an installation test on clean systems (section 9.4) |
+| **0.1** | core pipeline, `basal` backend (default) and `openai_compatible` (alternative), extractors (including probability, stations, periods, points, geometry file), shared adapter with command layer (`calls`, tool clients, offline preview, availability check), adapters for Kartograf 0.8.0 and all of Obserwator 3.0.0 with two-stage operation recognition, tool stores in the configuration, `retman scaffold` (`list`, `draft`, `check`), CI with tests on supported tool versions, translation files (PL, EN), CLI and Python API (including the plan as data and `known`), `retman doctor check`, workspace in the project folder (numbered results, input selection without guessing, `retman results list`), central file and `retman config init`, project journal and audit trail (`retman journal show`), `retman eval run`, response time measurements (section 9.2), CI on Windows, Linux and macOS, including an installation test on clean systems (section 9.4) |
 | 0.2 | chain resolver, sanity checks between steps, chain resumption, named results, result descriptions by the text model, native provider APIs (optional), descriptions and handlers for the remaining ecosystem tools (Hydrolog, Hydrograf, BasicHydraulics) |
 | 0.3 | MCP server (`retman[mcp]`, stdio, confirmation via elicitation, `channel` field in the audit trail; section 7.5.1) |
 | 0.4 | HTTP API |
@@ -2491,7 +2490,7 @@ in which version.
 
 ## 12. Open Technical Issues
 
-1. **Types in the tools' public API** — settled for Kartograf and IMGWTools: choices are not
+1. **Types in the tools' public API** — settled for Kartograf and Obserwator: choices are not
    typed as `Literal` (Kartograf: `str | None`), and the machine-readable source of truth is the
    command catalog (`allowed`, `enum`, `validate_command`), so `retman scaffold` reads catalogs,
    not docstrings (ADR-013, ADR-019). To check for Hydrolog, Hydrograf and BasicHydraulics:
@@ -2512,7 +2511,7 @@ in which version.
    checks of transitions between chain steps.
 7. **Data kinds** — the full list of `kind` names, their file formats and required attributes
    (section 3.2.6). Formats should be chosen from the start so that future GUIs can load them.
-   Settled for Kartograf (ADR-004, ADR-016) and IMGWTools (ADR-017); Hydrolog, Hydrograf
+   Settled for Kartograf (ADR-004, ADR-016) and Obserwator (ADR-017); Hydrolog, Hydrograf
    and BasicHydraulics open.
 8. **GUI integration** (section 7.4) — connection variant (A or B) and GUI technology, once GUIs
    are built.

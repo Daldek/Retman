@@ -1,6 +1,6 @@
 """Measured variables named in a command, checked against the chosen dataset.
 
-IMGWTools exports the variables of one dataset: hydrological ``H`` (water level),
+Obserwator exports the variables of one dataset: hydrological ``H`` (water level),
 ``Q`` (discharge), ``T`` (water temperature), their monthly ``_min/_mean/_max``
 forms, and the meteorological ``P``, ``Tmax``, ``Tmin``, ``Tmean``, ``Tground``,
 ``snow_cover``, ``fresh_snow``. A command names them by code or by Polish words
@@ -19,7 +19,7 @@ from retman.exceptions import TranslationError
 from retman.extractors.base import ExtractionContext, Match, Reading, TextSource
 from retman.extractors.text import fold, words
 
-# Codes the IMGW datasets use (imgwtools.datasets()); the dataset's own list in
+# Codes the Obserwator datasets use (obserwator.datasets()); the dataset's own list in
 # the scope takes precedence, so a new variable needs no change here.
 KNOWN_VARIABLES = (
     "H",
@@ -184,7 +184,7 @@ def extract_variables(text: str, ctx: ExtractionContext) -> list[Match]:
     >>> from datetime import date
     >>> from pathlib import Path
     >>> ctx = ExtractionContext(
-    ...     tool="imgwtools", settings={}, project_dir=Path("."),
+    ...     tool="obserwator", settings={}, project_dir=Path("."),
     ...     scope={"variables": ["H", "Q", "T"]}, lookup=lambda call: {},
     ...     today=date(2026, 10, 19),
     ... )

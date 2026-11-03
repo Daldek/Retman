@@ -13,7 +13,7 @@ The name comes from the retman — the leader of the raftsmen, who guided the cr
 
 ## 1. Problem and context
 
-The ecosystem of hydrology tools (Hydrograf, Kartograf, IMGWTools, Hydrolog, BasicHydraulics)
+The ecosystem of hydrology tools (Hydrograf, Kartograf, Obserwator (formerly IMGWTools), Hydrolog, BasicHydraulics)
 gives access to data and computations through a Python API and — in some of the tools — through a GUI.
 Some of the GUIs do not exist yet.
 
@@ -161,7 +161,7 @@ Varied — Retman must support **two paths**:
 ### 7.1. In scope for v0.1
 
 - Single operations (no chains) of two tools: Kartograf 0.8.0 (five operations: four on spatial data and the creation of its store)
-  and the whole of IMGWTools 3.0.0 (all user-facing capabilities, including ČHMÚ data;
+  and the whole of Obserwator 3.0.0 (all user-facing capabilities, including ČHMÚ data;
   19 operations in 5 categories; projects belong to Archiwista, Nogat ECO-054) — section 7.2,
   ADR-012, ADR-017.
 - Scenarios S-01 to S-04.
@@ -170,7 +170,7 @@ Varied — Retman must support **two paths**:
 ### 7.2. Operations in v0.1
 
 Selection criteria: Kartograf — four operations from ADR-001, carried over to version 0.8.0 (ADR-012), and the creation of the store (the marker `store init` writes, ECO-051);
-IMGWTools — all user-facing capabilities of the tool's command catalog (ADR-017; author: "all of IMGW
+Obserwator — all user-facing capabilities of the tool's command catalog (ADR-017; author: "all of IMGW
 goes into v0.1"), with justified exclusions. There are more than 9 operations, so recognition
 is two-stage: category, then operation (ARCHITECTURE section 3.4).
 
@@ -183,7 +183,7 @@ is two-stage: category, then operation (ARCHITECTURE section 3.4).
 | DEM (NMT) or DSM (NMPT) cutout for an area | Kartograf | rectangle in PL-1992 or WGS84, geometry file |
 | download BDOT10k (topographic objects database) | Kartograf | county TERYT code, rectangle, sheet code, geometry file |
 
-**IMGWTools 3.0.0** (ADR-017): 19 operations in five categories, on IMGW-PIB and ČHMÚ data
+**Obserwator 3.0.0** (ADR-017): 19 operations in five categories, on IMGW-PIB and ČHMÚ data
 (ARCHITECTURE section 3.2.11):
 
 | Category | Operations |
@@ -236,7 +236,7 @@ testers). The first version recommended for production deployments: **1.0.0**.
 
 | Version | What the user (tester) gets |
 | --- | --- |
-| **0.1** | single operations from the CLI and Python on Kartograf 0.8.0 and all of IMGWTools 3.0.0 (two-stage recognition of operations), geometry file as area, asking follow-up questions, plan with offline preview and confirmation, data availability check on request, step-by-step work, tool data stores in the configuration, environment diagnostics; model locally or on the organisation's server; project journal and audit trail |
+| **0.1** | single operations from the CLI and Python on Kartograf 0.8.0 and all of Obserwator 3.0.0 (two-stage recognition of operations), geometry file as area, asking follow-up questions, plan with offline preview and confirmation, data availability check on request, step-by-step work, tool data stores in the configuration, environment diagnostics; model locally or on the organisation's server; project journal and audit trail |
 | 0.2 | chains of operations, result descriptions in Polish, remaining tools of the ecosystem (Hydrolog, Hydrograf, BasicHydraulics) |
 | 0.3 | MCP server (optional extra `retman[mcp]`): an external AI assistant plans, and a human confirms execution in their own client (W-16, ADR-018) |
 | 0.4 | access to Retman via an HTTP API (e.g. for a web application and GUI) |
@@ -257,7 +257,7 @@ testers). The first version recommended for production deployments: **1.0.0**.
 | unknown accuracy of a small model on hydrological vocabulary | a lot of follow-up questions or errors | test set from day one, synonyms in descriptions, option of a larger model |
 | weak hardware of users | Retman too slow or impossible to run | smallest model, diagnostics, model on the organisation's server (from 0.1, section 3.3) |
 | maintaining conformance with five tools | Retman breaks after changes in the tools | tests on tool versions and conformance check by execution (`retman scaffold check`, ADR-019) in CI |
-| Kartograf 0.8.0 and IMGWTools 3.0.0 without pushed release tags | Retman depends on unreleased commits | the `tools` group pins commits until tags exist (neither is pushed yet, PROGRESS), then tags; version ranges in manifests (`>=0.8.0,<0.9`, `>=3.0.0,<4`; ADR-012, ADR-024, ADR-025) |
+| Kartograf 0.8.0 and Obserwator 3.0.0 without pushed release tags | Retman depends on unreleased commits | the `tools` group pins commits until tags exist (neither is pushed yet, PROGRESS), then tags; version ranges in manifests (`>=0.8.0,<0.9`, `>=3.0.0,<4`; ADR-012, ADR-024, ADR-025) |
 | tool stores on a disk without hard links (FAT/exFAT, some network shares) | tools will not save data | `retman config init` checks hard links before writing the configuration file, `retman doctor check` — in both stores (ARCHITECTURE sections 7.2, 9.1) |
 | MCP client without the ability to confirm or with a model in the cloud (from 0.3) | execution without a human or leakage of command content | fail-safe closure: without confirmation the client gets only the plan; command content and paths are hidden by default (ADR-018, ARCHITECTURE section 7.5.1) |
 | GUI part missing | integration with GUI postponed | plan as data from v0.1, decision on integration later |
@@ -276,8 +276,8 @@ testers). The first version recommended for production deployments: **1.0.0**.
 1. The problem Retman solves, described from the perspective of administration and designers (chapter 1).
 2. Expectations and barriers of the individual groups (section 3.4).
 3. Whether and how to show Retman to the target groups before 1.0 (chapter 10).
-4. The list of first operations (section 7.2) — settled for Kartograf and IMGWTools (ADR-001, ADR-012, ADR-016, ADR-017); to be settled for Hydrolog, Hydrograf and BasicHydraulics (from 0.2).
+4. The list of first operations (section 7.2) — settled for Kartograf and Obserwator (ADR-001, ADR-012, ADR-016, ADR-017); to be settled for Hydrolog, Hydrograf and BasicHydraulics (from 0.2).
 5. Target values: response time, quality and success measures (chapters 5, 6 and 8).
 6. Cooperation with GUIs — decision once the GUIs exist.
 7. Scenarios characteristic of the main user groups (chapter 4).
-8. Result file formats (W-09; technical side: ARCHITECTURE chapter 12, item 7) — settled for Kartograf and IMGWTools (ADR-004, ADR-016, ADR-017); open for the remaining tools.
+8. Result file formats (W-09; technical side: ARCHITECTURE chapter 12, item 7) — settled for Kartograf and Obserwator (ADR-004, ADR-016, ADR-017); open for the remaining tools.
