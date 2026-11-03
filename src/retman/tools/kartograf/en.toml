@@ -1,6 +1,6 @@
 [categories.spatial_data]
 label = "GUGiK spatial data"
-description = "Downloading spatial data from GUGiK: the DEM (NMT, numeryczny model terenu), the DSM (NMPT, numeryczny model pokrycia terenu), orthophoto (ortofotomapa), elevation cutouts (wycinki wysokościowe) and BDOT10k (topographic vector data); creating the Kartograf store (the store marker)"
+description = "Downloading spatial data from GUGiK: the DEM (NMT, numeryczny model terenu), the DSM (NMPT, numeryczny model pokrycia terenu), orthophoto (ortofotomapa), elevation cutouts (wycinki wysokościowe) and BDOT10k (topographic vector data); creating and inspecting the Kartograf store (the store marker, the data segments)"
 
 [categories.soil_data]
 label = "SoilGrids soil data"
@@ -226,6 +226,11 @@ label = "Create the Kartograf store"
 description = "Create (initialise) the Kartograf store in the folder from the configuration: write the store marker kartograf-store.json into a new or empty folder, or into a folder that has the layout of a store but no marker (the tool checks the layout first); the first step when Kartograf refuses to write into a store without its marker, setting up the data store (magazyn danych) for GUGiK spatial data, a new Kartograf store; does not download data and does not change an existing store."
 summary = "Done. Result #{number}: the Kartograf store is ready: {store}."
 
+[operations.inspect_kartograf_store]
+label = "Overview of the Kartograf store"
+description = "Show what the Kartograf store holds: its segments (product folders) with the product, the country, the dataset and whether the installed Kartograf knows them; which GUGiK and SoilGrids data are already downloaded, what is in the spatial data store; read-only, offline, downloads nothing."
+summary = "Done. Result #{number}: the Kartograf store {store} has {segment_count} segments."
+
 [operations.download_soil_layer]
 label = "Download a SoilGrids soil layer"
 description = "Download one soil property layer from SoilGrids (ISRIC, 250 m, soil grids, soil map, soil data) for a sheet code, a rectangle or a geometry file: clay, sand or silt content (texture, particle size fractions), organic carbon, pH, bulk density, coarse fragments, cation exchange capacity (CEC) or nitrogen, at a chosen depth and with a prediction statistic (mean, median, quantile, uncertainty)."
@@ -370,6 +375,7 @@ all_nodata = "The cutout contains no valid elevation data (the whole result is n
 masked_pixels = "{count} pixels outside land were masked as nodata."
 soil_all_nodata = "The SoilGrids layer has no data for this area (zeros only: sea, water, built-up land or rock)."
 hsg_all_nodata = "The HSG has no group at all: the texture data are missing for the whole area (for example water or built-up land)."
+unknown_segments = "Segments the installed Kartograf does not know ({count}): {segments} (for example from another version of the tool)."
 
 # Kartograf errors by registry code (ERR §4); its own text is only {detail}, and its
 # details.reason says which of the errors of the code it is
@@ -402,6 +408,7 @@ store_not_kartograf = "{path} is not a Kartograf store: it is a file or a folder
 store_marker_unreadable = "The marker kartograf-store.json in {path} is unreadable. The store is damaged or comes from a different version of Kartograf; specify another folder in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
 store_unsupported = "The Kartograf store in {path} has an unsupported marker schema ({schema}). Update Kartograf."
 store_nested = "The folder {path} cannot be a Kartograf store: it lies in, is or holds another store ({other}). Specify a folder outside it in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
+store_absent = "The Kartograf store folder {path} does not exist or is not a folder, so there is nothing to show. Check the store_dir setting of the [retman.tools.kartograf] table in nogat.toml; the store is created by the first download."
 
 # Additional plan rows (preview without network)
 [preview.envelope]

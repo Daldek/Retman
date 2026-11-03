@@ -276,6 +276,21 @@ MANIFEST: ManifestSpec = {
             "preview": "retman.tools.kartograf.preview:init_kartograf_store",
         },
         {
+            "id": "inspect_kartograf_store",
+            "category": "spatial_data",
+            "description": "List the segments (products) the Kartograf store holds, "
+            "offline",
+            "inputs": [],
+            "outputs": [],
+            "params": [],
+            # A read of the store: the command layer runs it, nothing is written
+            # and there is no network, so the operation has nothing to check
+            "calls": "retman.tools.kartograf.calls:inspect_kartograf_store",
+            "commands": ["store overview"],
+            "describe": "retman.tools.kartograf.describe:inspect_kartograf_store",
+            "preview": "retman.tools.kartograf.preview:inspect_kartograf_store",
+        },
+        {
             "id": "download_soil_layer",
             "category": "soil_data",
             "description": "Download one SoilGrids soil property layer (ISRIC, 250 m) "

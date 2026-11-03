@@ -1,6 +1,6 @@
 [categories.spatial_data]
 label = "Dane przestrzenne GUGiK"
-description = "Pobieranie danych przestrzennych z GUGiK: numeryczny model terenu NMT, numeryczny model pokrycia terenu NMPT, ortofotomapa, wycinki wysokościowe i BDOT10k (wektory topograficzne); założenie magazynu Kartografa (znacznik magazynu)"
+description = "Pobieranie danych przestrzennych z GUGiK: numeryczny model terenu NMT, numeryczny model pokrycia terenu NMPT, ortofotomapa, wycinki wysokościowe i BDOT10k (wektory topograficzne); założenie i przegląd magazynu Kartografa (znacznik magazynu, segmenty danych)"
 
 [categories.soil_data]
 label = "Dane glebowe SoilGrids"
@@ -226,6 +226,11 @@ label = "Utworzenie magazynu Kartografa"
 description = "Utwórz (zainicjuj) magazyn Kartografa w folderze z konfiguracji: zapisz znacznik magazynu kartograf-store.json w nowym albo pustym folderze albo w folderze z układem magazynu bez znacznika (narzędzie najpierw sprawdza układ); pierwszy krok, gdy Kartograf odmawia zapisu w magazynie bez znacznika, założenie magazynu danych przestrzennych GUGiK, nowy magazyn Kartografa; nie pobiera danych, nie zmienia istniejącego magazynu."
 summary = "Gotowe. Wynik #{number}: magazyn Kartografa jest gotowy: {store}."
 
+[operations.inspect_kartograf_store]
+label = "Przegląd magazynu Kartografa"
+description = "Pokaż, co jest w magazynie Kartografa: segmenty (katalogi produktów) z produktem, krajem, zbiorem danych i informacją, czy zna je zainstalowany Kartograf; jakie dane GUGiK i SoilGrids mam już pobrane, co jest w magazynie danych przestrzennych; tylko czyta, bez internetu, niczego nie pobiera."
+summary = "Gotowe. Wynik #{number}: magazyn Kartografa {store} ma segmentów: {segment_count}."
+
 [operations.download_soil_layer]
 label = "Pobranie warstwy glebowej SoilGrids"
 description = "Pobierz jedną warstwę właściwości gleby z SoilGrids (ISRIC, 250 m, soil grids, mapa glebowa, dane glebowe) dla godła arkusza, prostokąta albo pliku geometrii: zawartość iłu, piasku albo pyłu (uziarnienie, tekstura gleby, frakcje), węgiel organiczny, pH, gęstość objętościowa, części szkieletowe, pojemność wymiany kationów (CEC) albo azot, na wybranej głębokości i ze statystyką predykcji (średnia, mediana, kwantyl, niepewność)."
@@ -370,6 +375,7 @@ all_nodata = "Wycinek nie zawiera ważnych danych wysokościowych (cały wynik t
 masked_pixels = "Poza lądem zamaskowano {count} pikseli jako nodata."
 soil_all_nodata = "Warstwa SoilGrids nie ma danych dla tego obszaru (same zera: morze, wody, zabudowa albo skały)."
 hsg_all_nodata = "Grupy HSG nie mają żadnej klasy: dla całego obszaru brakuje danych o uziarnieniu (np. woda albo zabudowa)."
+unknown_segments = "Segmenty, których nie zna zainstalowany Kartograf ({count}): {segments} (np. z innej wersji narzędzia)."
 
 # Błędy Kartografa po kodzie rejestru błędów (ERR §4); jego własny tekst jest tylko
 # {detail}, a details.reason mówi, który to błąd tego kodu
@@ -402,6 +408,7 @@ store_not_kartograf = "{path} nie jest magazynem Kartografa: to plik albo folder
 store_marker_unreadable = "Znacznik kartograf-store.json w {path} jest nieczytelny. Magazyn jest uszkodzony albo pochodzi z innej wersji Kartografa; wskaż inny folder w ustawieniu store_dir tabeli [retman.tools.kartograf] pliku nogat.toml."
 store_unsupported = "Magazyn Kartografa w {path} ma nieobsługiwany schemat znacznika ({schema}). Zaktualizuj Kartografa."
 store_nested = "Folder {path} nie może być magazynem Kartografa: leży w innym magazynie, jest nim albo go zawiera ({other}). Wskaż folder poza nim w ustawieniu store_dir tabeli [retman.tools.kartograf] pliku nogat.toml."
+store_absent = "Folder magazynu Kartografa {path} nie istnieje albo nie jest folderem, więc nie ma czego przeglądać. Sprawdź ustawienie store_dir tabeli [retman.tools.kartograf] pliku nogat.toml; magazyn powstaje przy pierwszym pobraniu danych."
 
 # Dodatkowe wiersze planu (podgląd bez sieci)
 [preview.envelope]

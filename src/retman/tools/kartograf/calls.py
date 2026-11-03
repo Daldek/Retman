@@ -157,6 +157,13 @@ def init_kartograf_store(params: dict[str, Any], ctx: ToolContext) -> list[Catal
     return [CatalogCall("store init", {})]
 
 
+def inspect_kartograf_store(
+    params: dict[str, Any], ctx: ToolContext
+) -> list[CatalogCall]:
+    """``store overview`` of the configured store folder (a read, offline)."""
+    return [CatalogCall("store overview", {})]
+
+
 def download_soil_layer(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
     """One SoilGrids layer of an area: a property, a depth and a statistic.
 

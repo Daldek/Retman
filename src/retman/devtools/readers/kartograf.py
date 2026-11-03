@@ -17,9 +17,14 @@ from retman.devtools.model import (
 
 # Document schemas the Kartograf client of Retman understands: the domain documents of
 # the commands its operations run, which ``run_command`` wraps in the
-# ``kartograf-result/1`` envelope (a download and the marker ``store init`` writes),
-# and the plan ``check_command`` puts into it
-KNOWN_SCHEMAS = ("kartograf-download/1", "kartograf-store-init/1", "kartograf-plan/1")
+# ``kartograf-result/1`` envelope (a download, the marker ``store init`` writes and
+# the segments ``store overview`` reads), and the plan ``check_command`` puts into it
+KNOWN_SCHEMAS = (
+    "kartograf-download/1",
+    "kartograf-store-init/1",
+    "kartograf-store-overview/1",
+    "kartograf-plan/1",
+)
 
 # Error codes of the registry that a library client never meets
 UNREACHABLE_ERRORS = {
@@ -70,10 +75,11 @@ def read_catalog() -> ToolCatalog:
     """Kartograf's catalog: every command with its data options and effects.
 
     The command layer (``validate_command``, ``run_command``, ``check_command``) takes
-    every command of the catalog; a command is ``data`` for the scaffold when its run
-    has effects (``effects.read_only`` is false in ``command_schema``), so the source
-    listings, the store reads, ``sheet`` and ``config show`` are not unused data
-    commands. The check of a command is a plan.
+    every command of the catalog, so every command is ``runnable``; a command is
+    ``data`` for the scaffold when its run has effects (``effects.read_only`` is false
+    in ``command_schema``), so the source listings, the store reads, ``sheet`` and
+    ``config show`` are not unused data commands, though an operation may run one
+    (``store overview``). The check of a command is a plan.
     """
     kartograf = importlib.import_module("kartograf")
     listed = kartograf.list_commands().to_dict()

@@ -160,7 +160,7 @@ Varied — Retman must support **two paths**:
 
 ### 7.1. In scope for v0.1
 
-- Single operations (no chains) of two tools: Kartograf 0.8.0 (seven operations: four on GUGiK spatial data, two on SoilGrids soils and the creation of its store)
+- Single operations (no chains) of two tools: Kartograf 0.8.0 (eight operations: four on GUGiK spatial data, two on SoilGrids soils, the creation and the overview of its store)
   and the whole of Obserwator 3.0.0 (all user-facing capabilities, including ČHMÚ data;
   19 operations in 5 categories; projects belong to Archiwista, Nogat ECO-054) — section 7.2,
   ADR-012, ADR-017.
@@ -169,7 +169,7 @@ Varied — Retman must support **two paths**:
 
 ### 7.2. Operations in v0.1
 
-Selection criteria: Kartograf — four operations from ADR-001, carried over to version 0.8.0 (ADR-012), the creation of the store (the marker `store init` writes, ECO-051), and the soil commands of its catalog (`soil download`, `soil hsg`: basic functions of Kartograf in the Nogat registry);
+Selection criteria: Kartograf — four operations from ADR-001, carried over to version 0.8.0 (ADR-012), the creation of the store (the marker `store init` writes, ECO-051), the soil commands of its catalog (`soil download`, `soil hsg`) and the overview of the store (`store overview`, read-only, the counterpart of describing the Obserwator store): basic functions of Kartograf in the Nogat registry;
 Obserwator — all user-facing capabilities of the tool's command catalog (ADR-017; author: "all of IMGW
 goes into v0.1"), with justified exclusions. There are more than 9 operations, so recognition
 is two-stage: category, then operation (ARCHITECTURE section 3.4).
@@ -184,6 +184,7 @@ is two-stage: category, then operation (ARCHITECTURE section 3.4).
 | download BDOT10k (topographic objects database) | Kartograf | county TERYT code, rectangle, sheet code, geometry file |
 | download one SoilGrids soil layer (a property, a depth of 0–200 cm, a prediction statistic) | Kartograf | sheet code, rectangle in PL-1992 or WGS84, geometry file |
 | hydrologic soil groups HSG (A–D, SCS-CN) from the SoilGrids texture of one depth | Kartograf | sheet code, rectangle in PL-1992 or WGS84, geometry file |
+| overview of the store: its segments (product, country, dataset), read-only | Kartograf | — |
 
 **Obserwator 3.0.0** (ADR-017): 19 operations in five categories, on IMGW-PIB and ČHMÚ data
 (ARCHITECTURE section 3.2.11):

@@ -70,7 +70,12 @@ def make_catalog(**changes: Any) -> ToolCatalog:
         result_schema="dummy-download/1",
     )
     availability = CommandInfo(
-        "elevation availability", "elevation", "Availability", network=True, data=False
+        "elevation availability",
+        "elevation",
+        "Availability",
+        network=True,
+        data=False,
+        runnable=False,
     )
     catalog = ToolCatalog(
         TOOL,
@@ -401,6 +406,20 @@ def test_command_that_validate_does_not_take_is_an_error(
         ]
 
     assert "x1_command_not_data" in keys(run(dummy, edit=edit), "error")
+
+
+def test_a_read_only_command_the_command_layer_runs_is_no_x1_error(
+    dummy: tuple[ManifestSpec, Path],
+) -> None:
+    """A store read is not a command an operation must offer (X9), yet it runs."""
+    overview = CommandInfo("store overview", "store", "Overview", data=False)
+    catalog = make_catalog()
+    catalog = replace(catalog, commands={**catalog.commands, overview.id: overview})
+
+    def edit(manifest: ManifestSpec) -> None:
+        operation(manifest)["commands"] = ["elevation download", "store overview"]
+
+    assert "x1_command_not_data" not in keys(run(dummy, edit=edit, catalog=catalog))
 
 
 def test_builder_emitting_an_undeclared_command_is_an_error(

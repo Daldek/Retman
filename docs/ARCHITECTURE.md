@@ -589,10 +589,10 @@ a description, builders or handlers, and a client in `src/retman/tools/`.
 
 #### 3.2.10. Kartograf 0.8.0 operations
 
-Seven operations (ADR-001, ADR-012, ADR-016) in two categories: `spatial_data` ("GUGiK spatial
+Eight operations (ADR-001, ADR-012, ADR-016) in two categories: `spatial_data` ("GUGiK spatial
 data") and `soil_data` ("SoilGrids soil data"). The six data operations go through the command
 layer (`calls`) and have an offline preview and an availability check (`check`); the seventh
-writes the store marker (below the table):
+writes the store marker and the eighth reads the segments of the store (below the table):
 
 | Operation (`id`) | Catalog commands | Area (`accepts`) | Parameters Retman asks about | Output kinds |
 | --- | --- | --- | --- | --- |
@@ -603,6 +603,7 @@ writes the store marker (below the table):
 | `download_soil_layer` — one SoilGrids property layer | `soil download` | `sheet`, `bbox`, `geometry` | property (clay, sand, silt, organic carbon, pH, bulk density, coarse fragments, CEC, nitrogen); measure of organic carbon (content SOC, density OCD, stock OCS); depth (0–5 … 100–200 cm; 0–30 cm for the stock); statistic (mean, median, 5% and 95% quantiles, uncertainty) | `soil_raster` |
 | `classify_soil_hsg` — hydrologic soil groups A–D (SCS-CN) | `soil hsg` | `sheet`, `bbox`, `geometry` | depth of the texture (0–5 … 100–200 cm) | `hsg_raster` |
 | `init_kartograf_store` — create the store: write its marker | `store init` | — | — | — |
+| `inspect_kartograf_store` — overview of the store: its segments | `store overview` | — | — | — |
 
 `init_kartograf_store` has no parameters. `store init` is a command of the catalog like the
 others (the command layer of Kartograf takes every command of it), so the operation is a `calls`
@@ -617,6 +618,17 @@ other call; it is the way out of the `no_marker` that `retman doctor check` and 
 (the command "Utwórz magazyn Kartografa"). It declares no `check`: the plan of `store init
 --check` is offline, so an availability step would be a consent notice without a network, and
 the preview judges the folder by the same rules (ADR-025 erratum 1).
+
+`inspect_kartograf_store` has no parameters either: `store overview` is a read of the store
+(read-only and offline in `command_schema`), which the command layer runs like every command,
+so the operation is a `calls` builder with its `describe` and `preview` and without a `check`.
+The result lists the segments (product, country, dataset key, name, `known`) and the count per
+product; a segment that no source of the installed Kartograf produces is a warning. The preview
+refuses only a folder the overview cannot read (missing: `store_unavailable`/`not_initialised`;
+a file: `not_a_directory`); a layout without its marker or a folder of other files is read as it
+is. The scaffold tells the two meanings of a command apart: `runnable` (the command layer runs
+it, X1) and `data` (an operation is expected to offer it, X9), so the store reads are no unused
+data commands, yet an operation may run one.
 
 The SoilGrids operations (`soil_data`). SoilGrids has eleven properties, more than one choice
 holds (section 3.4), so the three measures of organic carbon are one option of `property` and a

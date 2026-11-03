@@ -283,3 +283,37 @@ def init_kartograf_store(params: dict[str, Any], ctx: ToolContext) -> PreviewOut
         ],
         "problems": [],
     }
+
+
+# The reason of the ``store_unavailable`` that ends the plan of an overview, for the
+# states of a folder that ``store overview`` cannot read
+_UNREADABLE_FOLDERS = {
+    "missing": "not_initialised",
+    "not_a_directory": "not_a_directory",
+}
+
+
+def inspect_kartograf_store(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Preview the folder the overview reads; a folder it cannot read blocks.
+
+    ``store overview`` reads any folder, a layout without its marker and a folder of
+    other files included (it finds no segment there), and never writes; only a folder
+    that does not exist and a file leave it nothing to read.
+    """
+    folder = str(ctx.store_dir)
+    found = kartograf_store_state(ctx.store_dir)
+    reason = _UNREADABLE_FOLDERS.get(found.state)
+    if reason is not None:
+        problem: PreviewProblem = {
+            "params": [],
+            "key": "store_absent",
+            "args": {"path": folder},
+            "code": "store_unavailable",
+            "reason": reason,
+        }
+        return {"values": {}, "rows": [], "problems": [problem]}
+    return {
+        "values": {"store": folder, "store_state": found.state},
+        "rows": [{"key": "store", "args": {"path": folder}}],
+        "problems": [],
+    }

@@ -40,6 +40,13 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `hsg_raster` are new, and the command set has 34 rows for them.
 - The texts of the Kartograf errors `no_data` and `source_unavailable` name the source of the
   data as GUGiK or SoilGrids instead of GUGiK alone.
+- The overview of the Kartograf store ("Przegląd magazynu Kartografa", `store overview`, PRD
+  7.2, ARCHITECTURE 3.2.10): a read without network that lists the segments of the store
+  (product, country, dataset, whether the installed Kartograf knows them) and warns about the
+  unknown ones; a store folder that does not exist ends the plan (`store_unavailable`,
+  `not_initialised`); 16 rows of the command set. `retman scaffold check` tells a command the
+  command layer runs (X1) from a command an operation is expected to offer (X9), so an
+  operation may run a store read.
 - All Obserwator 3.0.0 (formerly IMGWTools) operations, ČHMÚ included: 19 operations in 5 categories (station
   search and catalog, current data and warnings, PMAXTP, station series, archives and the
   store; ADR-017, PRD 7.2).
