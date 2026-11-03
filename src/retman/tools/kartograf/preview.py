@@ -218,15 +218,30 @@ def download_sheet_hierarchy(params: dict[str, Any], ctx: ToolContext) -> Previe
     return output
 
 
-def download_elevation_cutout(
-    params: dict[str, Any], ctx: ToolContext
-) -> PreviewOutput:
-    """Preview the extent of a geometry file: the cutout is one rectangle around it."""
+def _extent(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Preview the store Kartograf will take and the extent of a geometry file."""
     if (refused := _refused(ctx)) is not None:
         return refused
     output = _empty()
     _envelope(params, ctx, output)
     return output
+
+
+def download_elevation_cutout(
+    params: dict[str, Any], ctx: ToolContext
+) -> PreviewOutput:
+    """Preview the extent of a geometry file: the cutout is one rectangle around it."""
+    return _extent(params, ctx)
+
+
+def download_soil_layer(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Preview the extent of a geometry file: SoilGrids gives the rectangle of it."""
+    return _extent(params, ctx)
+
+
+def classify_soil_hsg(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Preview the extent of a geometry file: the groups cover the rectangle of it."""
+    return _extent(params, ctx)
 
 
 def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:

@@ -513,6 +513,8 @@ Kartograf data kinds (ADR-004, ADR-016) — the format is whatever Kartograf ret
 | `orthophoto` | GeoTIFF (`.tif`) | TIFF signature |
 | `topographic_vector` | BDOT10k: GeoPackage (`.gpkg`) or Shapefile (`.shp`) | SQLite header (GPKG) or Shapefile file code |
 | `dem_archive` | DEM 100 m: ZIP archive with an XYZ file per voivodeship (`.zip`) | ZIP signature |
+| `soil_raster` | one SoilGrids property layer: GeoTIFF (`.tif`) with the integer values of SoilGrids (the unit and the divisor are in the result) | TIFF signature |
+| `hsg_raster` | hydrologic soil groups: GeoTIFF (`.tif`), classes 1–4 = A–D, 0 = no data | TIFF signature |
 | `area_geometry` | user file with area geometry: GeoPackage or Shapefile | as `topographic_vector`; validates the area from a file in the plan (section 6.1), also reserved as the output kind of future operations (chains, v0.2) |
 
 Obserwator data kinds (ADR-017) — tabular files and JSON documents; validators read only the
@@ -575,7 +577,7 @@ All tool-related tests live in the Retman repo:
 
 | Tool | Operation scope | Depends on | Status |
 | --- | --- | --- | --- |
-| Kartograf | downloading spatial data (DEM (NMT), DSM (NMPT), orthophoto, BDOT10k) | — | v0.1, version 0.8.0 |
+| Kartograf | downloading spatial data (DEM (NMT), DSM (NMPT), orthophoto, BDOT10k) and SoilGrids soil data (a property layer, hydrologic soil groups) | — | v0.1, version 0.8.0 |
 | Obserwator (formerly IMGWTools) | IMGW-PIB and ČHMÚ measurement data: stations, current data, PMAXTP, time series, archives and store | — | v0.1, version 3.0.0 |
 | Hydrolog | hydrological calculations (flows, methods) | — | planned (v0.2) |
 | BasicHydraulics | simple hydraulic calculations | — | planned (v0.2) |
@@ -587,10 +589,10 @@ a description, builders or handlers, and a client in `src/retman/tools/`.
 
 #### 3.2.10. Kartograf 0.8.0 operations
 
-Five operations (ADR-001, ADR-012, ADR-016) in one category, `spatial_data` ("GUGiK spatial
-data"). The four data operations go through the command layer (`calls`) and have an offline
-preview and an availability check (`check`); the fifth writes the store marker (below the
-table):
+Seven operations (ADR-001, ADR-012, ADR-016) in two categories: `spatial_data` ("GUGiK spatial
+data") and `soil_data` ("SoilGrids soil data"). The six data operations go through the command
+layer (`calls`) and have an offline preview and an availability check (`check`); the seventh
+writes the store marker (below the table):
 
 | Operation (`id`) | Catalog commands | Area (`accepts`) | Parameters Retman asks about | Output kinds |
 | --- | --- | --- | --- | --- |
@@ -598,6 +600,8 @@ table):
 | `download_sheet_hierarchy` — child map sheets: DEM (NMT), DSM (NMPT) or orthophoto | `elevation download`, `imagery download` | `sheet`, `geometry` (orthophoto only `sheet`) | product; target scale (1:10000 in PL-1992; 1:5000, 1:2000, 1:1000, 1:500 in PL-2000); DEM resolution (0.15–10 m) or DSM resolution (0.5; 0.6; 1 m); vertical datum; orthophoto color (RGB, CIR, B/W) | `dem`, `dsm`, `orthophoto` |
 | `download_elevation_cutout` — DEM or DSM 1 m cutout | `elevation download` | `bbox`, `geometry` | product; result CRS (EPSG:2180, 5514, 3045 — read by code, not the model, ADR-009); vertical datum | `dem`, `dsm` |
 | `download_bdot10k` — BDOT10k (current county packages) | `landcover download` | `teryt`, `bbox`, `sheet`, `geometry` | format (GeoPackage or Shapefile) | `topographic_vector` |
+| `download_soil_layer` — one SoilGrids property layer | `soil download` | `sheet`, `bbox`, `geometry` | property (clay, sand, silt, organic carbon, pH, bulk density, coarse fragments, CEC, nitrogen); measure of organic carbon (content SOC, density OCD, stock OCS); depth (0–5 … 100–200 cm; 0–30 cm for the stock); statistic (mean, median, 5% and 95% quantiles, uncertainty) | `soil_raster` |
+| `classify_soil_hsg` — hydrologic soil groups A–D (SCS-CN) | `soil hsg` | `sheet`, `bbox`, `geometry` | depth of the texture (0–5 … 100–200 cm) | `hsg_raster` |
 | `init_kartograf_store` — create the store: write its marker | `store init` | — | — | — |
 
 `init_kartograf_store` has no parameters. `store init` is a command of the catalog like the
@@ -613,6 +617,19 @@ other call; it is the way out of the `no_marker` that `retman doctor check` and 
 (the command "Utwórz magazyn Kartografa"). It declares no `check`: the plan of `store init
 --check` is offline, so an availability step would be a consent notice without a network, and
 the preview judges the folder by the same rules (ADR-025 erratum 1).
+
+The SoilGrids operations (`soil_data`). SoilGrids has eleven properties, more than one choice
+holds (section 3.4), so the three measures of organic carbon are one option of `property` and a
+question of their own (`carbon`); an invalid pair (the stock at 0–5 cm, clay at 0–30 cm) is
+rejected by Kartograf in the preview and asked again as the depth. The result of a layer repeats
+the unit of its integer values, the conventional unit and the divisor, read from the sidecar of the
+file (`extra.units`), so that a value in g/kg is not read as percent. `soil hsg` downloads the
+clay, sand and silt of one depth (the `mean`) into the store and computes the groups there; the
+client always passes the run argument `summary` (a command that declares it gets it, as the
+workers), and the result lists the share and the area of each group. A layer of zeros and a
+group raster without a class (Kartograf's notice `all_nodata`) are warnings in soil words. The
+availability check reads the freshness plan: the edition SoilGrids announces, what the store
+already holds and, for the groups, whether the stored ones were computed from the current layers.
 
 Kartograf operations have no default values (ADR-006): Retman asks about resolution, vertical
 datum, scale, color and format when the command does not include them. All ASC grid resolutions
@@ -631,6 +648,7 @@ file means is stated by the plan (`geometry_note`):
 | --- | --- | --- |
 | DEM (NMT) for a map sheet, child map sheets | map sheets at the given scale whose bounding box touches the bounding box of any feature in the layer; the polygon shape is not taken into account | a sheet count of 0 is a preview problem |
 | cutout | one rectangle covering all features of the layer, with no clipping to the polygon | no data outside the land area of Poland |
+| SoilGrids layer, hydrologic soil groups | one rectangle covering all features of the layer, with no clipping to the polygon | a 250 m grid: a small area is a few pixels |
 | BDOT10k | full packages of all counties intersecting the bounding box | an area outside Poland is rejected by the preview; the list of counties is known only to the PRG service (network, after confirmation or during the check) |
 | orthophoto (child map sheets) | the file is not accepted — the tool's provider class takes sheet codes (godło) only | preview problem: Retman asks again for the product and the area |
 

@@ -13,7 +13,9 @@ Kartograf's own defaults are never used: not its default store (``KARTOGRAF_ROOT
 ``nogat.toml``, ``<data_dir>/kartograf``) and not ``cache=True``, which would open the
 default cache of the user instead of the one the settings name. A call gets the
 workers and the update mode only if its command declares them (``store init`` does
-not): the command layer refuses an option that does not belong to the command.
+not): the command layer refuses an option that does not belong to the command. A
+command that declares ``summary`` (``soil hsg``) always gets it: the shares of the
+hydrologic soil groups are part of what Retman reports, not a setting.
 """
 
 import functools
@@ -48,6 +50,10 @@ _UPDATE_MODES: dict[str, UpdateMode | None] = {
     "upgrade": "upgrade",
     "force": "force",
 }
+
+# The run argument of ``soil hsg`` that adds the shares of the groups A-D to its
+# document (a run argument, like the workers: not an option of the call)
+_SUMMARY = "summary"
 
 # Offline lookups are Kartograf's query commands without effects (``sheet parse``,
 # ``sheet find``, ``<group> list-sources``, ``store sidecar``) and the envelope of a
@@ -225,6 +231,8 @@ class KartografClient:
             mode = self.settings.get("update", "local")
             if "update" in declared and mode != "local":
                 flags[mode] = True
+            if _SUMMARY in declared:
+                flags[_SUMMARY] = True
             return kartograf.format_command(call.command, call.options, run=flags)
 
     def lookup(self, call: CatalogCall) -> ToolDocument:
@@ -279,13 +287,15 @@ class KartografClient:
     # --- what exists only after consent: network and store writes -------------
 
     def _run_arguments(self, command: str) -> dict[str, Any]:
-        """Return the workers and the update mode of a run, if the command has them."""
+        """Return the workers, the update mode and the summary a command declares."""
         declared = declared_options(command)
         arguments: dict[str, Any] = {}
         if "update" in declared:
             arguments["update"] = update_mode(self.settings)
         if "workers" in declared:
             arguments["workers"] = _required(self.settings, "workers")
+        if _SUMMARY in declared:
+            arguments[_SUMMARY] = True
         return arguments
 
     def run(self, call: CatalogCall) -> ToolRun:

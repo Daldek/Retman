@@ -221,7 +221,9 @@ def test_a_failed_run_is_a_result_with_retmans_text_of_the_tools_error_code(
     assert result.error_code == "no_data"
     assert result.failure is not None
     assert result.failure["details"]["reason"] == "no_coverage"
-    assert "GUGiK nie ma danych" in (result.error or "")
+    # Retman's text of the code, with the tool's own wording only as its detail
+    template = operations()["download_dem_sheet"].texts.get("errors.no_data", detail="")
+    assert (result.error or "").startswith(template)
 
 
 def test_an_orthophoto_runs_through_the_provider_and_lands_in_the_store(

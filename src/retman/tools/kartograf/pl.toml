@@ -2,6 +2,10 @@
 label = "Dane przestrzenne GUGiK"
 description = "Pobieranie danych przestrzennych z GUGiK: numeryczny model terenu NMT, numeryczny model pokrycia terenu NMPT, ortofotomapa, wycinki wysokościowe i BDOT10k (wektory topograficzne); założenie magazynu Kartografa (znacznik magazynu)"
 
+[categories.soil_data]
+label = "Dane glebowe SoilGrids"
+description = "Gleby z SoilGrids (ISRIC, siatka 250 m): pobranie warstwy jednej właściwości gleby (zawartość iłu, piasku albo pyłu, węgiel organiczny, pH, gęstość objętościowa, części szkieletowe, pojemność wymiany kationów, azot) na wybranej głębokości oraz grupy hydrologiczne gleb HSG (A–D) metody SCS-CN wyznaczone z uziarnienia"
+
 [operations.download_dem_sheet]
 label = "Pobranie NMT dla arkusza lub obszaru"
 description = "Pobierz NMT dla godła arkusza albo dla obszaru z pliku geometrii: numeryczny model terenu, DEM, DTM, wysokości gruntu lub rzeźba terenu z GUGiK."
@@ -222,6 +226,131 @@ label = "Utworzenie magazynu Kartografa"
 description = "Utwórz (zainicjuj) magazyn Kartografa w folderze z konfiguracji: zapisz znacznik magazynu kartograf-store.json w nowym albo pustym folderze albo w folderze z układem magazynu bez znacznika (narzędzie najpierw sprawdza układ); pierwszy krok, gdy Kartograf odmawia zapisu w magazynie bez znacznika, założenie magazynu danych przestrzennych GUGiK, nowy magazyn Kartografa; nie pobiera danych, nie zmienia istniejącego magazynu."
 summary = "Gotowe. Wynik #{number}: magazyn Kartografa jest gotowy: {store}."
 
+[operations.download_soil_layer]
+label = "Pobranie warstwy glebowej SoilGrids"
+description = "Pobierz jedną warstwę właściwości gleby z SoilGrids (ISRIC, 250 m, soil grids, mapa glebowa, dane glebowe) dla godła arkusza, prostokąta albo pliku geometrii: zawartość iłu, piasku albo pyłu (uziarnienie, tekstura gleby, frakcje), węgiel organiczny, pH, gęstość objętościowa, części szkieletowe, pojemność wymiany kationów (CEC) albo azot, na wybranej głębokości i ze statystyką predykcji (średnia, mediana, kwantyl, niepewność)."
+summary = "Gotowe. Wynik #{number}: warstwa SoilGrids {property} {depth} ({stat}) jest w magazynie; wartości pliku są w {unit}, w {conventional_unit} po podzieleniu przez {divisor}."
+
+[operations.download_soil_layer.check]
+notice = "Zapytam usługę SoilGrids (ISRIC, GetCapabilities) o bieżące wydanie warstwy z planu i porównam je z wersją w magazynie. Niczego nie pobieram."
+
+[operations.download_soil_layer.params.property]
+label = "Właściwość gleby"
+question = "Którą właściwość gleby pobrać: ił, piasek, pył, węgiel organiczny, pH, gęstość objętościową, części szkieletowe, pojemność wymiany kationów czy azot?"
+model_question = "Jaką właściwość gleby wymienia polecenie?"
+help = "SoilGrids zapisuje wartości w swoich jednostkach całkowitych (np. ił w g/kg, pH razy 10); wynik podaje jednostkę pliku i dzielnik do jednostki zwykłej. Węgiel organiczny ma trzy miary, o które zapytam osobno."
+options.clay.label = "Ił (zawartość iłu)"
+options.clay.description = "clay — zawartość iłu, frakcja iłowa, cząstki poniżej 0,002 mm, g/kg (procent = wartość / 10)"
+options.sand.label = "Piasek (zawartość piasku)"
+options.sand.description = "sand — zawartość piasku, frakcja piaskowa, g/kg (procent = wartość / 10)"
+options.silt.label = "Pył (zawartość pyłu)"
+options.silt.description = "silt — zawartość pyłu, frakcja pyłowa, g/kg (procent = wartość / 10)"
+options.organic_carbon.label = "Węgiel organiczny"
+options.organic_carbon.description = "węgiel organiczny w glebie: zawartość (SOC), gęstość (OCD) albo zasoby (OCS), organic carbon, materia organiczna, próchnica"
+options.phh2o.label = "pH gleby (w wodzie)"
+options.phh2o.description = "phh2o — odczyn gleby, pH w wodzie (H2O), kwasowość gleby (plik: pH razy 10)"
+options.bdod.label = "Gęstość objętościowa"
+options.bdod.description = "bdod — gęstość objętościowa gleby, bulk density, cg/cm³ (kg/dm³ = wartość / 100)"
+options.cfvo.label = "Części szkieletowe"
+options.cfvo.description = "cfvo — części szkieletowe, frakcja szkieletowa, kamienie i żwir w glebie, coarse fragments, cm³/dm³"
+options.cec.label = "Pojemność wymiany kationów (CEC)"
+options.cec.description = "cec — pojemność wymiany kationów, kationowa pojemność sorpcyjna, CEC, mmol(c)/kg"
+options.nitrogen.label = "Azot całkowity"
+options.nitrogen.description = "nitrogen — azot całkowity w glebie, N, cg/kg (g/kg = wartość / 100)"
+options.unspecified.description = "Nie podano właściwości gleby — dopytaj"
+
+[operations.download_soil_layer.params.carbon]
+label = "Miara węgla organicznego"
+question = "Którą miarę węgla organicznego pobrać: zawartość (SOC, g/kg), gęstość (OCD, kg/m³) czy zasoby (OCS, t/ha, tylko 0–30 cm)?"
+model_question = "Jaką miarę węgla organicznego wymienia polecenie?"
+help = "Zawartość (SOC) to masa węgla w kilogramie gleby, gęstość (OCD) to masa węgla w metrze sześciennym gleby, a zasoby (OCS) to węgiel warstwy 0–30 cm na hektar: zasoby mają tylko tę jedną głębokość."
+options.soc.label = "Zawartość węgla organicznego (SOC)"
+options.soc.description = "soc — zawartość węgla organicznego w glebie, soil organic carbon, SOC, dg/kg (g/kg = wartość / 10)"
+options.ocd.label = "Gęstość węgla organicznego (OCD)"
+options.ocd.description = "ocd — gęstość węgla organicznego, organic carbon density, OCD, hg/m³ (kg/m³ = wartość / 10)"
+options.ocs.label = "Zasoby węgla organicznego (OCS, tylko 0–30 cm)"
+options.ocs.description = "ocs — zasoby węgla organicznego, organic carbon stock, OCS, t/ha w warstwie 0–30 cm"
+options.unspecified.description = "Nie podano miary węgla organicznego (zawartość, gęstość albo zasoby) — dopytaj"
+
+[operations.download_soil_layer.params.depth]
+label = "Głębokość warstwy gleby"
+question = "Z jakiej głębokości pobrać warstwę: 0–5, 5–15, 15–30, 30–60, 60–100 czy 100–200 cm (zasoby węgla OCS: 0–30 cm)?"
+model_question = "Jaki przedział głębokości gleby wymienia polecenie?"
+help = "SoilGrids publikuje sześć przedziałów głębokości pod powierzchnią; zasoby węgla organicznego (OCS) mają tylko przedział 0–30 cm, którego nie mają pozostałe właściwości."
+options.0_5cm.label = "0–5 cm"
+options.0_5cm.description = "0–5 cm — najpłytszy przedział, przy samej powierzchni, 0-5cm"
+options.5_15cm.label = "5–15 cm"
+options.5_15cm.description = "5–15 cm — 5-15cm"
+options.15_30cm.label = "15–30 cm"
+options.15_30cm.description = "15–30 cm — 15-30cm"
+options.30_60cm.label = "30–60 cm"
+options.30_60cm.description = "30–60 cm — 30-60cm, podglebie"
+options.60_100cm.label = "60–100 cm"
+options.60_100cm.description = "60–100 cm — 60-100cm"
+options.100_200cm.label = "100–200 cm"
+options.100_200cm.description = "100–200 cm — od 1 do 2 m, 100-200cm, najgłębszy przedział"
+options.0_30cm.label = "0–30 cm (tylko zasoby węgla OCS)"
+options.0_30cm.description = "0–30 cm — 0-30cm, cała warstwa wierzchnia; tylko zasoby węgla organicznego (OCS)"
+options.unspecified.description = "Nie podano głębokości — dopytaj"
+
+[operations.download_soil_layer.params.stat]
+label = "Statystyka predykcji"
+question = "Którą statystykę predykcji SoilGrids pobrać: średnią, medianę, kwantyl 5% albo 95%, czy niepewność?"
+model_question = "Jaką statystykę (średnia, mediana, kwantyl, niepewność) wymienia polecenie?"
+help = "SoilGrids to predykcja modelu: średnia i mediana (Q0.5) to wartość przewidywana, kwantyle 5% i 95% są granicami przedziału 90%, a niepewność to 10 × (Q0.95 − Q0.05) / Q0.5, bez jednostki."
+options.mean.label = "Średnia"
+options.mean.description = "mean — średnia predykcji, wartość średnia, przeciętna"
+options.q0_5.label = "Mediana (Q0.5)"
+options.q0_5.description = "Q0.5 — mediana, kwantyl 50%, wartość środkowa"
+options.q0_05.label = "Kwantyl 5% (Q0.05)"
+options.q0_05.description = "Q0.05 — 5. percentyl, dolna granica przedziału predykcji"
+options.q0_95.label = "Kwantyl 95% (Q0.95)"
+options.q0_95.description = "Q0.95 — 95. percentyl, górna granica przedziału predykcji"
+options.uncertainty.label = "Niepewność"
+options.uncertainty.description = "uncertainty — niepewność predykcji, rozrzut, błąd modelu"
+options.unspecified.description = "Nie podano statystyki — dopytaj"
+
+[operations.download_soil_layer.params.area]
+label = "Obszar warstwy glebowej"
+question = "Dla jakiego godła arkusza, prostokąta albo pliku geometrii pobrać warstwę SoilGrids?"
+help = "Podaj godło PL-1992 lub PL-2000, granice prostokąta w PL-1992 (EPSG:2180) lub WGS84 (EPSG:4326) albo plik SHP/GPKG. Dla godła warstwa obejmuje prostokąt arkusza, dla pliku prostokąt wszystkich jego obiektów; wynik nie jest przycinany do kształtu. Siatka SoilGrids ma 250 m, więc mały obszar to kilka pikseli."
+example = "N-34-130-D albo 16.90 52.40 16.95 52.45"
+geometry_note = "jeden prostokąt obejmujący wszystkie obiekty warstwy; nie przycina do wieloboku"
+
+[operations.classify_soil_hsg]
+label = "Grupy hydrologiczne gleb HSG z SoilGrids"
+description = "Wyznacz grupy hydrologiczne gleb HSG (A, B, C, D) metody SCS-CN (liczba CN, curve number, odpływ, infiltracja) z uziarnienia SoilGrids dla godła arkusza, prostokąta albo pliku geometrii: Kartograf pobiera zawartość iłu, piasku i pyłu z jednej głębokości i klasyfikuje teksturę gleby (USDA) na grupy; wynik to raster grup z udziałem i powierzchnią każdej grupy."
+summary = "Gotowe. Wynik #{number}: grupy hydrologiczne gleb ({depth}): A {groups[A][percent]}%, B {groups[B][percent]}%, C {groups[C][percent]}%, D {groups[D][percent]}%, bez danych {groups[nodata][percent]}%."
+
+[operations.classify_soil_hsg.check]
+notice = "Zapytam usługę SoilGrids (ISRIC, GetCapabilities) o bieżące wydanie warstw iłu, piasku i pyłu z planu i sprawdzę, czy magazyn ma je oraz policzone z nich grupy. Niczego nie pobieram ani nie liczę."
+
+[operations.classify_soil_hsg.params.depth]
+label = "Głębokość uziarnienia"
+question = "Z jakiej głębokości wziąć uziarnienie do grup HSG: 0–5, 5–15, 15–30, 30–60, 60–100 czy 100–200 cm?"
+model_question = "Jaki przedział głębokości gleby wymienia polecenie?"
+help = "Grupy liczone są ze średniej zawartości iłu, piasku i pyłu SoilGrids z jednego przedziału głębokości; zwykle bierze się warstwę przy powierzchni (0–5 cm) albo przedział, który decyduje o wsiąkaniu wody."
+options.0_5cm.label = "0–5 cm"
+options.0_5cm.description = "0–5 cm — najpłytszy przedział, przy samej powierzchni, 0-5cm"
+options.5_15cm.label = "5–15 cm"
+options.5_15cm.description = "5–15 cm — 5-15cm"
+options.15_30cm.label = "15–30 cm"
+options.15_30cm.description = "15–30 cm — 15-30cm"
+options.30_60cm.label = "30–60 cm"
+options.30_60cm.description = "30–60 cm — 30-60cm, podglebie"
+options.60_100cm.label = "60–100 cm"
+options.60_100cm.description = "60–100 cm — 60-100cm"
+options.100_200cm.label = "100–200 cm"
+options.100_200cm.description = "100–200 cm — od 1 do 2 m, 100-200cm, najgłębszy przedział"
+options.unspecified.description = "Nie podano głębokości — dopytaj"
+
+[operations.classify_soil_hsg.params.area]
+label = "Obszar grup HSG"
+question = "Dla jakiego godła arkusza, prostokąta albo pliku geometrii wyznaczyć grupy HSG?"
+help = "Podaj godło PL-1992 lub PL-2000, granice prostokąta w PL-1992 (EPSG:2180) lub WGS84 (EPSG:4326) albo plik SHP/GPKG. Dla godła grupy obejmują prostokąt arkusza, dla pliku prostokąt wszystkich jego obiektów; wynik nie jest przycinany do kształtu. Siatka SoilGrids ma 250 m."
+example = "N-34-130-D"
+geometry_note = "jeden prostokąt obejmujący wszystkie obiekty warstwy; nie przycina do wieloboku"
+
 # Ostrzeżenia wyniku. Klucze równe kodom uwag Kartografa zastępują jego tekst
 # (angielski, z nazwami flag wiersza poleceń); pozostałe uwagi ostrzegawcze są
 # pokazywane dosłownie (core: warnings.tool_notice).
@@ -239,13 +368,15 @@ cache_disabled = "Pamięć podręczna metadanych Kartografa jest wyłączona: {t
 failed_counties = "Nie udało się pobrać {count} z {total} pakietów powiatowych BDOT10k (powiaty: {units})."
 all_nodata = "Wycinek nie zawiera ważnych danych wysokościowych (cały wynik to nodata)."
 masked_pixels = "Poza lądem zamaskowano {count} pikseli jako nodata."
+soil_all_nodata = "Warstwa SoilGrids nie ma danych dla tego obszaru (same zera: morze, wody, zabudowa albo skały)."
+hsg_all_nodata = "Grupy HSG nie mają żadnej klasy: dla całego obszaru brakuje danych o uziarnieniu (np. woda albo zabudowa)."
 
 # Błędy Kartografa po kodzie rejestru błędów (ERR §4); jego własny tekst jest tylko
 # {detail}, a details.reason mówi, który to błąd tego kodu
 [errors]
 validation_error = "Kartograf odrzuca ten wybór: {detail}"
-no_data = "GUGiK nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: {detail}"
-source_unavailable = "Nie udało się pobrać danych z usługi GUGiK. Szczegóły: {detail}"
+no_data = "Źródło danych (GUGiK, SoilGrids) nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: {detail}"
+source_unavailable = "Nie udało się pobrać danych z usługi źródła (GUGiK, SoilGrids). Szczegóły: {detail}"
 store_unavailable = "Magazyn Kartografa albo jego pamięć podręczna metadanych nie nadaje się do użycia: {detail}. Sprawdź: retman doctor check"
 conflict = "Kartograf nie zapisze danych w tym magazynie: {detail}. Sprawdź: retman doctor check"
 data_error = "Dane, które Kartograf trzyma w magazynie, są nieprawidłowe albo niekompletne: {detail}"
@@ -322,3 +453,7 @@ in_store = "  {count} z nich jest już w magazynie."
 counties = "  Powiaty obszaru: {count} ({units})"
 no_counties = "  Obszar nie przecina żadnego powiatu."
 store_refused = "  Kartograf odmówi zapisu w tym magazynie, więc nic nie zostanie pobrane: {detail}"
+soil_edition = "  Wydanie SoilGrids: {edition} (warstw obszaru: {count})"
+soil_unchecked = "  Nie udało się sprawdzić wydania SoilGrids (warstw: {count})."
+soil_newer = "  {count} z nich ma w SoilGrids nowsze wydanie niż w magazynie; pobierze je tylko ustawienie update = \"upgrade\"."
+hsg_current = "  Grupy HSG tego obszaru są już w magazynie i zostały policzone z bieżących warstw."

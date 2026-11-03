@@ -1,10 +1,31 @@
 """Kartograf operation manifest (ADR-001, ADR-004)."""
 
-from retman.registry.manifest import ManifestSpec
+from retman.registry.manifest import ManifestSpec, ParamSpec
 
 # Height systems of Kartograf's elevation products (EVRF2007 for every grid,
 # KRON86 only for some: Kartograf's own validation says which)
 _VERTICAL_CRS = {"evrf2007": "EVRF2007", "kron86": "KRON86"}
+
+# The six SoilGrids depth intervals of every property but the carbon stock, which
+# SoilGrids publishes for 0-30 cm only (Kartograf's own validation says which)
+_SOIL_DEPTHS = {
+    "0_5cm": "0-5cm",
+    "5_15cm": "5-15cm",
+    "15_30cm": "15-30cm",
+    "30_60cm": "30-60cm",
+    "60_100cm": "60-100cm",
+    "100_200cm": "100-200cm",
+}
+
+# SoilGrids is a global grid of 250 m: an area is a sheet, a rectangle or the
+# envelope of a geometry file, never an administrative unit
+_SOIL_AREA: ParamSpec = {
+    "name": "area",
+    "type": "free",
+    "extractor": "area",
+    "accepts": ["sheet", "bbox", "geometry"],
+    "required": True,
+}
 
 MANIFEST: ManifestSpec = {
     "tool": "kartograf",
@@ -253,6 +274,85 @@ MANIFEST: ManifestSpec = {
             "commands": ["store init"],
             "describe": "retman.tools.kartograf.describe:init_kartograf_store",
             "preview": "retman.tools.kartograf.preview:init_kartograf_store",
+        },
+        {
+            "id": "download_soil_layer",
+            "category": "soil_data",
+            "description": "Download one SoilGrids soil property layer (ISRIC, 250 m) "
+            "for an area",
+            "inputs": [],
+            "outputs": ["soil_raster"],
+            "commands": ["soil download"],
+            "calls": "retman.tools.kartograf.calls:download_soil_layer",
+            "describe": "retman.tools.kartograf.describe:download_soil_layer",
+            "preview": "retman.tools.kartograf.preview:download_soil_layer",
+            "check": "retman.tools.kartograf.checks:download_soil_layer",
+            "params": [
+                {
+                    # Eleven SoilGrids properties do not fit one choice: the three
+                    # measures of organic carbon are one option with a question of
+                    # their own
+                    "name": "property",
+                    "type": "choice",
+                    "options": [
+                        "clay",
+                        "sand",
+                        "silt",
+                        "organic_carbon",
+                        "phh2o",
+                        "bdod",
+                        "cfvo",
+                        "cec",
+                        "nitrogen",
+                    ],
+                    "required": True,
+                },
+                {
+                    "name": "carbon",
+                    "type": "choice",
+                    "options": ["soc", "ocd", "ocs"],
+                    "required": True,
+                    "depends_on": {"property": ["organic_carbon"]},
+                },
+                {
+                    "name": "depth",
+                    "type": "choice",
+                    "options": [*_SOIL_DEPTHS, "0_30cm"],
+                    "tool_values": {**_SOIL_DEPTHS, "0_30cm": "0-30cm"},
+                    "required": True,
+                },
+                {
+                    "name": "stat",
+                    "type": "choice",
+                    "options": ["mean", "q0_5", "q0_05", "q0_95", "uncertainty"],
+                    "tool_values": {"q0_5": "Q0.5", "q0_05": "Q0.05", "q0_95": "Q0.95"},
+                    "required": True,
+                },
+                _SOIL_AREA,
+            ],
+        },
+        {
+            "id": "classify_soil_hsg",
+            "category": "soil_data",
+            "description": "Compute the hydrologic soil groups A-D (SCS-CN) from the "
+            "SoilGrids texture of an area",
+            "inputs": [],
+            "outputs": ["hsg_raster"],
+            "commands": ["soil hsg"],
+            "calls": "retman.tools.kartograf.calls:classify_soil_hsg",
+            "describe": "retman.tools.kartograf.describe:classify_soil_hsg",
+            "preview": "retman.tools.kartograf.preview:classify_soil_hsg",
+            "check": "retman.tools.kartograf.checks:classify_soil_hsg",
+            "params": [
+                {
+                    "name": "depth",
+                    "type": "choice",
+                    "options": list(_SOIL_DEPTHS),
+                    "tool_values": _SOIL_DEPTHS,
+                    "required": True,
+                },
+                _SOIL_AREA,
+            ],
         },
     ],
 }

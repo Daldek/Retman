@@ -168,11 +168,12 @@ The commands of the catalog; each exists as a CLI command and as a Python functi
 | `retman scaffold list` | `retman.operations.scaffold_list` | List the data commands of a tool and the operations that use them | no |
 | `retman scaffold draft` | `retman.operations.scaffold_draft` | Draft an operation from a command of a tool, for review by hand | no |
 
-The operations that a Polish command can select, 24 operations in 6 categories (a command that names none of them is `unsupported`):
+The operations that a Polish command can select, 26 operations in 7 categories (a command that names none of them is `unsupported`):
 
 | Category | Id | Tool | Operations | Data source |
 |---|---|---|---|---|
 | Spatial data: DEM, DSM, orthophoto, BDOT10k, the store | `spatial_data` | Kartograf 0.8.0 | 5 | GUGiK |
+| Soil data: a SoilGrids layer, hydrologic soil groups (HSG) | `soil_data` | Kartograf 0.8.0 | 2 | ISRIC SoilGrids |
 | Stations and data register | `obserwator_catalog` | Obserwator 3.0.0 | 3 | IMGW-PIB, ČHMÚ |
 | Current data and warnings | `obserwator_current` | Obserwator 3.0.0 | 3 | IMGW-PIB |
 | Maximum precipitation PMAXTP | `obserwator_pmaxtp` | Obserwator 3.0.0 | 2 | IMGW-PIB |
@@ -258,6 +259,6 @@ Rules, commands and the documentation map for people and agents who work on the 
 
 ## Status, licence, author
 
-Under construction (before v0.1.0). Working: five Kartograf 0.8.0 operations (DEM for a map sheet or an area from a file, child sheets with the orthophoto in three colour variants, a DEM or DSM cutout, BDOT10k, and the creation of the store) and 26 Obserwator 3.0.0 operations (two-stage recognition: category, then operation), from the CLI and from Python, with a decision model on any OpenAI-compatible server (for example Bielik 11B in LM Studio); the offline plan preview, the availability check on request, `retman doctor check`, `retman eval run` and `retman scaffold`. The `basal` backend does not exist yet. Versions 0.x are public but not recommended for production before 1.0.0.
+Under construction (before v0.1.0). Working: seven Kartograf 0.8.0 operations (DEM for a map sheet or an area from a file, child sheets with the orthophoto in three colour variants, a DEM or DSM cutout, BDOT10k, a SoilGrids soil layer, the hydrologic soil groups HSG, and the creation of the store) and 26 Obserwator 3.0.0 operations (two-stage recognition: category, then operation), from the CLI and from Python, with a decision model on any OpenAI-compatible server (for example Bielik 11B in LM Studio); the offline plan preview, the availability check on request, `retman doctor check`, `retman eval run` and `retman scaffold`. The `basal` backend does not exist yet. Versions 0.x are public but not recommended for production before 1.0.0.
 
 MIT licence, see [LICENSE](https://github.com/Daldek/Retman/blob/main/LICENSE). Author: [Piotr de Bever](https://www.linkedin.com/in/piotr-de-bever/).
