@@ -55,8 +55,8 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
    - **Obserwator (formerly IMGWTools): done (the calls, the marker states, the documents,
      ADR-024); projects are gone (Nogat ECO-054, plan `2026-10-31-archiwista-projects` step 4);
      the tool is renamed (Nogat ECO-057, plan `2026-11-03-imgwtools-to-obserwator` step 3).**
-     The `tools` group pins `651d4d73dc6e6a2a2a75ec8476a35ee050ed787d`, the head of Obserwator
-     `feature/obserwator`, which is on GitHub (repository `Daldek/IMGWTools` until its rename),
+     The `tools` group pins `ea158dc6f703a5ababd91ff54e7ddec35b4f389b` and Kartograf `9deaa314…`,
+     the commits of Nogat's release set `candidate-1` (`ecosystem.py set apply`; repository `Daldek/IMGWTools` until its rename),
      so `uv lock` and `uv sync` resolve it normally. The tool keeps no projects, so the category
      `imgw_projects` and its seven operations are removed; projects belong to Archiwista. Retman
      sets no `OBSERWATOR_ROOT` and uses no `obserwator_*` tool of the MCP and REST surfaces: it

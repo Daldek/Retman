@@ -49,7 +49,7 @@ in `pyproject.toml`; Kartograf's is the head of its `develop`, Obserwator's the 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@9deaa314c88f89ea2d9308481e0c0b04751fc792" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/IMGWTools@651d4d73dc6e6a2a2a75ec8476a35ee050ed787d"
+    --with "obserwator[store] @ git+https://github.com/Daldek/IMGWTools@ea158dc6f703a5ababd91ff54e7ddec35b4f389b"
 ```
 
 The Obserwator `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are

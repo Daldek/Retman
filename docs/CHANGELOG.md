@@ -275,6 +275,9 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   A command whose run is read-only in `command_schema` (the source listings, the availability
   reports, `store overview`, `sheet`, `config show`) is no data command for the scaffold; the
   list went from 41 to 14 commands (ADR-025 erratum 2).
+- The `tools` group pins the commits of Nogat's release set `candidate-1`: Kartograf `9deaa314`
+  and Obserwator `ea158dc6` (the merge of the rename into its `develop`; the tree of `651d4d73`),
+  written by `ecosystem.py set apply`, so every consumer pins the same commits.
 - The `tools` group pins Kartograf `dbcfe5bb`, the head of its branch
   `feature/archiwista-projects`, which is on GitHub; the supported range stays
   `>=0.8.0.dev0,<0.9`. Kartograf keeps no projects any more (Nogat ECO-054); Retman's Kartograf
