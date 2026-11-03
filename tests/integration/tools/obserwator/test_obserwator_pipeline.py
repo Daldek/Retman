@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 from obserwator_support import isolate_environment
 
+from retman.adapters.catalog import CatalogCall, ToolDocument, ToolError
 from retman.backends.base import Decision
 from retman.config import init_config, load_config
 from retman.core.pipeline import Retman
@@ -125,3 +126,43 @@ def test_a_store_that_does_not_exist_ends_planning_with_store_unavailable(tmp_pa
     text = str(caught.value.text)
     assert f"({caught.value.details['path']})" in text
     assert "nie jest jeszcze utworzony" in text and "Utwórz magazyn Obserwatora" in text
+
+
+def no_catalog(call: CatalogCall) -> ToolDocument:
+    raise ToolError("obserwator", "not_found", "no station catalog", call=call)
+
+
+def test_a_station_named_without_a_catalog_is_asked_for_not_widened(tmp_path):
+    rules: dict[str, str | Decision] = {
+        "obserwator_current": "obserwator_current",
+        "fetch_current_observations": "fetch_current_observations",
+        "hydro": "hydro",
+    }
+    app, client = make_app(tmp_path, rules=rules)
+    client.documents = {**client.documents, "stations find": no_catalog}
+
+    plan = app.plan("Pobierz aktualne dane hydrologiczne ze stacji Racibórz-Miedonia.")
+
+    # The station is optional (no station: all of them), but a name was given
+    (question,) = plan.questions
+    assert question.name == "station"
+    assert "Nie ma katalogu stacji IMGW" in str(question.error)
+    assert "Zbuduj katalog stacji IMGW" in str(question.error)
+    assert "station" not in plan.values
+
+    plan = plan.answer("station", "150180060")
+
+    assert plan.questions == []
+    assert plan.values["station"].value["code"] == "150180060"
+
+
+def test_a_required_station_without_a_catalog_says_why_only_codes_are_read(
+    tmp_path,
+):
+    app, client = make_app(tmp_path)
+    client.documents = {**client.documents, "stations find": no_catalog}
+
+    plan = app.plan("Pobierz dobowe opady z lat 2000–2020")
+
+    question = next(q for q in plan.questions if q.name == "station")
+    assert "rozpoznaję tylko kody stacji" in str(question.error)

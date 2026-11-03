@@ -106,6 +106,7 @@ hydro_river = "{name} — {provider} hydrological station on the river {river}, 
 meteo = "{name} — {provider} meteorological station, code {code}"
 code_only = "station with code {code} ({provider}, not in the catalog)"
 too_many = "too many stations ({count})"
+name_only = "station “{name}” (there is no station catalog to recognise it)"
 
 [extractors.query]
 fragment = "phrase “{text}” (from “{raw}”)"

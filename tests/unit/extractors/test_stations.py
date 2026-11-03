@@ -480,6 +480,52 @@ def test_no_hint_when_the_catalog_is_fine() -> None:
     assert explain_station("ze stacji Nigdzie", make_context()) is None
 
 
+def _no_catalog(call: CatalogCall) -> dict[str, Any]:
+    raise _error("not_found")
+
+
+@pytest.mark.parametrize(
+    ("command", "name"),
+    [
+        (
+            "Pobierz dane hydrologiczne ze stacji Racibórz-Miedonia.",
+            "Racibórz-Miedonia",
+        ),
+        ("Pokaż dane z wodowskazu w Nowym Targu dla IMGW-PIB", "Nowym Targu"),
+        ("Dane ze stacji hydrologicznej IMGW-PIB Kłodzko z 2020", "Kłodzko"),
+        ("pobierz dane ze stacji raciborz-miedonia z 2020", "raciborz-miedonia"),
+    ],
+)
+def test_a_name_without_a_catalog_is_asked_about_not_dropped(
+    command: str, name: str
+) -> None:
+    context = make_context(lookup=_no_catalog)
+
+    match = _only(extract_station(command, context))
+
+    # Dropping the name would widen the request to every station (W-02)
+    assert match.readings[0].value["name"] == name
+    assert validate_station(match.readings[0].value, context) == (
+        "extractors.hints.station_no_catalog"
+    )
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "Pobierz aktualne dane hydrologiczne ze wszystkich stacji.",
+        "Pobierz aktualne dane ze stacji hydrologicznych IMGW-PIB.",
+        "pobierz dane ze stacji za rok 2020",
+        "Pobierz dane ze stacji o kodzie 150180060",
+        "Pobierz dane ze stacji Racibórz-Miedonia, kod 150180060",
+    ],
+)
+def test_no_name_is_made_up_from_words_that_are_not_one(command: str) -> None:
+    matches = extract_station(command, make_context(lookup=_no_catalog))
+
+    assert all(match.readings[0].value["code"] for match in matches)
+
+
 def test_every_label_and_display_text_exists_and_formats() -> None:
     texts = load_core_texts("pl")
     context = make_context()

@@ -51,6 +51,7 @@ from retman.exceptions import (
 from retman.extractors import (
     EXTRACTORS,
     describe_value,
+    explain_missing,
     read_answer,
     read_command,
     validate_value,
@@ -686,8 +687,18 @@ class Retman:
             if "default" in spec:
                 self._set_param(plan, operation, spec, spec["default"], "default")
                 return None
-            return (
-                self._param_question(operation, spec) if spec.get("required") else None
+            if not spec.get("required"):
+                return None
+            # Why nothing was read, e.g. no station catalog to read a name with
+            hint = explain_missing(
+                spec["extractor"],
+                plan.command,
+                self._extraction_context(plan, operation),
+            )
+            return self._param_question(
+                operation,
+                spec,
+                error=self.texts.get(hint.key, **hint.args) if hint else None,
             )
         if any(match.ambiguous for match in matches) or (
             len(matches) > 1 and not spec.get("multiple")

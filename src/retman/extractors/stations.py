@@ -28,6 +28,11 @@ STATION_INDEX_KEY = "obserwator_station_index"
 # Tool error codes meaning "there is no station catalog (yet)", as opposed to
 # a catalog that exists but cannot be read.
 _NO_CATALOG_CODES = frozenset({"not_found", "store_unavailable"})
+# Why a station name could not be read, for the question about it
+_CATALOG_HINTS = {
+    "no_catalog": "extractors.hints.station_no_catalog",
+    "unreadable": "extractors.hints.station_catalog_unreadable",
+}
 
 # A code is not part of a longer number (nor of a decimal such as "52.123456789").
 _IMGW_CODE_RE = re.compile(r"(?<!\d)(?<!\d[.,])[0-9]{9}(?!\d)(?![.,]\d)")
@@ -58,6 +63,44 @@ _MAX_EXTRA_LETTERS = 4  # letters an inflected form may add to the stem
 
 _EXACT = 2
 _INFLECTED = 1
+
+# Without a catalog a name cannot be read, but a station word announces one ("ze
+# stacji Racibórz-Miedonia", "z wodowskazu w Raciborzu"). Between the two may stand a
+# preposition and words of the station's kind; a code ("stacji o kodzie 150180060",
+# "Racibórz, kod 150180060") is the station itself, not another name.
+_STATION_CUES = ("stacj", "posterun", "wodowskaz")
+_BEFORE_NAME = frozenset({"w", "we", "na", "nad", "przy", "pod", "o", "nazwie"})
+_KIND_STEMS = (
+    "hydrolog",
+    "meteorolog",
+    "synopty",
+    "opadow",
+    "klimatolog",
+    "wodowskaz",
+    "pomiarow",
+    "imgw",
+    "pib",
+    "chmi",
+)
+# Words of a lowercase command that follow a station word and are no name
+_NOT_NAMES = (
+    "kod",
+    "numer",
+    "nr",
+    "dla",
+    "oraz",
+    "lub",
+    "albo",
+    "wszystk",
+    "kazd",
+    "tej",
+    "tych",
+    "ktor",
+    "dan",
+    "rok",
+    "lat",
+)
+_CODE_OF_NAME_RE = re.compile(r"[\s,;:()\-–—]*(?:(?:o\s+)?kod(?:zie)?|nr)?[\s:]*")
 
 
 @dataclass(frozen=True)
@@ -441,6 +484,73 @@ def _name_matches(
     return matches
 
 
+def _proper(word: str) -> bool:
+    """Tell a capitalised word; an acronym (IMGW, PIB) is no proper name."""
+    return word[:1].isupper() and any(c.islower() for c in word[1:])
+
+
+def _uncatalogued_names(text: str, index: StationIndex) -> list[Match]:
+    """Station names given in words while there is no catalog to read them.
+
+    Dropping such a name would widen the request to every station (W-02), so a
+    name announced by a station word becomes a reading without a code, which
+    ``validate_station`` rejects with the reason (build the catalog or give the
+    code). In a command that capitalises words the name is its capitalised words
+    (or words joined by hyphens); in a lowercase one it is the first word that
+    can be a name, with the words hyphenated to it.
+    """
+    if index.reason is None:
+        return []
+    text_words = words(fold(text))
+    written = [text[word.start : word.end] for word in text_words]
+    capitalised = any(_proper(word) for word in written[1:])
+
+    def hyphenated(position: int) -> bool:
+        previous, word = text_words[position - 1], text_words[position]
+        return text[previous.end : word.start] == "-"
+
+    matches = []
+    position = 0
+    while position < len(text_words):
+        cue = text_words[position].text
+        position += 1
+        if not cue.startswith(_STATION_CUES):
+            continue
+        while position < len(text_words) and (
+            text_words[position].text in _BEFORE_NAME
+            or text_words[position].text.startswith(_KIND_STEMS)
+        ):
+            position += 1
+        first = position
+        if position < len(text_words):
+            word = text_words[position].text
+            if (
+                _proper(written[position])
+                if capitalised
+                else len(word) >= _MIN_STEM
+                and not word.isdigit()
+                and not word.startswith(_NOT_NAMES)
+            ):
+                position += 1
+        while (
+            first < position < len(text_words)
+            and not text_words[position].text.isdigit()
+            and (hyphenated(position) or (capitalised and _proper(written[position])))
+        ):
+            position += 1
+        if position == first:
+            continue
+        start, end = text_words[first].start, text_words[position - 1].end
+        name = text[start:end]
+        reading = Reading(
+            {"type": "station", "code": None, "name": name, "catalog": index.reason},
+            "extractors.station.name_only",
+            {"name": name},
+        )
+        matches.append(Match(start, end, (reading,)))
+    return matches
+
+
 def extract_station(text: str, ctx: ExtractionContext) -> list[Match]:
     """
     Stations named in the command: by code, or by name against the catalog.
@@ -455,7 +565,10 @@ def extract_station(text: str, ctx: ExtractionContext) -> list[Match]:
       any inflected-only match (``Match.confirm``). More than
       ``MAX_CANDIDATES`` stations give a reading the validator rejects with a
       request for a more exact name.
-    * Without a catalog only codes are read (see ``explain_station``).
+    * Without a catalog only codes are read; a name a station word announces
+      ("ze stacji Racibórz-Miedonia") gives a reading without a code that the
+      validator rejects with the reason, so the request is never widened to
+      every station (W-02); see also ``explain_station``.
 
     Parameters
     ----------
@@ -502,7 +615,17 @@ def extract_station(text: str, ctx: ExtractionContext) -> list[Match]:
             for code in codes
         )
     ]
-    return sorted(codes + names, key=lambda match: match.start)
+    unread = [
+        match
+        for match in _uncatalogued_names(text, index)
+        # "Racibórz, kod 150180060": the code is the station of the name
+        if not any(
+            code.start >= match.end
+            and _CODE_OF_NAME_RE.fullmatch(fold(text[match.end : code.start]))
+            for code in codes
+        )
+    ]
+    return sorted(codes + names + unread, key=lambda match: match.start)
 
 
 def validate_station(value: Any, ctx: ExtractionContext) -> str | None:
@@ -510,6 +633,8 @@ def validate_station(value: Any, ctx: ExtractionContext) -> str | None:
     if not isinstance(value, dict) or value.get("type") != "station":
         return "extractors.errors.invalid_station"
     code = value.get("code")
+    if code is None and value.get("catalog") in _CATALOG_HINTS:
+        return _CATALOG_HINTS[value["catalog"]]
     if code is None and isinstance(value.get("candidates"), int):
         return "extractors.errors.station_too_many"
     provider = value.get("provider")
@@ -530,12 +655,8 @@ def validate_station(value: Any, ctx: ExtractionContext) -> str | None:
 
 def explain_station(text: str, ctx: ExtractionContext) -> Hint | None:
     """Why a required station got no reading: the catalog is missing or unreadable."""
-    reason = StationIndex.load(ctx).reason
-    if reason == "no_catalog":
-        return Hint("extractors.hints.station_no_catalog")
-    if reason == "unreadable":
-        return Hint("extractors.hints.station_catalog_unreadable")
-    return None
+    key = _CATALOG_HINTS.get(StationIndex.load(ctx).reason or "")
+    return Hint(key) if key is not None else None
 
 
 def describe_station(value: Mapping[str, Any], texts: TextSource) -> str:

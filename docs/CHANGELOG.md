@@ -355,5 +355,11 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `missing_dependency` (`pyarrow_missing`), and a plan file of another store with
   `validation_error` (`plan_other_store`). A preview problem without parameters now names the
   code and the reason of its error (ARCHITECTURE 3.2.4).
+- Without a station catalog, a station named in words ("Pobierz aktualne dane hydrologiczne ze
+  stacji Racibórz-Miedonia.") is no longer dropped: the plan asked nothing and fetched every
+  station instead of the one named (W-02). The name is now a question about the station with the
+  reason "Nie ma katalogu stacji IMGW, więc rozpoznaję tylko kody stacji… Katalog tworzy polecenie
+  „Zbuduj katalog stacji IMGW”", answered with the code; a required station that got no reading
+  is asked about with the same reason, which was never shown (ARCHITECTURE 3.2.11).
 
 [Unreleased]: https://github.com/Daldek/Retman/commits/develop

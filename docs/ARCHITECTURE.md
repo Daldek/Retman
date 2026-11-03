@@ -744,7 +744,10 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
   9 IMGW-PIB digits, ČHMÚ WIGOS identifier; names with Polish inflection, an inflected name requires
   confirmation, section 6.1). Without a catalog Retman reads only codes and points to the
   `build_obserwator_station_catalog` operation (explicit, confirmed, with network); until then it does not
-  search for stations over the network while asking questions.
+  search for stations over the network while asking questions. A name that a station word announces
+  ("ze stacji Racibórz-Miedonia") is then not dropped, which would widen an optional station to every
+  station (W-02): it is a question about the station, with the reason (build the catalog or give the
+  code); a required station that got no reading is asked about with the same reason.
 - **Period: two semantics, never mixed.** Archive operations take `years` — years in the numbering of
   the tool's archives (for IMGW-PIB hydrological datasets these are hydrological years). Series
   operations take `period` (years or dates) and `year_type` (hydrological or calendar year) —
