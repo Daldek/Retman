@@ -819,6 +819,24 @@ class Retman:
         )
         return None
 
+    def _no_inputs(self, kind: str, number: int | None = None) -> str:
+        """Say that the project has no result of ``kind`` and what makes one."""
+        makers = [
+            self.texts.get("dialog.input_maker", label=operation.text("label"))
+            for operation in self.operations.values()
+            if kind in operation.spec["outputs"]
+        ]
+        how = (
+            self.texts.get("dialog.input_made_by", operations=", ".join(makers))
+            if makers
+            else self.texts.get("dialog.input_path_only")
+        )
+        if number is None:
+            return self.texts.get("dialog.input_none", kind=kind, how=how)
+        return self.texts.get(
+            "dialog.input_no_result", number=number, kind=kind, how=how
+        )
+
     def _input_question(
         self,
         name: str,
@@ -843,12 +861,13 @@ class Retman:
                 error=error,
                 help=self.texts.get("dialog.help_fallback"),
             )
+        # Nothing to offer: say so and what makes such a result, never "choose one"
         return Question(
             name,
             "value",
             self.texts.get("dialog.input_missing", kind=kind),
             example=self.texts.get("dialog.example_path"),
-            error=error,
+            error=error or self._no_inputs(kind),
             help=self.texts.get("dialog.help_fallback"),
         )
 
@@ -889,11 +908,15 @@ class Retman:
                     if error
                     else None
                 )
+            if specific or candidates:
+                return self._input_question(
+                    name,
+                    kind,
+                    specific or candidates,
+                    error=None if specific else self.texts.get("dialog.invalid_choice"),
+                )
             return self._input_question(
-                name,
-                kind,
-                specific or candidates,
-                error=self.texts.get("dialog.invalid_choice") if not specific else None,
+                name, kind, [], error=self._no_inputs(kind, number)
             )
         if paths:
             path = Path(paths[0].readings[0].value)
@@ -1279,7 +1302,9 @@ class Retman:
                 if result_matches:
                     number = result_matches[0].readings[0].value
                     candidates = self.workspace.resolve_result(number, kind)
-                    if len(candidates) != 1:
+                    if not candidates and not self.workspace.find_by_kind(kind):
+                        error = self._no_inputs(kind, number)
+                    elif len(candidates) != 1:
                         error = self.texts.get("dialog.invalid_choice")
                     else:
                         path = candidates[0].path

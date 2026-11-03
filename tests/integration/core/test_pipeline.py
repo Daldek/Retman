@@ -257,6 +257,23 @@ def test_workspace_input_file_validated_before_handler(create_app):
     assert corrected.inputs["source"].value["path"] == str(source)
 
 
+def test_a_result_reference_with_no_result_of_its_kind_says_how_to_make_one(
+    create_app,
+):
+    copier = create_app({"copy_dem": "copy_dem"})
+
+    plan = copier.plan("Skopiuj wynik #1")
+    again = plan.answer("source", "#1")
+
+    # Nothing to choose from: no "choose one of the given options" without options
+    (question,) = plan.questions
+    assert question.options == []
+    assert question.error is not None
+    assert question.error.startswith("Nie ma wcześniejszego wyniku #1 rodzaju dem")
+    assert "„Utworzenie NMT”" in question.error
+    assert again.questions[0].error == question.error
+
+
 def test_workspace_explicit_result_and_file_override_recent_result(create_app):
     creator = create_app({"make_dem": "make_dem", "raw": "raw"})
     first = creator.execute(creator.plan(f"NMT dla {SHEET}").confirm())

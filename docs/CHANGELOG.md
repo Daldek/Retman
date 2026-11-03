@@ -361,5 +361,11 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   reason "Nie ma katalogu stacji IMGW, więc rozpoznaję tylko kody stacji… Katalog tworzy polecenie
   „Zbuduj katalog stacji IMGW”", answered with the code; a required station that got no reading
   is asked about with the same reason, which was never shown (ARCHITECTURE 3.2.11).
+- An input with no earlier result of its kind ("Pobierz do magazynu według planu #1" in a project
+  without a plan) no longer asks "Wybierz jedną z podanych możliwości." with no options to choose
+  from: the question says that the project has no result of that kind (or no result #1 of it)
+  and names the operations that make one, e.g. „Sprawdzenie archiwów względem magazynu”, or
+  asks for a file path when no operation makes it, also when the answer names a missing result
+  (ARCHITECTURE 5.3).
 
 [Unreleased]: https://github.com/Daldek/Retman/commits/develop
