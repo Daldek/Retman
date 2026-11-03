@@ -16,7 +16,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
 | `retman eval run` and the 501-command set | in progress | code done; the last run was on the old 83-command set |
-| Nogat standard 2.1, structure and tooling | done | branch `chore/nogat-2.1`: gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
+| Nogat standard 2.1, structure and tooling | done | on `develop` (merged from `chore/nogat-2.1`): gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
 | Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
 | Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
 | Nogat standard 2.1, agent interfaces | done | ADR-022: catalog, `retman.operations`, the CLI generated from the catalog, `retman-result/1`, schemas in `src/retman/schemas/`, generated `AGENTS.md` and `llms.txt`; the texts inside the machine documents are English (erratum 1) |
@@ -33,11 +33,11 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 | Rulesets for `main`, `develop` and `v*` tags, private vulnerability reporting, Dependabot security updates, default branch (DEV-3.6, DEV-13.6, DEV-13.7) | GitHub settings |
 | `docs/CLA.md` | the author's legal text; `CONTRIBUTING.md` and the pull request template already refer to it |
 | Tags, releases, replacing the commit pins of the `tools` group by tags, PyPI name `nogat-retman` (phases 5 and 6) | need the producers' tags and the author's approval |
-| Pull request and merge of `feature/archiwista-projects` (pushed at `5c3be44`, gate green; it carries `chore/nogat-2.1`, `feature/imgwtools-data-output` and `feature/kartograf-data-output`) into `develop` | approvals (DEV-3.3) |
+| Pull requests | none: on 2026-11-03 the author merged `feature/archiwista-projects` (`63685c5`, which carried `chore/nogat-2.1`, `feature/imgwtools-data-output` and `feature/kartograf-data-output`) into `develop` locally with `--no-ff`; the four branches are deleted, `main` and `develop` remain |
 
 ## Next
 
-1. **Resume the standard 2.1 adoption on `chore/nogat-2.1`** (one commit per step, gate
+1. **Resume the standard 2.1 adoption on a new branch from `develop`** (one commit per step, gate
    green before each; the source of the rules is the Nogat branch `feature/data-output`,
    `git -C ~/workspace/Nogat show feature/data-output:standards/<file>`; Hydrolog's and
    Kartograf's branches `chore/nogat-2.1` are the reference implementations). Open: 1.5 (done:
