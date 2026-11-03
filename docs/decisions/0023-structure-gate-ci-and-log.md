@@ -82,5 +82,5 @@ but no code wrote. Release 0.1.0 is not tagged, so no step needs a migration pat
 ## Errata
 
 **Erratum 1 (2026-10-25, IMGWTools data output, ADR-024):** the second consequence needs a
-caveat: the IMGWTools commit of the `tools` group (`a304521`) is not pushed, so the gate fetches
+caveat: the IMGWTools commit of the `tools` group (`08f1a7b`) is not pushed, so the gate fetches
 it only on a machine whose uv git cache holds it, until the author pushes IMGWTools.

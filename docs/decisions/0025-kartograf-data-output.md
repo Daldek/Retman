@@ -18,7 +18,7 @@ registry with the precision in `details.reason` (`no_data` and not `no_coverage`
 `kartograf-store.json` (schema `kartograf-store/1`) that the tool writes on the first write into a
 new or an empty folder. A folder that has the layout of a store and no marker, a folder with other
 files, a marker that is not a `kartograf-store/1` document and a store inside another store are
-refused. On the head of the branch, `8a36e977`, the Kartograf tests of Retman failed.
+refused. On the head of the branch, `d6c0ca69`, the Kartograf tests of Retman failed.
 
 ## Options considered
 
@@ -89,7 +89,7 @@ How the marker is written when the layout has lost it:
    leave the machine is replaced, by stubs of the public provider classes
    (`tests/integration/tools/kartograf/kartograf_offline.py`). The stores the tests only read
    are built by `kartograf.testing` (DEV-10.6). The recorded documents of the old API are gone.
-6. **The pin.** The `tools` group pins Kartograf `8a36e977`, the head of its branch
+6. **The pin.** The `tools` group pins Kartograf `d6c0ca69`, the head of its branch
    `feature/data-output`. The commit is not pushed, which departs from ADR-012 ("pin pushed
    commits") in the same way as the IMGWTools pin (ADR-024 item 1); both are fetched into the uv
    git cache of this machine, and the author pushes both tools first.
@@ -128,8 +128,8 @@ How the marker is written when the layout has lost it:
 
 ## Errata
 
-**Erratum 1 (2026-10-25, Kartograf `b73aad33`):** the pin of item 6 is now Kartograf
-`b73aad3327cf6faf7ec7d15fe47e9a897f21954a`, the head of `feature/data-output`, which is on
+**Erratum 1 (2026-10-25, Kartograf `e3c0ab3a`):** the pin of item 6 is now Kartograf
+`e3c0ab3a7f448df7430d475950e5be366a3a227c`, the head of `feature/data-output`, which is on
 GitHub (the departure from ADR-012 ends for Kartograf). It has what items 4 and 7 waited for.
 (a) A refused store is one error of the command with its registry code and reason, before any
 request: the test `test_a_run_into_a_store_kartograf_refuses_is_an_error_with_its_registry_code`
@@ -156,20 +156,20 @@ download, write or delete (the downloads, `soil hsg`, `project *`, `cache clear`
 source listings, the availability reports, the store reads, `sheet` and `config show`. This
 replaces the sentence of erratum 1 that `data` is true for all.
 
-**Erratum 3 (2026-10-25, Kartograf `45dedf4a`):** the pin is now Kartograf
-`45dedf4a155e2d2f7302459a8c383876fed98e98`, the head of `feature/data-output`, which is on
+**Erratum 3 (2026-10-25, Kartograf `c655639b`):** the pin is now Kartograf
+`c655639b6b80df81564c769d841c4f86bf811654`, the head of `feature/data-output`, which is on
 GitHub. The head makes `store_root()` public; Retman does not use it, because it passes `root`
 from `[retman.tools.kartograf] store_dir` and resolves no default root of a tool.
 
-**Erratum 4 (2026-10-25, Kartograf `c31ca04c`):** the pin is now Kartograf
-`c31ca04c078ebbee36850d0aa4dcead59dd77a41`, the head of `feature/data-output`, which is on
+**Erratum 4 (2026-10-25, Kartograf `d11f6219`):** the pin is now Kartograf
+`d11f6219516098af3b92f49ff510ae02883cb055`, the head of `feature/data-output`, which is on
 GitHub. The head keeps a position whose check failed as `check_failed` in a plain-mode plan and
 flushes stray stdout of the MCP server to stderr; Retman plans and writes only in the store
 (`root` from `[retman.tools.kartograf] store_dir`) and calls no MCP server, so nothing in Retman
 changes.
 
-**Erratum 5 (2026-10-31, Kartograf `8ad55ab6`, Nogat ECO-054):** the pin is now Kartograf
-`8ad55ab67b1e6e2e2ef3eb52cb6930ed92fecc06`, the head of its branch `feature/archiwista-projects`,
+**Erratum 5 (2026-10-31, Kartograf `dbcfe5bb`, Nogat ECO-054):** the pin is now Kartograf
+`dbcfe5bb687e20a4f19d54b45202f212901bf2e7`, the head of its branch `feature/archiwista-projects`,
 which is on GitHub. The tool keeps no projects (Archiwista keeps them): the `project` commands and
 family, their documents, `ProjectLockedError`, the notice `project_geometry_changed`,
 `parse_command(tasks=)` and `check=` of `outcome_of` and `exit_code_of` are gone. Retman's

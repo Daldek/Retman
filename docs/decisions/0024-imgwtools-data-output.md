@@ -44,11 +44,11 @@ The texts of the tool, which are English strings in its documents:
 
 ## Decision
 
-1. **Pin.** The `tools` group pins IMGWTools `a304521`, the head of its branch
+1. **Pin.** The `tools` group pins IMGWTools `08f1a7b`, the head of its branch
    `feature/data-output`. The commit is not pushed, which departs from ADR-012 ("pin pushed
    commits"): `uv lock` and `uv sync` resolve it only on a machine whose uv git cache holds it,
    the author pushes IMGWTools first, and until then a pushed Retman has no green CI. Kartograf
-   stays at `8e9bcbb` until its own `feature/data-output` is pushed (PROGRESS Next 2).
+   stays at `b8971fd` until its own `feature/data-output` is pushed (PROGRESS Next 2).
 2. **Calls.** The client reads the `exclusive` groups of the catalog of the tool and adds `root`
    (from `store_dir`) only to a call that names no option of a group that holds `root`. The two
    download operations pass the results folder as `output_dir`, with the project folder as the
@@ -95,7 +95,7 @@ The texts of the tool, which are English strings in its documents:
 
 ## Errata
 
-**Erratum 1 (2026-10-25, REL-5.6, ECO-053):** the pin of item 1 is now IMGWTools `7b11755`, the
+**Erratum 1 (2026-10-25, REL-5.6, ECO-053):** the pin of item 1 is now IMGWTools `97c1057`, the
 head of the same branch (it ships `py.typed` and refuses a nested store in the plan of every store
 write), and it is still not pushed. While a commit is pinned, the supported range admits the
 development versions of the pending release: the manifests say `>=0.8.0.dev0,<0.9` (Kartograf)
@@ -107,14 +107,14 @@ release change that replaces the commits by tags narrows the ranges to `>=0.8.0,
 that need a ready IMGW store use `imgwtools.testing` (DEV-10.6).
 
 **Erratum 2 (2026-10-25, Kartograf data output, ADR-025):** item 1 says that Kartograf stays at
-`8e9bcbb` until its own `feature/data-output` is pushed, and a consequence says that its
+`b8971fd` until its own `feature/data-output` is pushed, and a consequence says that its
 calls and error codes wait for the tool. Neither holds any longer: the `tools` group pins
-Kartograf `8a36e977`, the head of that branch, which is not pushed either, and the Kartograf
+Kartograf `d6c0ca69`, the head of that branch, which is not pushed either, and the Kartograf
 calls (`root` in place of `output_dir`) and error codes (the registry) are migrated (ADR-025).
 Both pins wait for the author's push (PROGRESS Next 2).
 
-**Erratum 3 (2026-10-25, IMGWTools `7e2114e`):** the pin of item 1 is now IMGWTools
-`7e2114e1424903f1fd8fc036a2cb7aa81df44287`, the head of the same branch, which is on GitHub.
+**Erratum 3 (2026-10-25, IMGWTools `b0ef83c`):** the pin of item 1 is now IMGWTools
+`b0ef83cf77a3ac23aac8ec81177826197af28d9f`, the head of the same branch, which is on GitHub.
 Two Nogat decisions (R1, R2) changed its refusals, and Retman reads them so. An `output_dir` that
 is or lies in a store is `conflict` (`output_in_store`) before any request and `details.paths`
 is the directory, not every target (it is kept in the `tool_details` of the failure). A store
@@ -129,21 +129,21 @@ plan and in the run; the plans of Retman name such a marker as unreadable instea
 files". `tests/unit/test_stores.py` holds `imgw_store_state` against the check of `series build`
 of the tool for every state.
 
-**Erratum 4 (2026-10-25, IMGWTools `3f7de36`):** the pin is now IMGWTools
-`3f7de36f98f1ba40d72ab5556942567cfbc55b92`, the head of the same branch, which is on GitHub. `project init` reads the
+**Erratum 4 (2026-10-25, IMGWTools `4faf884`):** the pin is now IMGWTools
+`4faf884f1f695635e1589c9ebb3b6d4ad34073f1`, the head of the same branch, which is on GitHub. `project init` reads the
 marker as `store init` does: a marker that cannot be read is `data_error` (`invalid_marker`)
 there too (it was `store_unavailable`, `unsupported`), so the test of the store folders that a
 project meets expects `data_error` for the damaged one. The tool has `store_root()` for its
 default root; Retman does not use it, because it passes `root` from `[retman.tools.imgwtools]
 store_dir` to every command and resolves no default root of a tool.
 
-**Erratum 5 (2026-10-25, IMGWTools `6bd35a49`):** the pin is now IMGWTools
-`6bd35a49b329f99b591ffdee39367daec0e75af7`, the head of the same branch, which is on GitHub. The
+**Erratum 5 (2026-10-25, IMGWTools `71bae778`):** the pin is now IMGWTools
+`71bae778a6573019a0b8da6498b4429f0e03ddfb`, the head of the same branch, which is on GitHub. The
 head only flushes stray stdout to stderr before the MCP server leaves stdio; Retman calls the
 command layer, not the MCP server, so nothing in Retman changes.
 
-**Erratum 6 (2026-10-31, IMGWTools `4bf8bb0d`, Nogat ECO-054):** the pin is now IMGWTools
-`4bf8bb0d44ceb27ca84f4f6fa6ffeee46a6b3185`, the head of its branch `feature/archiwista-projects`,
+**Erratum 6 (2026-10-31, IMGWTools `8cd6844c`, Nogat ECO-054):** the pin is now IMGWTools
+`8cd6844c493d27e6a8792c29dfc64528d68a2998`, the head of its branch `feature/archiwista-projects`,
 which is on GitHub. The tool keeps no projects: the `project` commands, the manifest
 `imgw-project/1`, the field `task` of the result items and the status `restored_by_content` are
 gone, so Retman's `imgw_projects` operations are removed and the sentences of item 5 and of

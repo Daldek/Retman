@@ -5,8 +5,8 @@
   użytkownikowi informację o dostępności danych: niezmiennik N-12, hak `preview` (offline), krok
   `check` (sieć, osobna zgoda), kontrakt, UX, wpływ na pliki Retmana, testy, ryzyka.
 - **Metoda:** oba narzędzia uruchamiane offline pod **blokadą gniazd** (DNS + `connect` rzucają
-  wyjątek; każda próba jest zgłaszana): Kartograf `develop` `d7b5369e` (czyste drzewo), IMGWTools
-  `31e96fa` (eksport `git archive` do `/tmp`, bo drzewo IMGWTools miało w chwili badania ~25
+  wyjątek; każda próba jest zgłaszana): Kartograf `develop` `54b3a17b` (czyste drzewo), IMGWTools
+  `12cd530` (eksport `git archive` do `/tmp`, bo drzewo IMGWTools miało w chwili badania ~25
   niezatwierdzonych plików edytowanych przez kogoś innego; wyniki identyczne na czystym eksporcie).
   [WNIOSEK] = odczytane z kodu/dokumentacji, niewykonane. Kontrakty uzgodnione komunikatami z
   GeometryArea (hak `preview`), IntegrationStrategy (`ToolContext`, `PlanClient`/`RunClient`) i
@@ -110,7 +110,7 @@ Typy zwracane: `check_data`, `check_landcover`, `check_soil`, `check_hsg`, `chec
 `check_pl_cutout`, `check_command` → `UpdatePlan`; `check_availability` → `AvailabilityReport`;
 `check_project` → `ProjectCheck`. Wszystkie mają `to_dict()` (dokument JSON z polem `schema`).
 
-### 2.2 IMGWTools 3.0.0 (`31e96fa`)
+### 2.2 IMGWTools 3.0.0 (`12cd530`)
 
 | Funkcja | Wynik pod blokadą | Dowód |
 |---|---|---|
@@ -550,7 +550,7 @@ socket.getaddrinfo = socket.create_connection = socket.socket.connect = socket.s
 ```
 
 Uruchomienie: `cd /tmp && uv run --no-project --python 3.12 --with <ścieżka do repozytorium Kartograf> python probe.py`
-(IMGWTools: `--with '/tmp/imgw_31e96fa[store]'`). Każda funkcja wymieniona jako „offline” i każda
+(IMGWTools: `--with '/tmp/imgw_12cd530[store]'`). Każda funkcja wymieniona jako „offline” i każda
 wymieniona jako „sieć” **bez** znacznika `[docstring, not run]` zachowała się tak, jak opisano:
 offline kończyły się lub rzucały własny `ValidationError`/`IMGW*Error` z **zerem** `NetAttempt`;
 sieciowe rzucały `NetAttempt`.

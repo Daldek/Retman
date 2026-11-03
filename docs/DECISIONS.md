@@ -49,7 +49,7 @@ ADR-x`); each relation is recorded on both sides.
 | [ADR-021](decisions/0021-user-environment.md) | User environment: `[retman]` in `nogat.toml`, variables and user directories | accepted; amends ADR-010, ADR-015 | 2026-10-24 |
 | [ADR-022](decisions/0022-agent-interfaces.md) | Agent interfaces: one command catalog, one `retman` executable | accepted; amends ADR-011, ADR-019 | 2026-10-24 |
 | [ADR-023](decisions/0023-structure-gate-ci-and-log.md) | Repository structure, quality gate, CI, test tree and technical log | accepted | 2026-10-24 |
-| [ADR-024](decisions/0024-imgwtools-data-output.md) | IMGWTools data output: plain files or a store, called as the tool defines them | accepted; amends ADR-012; amended by ADR-025; erratum 1 (REL-5.6 ranges, pin `7b11755`), erratum 2 (the Kartograf pin) | 2026-10-25 |
+| [ADR-024](decisions/0024-imgwtools-data-output.md) | IMGWTools data output: plain files or a store, called as the tool defines them | accepted; amends ADR-012; amended by ADR-025; erratum 1 (REL-5.6 ranges, pin `97c1057`), erratum 2 (the Kartograf pin) | 2026-10-25 |
 | [ADR-025](decisions/0025-kartograf-data-output.md) | Kartograf data output: one store root, the registry codes, the marker states judged by Retman | accepted; amends ADR-012, ADR-024 | 2026-10-25 |
 
 ---
@@ -395,8 +395,8 @@ all four adapter operations stopped working; IMGWTools 2.x had no adapter.
 
 **Decision:** B (author: "as soon as possible; the biggest changes are already in"). Ranges:
 Kartograf `>=0.8.0,<0.9`, IMGWTools `>=3.0.0,<4` (semver and IMGWTools `/1` contracts). The
-`tools` group pins, until the tags exist, `kartograf@8e9bcbb0` (`origin/develop`) and
-`imgwtools[store]@0d98f3b` (`origin/slave`, publishing store versions via hard links —
+`tools` group pins, until the tags exist, `kartograf@b8971fda` (`origin/develop`) and
+`imgwtools[store]@cb6af4f` (`origin/slave`, publishing store versions via hard links —
 works on Linux, macOS and Windows; the author includes it in v3.0.0). Retman asks about every new
 required value (author): DSM (NMPT) resolution and vertical reference system, orthophoto colour
 (RGB/CIR/B-W). All resolutions of Kartograf ASC map sheets are supported (DEM (NMT) 0.15; 0.5;
@@ -407,7 +407,7 @@ Completeness of the resolutions is guarded by the coverage check (ADR-019). Deta
 `docs/research/2026-10-19-kartograf-0.8.0-migracja.md`, `…-imgwtools-3.0.0-operacje.md`.
 
 **Erratum 1 (2026-10-25, IMGWTools data output, ADR-024):** the IMGWTools pin of the decision,
-`0d98f3b` (`origin/slave`), is replaced by `a304521`, the head of the IMGWTools branch
+`cb6af4f` (`origin/slave`), is replaced by `08f1a7b`, the head of the IMGWTools branch
 `feature/data-output`. That commit is not pushed, so the rule "pin the pushed commits" holds for
 Kartograf only, until the author pushes IMGWTools. The ranges and the other decisions stand.
 
@@ -415,10 +415,10 @@ Kartograf only, until the author pushes IMGWTools. The ranges and the other deci
 ranges admit the development versions of the pending releases: Kartograf `>=0.8.0.dev0,<0.9` and
 IMGWTools `>=3.0.0.dev0,<4`, tested with `packaging` and `prereleases=True`; the release change
 that puts the tags in place of the commits narrows them to `>=0.8.0,<0.9` and `>=3.0.0,<4`. The
-IMGWTools pin is `7b11755` now.
+IMGWTools pin is `97c1057` now.
 
 **Erratum 3 (2026-10-25, Kartograf data output, ADR-025):** the Kartograf pin of the decision,
-`8e9bcbb0` (`origin/develop`), is replaced by `8a36e977`, the head of the Kartograf branch
+`b8971fda` (`origin/develop`), is replaced by `d6c0ca69`, the head of the Kartograf branch
 `feature/data-output`. That commit is not pushed either, so the rule "pin the pushed commits" holds
 for neither tool until the author pushes both (erratum 1 said Kartograf only). The ranges and the
 other decisions stand.

@@ -4,14 +4,14 @@
 - **Zakres:** (Q1) sposób wywoływania narzędzi przez handlery; (Q2) `retman-scaffold`: szkice
   i kontrola dryfu; (Q3) opcje statyczne czy wyprowadzane z katalogu w czasie ładowania.
   Podstawa: Retman `develop` `f1b7294` (+ niezatwierdzone `PROGRESS.md`, raport wpływu, `uv.lock`),
-  Kartograf `develop` `d7b5369e` = 0.8.0 (czyste drzewo, tag niewypchnięty), IMGWTools `slave`
-  `31e96fa` = 3.0.0 (tag niewypchnięty).
+  Kartograf `develop` `54b3a17b` = 0.8.0 (czyste drzewo, tag niewypchnięty), IMGWTools `slave`
+  `12cd530` = 3.0.0 (tag niewypchnięty).
 - **Metoda:** odczyt kodu i dokumentacji obu narzędzi oraz Retmana; sondy uruchamiane offline
   (z blokadą gniazd tam, gdzie liczy się próba połączenia), skrypty jednorazowe w `/tmp/probe`,
   nic nie zapisano w żadnym repozytorium. IMGWTools analizowano na czystym eksporcie
   `git archive slave` (`/tmp/imgw-slave`; w chwili startu drzewo robocze było na
   `fix/archiwista-compat` z niezatwierdzonymi zmianami w `src/imgwtools/store/*` i
-  `exceptions.py`; po zakończeniu repo było na `slave`, czyste, na tym samym `31e96fa`).
+  `exceptions.py`; po zakończeniu repo było na `slave`, czyste, na tym samym `12cd530`).
 - **Oznaczenia:** „sprawdzone” = wykonane offline podczas badania; [WNIOSEK] = niewykonane.
   Odwołania `ścieżka:linia` dotyczą repozytorium nazwanego w zdaniu.
 - **Status:** decyzja delegowana przez autora (2026-10-19) — decyzja nr 8 autora: rekomendacja
@@ -21,9 +21,9 @@
 
 Źródło: konsolidacyjny plan wdrożenia z 2026-10-19 (decyzje autora).
 
-**Aktualizacja (2026-10-19, wieczór):** IMGWTools `0d98f3b` (`origin/slave`) zapisuje magazyn
-dowiązaniami twardymi na każdej platformie (model Kartografa); pin Retmana `0d98f3b`. Uwagi
-o zapisie „tylko Linux” (D8, ryzyko 17) dotyczą wyłącznie `31e96fa`; magazyn IMGW, tak jak
+**Aktualizacja (2026-10-19, wieczór):** IMGWTools `cb6af4f` (`origin/slave`) zapisuje magazyn
+dowiązaniami twardymi na każdej platformie (model Kartografa); pin Retmana `cb6af4f`. Uwagi
+o zapisie „tylko Linux” (D8, ryzyko 17) dotyczą wyłącznie `12cd530`; magazyn IMGW, tak jak
 Kartografa, wymaga systemu plików z dowiązaniami twardymi.
 
 1. **Kolor ortofotomapy JEST pytaniem (decyzja autora).** D10 i wniosek „ortofotomapa = RGB bez
@@ -40,11 +40,11 @@ Kartografa, wymaga systemu plików z dowiązaniami twardymi.
    „dokładnie jedno z handler / calls” z p. 1.3 i 4 pkt 1. Sygnatura handlera:
    `handler(params, inputs, output_dir, ctx)`.
 3. **IMGWTools v3.0.0 będzie zawierał poprawkę przenośnego zapisu magazynu (autor).** Ryzyko 17
-   i część D8 o zapisie „tylko Linux” dotyczą commita `31e96fa`; docelowo dolna granica
+   i część D8 o zapisie „tylko Linux” dotyczą commita `12cd530`; docelowo dolna granica
    `>=3.0.0` jest bezpieczna na każdej platformie. Do czasu pojawienia się tagów grupa `tools`
    przypina wypchnięte commity (`kartograf @ git+https://github.com/Daldek/Kartograf@<pełny sha
-   origin/develop>`, `imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@31e96fa…`
-   z `origin/slave`; plan wdrożenia podaje `8e9bcbb0…` dla Kartografa zamiast `d7b5369e`);
+   origin/develop>`, `imgwtools[store] @ git+https://github.com/Daldek/IMGWTools@12cd530…`
+   z `origin/slave`; plan wdrożenia podaje `b8971fda…` dla Kartografa zamiast `54b3a17b`);
    sonda platformowa w `retman doctor` zostaje.
 4. **`year_type` jest ZAWSZE pytaniem**, gdy nie podano go w poleceniu (brak zgadywania) —
    dotyczy operacji IMGWTools (zakres ImgwScope), nie zmienia kontraktu integracji.
@@ -78,7 +78,7 @@ rozpoznawania dwuetapowego (p. 6); 6 (magazyny) → D5; 7 (MCP) → API w proces
 | **D5** | **Magazyny i konfiguracja.** Jeden katalog magazynu na narzędzie, poza folderami wyników, deklarowany w `retman.toml` `[tools.kartograf]` / `[tools.imgwtools]` (decyzja autora 6, N-11). Argumenty środowiskowe (`output_dir`/`root`, `workers`, `cache`, `update`) pochodzą wyłącznie z tej tabeli, nigdy z domyślnych wartości narzędzia ani zmiennych środowiskowych. Wyniki wskazują pliki magazynu przez ścieżkę bezwzględną + SHA-256 (nic nie jest kopiowane); pliki, które Retman lub narzędzie *eksportuje*, trafiają do `output_dir`. |
 | **D6** | **Manifesty zostają statyczne i recenzowane; opcje nigdy nie są wyprowadzane z zainstalowanego katalogu w czasie ładowania** (Q3). Dochodzi pięć opcjonalnych kluczy manifestu: `calls`, `commands`, `tool_values`, `option_meta` (nieprzezroczyste dane per opcja, tylko dla builderów), `excluded`; klucze opcji nie zawierają kropek (`0_5m`). „WSZYSTKIE rozdzielczości” wymusza *niezmiennik pokrycia* w kontroli dryfu, a nie listy dynamiczne. Tabeli `combinations` (poprawne pary) w v0.1 NIE dodajemy. |
 | **D7** | **`retman-scaffold` czyta maszynowe katalogi narzędzi** (`get_catalog`, `command_schema`, `list_sources`, `datasets`), a nie docstringi: `list` / `draft` / `--check`. Bez `griffe` i bez nowej zależności w v0.1. Kontrola dryfu to *zgodność przez wykonanie*: uruchamia prawdziwe buildery wywołań na siatce wyborów z manifestu przez offline'owe `validate_command` narzędzia, plus sondę pokrycia uwzględniającą zakres. Działa w pytest, w CI i (lekko) w `retman doctor`. |
-| **D8** | **Wersje.** Kartograf `>=0.8.0,<0.9` (minory 0.x mogą łamać). IMGWTools `>=3.0.0,<4` (semver + addytywne kontrakty IMGW-13; autor może wybrać `<3.1`), **ale 3.0.0 jako otagowany (`31e96fa`) zapisuje magazyn tylko na Linuksie**: `store/writer.py:93-98` rzuca `IMGWStoreConflictError` na każdej innej platformie (sprawdzone), więc na Windows/macOS (PRD N-09) dolną granicą musi być wydanie z przenośnym zapisem — w chwili badania niewydana praca na `fix/archiwista-compat` (ImgwScope) [WNIOSEK: wydanie 3.0.x]. **Decyzja końcowa 3: autor włoży tę poprawkę do v3.0.0.** Bez statycznej flagi platformy: `retman doctor` sonduje przez `imgwtools.testing.build_fixture_store` w katalogu tymczasowym (p. 1.6). CI uruchamia zgodność na najstarszej/najnowszej wersji z zakresu oraz nocnie na gałęziach integracyjnych narzędzi. |
+| **D8** | **Wersje.** Kartograf `>=0.8.0,<0.9` (minory 0.x mogą łamać). IMGWTools `>=3.0.0,<4` (semver + addytywne kontrakty IMGW-13; autor może wybrać `<3.1`), **ale 3.0.0 jako otagowany (`12cd530`) zapisuje magazyn tylko na Linuksie**: `store/writer.py:93-98` rzuca `IMGWStoreConflictError` na każdej innej platformie (sprawdzone), więc na Windows/macOS (PRD N-09) dolną granicą musi być wydanie z przenośnym zapisem — w chwili badania niewydana praca na `fix/archiwista-compat` (ImgwScope) [WNIOSEK: wydanie 3.0.x]. **Decyzja końcowa 3: autor włoży tę poprawkę do v3.0.0.** Bez statycznej flagi platformy: `retman doctor` sonduje przez `imgwtools.testing.build_fixture_store` w katalogu tymczasowym (p. 1.6). CI uruchamia zgodność na najstarszej/najnowszej wersji z zakresu oraz nocnie na gałęziach integracyjnych narzędzi. |
 | **D9** | **Testy.** `FakeToolClient` w `retman/testing.py` + nagrane dokumenty JSON zastępują 8 testów z monkeypatchem; testy IMGWTools używają jego oficjalnego magazynu fikcyjnego offline; prawdziwych narzędzi dotykają tylko testy zgodności (offline) i testy `live`. |
 | **D10** | **[ZASTĄPIONE decyzją końcową 1]** Luka do rozstrzygnięcia z autorem: `color` ortofotomapy (RGB/CIR/B/W) istnieje tylko w klasie providera (`GugikOrtoProvider(color=)`); `imagery download` nie ma opcji `color` (sprawdzone: `nieznana opcja 'color'`). Pierwotna rekomendacja: ortofotomapa przez warstwę komend = RGB, wpisane w etykiecie operacji, bez pytania; CIR/B-W czeka na ogólne `--color` w Kartografie (autor jest właścicielem obu repozytoriów). **Rozstrzygnięcie autora: Retman pyta o kolor, własny handler na providerze.** |
 
@@ -401,7 +401,7 @@ reference_data_dir = '/data/retman/imgwtools-reference' # exported as IMGW_DATA_
   `store_unavailable`: wskazówka `retman init`), `pyarrow` importowalny, gdy operacje serii są
   włączone (`imgwtools[store]`), ścieżka cache na dysku lokalnym; z `--deep` sonda platformowa
   (`imgwtools.testing.build_fixture_store` w katalogu tymczasowym, offline, ~1,7 s), bo zapisy
-  magazynu w IMGWTools `31e96fa` działają tylko na Linuksie (D8; decyzja końcowa 3).
+  magazynu w IMGWTools `12cd530` działają tylko na Linuksie (D8; decyzja końcowa 3).
 
 ### 1.7 Testy, mypy, haki, anulowanie
 
@@ -728,7 +728,7 @@ Użytkownicy z nowszym narzędziem w zakresie zobaczą lukę w `retman doctor` z
     `_finish_pl_sheets`): dzisiejsze ostrzeżenia Retmana `no_coverage {count,total}` /
     `failed_sheets {count,total}` stają się dosłownym tekstem Kartografa (polski ASCII, wymienia
     arkusze), chyba że autor zechce obliczenia offline `requested - delivered`.
-17. **Zapisy magazynu w IMGWTools 3.0.0 (`31e96fa`) działają tylko na Linuksie**
+17. **Zapisy magazynu w IMGWTools 3.0.0 (`12cd530`) działają tylko na Linuksie**
     (`store/writer.py:93-98`, sprawdzone: `_atomic_publish` używa `renameat2(RENAME_NOREPLACE)` i
     rzuca `IMGWStoreConflictError` gdzie indziej; wywołujący `writer.py:650,1045`, `series.py:1145`,
     `catalog.py:212`, czyli publikacja archiwów/wersji, `series build`, `store catalog`), a Retman
@@ -795,11 +795,11 @@ Retman: `registry/loader.py:71-94`; `registry/manifest.py:141-159,178-198`;
 `tests/tools/kartograf/test_handlers.py:57-263`; `tests/conftest.py:38`;
 `eval/dataset.py:validate_commands`; `pyproject.toml:40,70`; ARCHITECTURE 3.2.3–3.2.8, 4.1–4.3, 9.1,
 9.3, 13.1; CLAUDE.md.
-Kartograf (`d7b5369e`): `commands.py:185,278,348`; `catalog/model.py:31,85,108`;
+Kartograf (`54b3a17b`): `commands.py:185,278,348`; `catalog/model.py:31,85,108`;
 `catalog/build.py:344,388`; `__init__.py:461-488`; `sources/registry.py:304`; `source_info.py:207`;
 `docs/DECISIONS.md:2730-2830,4136+`; `docs/DEVELOPMENT_STANDARDS.md:507-523,843-863`;
 `docs/USAGE.md:3303-3385,3487-3530`.
-IMGWTools (`31e96fa`): `commands.py:2077,2284,2715,2834-2877,2881`; `store/types.py:957,1018,1101`;
+IMGWTools (`12cd530`): `commands.py:2077,2284,2715,2834-2877,2881`; `store/types.py:957,1018,1101`;
 `exceptions.py:65,135`; `testing.py:1-60`; `docs/ARCHITECTURE.md:224,226,245`;
 `docs/DECISIONS.md:110-118,265`; `docs/superpowers/specs/2026-10-19-agent-support-design.md:554-561`;
 `AGENTS.md:15-21,37-48,141,241-257`.

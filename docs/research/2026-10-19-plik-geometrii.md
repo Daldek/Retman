@@ -6,7 +6,7 @@
   `download_bdot10k`): kształt wartości, wybór warstwy, podgląd w planie, rodzaj
   `area_geometry`, audyt, wpływ na pliki i dokumenty.
 - **Metoda:** wszystko oznaczone „sprawdzone” uruchomiono offline na Kartografie `develop`
-  `d7b5369e` (0.8.0) z blokadą gniazd (każda próba sieci rzuca wyjątek); wywołania offline
+  `54b3a17b` (0.8.0) z blokadą gniazd (każda próba sieci rzuca wyjątek); wywołania offline
   niczego nie zapisały na dysk. Pliki testowe: `/tmp/geo/` (SHP z ukośnym wielokątem + `.prj`,
   SHP bez `.prj`, SHP z punktem, SHP w WGS84, GPKG jedno- i dwuwarstwowy zrobione
   `pyogrio`). Nie sprawdzano żadnej ścieżki pobierania z siecią [WNIOSEK z lektury kodu tam,

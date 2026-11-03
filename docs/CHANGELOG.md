@@ -211,7 +211,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   Migration: read the new names in `result.json`; the plan and the settings do not change. The
   texts of the tool are English and are shown as they come, so a Polish message can quote an
   English detail, and the licence notice of an IMGW result ends with an English notice. The `tools`
-  group pins IMGWTools `7e2114e`, the head of its branch `feature/data-output`, which is on
+  group pins IMGWTools `b0ef83c`, the head of its branch `feature/data-output`, which is on
   GitHub (ARCHITECTURE 3.2.11, 9.3; USAGE 5.2; ADR-024 erratum 3).
 - An IMGW store folder can be a layout of a store without its marker (`archives/`, `series/`,
   `stations/` or `pmaxtp/` and no `imgw-store.json`): `retman doctor check` reports it as
@@ -233,7 +233,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   Migration: read the new codes in `result.json`; the plan and the settings do not change. The
   first write into a new folder writes the store marker `kartograf-store.json`. Retman always
   writes to the store (`root`) and offers no plain mode of Kartograf. The `tools` group pins
-  Kartograf `b73aad33`, the head of its branch `feature/data-output`, which is on GitHub
+  Kartograf `e3c0ab3a`, the head of its branch `feature/data-output`, which is on GitHub
   (ARCHITECTURE 3.2.4, 3.2.10; USAGE 5.2, 9.1; ADR-012 erratum 3; ADR-025 erratum 1).
 - A Kartograf store folder can be the layout of a store without its marker (files in a product
   tree such as `nmt/` and no `kartograf-store.json`), a folder with other files, a folder whose
@@ -251,7 +251,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   (`packaging`, a new core dependency) instead of a comparison of numbers, so `~=` and the
   other PEP 440 forms are valid in a manifest. The release change that puts the tags in place of
   the commits narrows the ranges to `>=0.8.0,<0.9` and `>=3.0.0,<4`.
-- The `tools` group pins IMGWTools `7e2114e`, which ships `py.typed`: mypy checks the calls and
+- The `tools` group pins IMGWTools `b0ef83c`, which ships `py.typed`: mypy checks the calls and
   the tests against its types, and the ignore of `imgwtools` is gone from `pyproject.toml`. The
   tests that need a ready IMGW store use the fixture store of `imgwtools.testing`, not a marker
   written by hand (DEV-10.6).
@@ -267,15 +267,15 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   cannot be read is named so in the plan; the tool raises `data_error` (`invalid_marker`) for
   it, and `tests/unit/test_stores.py` holds `imgw_store_state` against the check of the tool
   (ADR-024 erratum 3, ADR-025 erratum 1).
-- The pins are the final heads of the producers: Kartograf `c31ca04c` and IMGWTools
-  `6bd35a49` (first `45dedf4a` and `3f7de36`). The tool's `project init` refuses a store marker
+- The pins are the final heads of the producers: Kartograf `d11f6219` and IMGWTools
+  `71bae778` (first `c655639b` and `4faf884`). The tool's `project init` refuses a store marker
   that cannot be read as `data_error` (`invalid_marker`), like `store init` (it was
   `store_unavailable`) (ADR-024 errata 4 and 5, ADR-025 errata 3 and 4).
 - `retman scaffold check --tool kartograf`: X9 lists only the data commands no operation uses.
   A command whose run is read-only in `command_schema` (the source listings, the availability
   reports, `store overview`, `sheet`, `config show`) is no data command for the scaffold; the
   list went from 41 to 14 commands (ADR-025 erratum 2).
-- The `tools` group pins Kartograf `8ad55ab6`, the head of its branch
+- The `tools` group pins Kartograf `dbcfe5bb`, the head of its branch
   `feature/archiwista-projects`, which is on GitHub; the supported range stays
   `>=0.8.0.dev0,<0.9`. Kartograf keeps no projects any more (Nogat ECO-054); Retman's Kartograf
   operations used none, so they are unchanged. `retman scaffold check --tool kartograf` lists 10
@@ -295,7 +295,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `download_imgw_project`, `check_imgw_project` and `verify_imgw_project`, with their
   previews, texts and eval rows. IMGWTools keeps no projects any more: projects, and the pins
   of store versions, belong to Archiwista (Nogat ECO-054). The `tools` group pins IMGWTools
-  `4bf8bb0d`, the head of its `feature/archiwista-projects`, and the tool's new error code
+  `8cd6844c`, the head of its `feature/archiwista-projects`, and the tool's new error code
   `unsupported` has its text. Migration: keep a project in Archiwista; Retman still downloads,
   checks and synchronises the IMGW store (ARCHITECTURE 3.2.11).
 - The task name extractor `identifier` and its text `extractors.errors.invalid_identifier`: its

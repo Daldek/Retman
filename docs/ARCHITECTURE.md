@@ -2322,8 +2322,8 @@ a GPU. The results go into the documentation as guidance for model selection (PR
   nor `mypy src tests` depends on what is installed.
 - The `tools` dependency group in `pyproject.toml` serves tests and manual runs; it is not
   a dependency of the user's environment. Until the tags `v0.8.0` (Kartograf) and `v3.0.0`
-  (IMGWTools) it pins commits: Kartograf `8a36e977` and IMGWTools with the `store` extra
-  (`7b11755`), the heads of the branches `feature/data-output` of the two tools, not pushed yet:
+  (IMGWTools) it pins commits: Kartograf `d6c0ca69` and IMGWTools with the `store` extra
+  (`97c1057`), the heads of the branches `feature/data-output` of the two tools, not pushed yet:
   `uv lock` resolves them only where the git cache holds them, until the author pushes both
   tools; PROGRESS Next 2); after release it switches to tags (ADR-012, ADR-024). The IMGWTools `store`
   extra installs `pyarrow` (time series are Parquet files).
