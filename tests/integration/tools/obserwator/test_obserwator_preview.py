@@ -237,7 +237,7 @@ def test_a_store_that_is_there_but_cannot_write_series_needs_pyarrow(
 ):
     monkeypatch.setattr(preview_module, "tool_installed", lambda name: False)
     client = FakeToolClient(
-        documents={"store info": READY, "series summary": {"result": {"items": []}}}
+        documents={"store info": READY, "series summary": {"result": []}}
     )
 
     writing = review(
@@ -609,8 +609,8 @@ def test_a_review_asks_the_tool_only_offline_questions(operations, tmp_path):
     client = FakeToolClient(
         documents={
             "store info": READY,
-            "series summary": {"result": {"items": []}},
-            "datasets files": {"result": {"items": []}},
+            "series summary": {"result": []},
+            "datasets files": {"result": []},
         }
     )
 

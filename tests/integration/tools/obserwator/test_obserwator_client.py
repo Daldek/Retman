@@ -131,9 +131,10 @@ def test_lookup_serves_the_store_and_the_registry_as_the_tools_envelope(client):
     datasets = client.lookup(CatalogCall("datasets list", {"provider": "CHMI"}))
 
     assert stations["schema"] == "obserwator-result/1" and stations["status"] == "ok"
-    assert stations["result"]["total"] == len(stations["result"]["items"]) == 11
+    assert stations["page"] == {"total": 11, "next_cursor": None, "truncated": False}
+    assert len(stations["result"]) == 11
     assert info["result"]["exists"] and info["result"]["supported"]
-    assert {item["key"] for item in datasets["result"]["items"]} >= {
+    assert {item["key"] for item in datasets["result"]} >= {
         "cz.chmi.hydro_daily",
         "cz.chmi.meteo_daily",
     }

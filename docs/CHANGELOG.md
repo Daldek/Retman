@@ -177,6 +177,13 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 - The repository URL of Obserwator is `github.com/Daldek/Obserwator` (renamed from
   `Daldek/IMGWTools`; Nogat plan `2026-11-03-imgwtools-to-obserwator` step 5); same pinned commit.
 
+- Obserwator pinned at `1ee5457` (the Nogat release set `candidate-1`), whose documents follow
+  the Nogat standard 1.0 (its ADR-010). Retman reads a list command's items from `result` (a
+  list; the paging is the envelope's `page`), a notice's text from `message` and passes the
+  tool's `hint` with its errors; the scaffold reads Obserwator's `commands-1` catalog. The
+  `command_line` of an audit call ends with `--json`, so the line prints the envelope Retman
+  keeps. An Obserwator document kept as a result (`obserwator_report`) has the new shape.
+
 - **Breaking: agent interfaces** (AGI, ADR-022). One executable `retman <group> <verb>`
   generated from a command catalog; `retman commands list|schema|guide` serve the catalog and
   the guides for agents; `--json` prints the envelope `retman-result/1` (the outcomes `partial`

@@ -161,7 +161,8 @@ def synthetic_station_document(options: Mapping[str, object]) -> ToolDocument:
         "command": "stations find",
         "check": False,
         "status": "ok",
-        "result": {"items": items, "total": len(items), "limit": None, "offset": 0},
+        "result": items,
+        "page": {"total": len(items), "next_cursor": None, "truncated": False},
         "notices": [],
     }
 

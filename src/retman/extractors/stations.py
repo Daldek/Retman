@@ -247,8 +247,7 @@ class StationIndex:
         except RetmanError as err:
             code = getattr(err, "code", None)
             return cls((), "no_catalog" if code in _NO_CATALOG_CODES else "unreadable")
-        result = document.get("result") if isinstance(document, Mapping) else None
-        items = result.get("items") if isinstance(result, Mapping) else None
+        items = document.get("result") if isinstance(document, Mapping) else None
         if not isinstance(items, list):
             return cls((), "unreadable")
         return cls.from_entries(items)

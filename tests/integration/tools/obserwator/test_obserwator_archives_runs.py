@@ -125,7 +125,7 @@ def test_a_store_that_is_not_there_blocks_the_plan_and_is_never_initialised(
     tmp_path: Path, operation: str, params: dict[str, Any]
 ) -> None:
     client = FakeToolClient(
-        documents={"store info": NO_STORE, "store scan": {"result": {"items": []}}}
+        documents={"store info": NO_STORE, "store scan": {"result": []}}
     )
 
     result = preview(operation, params, client, inputs={"plan": tmp_path / "plan.json"})
@@ -149,7 +149,7 @@ def test_series_need_pyarrow_so_sync_is_blocked_without_it(
         SELECTION,
         FakeToolClient(documents={"store info": READY}),
     )
-    listing: dict[str, Any] = {"result": {"items": []}}
+    listing: dict[str, Any] = {"result": []}
     check = preview(
         "check_obserwator_archives",
         SELECTION,

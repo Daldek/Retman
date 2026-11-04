@@ -29,9 +29,10 @@ def test_the_synthetic_catalog_serves_only_the_store_search_and_filters_it():
         CatalogCall("stations find", {"source": "store", "query": "wisl"})
     )
 
-    assert everything["result"]["total"] == len(synthetic_station_items())
-    assert {item["provider"] for item in czech["result"]["items"]} == {"CHMI"}
-    assert {item["river"] for item in river["result"]["items"]} == {"Wisła"}
+    assert everything["page"]["total"] == len(synthetic_station_items())
+    assert len(everything["result"]) == len(synthetic_station_items())
+    assert {item["provider"] for item in czech["result"]} == {"CHMI"}
+    assert {item["river"] for item in river["result"]} == {"Wisła"}
     with pytest.raises(ToolError) as caught:
         catalog_lookup(CatalogCall("store info", {}))
     assert caught.value.tool_code == "not_found"
@@ -48,8 +49,8 @@ def test_the_stand_in_has_a_complete_store_and_never_runs_anything(client):
     )
 
     assert client.lookup(CatalogCall("store info", {}))["result"]["supported"]
-    assert {item["variable"] for item in summary["result"]["items"]} == {"H", "Q", "T"}
-    assert files["result"]["total"] == 1  # a pure command goes to the real tool
+    assert {item["variable"] for item in summary["result"]} == {"H", "Q", "T"}
+    assert files["page"]["total"] == 1  # a pure command goes to the real tool
     for method in (client.run, client.check, client.query):
         with pytest.raises(ToolError) as caught:
             method(CatalogCall("store sync", {}))

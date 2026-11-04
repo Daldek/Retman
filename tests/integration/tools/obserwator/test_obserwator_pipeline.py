@@ -53,14 +53,12 @@ def make_app(
         documents={
             "stations find": lambda call: synthetic_station_document(call.options),
             "store info": {"result": store or {"exists": True, "supported": True}},
-            "series summary": {"result": {"items": []}},
+            "series summary": {"result": []},
             "datasets files": {
-                "result": {
-                    "items": [
-                        {"server_path": "dane/2000_o.zip"},
-                        {"server_path": "dane/2020_12_o.zip"},
-                    ]
-                }
+                "result": [
+                    {"server_path": "dane/2000_o.zip"},
+                    {"server_path": "dane/2020_12_o.zip"},
+                ]
             },
         }
     )

@@ -189,7 +189,7 @@ def test_the_current_version_is_the_one_the_tool_calls_current() -> None:
     store = fixture_store()
     client = real_client(store.parent, store)
     document = client.lookup(CatalogCall("store scan", {"kind": "archive"}))
-    items = document["result"]["items"]
+    items = document["result"]
 
     for dataset, years, slot in (
         (
@@ -288,7 +288,7 @@ def test_export_makes_one_call_per_stored_archive(tmp_path: Path) -> None:
         _entry(slot.format(n="01"), "v/1", year=2020),
         _entry(slot.format(n="02"), "v/2", year=2020),
     ]
-    client = FakeToolClient(documents={"store scan": {"result": {"items": items}}})
+    client = FakeToolClient(documents={"store scan": {"result": items}})
     params = {
         "dataset": "pl_hydro_daily",
         "years": {"type": "years", "first": 2020, "last": 2020},

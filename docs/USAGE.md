@@ -580,7 +580,7 @@ Excerpt (result from section 5.2):
  "tool": {
   "tool": "obserwator", "version": "3.0.0",
   "calls": [{"command": "series export",
-             "command_line": "obserwator series export --root <store> --dataset pl.imgw.hydro_daily --station 149190310 …",
+             "command_line": "obserwator series export --root <store> --dataset pl.imgw.hydro_daily --station 149190310 … --json",
              "status": "ok", "document_file": "tool_1_series_export.json", "sha256": "7b645332…"}]
  }
 }
