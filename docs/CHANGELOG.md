@@ -47,6 +47,18 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `not_initialised`); 16 rows of the command set. `retman scaffold check` tells a command the
   command layer runs (X1) from a command an operation is expected to offer (X9), so an
   operation may run a store read.
+- Two Kartograf operations on spatial data ("Dane przestrzenne GUGiK", PRD 7.2, ARCHITECTURE
+  3.2.10): the orthophoto cutout of an area (`imagery download --cutout`: one GeoTIFF of a
+  rectangle or of the rectangle around a geometry file, the RGB orthophoto from the standard or
+  the high-resolution WCS or the true orthophoto of selected cities, a pixel of 5 cm to 1 m;
+  the availability check reads the sheet index of the area); and the land cover of an area
+  (`landcover download`): CORINE Land Cover of an edition from 1990 to 2018, which without CLMS
+  credentials is a WMS preview the result names as such, or the BDOO packages of every
+  voivodeship the area touches in a yearly release, a failed voivodeship being a warning. The
+  data kinds `landcover_raster` (GeoTIFF or PNG) and `topographic_archive` (ZIP) are new, and
+  the command set has 34 rows for them and a near miss for the Czech land cover (ZABAGED,
+  Data50, Data250), which needs an area Retman does not read yet. With ten Kartograf
+  operations its recognition is two-stage as well (category, then operation).
 - All Obserwator 3.0.0 (formerly IMGWTools) operations, ČHMÚ included: 19 operations in 5 categories (station
   search and catalog, current data and warnings, PMAXTP, station series, archives and the
   store; ADR-017, PRD 7.2).

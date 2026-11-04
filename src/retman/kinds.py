@@ -38,6 +38,7 @@ _CSV_ROWS_CHECKED = 5
 _TIFF_SIGNATURES = (b"II*\x00", b"MM\x00*", b"II+\x00", b"MM\x00+")
 _SQLITE_SIGNATURE = b"SQLite format 3\x00"
 _ZIP_SIGNATURE = b"PK\x03\x04"
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 _SHAPEFILE_CODE = (9994).to_bytes(4, "big")
 _UTF8_BOM = b"\xef\xbb\xbf"
 
@@ -96,6 +97,8 @@ def _check_signature(path: Path) -> str | None:
         valid = header[:4] == _SHAPEFILE_CODE
     elif suffix == ".zip":
         valid = header[:4] == _ZIP_SIGNATURE
+    elif suffix == ".png":
+        valid = header[:8] == _PNG_SIGNATURE
     else:
         valid = False
     return None if valid else "invalid_header"
@@ -272,6 +275,10 @@ KINDS: dict[str, Kind] = _kinds(
     # hydrologic soil groups computed from the texture (GeoTIFF, classes 1-4 = A-D)
     Kind("soil_raster", (".tif",), _check_signature),
     Kind("hsg_raster", (".tif",), _check_signature),
+    # CORINE Land Cover: class codes (GeoTIFF) or, without CLMS credentials, the
+    # coloured WMS preview (PNG); BDOO: one ZIP of GML files per voivodeship
+    Kind("landcover_raster", (".tif", ".png"), _check_signature),
+    Kind("topographic_archive", (".zip",), _check_signature),
     # A user's file with the area geometry, checked like topographic_vector
     Kind("area_geometry", (".gpkg", ".shp"), _check_signature),
     # Obserwator: station lists, series, PMAXTP, live data, archives and reports

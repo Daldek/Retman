@@ -7,13 +7,18 @@ version and the files are real files. What would use the network is replaced by
 stubs of the public provider classes: the GUGiK sheet providers answer
 ``resolve_campaigns`` from an index of flights and write a sheet in ``download_record``
 (:class:`GugikIndex`), BDOT10k answers ``teryts_for_area`` and ``download_package``
-from a list of counties (:class:`Counties`), and SoilGrids answers ``edition`` and
-writes a GeoTIFF in ``download_by_bbox`` (:class:`SoilGrids`). A call that reaches a
-socket anyway fails (``tests/conftest.py`` blocks it). The stores the tests only read
-are built by ``kartograf.testing`` (DEV-10.6).
+from a list of counties (:class:`Counties`), SoilGrids answers ``edition`` and
+writes a GeoTIFF in ``download_by_bbox`` (:class:`SoilGrids`), the GUGiK image WCS
+writes an RGB cutout (:class:`ImageWcs`), CORINE writes its WMS preview
+(:class:`Corine`) and BDOO's voivodeships and packages come from :class:`Bdoo`. A
+call that reaches a socket anyway fails (``tests/conftest.py`` blocks it). The
+stores the tests only read are built by ``kartograf.testing`` (DEV-10.6).
 """
 
+import io
+import struct
 import threading
+import zlib
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
@@ -25,6 +30,8 @@ import kartograf
 import numpy
 import rasterio
 import requests
+from kartograf.download import collections
+from kartograf.providers.pl.gugik_orto import GugikImageProvider
 from kartograf.providers.pl.skorowidz import SkorowidzRecord
 from kartograf.sources.edition import Edition
 from rasterio.transform import from_bounds
@@ -299,5 +306,186 @@ def soilgrids(service: SoilGrids) -> Iterator[SoilGrids]:
     with (
         patch.object(kartograf.SoilGridsProvider, "download_by_bbox", service.download),
         patch.object(kartograf.SoilGridsProvider, "edition", service.edition),
+    ):
+        yield service
+
+
+class ImageWcs:
+    """The stubbed GUGiK image WCS: an RGB GeoTIFF of the grid each request asks for.
+
+    ``value`` is every band of every pixel (0 is an image without data, which
+    Kartograf refuses as no coverage); ``requests`` lists the steps asked for.
+    """
+
+    def __init__(self, value: int = 128) -> None:
+        self.value = value
+        self.requests: list[float] = []
+
+    def download(
+        self, provider: GugikImageProvider, bbox: kartograf.BBox, output_path: Path
+    ) -> Path:
+        """Write the image of ``bbox`` on the provider's own pixel grid."""
+        grid = provider.WCS_GRID
+        assert grid is not None  # every image product with a cutout has its grid
+        step = grid.step
+        self.requests.append(step)
+        width = round((bbox.max_x - bbox.min_x) / step)
+        height = round((bbox.max_y - bbox.min_y) / step)
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with rasterio.open(
+            path,
+            "w",
+            driver="GTiff",
+            height=height,
+            width=width,
+            count=3,
+            dtype="uint8",
+            crs="EPSG:2180",
+            transform=from_bounds(
+                bbox.min_x, bbox.min_y, bbox.max_x, bbox.max_y, width, height
+            ),
+        ) as raster:
+            raster.write(numpy.full((3, height, width), self.value, dtype="uint8"))
+        return path
+
+
+@contextmanager
+def image_wcs(service: ImageWcs) -> Iterator[ImageWcs]:
+    """Answer the GUGiK image WCS (orthophoto and true orthophoto cutouts)."""
+
+    def download(
+        provider: GugikImageProvider,
+        bbox: kartograf.BBox,
+        output_path: Path,
+        format: str,
+        timeout: float,
+        description: str,
+    ) -> Path:
+        return service.download(provider, bbox, output_path)
+
+    with patch.object(GugikImageProvider, "_download_wcs", download):
+        yield service
+
+
+def png() -> bytes:
+    """A 2 x 2 opaque RGBA PNG: what the CORINE WMS sends for an area with data."""
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
+
+    rows = b"".join(b"\x00" + bytes((230, 0, 77, 255)) * 2 for _ in range(2))
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", 2, 2, 8, 6, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(rows))
+        + chunk(b"IEND", b"")
+    )
+
+
+class Corine:
+    """The stubbed CORINE service without CLMS credentials: the WMS preview (PNG).
+
+    ``years`` lists the editions downloaded.
+    """
+
+    def __init__(self) -> None:
+        self.years: list[int] = []
+
+    def download(
+        self,
+        bbox: kartograf.BBox,
+        output_path: Path,
+        timeout: int = 60,
+        *,
+        year: int,
+        **kwargs: Any,
+    ) -> Path:
+        """Write the preview of ``year`` over the rectangle."""
+        self.years.append(year)
+        path = Path(output_path).with_suffix(".png")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(png())
+        return path
+
+
+@contextmanager
+def corine(service: Corine) -> Iterator[Corine]:
+    """Answer CORINE as without CLMS credentials: every edition is a WMS preview."""
+    with (
+        patch.object(kartograf.CorineProvider, "uses_clms", lambda self, year: False),
+        patch.object(kartograf.CorineProvider, "download_by_bbox", service.download),
+    ):
+        yield service
+
+
+class _Response:
+    """A streamed ``requests.Response`` stand-in of the BDOO opendata server."""
+
+    def __init__(self, status: int, body: bytes) -> None:
+        self.status_code = status
+        self.headers = {"Content-Length": str(len(body))}
+        self.content = body
+        self.text = body.decode("utf-8", errors="replace")
+
+    def raise_for_status(self) -> None:
+        if self.status_code >= 400:
+            error = requests.HTTPError(f"{self.status_code} Error")
+            error.response = self  # type: ignore[assignment]
+            raise error
+
+    def iter_content(self, chunk_size: int = 1) -> Iterator[bytes]:
+        size = max(int(chunk_size), 1)
+        for start in range(0, len(self.content), size):
+            yield self.content[start : start + size]
+
+
+class Bdoo:
+    """The stubbed BDOO opendata: the PRG counties of an area and the packages.
+
+    ``teryts`` are the counties (PRG) an area intersects; its voivodeships are their
+    first two digits. A package of a voivodeship in ``missing`` is a 404. ``fetched``
+    lists the package urls transferred.
+    """
+
+    def __init__(self, teryts: Sequence[str], *, missing: Iterable[str] = ()) -> None:
+        self.teryts = list(teryts)
+        self.missing = set(missing)
+        self.fetched: list[str] = []
+
+    def counties(self, bbox: Any, **kwargs: Any) -> list[str]:
+        """The counties of the area."""
+        return list(self.teryts)
+
+    def _answer(self, url: str) -> _Response:
+        voivodeship = url.rsplit(".", 2)[-2]
+        if voivodeship in self.missing:
+            return _Response(404, b"<html>404 Not Found</html>")
+        buffer = io.BytesIO()
+        with ZipFile(buffer, "w") as archive:
+            name = f"PL.PZGiK.201.{voivodeship}"
+            archive.writestr(f"{name}/BDOO/{name}__OT_PTWP_A.xml", b"<gml/>")
+        return _Response(200, buffer.getvalue())
+
+    def get(self, url: str, **kwargs: Any) -> _Response:
+        """``GET`` of a package."""
+        self.fetched.append(url)
+        return self._answer(url)
+
+    def head(self, url: str, **kwargs: Any) -> _Response:
+        """``HEAD`` of a package: its size."""
+        answer = self._answer(url)
+        if answer.status_code >= 400:
+            return _Response(answer.status_code, b"")
+        return answer
+
+
+@contextmanager
+def bdoo(service: Bdoo) -> Iterator[Bdoo]:
+    """Answer BDOO (the PRG counties of an area and the packages) from ``service``."""
+    with (
+        patch.object(collections, "discover_teryts_for_bbox", service.counties),
+        patch.object(collections, "_session", lambda: service),
     ):
         yield service

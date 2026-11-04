@@ -4,8 +4,9 @@ The user confirms it separately from the plan (ARCHITECTURE 6.5); it reads what
 GUGiK's indexes hold for the plan's area and writes nothing. It reports, never
 decides: the user changes the plan or confirms it. Elevation data are asked of
 ``elevation availability`` (years, resolutions, height systems, completeness);
-orthophoto sheets, BDOT10k counties and SoilGrids layers have no availability
-report, so their freshness plans (``check_command``) are read instead.
+orthophoto sheets (also those standing in for an orthophoto cutout), BDOT10k counties,
+BDOO voivodeships, CORINE and SoilGrids layers have no availability report, so their
+freshness plans (``check_command``) are read instead.
 """
 
 from collections import Counter
@@ -25,8 +26,10 @@ _SYSTEM = {"1992": "PL-1992", "2000": "PL-2000"}
 _CUTOUT_RESOLUTION = "1m"
 # A freshness plan item whose source has the sheet
 _PUBLISHED = ("missing", "current", "newer")
-# Counties named in one line
-_SHOWN_COUNTIES = 12
+# Units (counties, voivodeships) named in one line
+_SHOWN_UNITS = 12
+# The segment of a CORINE WMS preview (no CLMS credentials): no cheap signal
+_PREVIEW_SEGMENT = "_preview"
 # The plan track of the computed hydrologic soil groups (the others are its inputs)
 _HSG_TRACK = "hsg"
 
@@ -171,8 +174,14 @@ def _refused(plan: Mapping[str, Any]) -> CheckOutput | None:
     return None
 
 
-def _orthophoto(call: CatalogCall, ctx: ToolContext) -> CheckOutput:
-    """Check the newest RGB flight GUGiK's index lists for each requested sheet."""
+def _orthophoto(
+    call: CatalogCall, ctx: ToolContext, *, words: str = "orthophoto"
+) -> CheckOutput:
+    """Check the newest flight GUGiK's index lists for each requested sheet.
+
+    ``words`` names the product in the keys of the lines (``orthophoto``: the RGB
+    orthophotomap, ``true_orthophoto``: the true orthophoto of selected cities).
+    """
     try:
         plan = ctx.runner.check(call)
     except ToolError as err:
@@ -180,7 +189,7 @@ def _orthophoto(call: CatalogCall, ctx: ToolContext) -> CheckOutput:
             raise
         return {
             "status": "unavailable",
-            "items": [{"key": "orthophoto_none", "args": {"detail": err.detail}}],
+            "items": [{"key": f"{words}_none", "args": {"detail": err.detail}}],
         }
     if (refused := _refused(plan)) is not None:
         return refused
@@ -203,7 +212,7 @@ def _orthophoto(call: CatalogCall, ctx: ToolContext) -> CheckOutput:
         status = "available"
     lines: list[CheckItem] = [
         {
-            "key": "orthophoto_sheets",
+            "key": f"{words}_sheets",
             "args": {
                 "published": str(published),
                 "total": str(total),
@@ -237,6 +246,41 @@ def download_elevation_cutout(params: dict[str, Any], ctx: ToolContext) -> Check
     return _elevation(call, ctx)
 
 
+def download_orthophoto_cutout(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
+    """Check the cutout: the sheet index of the area is a proxy for what WCS composes.
+
+    The cutout itself has no cheap signal (Kartograf's plan cannot tell without
+    downloading), so the index of the PL-1992 sheets of the same area is asked
+    instead, as for the elevation cutout.
+    """
+    (cutout,) = calls.download_orthophoto_cutout(params, ctx)
+    area = {
+        name: value for name, value in cutout.options.items() if name in _AREA_OPTIONS
+    }
+    sheets = CatalogCall(
+        cutout.command, {**area, "sheet_system": "1992"}, cutout.kind, cutout.params
+    )
+    words = "orthophoto" if params["product"] == "orthophoto" else "true_orthophoto"
+    report = _orthophoto(sheets, ctx, words=words)
+    return {
+        "status": report["status"],
+        "items": [*report["items"], {"key": "cutout_note", "args": {}}],
+    }
+
+
+def _shown(units: list[str]) -> str:
+    """Return the units of a plan for one line (the first of many and an ellipsis)."""
+    shown = ", ".join(units[:_SHOWN_UNITS])
+    return shown + ", ..." if len(units) > _SHOWN_UNITS else shown
+
+
+def _verdict(statuses: Counter[str], count: int) -> CheckStatus:
+    """Return ``unknown`` when no position was checked, ``partial`` when some were."""
+    if statuses["check_failed"] == count:
+        return "unknown"
+    return "partial" if statuses["check_failed"] else "available"
+
+
 def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
     """Check the counties an area touches and whether their packages are stored."""
     (call,) = calls.download_bdot10k(params, ctx)
@@ -248,21 +292,65 @@ def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
         return {"status": "unavailable", "items": [{"key": "no_counties", "args": {}}]}
     statuses = Counter(item["status"] for item in items)
     units = [str(item["unit"]) for item in items]
-    status: CheckStatus
-    if statuses["check_failed"] == len(items):
-        status = "unknown"
-    elif statuses["check_failed"]:
-        status = "partial"
-    else:
-        status = "available"
-    shown = ", ".join(units[:_SHOWN_COUNTIES])
-    if len(units) > _SHOWN_COUNTIES:
-        shown += ", ..."
     lines: list[CheckItem] = [
-        {"key": "counties", "args": {"count": str(len(units)), "units": shown}}
+        {"key": "counties", "args": {"count": str(len(units)), "units": _shown(units)}}
     ]
     if statuses["current"]:
         lines.append({"key": "in_store", "args": {"count": str(statuses["current"])}})
+    return {"status": _verdict(statuses, len(items)), "items": lines}
+
+
+def download_landcover(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
+    """CORINE: the edition the CLMS catalogue announces; BDOO: the voivodeships.
+
+    Without CLMS credentials CORINE is a WMS preview, which has no cheap signal;
+    BDOO has none either, so its plan lists the voivodeships of the area (PRG) and
+    what the store holds.
+    """
+    (call,) = calls.download_landcover(params, ctx)
+    plan = ctx.runner.check(call)
+    if (refused := _refused(plan)) is not None:
+        return refused
+    items = plan["items"]
+    if not items:
+        key = "no_voivodeships" if params["product"] == "bdoo" else "corine_none"
+        return {"status": "unavailable", "items": [{"key": key, "args": {}}]}
+    statuses = Counter(item["status"] for item in items)
+    status = _verdict(statuses, len(items))
+    lines: list[CheckItem] = []
+    if params["product"] == "bdoo":
+        units = [str(item["unit"]) for item in items]
+        lines.append(
+            {
+                "key": "voivodeships",
+                "args": {"count": str(len(units)), "units": _shown(units)},
+            }
+        )
+    elif any(str(item["segment"]).endswith(_PREVIEW_SEGMENT) for item in items):
+        status = "unknown"
+        lines.append({"key": "corine_preview", "args": {}})
+    else:
+        editions = sorted(
+            {str(item["available_label"]) for item in items if item["available_label"]}
+        )
+        if editions:
+            lines.append(
+                {"key": "corine_edition", "args": {"edition": ", ".join(editions)}}
+            )
+    if statuses["check_failed"]:
+        lines.append(
+            {
+                "key": "landcover_unchecked",
+                "args": {"count": str(statuses["check_failed"])},
+            }
+        )
+    # Neither BDOO nor the CORINE preview has a signal: a stored position is one
+    # with a local version, whatever its status
+    stored = sum(item["local_label"] is not None for item in items)
+    if stored:
+        lines.append({"key": "in_store", "args": {"count": str(stored)}})
+    if statuses["newer"]:
+        lines.append({"key": "soil_newer", "args": {"count": str(statuses["newer"])}})
     return {"status": status, "items": lines}
 
 

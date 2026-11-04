@@ -1,6 +1,6 @@
 [categories.spatial_data]
 label = "Dane przestrzenne GUGiK"
-description = "Pobieranie danych przestrzennych z GUGiK: numeryczny model terenu NMT, numeryczny model pokrycia terenu NMPT, ortofotomapa, wycinki wysokościowe i BDOT10k (wektory topograficzne); założenie i przegląd magazynu Kartografa (znacznik magazynu, segmenty danych)"
+description = "Pobieranie danych przestrzennych z GUGiK: numeryczny model terenu NMT, numeryczny model pokrycia terenu NMPT, ortofotomapa (arkusze i wycinek obszaru), wycinki wysokościowe, BDOT10k (wektory topograficzne), BDOO i pokrycie terenu CORINE Land Cover; założenie i przegląd magazynu Kartografa (znacznik magazynu, segmenty danych)"
 
 [categories.soil_data]
 label = "Dane glebowe SoilGrids"
@@ -221,6 +221,122 @@ options.shp.label = "Shapefile (.shp)"
 options.shp.description = "Shapefile (.shp, SHP) — wszystkie warstwy z pakietu ZIP wraz z .dbf/.shx/.prj"
 options.unspecified.description = "Nie podano formatu — dopytaj o GeoPackage albo Shapefile"
 
+[operations.download_orthophoto_cutout]
+label = "Wycinek ortofotomapy dla prostokąta lub obszaru"
+description = "Pobierz jeden obraz GeoTIFF ortofotomapy z WCS GUGiK dla prostokąta współrzędnych albo obwiedni pliku geometrii: ortofotomapa (ortofoto, orthophoto, zdjęcie lotnicze, zdjęcia z lotu, mapa satelitarna obszaru) w barwach naturalnych RGB albo prawdziwa ortofotomapa (true orto, true ortho) wybranych miast; jeden plik obszaru zamiast arkuszy, z wybranym pikselem."
+
+[operations.download_orthophoto_cutout.check]
+notice = "Zapytam skorowidz ortofotomapy GUGiK (WMS) o arkusze PL-1992 prostokąta albo pliku z planu i ich najnowsze loty. Wycinek składa serwer WCS, więc skorowidz arkuszy tylko przybliża, co będzie w wyniku."
+
+[operations.download_orthophoto_cutout.params.product]
+label = "Rodzaj ortofotomapy"
+question = "Jaką ortofotomapę wyciąć: zwykłą ortofotomapę RGB czy prawdziwą ortofotomapę (true orto) wybranych miast?"
+model_question = "Jaki rodzaj ortofotomapy wymienia polecenie?"
+help = "Ortofotomapa obejmuje całą Polskę. Prawdziwa ortofotomapa (true orto, piksel 5 cm) jest tylko dla wybranych miast; poza nimi piksele są czarne (0, 0, 0). Wycinek pochodzi z kompozycji lotów serwera GUGiK: rocznika ani lotu nie wybierasz."
+options.orthophoto.label = "Ortofotomapa RGB"
+options.orthophoto.description = "orto — zwykła ortofotomapa w barwach naturalnych, ortofoto, orthophoto, zdjęcie lotnicze, zdjęcia z lotu (domyślna, gdy polecenie mówi po prostu o ortofotomapie)"
+options.true_orthophoto.label = "Prawdziwa ortofotomapa (true orto) miast"
+options.true_orthophoto.description = "true orto — prawdziwa ortofotomapa wybranych miast, true ortho, true orthophoto, bez przechyleń budynków, piksel 5 cm"
+options.unspecified.description = "Nie podano rodzaju ortofotomapy — dopytaj o zwykłą albo prawdziwą (true orto)"
+
+[operations.download_orthophoto_cutout.params.area]
+label = "Prostokąt lub obszar wycinka ortofotomapy"
+question = "Jaki prostokąt współrzędnych albo plik geometrii wyciąć z ortofotomapy?"
+help = "Podaj granice prostokąta w PL-1992 (EPSG:2180) lub WGS84 (EPSG:4326) albo plik SHP/GPKG. Dla pliku wycinek obejmuje prostokąt wszystkich jego obiektów i nie jest przycinany do kształtu. Obraz jest zawsze w układzie siatki usługi, PL-1992 (EPSG:2180), bez przepróbkowania."
+example = "566000,243000,566500,243500 EPSG:2180"
+geometry_note = "jeden prostokąt obejmujący wszystkie obiekty warstwy; nie przycina do wieloboku"
+
+[operations.download_orthophoto_cutout.params.coverage]
+label = "Wariant usługi ortofotomapy"
+question = "Z którego wariantu usługi WCS GUGiK wyciąć ortofotomapę: standardowego (najnowsze dostępne zdjęcia) czy wysokiej rozdzielczości (zdjęcia o pikselu 10 cm i mniejszym)?"
+model_question = "Jaki wariant usługi ortofotomapy (standardowy czy wysokiej rozdzielczości) wymienia polecenie?"
+help = "Wariant standardowy składa najnowsze dostępne zdjęcia. Wariant wysokiej rozdzielczości składa tylko zdjęcia o pikselu 10 cm lub mniejszym, których nie ma dla całego kraju. Piksel wyniku wybierasz osobno."
+options.standard.label = "Standardowy (najnowsze zdjęcia)"
+options.standard.description = "standard — najnowsze dostępne ortofotomapy, zwykła usługa, aktualne zdjęcia"
+options.high.label = "Wysoka rozdzielczość (piksel 10 cm i mniej)"
+options.high.description = "high — ortofotomapa wysokiej rozdzielczości, zdjęcia o pikselu 10 cm lub mniejszym, szczegółowa, HD"
+options.unspecified.description = "Nie podano wariantu usługi — dopytaj o standardowy albo wysokiej rozdzielczości"
+
+[operations.download_orthophoto_cutout.params.resolution]
+label = "Piksel wycinka"
+question = "Jaki piksel ma mieć wycinek: 5 cm (tylko true orto), 10 cm, 25 cm, 50 cm czy 1 m?"
+model_question = "Jaki piksel (rozdzielczość) wycinka wymienia polecenie?"
+help = "Mniejszy piksel to więcej szczegółów i większy plik: 500 × 500 m w pikselu 25 cm to 2000 × 2000 pikseli. Piksel 5 cm ma tylko prawdziwa ortofotomapa (true orto)."
+options.0_05m.label = "5 cm (tylko true orto)"
+options.0_05m.description = "0,05 m — piksel 5 centymetrów, 0.05 m, 5 cm (tylko prawdziwa ortofotomapa)"
+options.0_1m.label = "10 cm"
+options.0_1m.description = "0,1 m — piksel 10 centymetrów, 0.1 m, 10 cm"
+options.0_25m.label = "25 cm"
+options.0_25m.description = "0,25 m — piksel 25 centymetrów, 0.25 m, 25 cm, ćwierć metra"
+options.0_5m.label = "50 cm"
+options.0_5m.description = "0,5 m — piksel 50 centymetrów, 0.5 m, 50 cm, pół metra"
+options.1m.label = "1 m"
+options.1m.description = "1 m — piksel 1 metr, 100 cm"
+options.unspecified.description = "Nie podano piksela — dopytaj, o który chodzi"
+
+[operations.download_landcover]
+label = "Pokrycie terenu CORINE albo BDOO"
+description = "Pobierz pokrycie terenu dla godła arkusza, prostokąta albo pliku geometrii: CORINE Land Cover (CLC, Copernicus, EEA, klasy pokrycia i użytkowania terenu Europy, raster) z wybranego wydania albo BDOO (baza danych obiektów ogólnogeograficznych GUGiK, 1:250 000, paczki GML województw) z wybranego rocznika. Nie dla BDOT10k (osobna operacja paczek powiatów)."
+
+[operations.download_landcover.check]
+notice = "Dla CORINE zapytam katalog CLMS (Copernicus) o wydanie z planu; podglądu WMS nie da się sprawdzić bez pobrania. Dla BDOO zapytam usługę PRG GUGiK, które województwa przecina obszar, i sprawdzę, czy ich paczki są już w magazynie. Niczego nie pobieram."
+
+[operations.download_landcover.params.product]
+label = "Produkt pokrycia terenu"
+question = "Które pokrycie terenu pobrać: CORINE Land Cover czy BDOO?"
+model_question = "Jaki produkt pokrycia terenu wymienia polecenie?"
+help = "CORINE Land Cover to europejski raster klas pokrycia terenu (44 klasy, najmniejszy wydzielony obszar 25 ha). BDOO to wektorowa baza obiektów ogólnogeograficznych GUGiK w skali 1:250 000, publikowana jako paczka GML dla każdego województwa. Szczegółowe wektory topograficzne 1:10 000 (BDOT10k) pobiera osobna operacja."
+options.corine.label = "CORINE Land Cover (Europa, raster)"
+options.corine.description = "CORINE — CORINE Land Cover, CLC, Copernicus, EEA, europejska mapa pokrycia i użytkowania terenu, klasy CLC, raster"
+options.bdoo.label = "BDOO (GUGiK, 1:250 000, województwa)"
+options.bdoo.description = "BDOO — baza danych obiektów ogólnogeograficznych GUGiK, mapa ogólnogeograficzna 1:250 000, wektory GML województw (to nie jest BDOT10k)"
+options.unspecified.description = "Nie podano produktu — dopytaj o CORINE albo BDOO"
+
+[operations.download_landcover.params.area]
+label = "Obszar pokrycia terenu"
+question = "Dla jakiego godła arkusza, prostokąta albo pliku geometrii pobrać pokrycie terenu?"
+help = "Podaj godło PL-1992 lub PL-2000, granice prostokąta w PL-1992 (EPSG:2180) lub WGS84 (EPSG:4326) albo plik SHP/GPKG. CORINE obejmuje prostokąt obszaru (dla pliku prostokąt wszystkich jego obiektów, bez przycięcia do kształtu). BDOO to pełne paczki wszystkich województw, które przecina obszar; listę województw daje dopiero zapytanie do PRG (sieć, po potwierdzeniu)."
+example = "N-34-130-D albo 16.90 52.40 16.95 52.45"
+geometry_note = "CORINE: jeden prostokąt obejmujący wszystkie obiekty warstwy; BDOO: pełne paczki województw przecinających obwiednię obszaru"
+
+[operations.download_landcover.params.corine_year]
+label = "Wydanie CORINE"
+question = "Które wydanie CORINE Land Cover pobrać: 2018, 2012, 2006, 2000 czy 1990?"
+model_question = "Jaki rok (wydanie) CORINE wymienia polecenie?"
+help = "Rok wydania to rok odniesienia danych. Z danymi logowania CLMS (zmienna CLMS_CREDENTIALS) Kartograf pobiera GeoTIFF z kodami klas dla lat 2018, 2012, 2006 i 2000; bez nich pobiera barwny podgląd WMS (obraz PNG). Rok 1990 jest tylko podglądem i nie obejmuje Polski."
+options.2018.label = "2018 (najnowsze)"
+options.2018.description = "2018 — CLC2018, najnowsze wydanie CORINE, aktualne pokrycie terenu"
+options.2012.label = "2012"
+options.2012.description = "2012 — CLC2012"
+options.2006.label = "2006"
+options.2006.description = "2006 — CLC2006"
+options.2000.label = "2000"
+options.2000.description = "2000 — CLC2000"
+options.1990.label = "1990 (tylko podgląd, bez Polski)"
+options.1990.description = "1990 — CLC1990, najstarsze wydanie, tylko podgląd WMS"
+options.unspecified.description = "Nie podano wydania CORINE — dopytaj o rok"
+
+[operations.download_landcover.params.bdoo_year]
+label = "Rocznik BDOO"
+question = "Który rocznik BDOO pobrać: 2026, 2025, 2024, 2023, 2022, 2021 czy 2015?"
+model_question = "Jaki rocznik BDOO wymienia polecenie?"
+help = "GUGiK publikuje BDOO jako roczniki; roczników 2014 i 2016–2020 nie ma. Paczki do 2023 nie mają plików klas bez obiektów w województwie."
+options.2026.label = "2026 (najnowszy)"
+options.2026.description = "2026 — najnowszy rocznik BDOO, aktualne dane"
+options.2025.label = "2025"
+options.2025.description = "2025 — rocznik 2025"
+options.2024.label = "2024"
+options.2024.description = "2024 — rocznik 2024"
+options.2023.label = "2023"
+options.2023.description = "2023 — rocznik 2023"
+options.2022.label = "2022"
+options.2022.description = "2022 — rocznik 2022"
+options.2021.label = "2021"
+options.2021.description = "2021 — rocznik 2021"
+options.2015.label = "2015 (najstarszy)"
+options.2015.description = "2015 — najstarszy rocznik BDOO"
+options.unspecified.description = "Nie podano rocznika BDOO — dopytaj o rok"
+
 [operations.init_kartograf_store]
 label = "Utworzenie magazynu Kartografa"
 description = "Utwórz (zainicjuj) magazyn Kartografa w folderze z konfiguracji: zapisz znacznik magazynu kartograf-store.json w nowym albo pustym folderze albo w folderze z układem magazynu bez znacznika (narzędzie najpierw sprawdza układ); pierwszy krok, gdy Kartograf odmawia zapisu w magazynie bez znacznika, założenie magazynu danych przestrzennych GUGiK, nowy magazyn Kartografa; nie pobiera danych, nie zmienia istniejącego magazynu."
@@ -376,13 +492,15 @@ masked_pixels = "Poza lądem zamaskowano {count} pikseli jako nodata."
 soil_all_nodata = "Warstwa SoilGrids nie ma danych dla tego obszaru (same zera: morze, wody, zabudowa albo skały)."
 hsg_all_nodata = "Grupy HSG nie mają żadnej klasy: dla całego obszaru brakuje danych o uziarnieniu (np. woda albo zabudowa)."
 unknown_segments = "Segmenty, których nie zna zainstalowany Kartograf ({count}): {segments} (np. z innej wersji narzędzia)."
+corine_preview = "Bez danych logowania CLMS (zmienna CLMS_CREDENTIALS) CORINE jest barwnym podglądem WMS (obraz PNG), a nie rastrem kodów klas: nadaje się do oglądania, nie do obliczeń."
+failed_voivodeships = "Nie udało się pobrać {count} z {total} paczek wojewódzkich BDOO (województwa: {units})."
 
 # Błędy Kartografa po kodzie rejestru błędów (ERR §4); jego własny tekst jest tylko
 # {detail}, a details.reason mówi, który to błąd tego kodu
 [errors]
 validation_error = "Kartograf odrzuca ten wybór: {detail}"
-no_data = "Źródło danych (GUGiK, SoilGrids) nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: {detail}"
-source_unavailable = "Nie udało się pobrać danych z usługi źródła (GUGiK, SoilGrids). Szczegóły: {detail}"
+no_data = "Źródło danych (GUGiK, SoilGrids, CORINE) nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: {detail}"
+source_unavailable = "Nie udało się pobrać danych z usługi źródła (GUGiK, SoilGrids, CORINE). Szczegóły: {detail}"
 store_unavailable = "Magazyn Kartografa albo jego pamięć podręczna metadanych nie nadaje się do użycia: {detail}. Sprawdź: retman doctor check"
 conflict = "Kartograf nie zapisze danych w tym magazynie: {detail}. Sprawdź: retman doctor check"
 data_error = "Dane, które Kartograf trzyma w magazynie, są nieprawidłowe albo niekompletne: {detail}"
@@ -403,6 +521,7 @@ no_descendants = "Arkusz {code} (PL-2000) nie ma arkuszy potomnych w skalach, kt
 no_sheets = "Plik geometrii nie przecina żadnego arkusza w wybranej skali."
 orthophoto_needs_sheet = "Ortofotomapę pobieram tylko dla godła arkusza, nie dla pliku geometrii. Podaj godło albo wybierz inne dane."
 outside_poland = "Obszar z pliku leży poza Polską, a BDOT10k obejmuje tylko Polskę."
+bdoo_outside_poland = "Obszar z pliku leży poza Polską, a BDOO obejmuje tylko Polskę."
 store_no_marker = "Folder {path} ma układ magazynu Kartografa, ale nie ma znacznika. Zapisz znacznik poleceniem „Utwórz magazyn Kartografa” (albo kartograf store init --root {path}); narzędzie najpierw sprawdzi układ."
 store_not_kartograf = "{path} nie jest magazynem Kartografa: to plik albo folder z innymi plikami. Wskaż pusty folder w ustawieniu store_dir tabeli [retman.tools.kartograf] pliku nogat.toml."
 store_marker_unreadable = "Znacznik kartograf-store.json w {path} jest nieczytelny. Magazyn jest uszkodzony albo pochodzi z innej wersji Kartografa; wskaż inny folder w ustawieniu store_dir tabeli [retman.tools.kartograf] pliku nogat.toml."
@@ -464,3 +583,11 @@ soil_edition = "  Wydanie SoilGrids: {edition} (warstw obszaru: {count})"
 soil_unchecked = "  Nie udało się sprawdzić wydania SoilGrids (warstw: {count})."
 soil_newer = "  {count} z nich ma w SoilGrids nowsze wydanie niż w magazynie; pobierze je tylko ustawienie update = \"upgrade\"."
 hsg_current = "  Grupy HSG tego obszaru są już w magazynie i zostały policzone z bieżących warstw."
+true_orthophoto_none = "  GUGiK nie ma prawdziwej ortofotomapy (true orto) dla tego obszaru (jest tylko dla wybranych miast). {detail}"
+true_orthophoto_sheets = "  Prawdziwa ortofotomapa: {published} z {total} arkuszy ma dane, najnowszy lot z dnia {newest}"
+voivodeships = "  Województwa obszaru: {count} ({units})"
+no_voivodeships = "  Obszar nie przecina żadnego województwa."
+corine_none = "  Plan CORINE nie ma żadnej pozycji dla tego obszaru."
+corine_preview = "  Bez danych logowania CLMS pobiorę podgląd WMS (obraz PNG); jego wydania nie da się sprawdzić bez pobrania."
+corine_edition = "  Wydanie CORINE w katalogu CLMS: {edition}"
+landcover_unchecked = "  Nie udało się sprawdzić {count} pozycji planu."

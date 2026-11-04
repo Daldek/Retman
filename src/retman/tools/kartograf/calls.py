@@ -152,6 +152,48 @@ def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCa
     return [CatalogCall("landcover download", options, "topographic_vector", routing)]
 
 
+def download_orthophoto_cutout(
+    params: dict[str, Any], ctx: ToolContext
+) -> list[CatalogCall]:
+    """One WCS orthophoto GeoTIFF of a rectangle or of the envelope of a geometry file.
+
+    The image is not resampled: its system is the one of the service grid
+    (EPSG:2180). Only the orthophotomap has the two WCS variants (``coverage``).
+    """
+    area_options, routing = _area(params["area"])
+    options: dict[str, object] = {
+        "product": ctx.tool_value("product", params["product"]),
+        "country": "pl",
+        **area_options,
+        "cutout": True,
+        "horizontal_crs": "EPSG:2180",
+        "resolution": ctx.tool_value("resolution", params["resolution"]),
+    }
+    if "coverage" in params:
+        options["coverage"] = params["coverage"]
+    return [CatalogCall("imagery download", options, "orthophoto", routing)]
+
+
+def download_landcover(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
+    """CORINE Land Cover of an edition, or the BDOO packages of a yearly release.
+
+    CORINE of an area is one raster (GeoTIFF of class codes with CLMS credentials,
+    else a PNG preview of the WMS); BDOO of an area is the GML package of every
+    voivodeship the area touches. Kartograf takes the year as a number.
+    """
+    area_options, routing = _area(params["area"])
+    product = params["product"]
+    year_param = f"{product}_year"
+    routing["year"] = year_param
+    options: dict[str, object] = {
+        "product": product,
+        **area_options,
+        "year": int(params[year_param]),
+    }
+    kind = "landcover_raster" if product == "corine" else "topographic_archive"
+    return [CatalogCall("landcover download", options, kind, routing)]
+
+
 def init_kartograf_store(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
     """``store init`` of the configured store folder (idempotent, refuses others)."""
     return [CatalogCall("store init", {})]

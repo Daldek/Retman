@@ -42,6 +42,8 @@ _ALL_NODATA = "all_nodata"
 _HSG_GROUPS = ("A", "B", "C", "D", "nodata")
 # What the result keeps of a segment of ``kartograf-store-overview/1``
 _SEGMENT_FIELDS = ("segment", "product", "country", "dataset_key", "name", "known")
+# CORINE without CLMS credentials: the WMS preview, a coloured PNG instead of codes
+_PREVIEW_SUFFIX = ".png"
 
 Runs = Sequence[tuple[CatalogCall, ToolRun]]
 
@@ -173,6 +175,26 @@ def download_elevation_cutout(
     }
 
 
+def download_orthophoto_cutout(
+    operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
+) -> HandlerOutput:
+    """Describe the one orthophoto GeoTIFF: product, pixel, WCS variant and size."""
+    ((call, run),) = runs
+    paths = [file.path for file in run.files]
+    coverage = call.options.get("coverage")
+    return {
+        "values": {
+            "product": str(call.options["product"]),
+            "resolution": str(call.options["resolution"]),
+            "coverage": None if coverage is None else str(coverage),
+            "file_count": len(paths),
+            "bytes": _bytes(paths),
+        },
+        "files": {_kind(call): paths},
+        "warnings": notice_warnings(operation, ctx.tool, run.notices),
+    }
+
+
 def extract_shapefiles(archive: Path, output_dir: Path) -> list[Path]:
     """Unpack a county's SHP ZIP into the result folder, keeping the sidecar files.
 
@@ -270,6 +292,77 @@ def download_bdot10k(
         "files": {_kind(call): files},
         "warnings": warnings,
     }
+
+
+def _corine(
+    operation: Operation, ctx: ToolContext, call: CatalogCall, run: ToolRun
+) -> HandlerOutput:
+    """CORINE: class codes (GeoTIFF) or, without CLMS credentials, a WMS preview.
+
+    Kartograf's notice of the preview is an info line, which a result does not
+    show; the preview is a coloured picture, not class codes, so the result says so.
+    """
+    paths = [file.path for file in run.files]
+    preview = any(path.suffix.lower() == _PREVIEW_SUFFIX for path in paths)
+    warnings: list[HandlerWarning] = (
+        [{"key": "corine_preview", "args": {}}] if preview else []
+    )
+    warnings.extend(notice_warnings(operation, ctx.tool, run.notices))
+    return {
+        "values": {
+            "product": "corine",
+            "year": int(str(call.options["year"])),
+            "preview": preview,
+            "edition": None if preview else _edition(run),
+            "file_count": len(paths),
+            "bytes": _bytes(paths),
+        },
+        "files": {_kind(call): paths},
+        "warnings": warnings,
+    }
+
+
+def _bdoo(
+    operation: Operation, ctx: ToolContext, call: CatalogCall, run: ToolRun
+) -> HandlerOutput:
+    """BDOO: a voivodeship package that failed is a warning, the others stay."""
+    paths = [file.path for file in run.files]
+    failed_units = [failure.unit for failure in run.failed]
+    warnings: list[HandlerWarning] = []
+    if failed_units:
+        warnings.append(
+            {
+                "key": "failed_voivodeships",
+                "args": {
+                    "count": str(len(failed_units)),
+                    "total": str(len(paths) + len(failed_units)),
+                    "units": ", ".join(failed_units),
+                },
+            }
+        )
+    warnings.extend(notice_warnings(operation, ctx.tool, run.notices))
+    return {
+        "values": {
+            "product": "bdoo",
+            "year": int(str(call.options["year"])),
+            "voivodeships": [path.stem for path in paths],
+            "voivodeship_count": len(paths),
+            "missing_voivodeships": len(failed_units),
+            "bytes": _bytes(paths),
+        },
+        "files": {_kind(call): paths},
+        "warnings": warnings,
+    }
+
+
+def download_landcover(
+    operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
+) -> HandlerOutput:
+    """CORINE raster of an area, or the BDOO packages of its voivodeships."""
+    ((call, run),) = runs
+    if call.options["product"] == "corine":
+        return _corine(operation, ctx, call, run)
+    return _bdoo(operation, ctx, call, run)
 
 
 def init_kartograf_store(

@@ -1,6 +1,6 @@
 [categories.spatial_data]
 label = "GUGiK spatial data"
-description = "Downloading spatial data from GUGiK: the DEM (NMT, numeryczny model terenu), the DSM (NMPT, numeryczny model pokrycia terenu), orthophoto (ortofotomapa), elevation cutouts (wycinki wysokościowe) and BDOT10k (topographic vector data); creating and inspecting the Kartograf store (the store marker, the data segments)"
+description = "Downloading spatial data from GUGiK: the DEM (NMT, numeryczny model terenu), the DSM (NMPT, numeryczny model pokrycia terenu), orthophoto (ortofotomapa: sheets and a cutout of an area), elevation cutouts (wycinki wysokościowe), BDOT10k (topographic vector data), BDOO and CORINE Land Cover land cover; creating and inspecting the Kartograf store (the store marker, the data segments)"
 
 [categories.soil_data]
 label = "SoilGrids soil data"
@@ -221,6 +221,122 @@ options.shp.label = "Shapefile (.shp)"
 options.shp.description = "Shapefile (.shp, SHP) — all layers from the ZIP package together with .dbf/.shx/.prj"
 options.unspecified.description = "No format given — ask about GeoPackage or Shapefile"
 
+[operations.download_orthophoto_cutout]
+label = "Orthophoto cutout for a rectangle or an area"
+description = "Download one orthophoto GeoTIFF from the GUGiK WCS for a coordinate rectangle or the bounding box of a geometry file: the orthophoto (ortofotomapa, ortofoto, aerial photo, aerial imagery of an area) in natural RGB colours or the true orthophoto (true orto, prawdziwa ortofotomapa) of selected cities; one file of the area instead of sheets, with the chosen pixel."
+
+[operations.download_orthophoto_cutout.check]
+notice = "I will ask the GUGiK orthophoto sheet index (WMS) for the PL-1992 sheets of the rectangle or file from the plan and their newest flights. The WCS server composes the cutout, so the sheet index only approximates what the result will contain."
+
+[operations.download_orthophoto_cutout.params.product]
+label = "Orthophoto type"
+question = "Which orthophoto should be cut out: the ordinary RGB orthophoto or the true orthophoto (true orto) of selected cities?"
+model_question = "What type of orthophoto does the command mention?"
+help = "The orthophoto covers all of Poland. The true orthophoto (true orto, 5 cm pixel) exists only for selected cities; outside them the pixels are black (0, 0, 0). The cutout comes from the GUGiK server's composition of flights: you do not choose the year or the flight."
+options.orthophoto.label = "RGB orthophoto"
+options.orthophoto.description = "orto — the ordinary orthophoto in natural colours, ortofotomapa, ortofoto, aerial photo, aerial imagery (the default when the command simply speaks of an orthophoto)"
+options.true_orthophoto.label = "True orthophoto (true orto) of cities"
+options.true_orthophoto.description = "true orto — the true orthophoto of selected cities, prawdziwa ortofotomapa, true ortho, no leaning buildings, 5 cm pixel"
+options.unspecified.description = "No orthophoto type given — ask about the ordinary or the true orthophoto (true orto)"
+
+[operations.download_orthophoto_cutout.params.area]
+label = "Rectangle or area of the orthophoto cutout"
+question = "Which coordinate rectangle or geometry file should be cut out of the orthophoto?"
+help = "Give the rectangle bounds in PL-1992 (EPSG:2180) or WGS84 (EPSG:4326), or a SHP/GPKG file. For a file, the cutout covers the rectangle of all its features and is not clipped to their shape. The image is always in the system of the service grid, PL-1992 (EPSG:2180), without resampling."
+example = "566000,243000,566500,243500 EPSG:2180"
+geometry_note = "one rectangle covering all features of the layer; not clipped to the polygon"
+
+[operations.download_orthophoto_cutout.params.coverage]
+label = "Orthophoto service variant"
+question = "Which variant of the GUGiK WCS should the orthophoto be cut from: the standard one (latest available photos) or the high-resolution one (photos with a pixel of 10 cm or smaller)?"
+model_question = "Which orthophoto service variant (standard or high resolution) does the command mention?"
+help = "The standard variant composes the latest available photos. The high-resolution variant composes only photos with a pixel of 10 cm or smaller, which do not exist for the whole country. The pixel of the result is chosen separately."
+options.standard.label = "Standard (latest photos)"
+options.standard.description = "standard — the latest available orthophotos, the ordinary service, current photos"
+options.high.label = "High resolution (pixel of 10 cm or less)"
+options.high.description = "high — the high-resolution orthophoto, photos with a pixel of 10 cm or smaller, detailed, HD"
+options.unspecified.description = "No service variant given — ask about standard or high resolution"
+
+[operations.download_orthophoto_cutout.params.resolution]
+label = "Cutout pixel"
+question = "Which pixel should the cutout have: 5 cm (true orto only), 10 cm, 25 cm, 50 cm or 1 m?"
+model_question = "What pixel (resolution) of the cutout does the command mention?"
+help = "A smaller pixel means more detail and a larger file: 500 × 500 m at a 25 cm pixel is 2000 × 2000 pixels. Only the true orthophoto (true orto) has the 5 cm pixel."
+options.0_05m.label = "5 cm (true orto only)"
+options.0_05m.description = "0.05 m — a 5 centimetre pixel, 0,05 m, 5 cm (the true orthophoto only)"
+options.0_1m.label = "10 cm"
+options.0_1m.description = "0.1 m — a 10 centimetre pixel, 0,1 m, 10 cm"
+options.0_25m.label = "25 cm"
+options.0_25m.description = "0.25 m — a 25 centimetre pixel, 0,25 m, 25 cm, a quarter of a metre"
+options.0_5m.label = "50 cm"
+options.0_5m.description = "0.5 m — a 50 centimetre pixel, 0,5 m, 50 cm, half a metre"
+options.1m.label = "1 m"
+options.1m.description = "1 m — a 1 metre pixel, 100 cm"
+options.unspecified.description = "No pixel given — ask which one is meant"
+
+[operations.download_landcover]
+label = "CORINE or BDOO land cover"
+description = "Download land cover for a sheet code (godło), a rectangle or a geometry file: CORINE Land Cover (CLC, Copernicus, EEA, the European land cover and land use classes, raster) of a chosen edition, or BDOO (the GUGiK general geographic objects database, baza danych obiektów ogólnogeograficznych, 1:250 000, voivodeship GML packages) of a chosen yearly release. Not for BDOT10k (a separate operation of county packages)."
+
+[operations.download_landcover.check]
+notice = "For CORINE I will ask the CLMS (Copernicus) catalogue for the edition from the plan; the WMS preview cannot be checked without downloading it. For BDOO I will ask the PRG GUGiK service which voivodeships the area intersects, and check whether their packages are already in the store. I download nothing."
+
+[operations.download_landcover.params.product]
+label = "Land cover product"
+question = "Which land cover should be downloaded: CORINE Land Cover or BDOO?"
+model_question = "What land cover product does the command mention?"
+help = "CORINE Land Cover is a European raster of land cover classes (44 classes, smallest mapped area 25 ha). BDOO is the GUGiK vector database of general geographic objects at 1:250 000, published as one GML package per voivodeship. The detailed 1:10 000 topographic vectors (BDOT10k) are downloaded by a separate operation."
+options.corine.label = "CORINE Land Cover (Europe, raster)"
+options.corine.description = "CORINE — CORINE Land Cover, CLC, Copernicus, EEA, the European land cover and land use map, CLC classes, raster"
+options.bdoo.label = "BDOO (GUGiK, 1:250 000, voivodeships)"
+options.bdoo.description = "BDOO — the GUGiK general geographic objects database, baza danych obiektów ogólnogeograficznych, general geographic map 1:250 000, voivodeship GML vectors (not BDOT10k)"
+options.unspecified.description = "No product given — ask about CORINE or BDOO"
+
+[operations.download_landcover.params.area]
+label = "Land cover area"
+question = "For which sheet code (godło), rectangle or geometry file should the land cover be downloaded?"
+help = "Give a PL-1992 or PL-2000 sheet code, the bounds of a rectangle in PL-1992 (EPSG:2180) or WGS84 (EPSG:4326), or a SHP/GPKG file. CORINE covers the rectangle of the area (for a file the rectangle of all its features, not clipped to their shape). BDOO is the full packages of every voivodeship the area intersects; the list of voivodeships is known only after querying PRG (network, after confirmation)."
+example = "N-34-130-D or 16.90 52.40 16.95 52.45"
+geometry_note = "CORINE: one rectangle covering all features of the layer; BDOO: full packages of the voivodeships intersecting the area's bounding box"
+
+[operations.download_landcover.params.corine_year]
+label = "CORINE edition"
+question = "Which CORINE Land Cover edition should be downloaded: 2018, 2012, 2006, 2000 or 1990?"
+model_question = "What CORINE year (edition) does the command mention?"
+help = "The edition year is the reference year of the data. With CLMS credentials (the CLMS_CREDENTIALS variable) Kartograf downloads a GeoTIFF of class codes for 2018, 2012, 2006 and 2000; without them it downloads a coloured WMS preview (a PNG image). 1990 is a preview only and does not cover Poland."
+options.2018.label = "2018 (newest)"
+options.2018.description = "2018 — CLC2018, the newest CORINE edition, current land cover"
+options.2012.label = "2012"
+options.2012.description = "2012 — CLC2012"
+options.2006.label = "2006"
+options.2006.description = "2006 — CLC2006"
+options.2000.label = "2000"
+options.2000.description = "2000 — CLC2000"
+options.1990.label = "1990 (preview only, not Poland)"
+options.1990.description = "1990 — CLC1990, the oldest edition, WMS preview only"
+options.unspecified.description = "No CORINE edition given — ask for the year"
+
+[operations.download_landcover.params.bdoo_year]
+label = "BDOO release"
+question = "Which BDOO release should be downloaded: 2026, 2025, 2024, 2023, 2022, 2021 or 2015?"
+model_question = "What BDOO release year does the command mention?"
+help = "GUGiK publishes BDOO as yearly releases; there are no releases 2014 and 2016–2020. Packages up to 2023 have no files for classes without features in the voivodeship."
+options.2026.label = "2026 (newest)"
+options.2026.description = "2026 — the newest BDOO release, current data"
+options.2025.label = "2025"
+options.2025.description = "2025 — the 2025 release"
+options.2024.label = "2024"
+options.2024.description = "2024 — the 2024 release"
+options.2023.label = "2023"
+options.2023.description = "2023 — the 2023 release"
+options.2022.label = "2022"
+options.2022.description = "2022 — the 2022 release"
+options.2021.label = "2021"
+options.2021.description = "2021 — the 2021 release"
+options.2015.label = "2015 (oldest)"
+options.2015.description = "2015 — the oldest BDOO release"
+options.unspecified.description = "No BDOO release given — ask for the year"
+
 [operations.init_kartograf_store]
 label = "Create the Kartograf store"
 description = "Create (initialise) the Kartograf store in the folder from the configuration: write the store marker kartograf-store.json into a new or empty folder, or into a folder that has the layout of a store but no marker (the tool checks the layout first); the first step when Kartograf refuses to write into a store without its marker, setting up the data store (magazyn danych) for GUGiK spatial data, a new Kartograf store; does not download data and does not change an existing store."
@@ -376,13 +492,15 @@ masked_pixels = "{count} pixels outside land were masked as nodata."
 soil_all_nodata = "The SoilGrids layer has no data for this area (zeros only: sea, water, built-up land or rock)."
 hsg_all_nodata = "The HSG has no group at all: the texture data are missing for the whole area (for example water or built-up land)."
 unknown_segments = "Segments the installed Kartograf does not know ({count}): {segments} (for example from another version of the tool)."
+corine_preview = "Without CLMS credentials (the CLMS_CREDENTIALS variable) CORINE is a coloured WMS preview (a PNG image), not a raster of class codes: fit for viewing, not for calculations."
+failed_voivodeships = "Failed to download {count} of {total} BDOO voivodeship packages (voivodeships: {units})."
 
 # Kartograf errors by registry code (ERR §4); its own text is only {detail}, and its
 # details.reason says which of the errors of the code it is
 [errors]
 validation_error = "Kartograf rejects this choice: {detail}"
-no_data = "The data source (GUGiK, SoilGrids) has no data for the specified area and the selected product parameters. Details: {detail}"
-source_unavailable = "Failed to download data from the source service (GUGiK, SoilGrids). Details: {detail}"
+no_data = "The data source (GUGiK, SoilGrids, CORINE) has no data for the specified area and the selected product parameters. Details: {detail}"
+source_unavailable = "Failed to download data from the source service (GUGiK, SoilGrids, CORINE). Details: {detail}"
 store_unavailable = "The Kartograf store or its metadata cache is not usable: {detail}. Check: retman doctor check"
 conflict = "Kartograf will not write to this store: {detail}. Check: retman doctor check"
 data_error = "The data Kartograf keeps in the store is invalid or incomplete: {detail}"
@@ -403,6 +521,7 @@ no_descendants = "Map sheet {code} (PL-2000) has no child sheets in the scales I
 no_sheets = "The geometry file does not intersect any map sheet in the selected scale."
 orthophoto_needs_sheet = "I download the orthophoto only for a sheet code, not for a geometry file. Give a sheet code or choose other data."
 outside_poland = "The area from the file lies outside Poland, and BDOT10k covers only Poland."
+bdoo_outside_poland = "The area from the file lies outside Poland, and BDOO covers only Poland."
 store_no_marker = "The folder {path} has the layout of a Kartograf store but no marker. Write the marker with the command “Create the Kartograf store” (or kartograf store init --root {path}); the tool checks the layout first."
 store_not_kartograf = "{path} is not a Kartograf store: it is a file or a folder with other files. Specify an empty folder in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
 store_marker_unreadable = "The marker kartograf-store.json in {path} is unreadable. The store is damaged or comes from a different version of Kartograf; specify another folder in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
@@ -464,3 +583,11 @@ soil_edition = "  SoilGrids edition: {edition} (layers of the area: {count})"
 soil_unchecked = "  Could not check the SoilGrids edition (layers: {count})."
 soil_newer = "  {count} of them have a newer edition in SoilGrids than in the store; only the setting update = \"upgrade\" downloads them."
 hsg_current = "  The HSG of this area is already in the store and was computed from the current layers."
+true_orthophoto_none = "  GUGiK has no true orthophoto (true orto) for this area (it exists only for selected cities). {detail}"
+true_orthophoto_sheets = "  True orthophoto: {published} of {total} sheets have data, newest flight of {newest}"
+voivodeships = "  Voivodeships of the area: {count} ({units})"
+no_voivodeships = "  The area intersects no voivodeship."
+corine_none = "  The CORINE plan has no position for this area."
+corine_preview = "  Without CLMS credentials I will download the WMS preview (a PNG image); its edition cannot be checked without downloading it."
+corine_edition = "  CORINE edition in the CLMS catalogue: {edition}"
+landcover_unchecked = "  {count} positions of the plan could not be checked."
