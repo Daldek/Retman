@@ -28,6 +28,25 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   or Shapefile; and the creation of the store ("Utwórz magazyn Kartografa", `kartograf store
   init`: it writes the store marker into a new or an empty folder, or into a layout that has
   lost it, after the tool has checked the layout; ECO-051).
+- Two Kartograf operations on SoilGrids soils, in their own category `soil_data` ("Dane
+  glebowe SoilGrids", PRD 7.2, ARCHITECTURE 3.2.10): one soil property layer (clay, sand,
+  silt, organic carbon as content, density or stock, pH, bulk density, coarse fragments, CEC
+  or nitrogen; a depth of 0-5 to 100-200 cm; mean, median, 5% or 95% quantile or
+  uncertainty), whose result gives the unit of the integer values and the divisor to the usual
+  unit (`soil download`); and the hydrologic soil groups A-D of the SCS-CN method from the
+  texture of one depth, with the share and the area of each group (`soil hsg`). Both take a
+  sheet code, a rectangle or a geometry file, preview the extent offline and check the
+  SoilGrids edition against the store on request; the data kinds `soil_raster` and
+  `hsg_raster` are new, and the command set has 34 rows for them.
+- The texts of the Kartograf errors `no_data` and `source_unavailable` name the source of the
+  data as GUGiK or SoilGrids instead of GUGiK alone.
+- The overview of the Kartograf store ("Przegląd magazynu Kartografa", `store overview`, PRD
+  7.2, ARCHITECTURE 3.2.10): a read without network that lists the segments of the store
+  (product, country, dataset, whether the installed Kartograf knows them) and warns about the
+  unknown ones; a store folder that does not exist ends the plan (`store_unavailable`,
+  `not_initialised`); 16 rows of the command set. `retman scaffold check` tells a command the
+  command layer runs (X1) from a command an operation is expected to offer (X9), so an
+  operation may run a store read.
 - All Obserwator 3.0.0 (formerly IMGWTools) operations, ČHMÚ included: 19 operations in 5 categories (station
   search and catalog, current data and warnings, PMAXTP, station series, archives and the
   store; ADR-017, PRD 7.2).

@@ -1,6 +1,10 @@
 [categories.spatial_data]
 label = "GUGiK spatial data"
-description = "Downloading spatial data from GUGiK: the DEM (NMT, numeryczny model terenu), the DSM (NMPT, numeryczny model pokrycia terenu), orthophoto (ortofotomapa), elevation cutouts (wycinki wysokościowe) and BDOT10k (topographic vector data); creating the Kartograf store (the store marker)"
+description = "Downloading spatial data from GUGiK: the DEM (NMT, numeryczny model terenu), the DSM (NMPT, numeryczny model pokrycia terenu), orthophoto (ortofotomapa), elevation cutouts (wycinki wysokościowe) and BDOT10k (topographic vector data); creating and inspecting the Kartograf store (the store marker, the data segments)"
+
+[categories.soil_data]
+label = "SoilGrids soil data"
+description = "Soils from SoilGrids (ISRIC, 250 m grid): downloading the layer of one soil property (clay, sand or silt content, organic carbon, pH, bulk density, coarse fragments, cation exchange capacity, nitrogen) at a chosen depth, and the hydrologic soil groups HSG (A–D) of the SCS-CN method derived from the texture"
 
 [operations.download_dem_sheet]
 label = "Download DEM (NMT) for a map sheet or area"
@@ -222,6 +226,136 @@ label = "Create the Kartograf store"
 description = "Create (initialise) the Kartograf store in the folder from the configuration: write the store marker kartograf-store.json into a new or empty folder, or into a folder that has the layout of a store but no marker (the tool checks the layout first); the first step when Kartograf refuses to write into a store without its marker, setting up the data store (magazyn danych) for GUGiK spatial data, a new Kartograf store; does not download data and does not change an existing store."
 summary = "Done. Result #{number}: the Kartograf store is ready: {store}."
 
+[operations.inspect_kartograf_store]
+label = "Overview of the Kartograf store"
+description = "Show what the Kartograf store holds: its segments (product folders) with the product, the country, the dataset and whether the installed Kartograf knows them; which GUGiK and SoilGrids data are already downloaded, what is in the spatial data store; read-only, offline, downloads nothing."
+summary = "Done. Result #{number}: the Kartograf store {store} has {segment_count} segments."
+
+[operations.download_soil_layer]
+label = "Download a SoilGrids soil layer"
+description = "Download one soil property layer from SoilGrids (ISRIC, 250 m, soil grids, soil map, soil data) for a sheet code, a rectangle or a geometry file: clay, sand or silt content (texture, particle size fractions), organic carbon, pH, bulk density, coarse fragments, cation exchange capacity (CEC) or nitrogen, at a chosen depth and with a prediction statistic (mean, median, quantile, uncertainty)."
+summary = "Done. Result #{number}: the SoilGrids layer {property} {depth} ({stat}) is in the store; the file values are in {unit}, in {conventional_unit} after division by {divisor}."
+
+[operations.download_soil_layer.check]
+notice = "I will ask the SoilGrids service (ISRIC, GetCapabilities) for the current edition of the layer from the plan and compare it with the version in the store. I download nothing."
+
+[operations.download_soil_layer.params.property]
+label = "Soil property"
+question = "Which soil property should be downloaded: clay, sand, silt, organic carbon, pH, bulk density, coarse fragments, cation exchange capacity or nitrogen?"
+model_question = "What soil property does the command mention?"
+help = "SoilGrids stores the values in integer units of its own (for example clay in g/kg, the pH times 10); the result gives the unit of the file and the divisor to the conventional unit. Organic carbon has three measures, which I ask about separately."
+options.clay.label = "Clay (clay content)"
+options.clay.description = "clay — clay content, clay fraction, particles below 0.002 mm, g/kg (percent = value / 10)"
+options.sand.label = "Sand (sand content)"
+options.sand.description = "sand — sand content, sand fraction, g/kg (percent = value / 10)"
+options.silt.label = "Silt (silt content)"
+options.silt.description = "silt — silt content, silt fraction, g/kg (percent = value / 10)"
+options.organic_carbon.label = "Organic carbon"
+options.organic_carbon.description = "soil organic carbon: content (SOC), density (OCD) or stock (OCS), organic matter, humus"
+options.phh2o.label = "Soil pH (in water)"
+options.phh2o.description = "phh2o — soil reaction, pH in water (H2O), soil acidity (file: pH times 10)"
+options.bdod.label = "Bulk density"
+options.bdod.description = "bdod — bulk density of the fine earth, cg/cm³ (kg/dm³ = value / 100)"
+options.cfvo.label = "Coarse fragments"
+options.cfvo.description = "cfvo — coarse fragments by volume, stones and gravel in the soil, cm³/dm³"
+options.cec.label = "Cation exchange capacity (CEC)"
+options.cec.description = "cec — cation exchange capacity, CEC, mmol(c)/kg"
+options.nitrogen.label = "Total nitrogen"
+options.nitrogen.description = "nitrogen — total nitrogen in the soil, N, cg/kg (g/kg = value / 100)"
+options.unspecified.description = "No soil property given — ask"
+
+[operations.download_soil_layer.params.carbon]
+label = "Organic carbon measure"
+question = "Which measure of organic carbon should be downloaded: content (SOC, g/kg), density (OCD, kg/m³) or stock (OCS, t/ha, 0–30 cm only)?"
+model_question = "What measure of organic carbon does the command mention?"
+help = "The content (SOC) is the mass of carbon in a kilogram of soil, the density (OCD) the mass of carbon in a cubic metre of soil, and the stock (OCS) the carbon of the 0–30 cm layer per hectare: the stock has only this one depth."
+options.soc.label = "Organic carbon content (SOC)"
+options.soc.description = "soc — soil organic carbon content, SOC, dg/kg (g/kg = value / 10)"
+options.ocd.label = "Organic carbon density (OCD)"
+options.ocd.description = "ocd — organic carbon density, OCD, hg/m³ (kg/m³ = value / 10)"
+options.ocs.label = "Organic carbon stock (OCS, 0–30 cm only)"
+options.ocs.description = "ocs — organic carbon stock, OCS, t/ha in the 0–30 cm layer"
+options.unspecified.description = "No measure of organic carbon given (content, density or stock) — ask"
+
+[operations.download_soil_layer.params.depth]
+label = "Soil layer depth"
+question = "From which depth should the layer be downloaded: 0–5, 5–15, 15–30, 30–60, 60–100 or 100–200 cm (organic carbon stock OCS: 0–30 cm)?"
+model_question = "What soil depth interval does the command mention?"
+help = "SoilGrids publishes six depth intervals below the surface; the organic carbon stock (OCS) has only the 0–30 cm interval, which the other properties do not have."
+options.0_5cm.label = "0–5 cm"
+options.0_5cm.description = "0–5 cm — the shallowest interval, at the surface, 0-5cm"
+options.5_15cm.label = "5–15 cm"
+options.5_15cm.description = "5–15 cm — 5-15cm"
+options.15_30cm.label = "15–30 cm"
+options.15_30cm.description = "15–30 cm — 15-30cm"
+options.30_60cm.label = "30–60 cm"
+options.30_60cm.description = "30–60 cm — 30-60cm, subsoil"
+options.60_100cm.label = "60–100 cm"
+options.60_100cm.description = "60–100 cm — 60-100cm"
+options.100_200cm.label = "100–200 cm"
+options.100_200cm.description = "100–200 cm — from 1 to 2 m, 100-200cm, the deepest interval"
+options.0_30cm.label = "0–30 cm (organic carbon stock OCS only)"
+options.0_30cm.description = "0–30 cm — 0-30cm, the whole topsoil; the organic carbon stock (OCS) only"
+options.unspecified.description = "No depth given — ask"
+
+[operations.download_soil_layer.params.stat]
+label = "Prediction statistic"
+question = "Which SoilGrids prediction statistic should be downloaded: the mean, the median, the 5% or 95% quantile, or the uncertainty?"
+model_question = "What statistic (mean, median, quantile, uncertainty) does the command mention?"
+help = "SoilGrids is a model prediction: the mean and the median (Q0.5) are the predicted value, the 5% and 95% quantiles bound the 90% interval, and the uncertainty is 10 × (Q0.95 − Q0.05) / Q0.5, without a unit."
+options.mean.label = "Mean"
+options.mean.description = "mean — mean of the prediction, average value"
+options.q0_5.label = "Median (Q0.5)"
+options.q0_5.description = "Q0.5 — median, 50% quantile, middle value"
+options.q0_05.label = "5% quantile (Q0.05)"
+options.q0_05.description = "Q0.05 — 5th percentile, lower bound of the prediction interval"
+options.q0_95.label = "95% quantile (Q0.95)"
+options.q0_95.description = "Q0.95 — 95th percentile, upper bound of the prediction interval"
+options.uncertainty.label = "Uncertainty"
+options.uncertainty.description = "uncertainty — prediction uncertainty, spread, model error"
+options.unspecified.description = "No statistic given — ask"
+
+[operations.download_soil_layer.params.area]
+label = "Soil layer area"
+question = "For which sheet code, rectangle or geometry file should the SoilGrids layer be downloaded?"
+help = "Give a PL-1992 or PL-2000 sheet code, the bounds of a rectangle in PL-1992 (EPSG:2180) or WGS84 (EPSG:4326), or an SHP/GPKG file. For a sheet code the layer covers the rectangle of the sheet, for a file the rectangle of all its features; the result is not clipped to the shape. The SoilGrids grid is 250 m, so a small area is a few pixels."
+example = "N-34-130-D or 16.90 52.40 16.95 52.45"
+geometry_note = "a single rectangle covering all features of the layer; does not clip to the polygon"
+
+[operations.classify_soil_hsg]
+label = "SoilGrids hydrologic soil groups (HSG)"
+description = "Compute the hydrologic soil groups HSG (A, B, C, D) of the SCS-CN method (CN, curve number, runoff, infiltration) from the SoilGrids texture for a sheet code, a rectangle or a geometry file: Kartograf downloads the clay, sand and silt content of one depth and classifies the soil texture (USDA) into the groups; the result is a raster of the groups with the share and the area of each group."
+summary = "Done. Result #{number}: hydrologic soil groups ({depth}): A {groups[A][percent]}%, B {groups[B][percent]}%, C {groups[C][percent]}%, D {groups[D][percent]}%, no data {groups[nodata][percent]}%."
+
+[operations.classify_soil_hsg.check]
+notice = "I will ask the SoilGrids service (ISRIC, GetCapabilities) for the current edition of the clay, sand and silt layers from the plan and check whether the store holds them and the groups computed from them. I download and compute nothing."
+
+[operations.classify_soil_hsg.params.depth]
+label = "Texture depth"
+question = "From which depth should the texture for the HSG be taken: 0–5, 5–15, 15–30, 30–60, 60–100 or 100–200 cm?"
+model_question = "What soil depth interval does the command mention?"
+help = "The groups are computed from the mean clay, sand and silt content of SoilGrids at one depth interval; usually the layer at the surface (0–5 cm) or the interval that governs infiltration."
+options.0_5cm.label = "0–5 cm"
+options.0_5cm.description = "0–5 cm — the shallowest interval, at the surface, 0-5cm"
+options.5_15cm.label = "5–15 cm"
+options.5_15cm.description = "5–15 cm — 5-15cm"
+options.15_30cm.label = "15–30 cm"
+options.15_30cm.description = "15–30 cm — 15-30cm"
+options.30_60cm.label = "30–60 cm"
+options.30_60cm.description = "30–60 cm — 30-60cm, subsoil"
+options.60_100cm.label = "60–100 cm"
+options.60_100cm.description = "60–100 cm — 60-100cm"
+options.100_200cm.label = "100–200 cm"
+options.100_200cm.description = "100–200 cm — from 1 to 2 m, 100-200cm, the deepest interval"
+options.unspecified.description = "No depth given — ask"
+
+[operations.classify_soil_hsg.params.area]
+label = "HSG area"
+question = "For which sheet code, rectangle or geometry file should the HSG be computed?"
+help = "Give a PL-1992 or PL-2000 sheet code, the bounds of a rectangle in PL-1992 (EPSG:2180) or WGS84 (EPSG:4326), or an SHP/GPKG file. For a sheet code the groups cover the rectangle of the sheet, for a file the rectangle of all its features; the result is not clipped to the shape. The SoilGrids grid is 250 m."
+example = "N-34-130-D"
+geometry_note = "a single rectangle covering all features of the layer; does not clip to the polygon"
+
 # Result warnings. Keys equal to Kartograf note codes replace its text
 # (English, with command-line flag names); other warning notes are
 # shown verbatim (core: warnings.tool_notice).
@@ -239,13 +373,16 @@ cache_disabled = "The Kartograf metadata cache is disabled: {text}"
 failed_counties = "Failed to download {count} of {total} BDOT10k county packages (counties: {units})."
 all_nodata = "The cutout contains no valid elevation data (the whole result is nodata)."
 masked_pixels = "{count} pixels outside land were masked as nodata."
+soil_all_nodata = "The SoilGrids layer has no data for this area (zeros only: sea, water, built-up land or rock)."
+hsg_all_nodata = "The HSG has no group at all: the texture data are missing for the whole area (for example water or built-up land)."
+unknown_segments = "Segments the installed Kartograf does not know ({count}): {segments} (for example from another version of the tool)."
 
 # Kartograf errors by registry code (ERR §4); its own text is only {detail}, and its
 # details.reason says which of the errors of the code it is
 [errors]
 validation_error = "Kartograf rejects this choice: {detail}"
-no_data = "GUGiK has no data for the specified area and the selected product parameters. Details: {detail}"
-source_unavailable = "Failed to download data from the GUGiK service. Details: {detail}"
+no_data = "The data source (GUGiK, SoilGrids) has no data for the specified area and the selected product parameters. Details: {detail}"
+source_unavailable = "Failed to download data from the source service (GUGiK, SoilGrids). Details: {detail}"
 store_unavailable = "The Kartograf store or its metadata cache is not usable: {detail}. Check: retman doctor check"
 conflict = "Kartograf will not write to this store: {detail}. Check: retman doctor check"
 data_error = "The data Kartograf keeps in the store is invalid or incomplete: {detail}"
@@ -271,6 +408,7 @@ store_not_kartograf = "{path} is not a Kartograf store: it is a file or a folder
 store_marker_unreadable = "The marker kartograf-store.json in {path} is unreadable. The store is damaged or comes from a different version of Kartograf; specify another folder in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
 store_unsupported = "The Kartograf store in {path} has an unsupported marker schema ({schema}). Update Kartograf."
 store_nested = "The folder {path} cannot be a Kartograf store: it lies in, is or holds another store ({other}). Specify a folder outside it in the store_dir setting of the [retman.tools.kartograf] table in nogat.toml."
+store_absent = "The Kartograf store folder {path} does not exist or is not a folder, so there is nothing to show. Check the store_dir setting of the [retman.tools.kartograf] table in nogat.toml; the store is created by the first download."
 
 # Additional plan rows (preview without network)
 [preview.envelope]
@@ -322,3 +460,7 @@ in_store = "  {count} of them are already in the store."
 counties = "  Counties in the area: {count} ({units})"
 no_counties = "  The area does not intersect any county."
 store_refused = "  Kartograf will refuse to write into this store, so nothing will be downloaded: {detail}"
+soil_edition = "  SoilGrids edition: {edition} (layers of the area: {count})"
+soil_unchecked = "  Could not check the SoilGrids edition (layers: {count})."
+soil_newer = "  {count} of them have a newer edition in SoilGrids than in the store; only the setting update = \"upgrade\" downloads them."
+hsg_current = "  The HSG of this area is already in the store and was computed from the current layers."

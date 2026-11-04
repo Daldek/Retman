@@ -10,8 +10,8 @@ check runs under a guard that records any network attempt and any file created.
 ======  =============================================================  ========
 Check   What it finds                                                   Severity
 ======  =============================================================  ========
-X1      a declared command the catalog lacks / is no data command /     error
-        the builder emits an undeclared one
+X1      a declared command the catalog lacks / that the command layer  error
+        does not run / the builder emits an undeclared one
 X2      a rejection that is not an answer the user can change (missing  error
         option, unknown option, rejection naming no parameter); the
         rejected pairs of the cartesian grid are only reported          info
@@ -247,7 +247,7 @@ class _Engine:
                     command=command,
                     version=self.catalog.version,
                 )
-            elif not info.data:
+            elif not info.runnable:
                 self.add("X1", "error", "x1_command_not_data", op, command=command)
         if not self.light:
             downloads = [

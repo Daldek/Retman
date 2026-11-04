@@ -268,6 +268,10 @@ KINDS: dict[str, Kind] = _kinds(
     Kind("topographic_vector", (".gpkg", ".shp"), _check_signature),
     # NMT 100 m: one ZIP per province holding an XYZ file
     Kind("dem_archive", (".zip",), _check_signature),
+    # One SoilGrids property layer (GeoTIFF, values in the SoilGrids units) and the
+    # hydrologic soil groups computed from the texture (GeoTIFF, classes 1-4 = A-D)
+    Kind("soil_raster", (".tif",), _check_signature),
+    Kind("hsg_raster", (".tif",), _check_signature),
     # A user's file with the area geometry, checked like topographic_vector
     Kind("area_geometry", (".gpkg", ".shp"), _check_signature),
     # Obserwator: station lists, series, PMAXTP, live data, archives and reports

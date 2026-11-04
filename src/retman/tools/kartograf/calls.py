@@ -155,3 +155,45 @@ def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCa
 def init_kartograf_store(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
     """``store init`` of the configured store folder (idempotent, refuses others)."""
     return [CatalogCall("store init", {})]
+
+
+def inspect_kartograf_store(
+    params: dict[str, Any], ctx: ToolContext
+) -> list[CatalogCall]:
+    """``store overview`` of the configured store folder (a read, offline)."""
+    return [CatalogCall("store overview", {})]
+
+
+def download_soil_layer(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
+    """One SoilGrids layer of an area: a property, a depth and a statistic.
+
+    Organic carbon is one option of ``property`` and its measure (content, density
+    or stock) the parameter ``carbon``, so a rejection of the property is asked
+    again as the measure.
+    """
+    area_options, routing = _area(params["area"])
+    soil_property = params["property"]
+    if soil_property == "organic_carbon":
+        soil_property = params["carbon"]
+        routing["property"] = "carbon"
+    options: dict[str, object] = {
+        "property": soil_property,
+        "depth": ctx.tool_value("depth", params["depth"]),
+        "stat": ctx.tool_value("stat", params["stat"]),
+        **area_options,
+    }
+    return [CatalogCall("soil download", options, "soil_raster", routing)]
+
+
+def classify_soil_hsg(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
+    """Build the call of the hydrologic soil groups of an area, from a depth's texture.
+
+    Kartograf takes the ``mean`` of the three layers; the summary of the groups is a
+    run argument the client adds, not an option of the call.
+    """
+    area_options, routing = _area(params["area"])
+    options: dict[str, object] = {
+        "depth": ctx.tool_value("depth", params["depth"]),
+        **area_options,
+    }
+    return [CatalogCall("soil hsg", options, "hsg_raster", routing)]

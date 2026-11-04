@@ -48,10 +48,11 @@ class OptionInfo:
 class CommandInfo:
     """A catalog command: its options and what running it does.
 
-    ``network`` and ``writes`` are the effects of a run; ``data`` tells whether
-    ``validate_command``/``run_command`` take it (a command of the catalog such
-    as a source listing is not a data command). ``examples`` are option sets the
-    tool itself documents (seeds for ``retman scaffold draft``).
+    ``network`` and ``writes`` are the effects of a run; ``runnable`` tells whether
+    ``validate_command``/``run_command`` take it, and ``data`` whether it is a command
+    an operation is expected to offer (X9: a source listing or a read of the store is
+    not, even where the command layer runs it). ``examples`` are option sets the tool
+    itself documents (seeds for ``retman scaffold draft``).
     """
 
     id: str
@@ -64,6 +65,7 @@ class CommandInfo:
     result_schema: str = ""
     check_schema: str = ""
     examples: tuple[Mapping[str, object], ...] = ()
+    runnable: bool = True
 
     def option(self, name: str) -> OptionInfo | None:
         """Return the option of that name, or ``None``."""

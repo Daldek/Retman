@@ -1,13 +1,16 @@
-"""Retman results of Kartograf's commands: ``kartograf-download/1`` and ``store init``.
+"""Retman results of Kartograf's commands: downloads, ``store init`` and its overview.
 
 The mappers turn the runs of an operation's call builder into a ``HandlerOutput``:
 the files (by data kind), a few values, and warnings. Kartograf's warning notices
 are shown with Retman's text where ``[warnings.<code>]`` exists in ``pl.toml``
 (its own wording names command-line flags), otherwise verbatim; info notices stay
-in the audit document. The document of ``store init`` is ``kartograf-store-init/1``.
+in the audit document. The document of ``store init`` is ``kartograf-store-init/1``,
+that of ``store overview`` ``kartograf-store-overview/1``; ``soil hsg`` adds the
+``summary`` of the groups A-D to its download document.
 """
 
 import re
+from collections import Counter
 from collections.abc import Iterable, Sequence
 from pathlib import Path, PurePosixPath
 from stat import S_IFLNK, S_IFMT
@@ -31,6 +34,14 @@ TOOL = "kartograf"
 
 # A campaign label starts with the date the data were acquired or published
 _CAMPAIGN = re.compile(r"(\d{4}-\d{2}-\d{2})_")
+# Kartograf's notice of a raster without data, worded per operation by Retman (the
+# text of ``[warnings.all_nodata]`` speaks of an elevation cutout)
+_ALL_NODATA = "all_nodata"
+# The hydrologic soil groups of the summary of ``soil hsg``, and the cells without
+# data, in the order the result lists them
+_HSG_GROUPS = ("A", "B", "C", "D", "nodata")
+# What the result keeps of a segment of ``kartograf-store-overview/1``
+_SEGMENT_FIELDS = ("segment", "product", "country", "dataset_key", "name", "known")
 
 Runs = Sequence[tuple[CatalogCall, ToolRun]]
 
@@ -279,4 +290,129 @@ def init_kartograf_store(
         },
         "files": {},
         "warnings": notice_warnings(operation, ctx.tool, run.notices),
+    }
+
+
+def inspect_kartograf_store(
+    operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
+) -> HandlerOutput:
+    """List the segments of the store: product, country, dataset and whether known.
+
+    The document of ``store overview`` is ``kartograf-store-overview/1``; it is a read,
+    so there are no files, and the saved document of the tool is the whole list. A
+    segment that no source of the installed Kartograf produces (``known`` false, e.g.
+    from another version of the tool) is a warning.
+    """
+    ((_, run),) = runs
+    overview = run.document["result"]
+    segments = [
+        {name: segment.get(name) for name in _SEGMENT_FIELDS}
+        for segment in overview.get("segments") or ()
+    ]
+    unknown = [str(segment["segment"]) for segment in segments if not segment["known"]]
+    warnings = notice_warnings(operation, ctx.tool, run.notices)
+    if unknown:
+        warnings.append(
+            {
+                "key": "unknown_segments",
+                "args": {"count": str(len(unknown)), "segments": ", ".join(unknown)},
+            }
+        )
+    return {
+        "values": {
+            "store": overview["root"],
+            "segment_count": len(segments),
+            "product_counts": dict(
+                sorted(Counter(str(segment["product"]) for segment in segments).items())
+            ),
+            "segments": segments,
+        },
+        "files": {},
+        "warnings": warnings,
+    }
+
+
+def _worded_empty(
+    operation: Operation, ctx: ToolContext, run: ToolRun, key: str
+) -> list[HandlerWarning]:
+    """Return the warnings of a run, Kartograf's ``all_nodata`` worded as ``key``."""
+    empty = any(notice.code == _ALL_NODATA for notice in run.notices)
+    warnings: list[HandlerWarning] = [{"key": key, "args": {}}] if empty else []
+    others = [notice for notice in run.notices if notice.code != _ALL_NODATA]
+    warnings.extend(notice_warnings(operation, ctx.tool, others))
+    return warnings
+
+
+def _edition(run: ToolRun) -> str | None:
+    """Return the SoilGrids edition of a run: the version label of its files."""
+    return next((file.version for file in run.files if file.version), None)
+
+
+def download_soil_layer(
+    operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
+) -> HandlerOutput:
+    """Describe the SoilGrids layer and the unit of its values, as its sidecar says.
+
+    SoilGrids keeps integer values in units of its own (clay in g/kg, the pH times
+    ten): the result repeats the unit of the file, the conventional unit and the
+    divisor between them, so that no value is read in the wrong unit. The units are
+    a bonus of the sidecar: without it the layer is still the result. A layer of
+    zeros (sea, water, built-up land) is Kartograf's ``all_nodata`` notice.
+    """
+    ((call, run),) = runs
+    paths = [file.path for file in run.files]
+    values: dict[str, Any] = {
+        "property": str(call.options["property"]),
+        "depth": str(call.options["depth"]),
+        "stat": str(call.options["stat"]),
+        "edition": _edition(run),
+        "file_count": len(paths),
+        "bytes": _bytes(paths),
+    }
+    units = (_sidecar_extra(paths[0], ctx).get("units") or {}) if paths else {}
+    if {"mapped", "conventional", "divisor"} <= units.keys():
+        values.update(
+            unit=units["mapped"],
+            conventional_unit=units["conventional"],
+            divisor=units["divisor"],
+        )
+    return {
+        "values": values,
+        "files": {_kind(call): paths},
+        "warnings": _worded_empty(operation, ctx, run, "soil_all_nodata"),
+    }
+
+
+def classify_soil_hsg(
+    operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
+) -> HandlerOutput:
+    """Describe the raster of the groups A-D with the share and area of each group.
+
+    The shares are the ``summary`` of the run, which the client always asks for; the
+    clay, sand and silt layers the groups come from stay in the store as the
+    ``inputs`` of Kartograf's document, which the result counts.
+    """
+    ((call, run),) = runs
+    paths = [file.path for file in run.files]
+    result = run.document.get("result") or {}
+    summary = result.get("summary") or {}
+    groups = {
+        group: {
+            "percent": round(float(summary[group]["percent"]), 1),
+            "area_ha": round(float(summary[group]["area_ha"]), 1),
+        }
+        for group in _HSG_GROUPS
+        if group in summary
+    }
+    return {
+        "values": {
+            "depth": str(call.options["depth"]),
+            "groups": groups,
+            "input_count": len(result.get("inputs") or ()),
+            "edition": _edition(run),
+            "file_count": len(paths),
+            "bytes": _bytes(paths),
+        },
+        "files": {_kind(call): paths},
+        "warnings": _worded_empty(operation, ctx, run, "hsg_all_nodata"),
     }

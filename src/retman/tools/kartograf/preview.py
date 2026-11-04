@@ -218,15 +218,30 @@ def download_sheet_hierarchy(params: dict[str, Any], ctx: ToolContext) -> Previe
     return output
 
 
-def download_elevation_cutout(
-    params: dict[str, Any], ctx: ToolContext
-) -> PreviewOutput:
-    """Preview the extent of a geometry file: the cutout is one rectangle around it."""
+def _extent(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Preview the store Kartograf will take and the extent of a geometry file."""
     if (refused := _refused(ctx)) is not None:
         return refused
     output = _empty()
     _envelope(params, ctx, output)
     return output
+
+
+def download_elevation_cutout(
+    params: dict[str, Any], ctx: ToolContext
+) -> PreviewOutput:
+    """Preview the extent of a geometry file: the cutout is one rectangle around it."""
+    return _extent(params, ctx)
+
+
+def download_soil_layer(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Preview the extent of a geometry file: SoilGrids gives the rectangle of it."""
+    return _extent(params, ctx)
+
+
+def classify_soil_hsg(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Preview the extent of a geometry file: the groups cover the rectangle of it."""
+    return _extent(params, ctx)
 
 
 def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
@@ -266,5 +281,39 @@ def init_kartograf_store(params: dict[str, Any], ctx: ToolContext) -> PreviewOut
             {"key": "store", "args": {"path": folder}},
             {"key": f"store_{found.state}", "args": {}},
         ],
+        "problems": [],
+    }
+
+
+# The reason of the ``store_unavailable`` that ends the plan of an overview, for the
+# states of a folder that ``store overview`` cannot read
+_UNREADABLE_FOLDERS = {
+    "missing": "not_initialised",
+    "not_a_directory": "not_a_directory",
+}
+
+
+def inspect_kartograf_store(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Preview the folder the overview reads; a folder it cannot read blocks.
+
+    ``store overview`` reads any folder, a layout without its marker and a folder of
+    other files included (it finds no segment there), and never writes; only a folder
+    that does not exist and a file leave it nothing to read.
+    """
+    folder = str(ctx.store_dir)
+    found = kartograf_store_state(ctx.store_dir)
+    reason = _UNREADABLE_FOLDERS.get(found.state)
+    if reason is not None:
+        problem: PreviewProblem = {
+            "params": [],
+            "key": "store_absent",
+            "args": {"path": folder},
+            "code": "store_unavailable",
+            "reason": reason,
+        }
+        return {"values": {}, "rows": [], "problems": [problem]}
+    return {
+        "values": {"store": folder, "store_state": found.state},
+        "rows": [{"key": "store", "args": {"path": folder}}],
         "problems": [],
     }

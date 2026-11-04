@@ -7,9 +7,10 @@ version and the files are real files. What would use the network is replaced by
 stubs of the public provider classes: the GUGiK sheet providers answer
 ``resolve_campaigns`` from an index of flights and write a sheet in ``download_record``
 (:class:`GugikIndex`), BDOT10k answers ``teryts_for_area`` and ``download_package``
-from a list of counties (:class:`Counties`). A call that reaches a socket anyway fails
-(``tests/conftest.py`` blocks it). The stores the tests only read are built by
-``kartograf.testing`` (DEV-10.6).
+from a list of counties (:class:`Counties`), and SoilGrids answers ``edition`` and
+writes a GeoTIFF in ``download_by_bbox`` (:class:`SoilGrids`). A call that reaches a
+socket anyway fails (``tests/conftest.py`` blocks it). The stores the tests only read
+are built by ``kartograf.testing`` (DEV-10.6).
 """
 
 import threading
@@ -21,8 +22,15 @@ from unittest.mock import patch
 from zipfile import ZipFile
 
 import kartograf
+import numpy
+import rasterio
 import requests
 from kartograf.providers.pl.skorowidz import SkorowidzRecord
+from kartograf.sources.edition import Edition
+from rasterio.transform import from_bounds
+
+# The texture of a loam (g/kg: 25% clay, 40% sand, 35% silt), hydrologic soil group B
+LOAM = {"clay": 250, "sand": 400, "silt": 350}
 
 # What a GeoTIFF, a GeoPackage and a ZIP archive start with (the data kinds of Retman
 # check exactly this)
@@ -228,3 +236,68 @@ def bdot10k_counties(counties: Counties) -> Iterator[Counties]:
         patch.object(requests.Session, "head", _head),
     ):
         yield counties
+
+
+class SoilGrids:
+    """The stubbed SoilGrids WCS: a layer of one value per property, and its edition.
+
+    ``values`` is the value of every pixel of a property's layer (a property without
+    one is a layer of zeros: an area SoilGrids masks, which Kartograf reports as
+    ``all_nodata``); ``edition`` is what the GetCapabilities of every property
+    announces. ``layers`` lists the layers transferred, as ``(property, depth, stat)``.
+    """
+
+    def __init__(self, values: Mapping[str, int], *, edition: str = "2.0") -> None:
+        self.values = dict(values)
+        self.edition_label = edition
+        self.layers: list[tuple[str, str, str]] = []
+        self._lock = threading.Lock()
+
+    def download(
+        self,
+        bbox: kartograf.BBox,
+        output_path: Path,
+        timeout: int = 120,
+        *,
+        property: str,
+        depth: str,
+        stat: str,
+        **kwargs: Any,
+    ) -> Path:
+        """Write the layer as a 4 x 4 GeoTIFF over the rectangle (EPSG:2180)."""
+        with self._lock:
+            self.layers.append((property, depth, stat))
+        path = Path(output_path).with_suffix(".tif")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        pixels = numpy.full((4, 4), self.values.get(property, 0), dtype="int16")
+        with rasterio.open(
+            path,
+            "w",
+            driver="GTiff",
+            height=4,
+            width=4,
+            count=1,
+            dtype="int16",
+            crs=bbox.crs,
+            transform=from_bounds(bbox.min_x, bbox.min_y, bbox.max_x, bbox.max_y, 4, 4),
+        ) as raster:
+            raster.write(pixels, 1)
+        return path
+
+    def edition(self, property: str, timeout: int = 120) -> Edition:
+        """The edition the GetCapabilities of the property map announces."""
+        return Edition(
+            id=self.edition_label,
+            url=f"https://maps.isric.org/mapserv?map=/map/{property}.map",
+            title=f"SoilGrids250m {self.edition_label} - {property}",
+        )
+
+
+@contextmanager
+def soilgrids(service: SoilGrids) -> Iterator[SoilGrids]:
+    """Answer the SoilGrids WCS (layers and editions) from ``service``."""
+    with (
+        patch.object(kartograf.SoilGridsProvider, "download_by_bbox", service.download),
+        patch.object(kartograf.SoilGridsProvider, "edition", service.edition),
+    ):
+        yield service

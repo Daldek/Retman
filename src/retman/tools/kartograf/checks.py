@@ -4,8 +4,8 @@ The user confirms it separately from the plan (ARCHITECTURE 6.5); it reads what
 GUGiK's indexes hold for the plan's area and writes nothing. It reports, never
 decides: the user changes the plan or confirms it. Elevation data are asked of
 ``elevation availability`` (years, resolutions, height systems, completeness);
-orthophoto sheets and BDOT10k counties have no availability report, so their
-freshness plans (``check_command``) are read instead.
+orthophoto sheets, BDOT10k counties and SoilGrids layers have no availability
+report, so their freshness plans (``check_command``) are read instead.
 """
 
 from collections import Counter
@@ -27,6 +27,8 @@ _CUTOUT_RESOLUTION = "1m"
 _PUBLISHED = ("missing", "current", "newer")
 # Counties named in one line
 _SHOWN_COUNTIES = 12
+# The plan track of the computed hydrologic soil groups (the others are its inputs)
+_HSG_TRACK = "hsg"
 
 Combination = dict[str, Any]
 
@@ -262,3 +264,59 @@ def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
     if statuses["current"]:
         lines.append({"key": "in_store", "args": {"count": str(statuses["current"])}})
     return {"status": status, "items": lines}
+
+
+def _soil(call: CatalogCall, ctx: ToolContext) -> CheckOutput:
+    """Compare the SoilGrids layers of a request with what the store holds.
+
+    The plan compares each layer with the edition the SoilGrids service announces
+    (its GetCapabilities); the groups of ``soil hsg`` are computed, not published,
+    and are ``current`` when their stored inputs are.
+    """
+    plan = ctx.runner.check(call)
+    if (refused := _refused(plan)) is not None:
+        return refused
+    layers = [item for item in plan["items"] if item.get("track") != _HSG_TRACK]
+    computed = [item for item in plan["items"] if item.get("track") == _HSG_TRACK]
+    statuses = Counter(item["status"] for item in layers)
+    status: CheckStatus
+    if not layers or statuses["check_failed"] == len(layers):
+        status = "unknown"
+    elif statuses["check_failed"]:
+        status = "partial"
+    else:
+        status = "available"
+    editions = sorted(
+        {str(item["available_label"]) for item in layers if item["available_label"]}
+    )
+    lines: list[CheckItem] = []
+    if editions:
+        lines.append(
+            {
+                "key": "soil_edition",
+                "args": {"edition": ", ".join(editions), "count": str(len(layers))},
+            }
+        )
+    if statuses["check_failed"] or not layers:
+        lines.append(
+            {"key": "soil_unchecked", "args": {"count": str(statuses["check_failed"])}}
+        )
+    if statuses["current"]:
+        lines.append({"key": "in_store", "args": {"count": str(statuses["current"])}})
+    if statuses["newer"]:
+        lines.append({"key": "soil_newer", "args": {"count": str(statuses["newer"])}})
+    if any(item["status"] == "current" for item in computed):
+        lines.append({"key": "hsg_current", "args": {}})
+    return {"status": status, "items": lines}
+
+
+def download_soil_layer(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
+    """Check the SoilGrids edition of the layer and whether the store holds it."""
+    (call,) = calls.download_soil_layer(params, ctx)
+    return _soil(call, ctx)
+
+
+def classify_soil_hsg(params: dict[str, Any], ctx: ToolContext) -> CheckOutput:
+    """Check the clay, sand and silt layers of the groups and the stored groups."""
+    (call,) = calls.classify_soil_hsg(params, ctx)
+    return _soil(call, ctx)

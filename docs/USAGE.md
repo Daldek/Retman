@@ -3,7 +3,7 @@
 A user guide: how to set up Retman, how to issue commands, answer questions, approve plans and
 find results — in the terminal and from Python.
 
-**Status:** before v0.1.0. Five Kartograf 0.8.0 operations and 26 Obserwator 3.0.0 (formerly IMGWTools) operations work
+**Status:** before v0.1.0. Eight Kartograf 0.8.0 operations and 26 Obserwator 3.0.0 (formerly IMGWTools) operations work
 (section 9) with a decision model compatible with the OpenAI API (e.g. LM Studio); the basal backend
 does not exist yet.
 
@@ -732,14 +732,15 @@ Codes 10 and 11 do not mean an error: the result was printed, and the code says 
 
 ## 9. What Retman Can Do Now
 
-Operations fall into seven groups (including one for Kartograf); Retman first picks the group, then the
+Operations fall into seven groups (two of them for Kartograf); Retman first picks the group, then the
 operation.
 
-### 9.1. Kartograf 0.8.0 — GUGiK spatial data (ADR-001, ADR-012, ADR-016)
+### 9.1. Kartograf 0.8.0 — GUGiK spatial data and SoilGrids soils (ADR-001, ADR-012, ADR-016)
 
-Five operations. Four of them download data from GUGiK into the Kartograf store (always the
-store, never plain files in the results folder) and have an offline preview and an availability
-check; the fifth writes the marker of the store:
+Eight operations in two groups. Four of them download data from GUGiK and two from SoilGrids
+(ISRIC) into the Kartograf store (always the store, never plain files in the results folder) and
+have an offline preview and an availability check; one writes the marker of the store and one
+reads its segments:
 
 | Operation | Area | Parameters (Retman asks about missing ones) | Example command |
 | --- | --- | --- | --- |
@@ -748,6 +749,9 @@ check; the fifth writes the marker of the store:
 | Cutout of DEM (NMT) or DSM (NMPT) 1 m | rectangle in PL-1992 (EPSG:2180) or WGS84 (EPSG:4326); geometry file | product DEM (NMT) / DSM (NMPT); result CRS EPSG:2180 / 5514 / 3045 (code with the `EPSG:` prefix, the bare number or a name, e.g. `wynik w 2180`, `do S-JTSK`); vertical datum | `wytnij dsm z prostokąta 52.40 16.90 52.41 16.91 do 3045` |
 | Download BDOT10k | county (TERYT, 4 digits), sheet code (godło), rectangle or geometry file | format GeoPackage / Shapefile | `ściągnij bdot dla powiatu 2264 w gpkg` |
 | Create the Kartograf store | the folder `store_dir` of the settings | none; it writes the store marker `kartograf-store.json` (nothing is downloaded, no check), into a new or an empty folder or into a layout that has lost its marker, after Kartograf has checked the layout; a folder with other files or a store inside another store is refused in the plan | `Utwórz magazyn Kartografa` |
+| Overview of the Kartograf store | the folder `store_dir` of the settings | none; it lists the segments (product folders) with the product, the country, the dataset and whether the installed Kartograf knows them; a read, offline (a folder that does not exist is refused in the plan) | `Pokaż, co jest w magazynie Kartografa` |
+| Download a SoilGrids soil layer | sheet code (godło), rectangle or geometry file (the rectangle around it) | property: clay / sand / silt / organic carbon / pH / bulk density / coarse fragments / CEC / nitrogen; for organic carbon its measure: content SOC / density OCD / stock OCS; depth 0–5 / 5–15 / 15–30 / 30–60 / 60–100 / 100–200 cm (the stock: 0–30 cm); statistic mean / median / 5% / 95% quantile / uncertainty. The result gives the unit of the integer values of the file and the divisor to the usual unit (clay in g/kg: percent = value / 10) | `Pobierz zawartość iłu 0-5 cm, średnia, dla arkusza N-34-130-D-d-2-4` |
+| Hydrologic soil groups HSG (A–D, SCS-CN) | sheet code (godło), rectangle or geometry file (the rectangle around it) | depth of the texture 0–5 … 100–200 cm; Kartograf downloads the clay, sand and silt of that depth and computes the groups; the result gives the share and the area of each group | `Wyznacz grupy HSG z głębokości 0-5 cm dla arkusza N-34-130-D-d-2-4` |
 
 Ways of writing the area:
 
