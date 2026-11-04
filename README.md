@@ -26,7 +26,7 @@ Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras:
 # CLI
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@9deaa314c88f89ea2d9308481e0c0b04751fc792" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/IMGWTools@ea158dc6f703a5ababd91ff54e7ddec35b4f389b"
+    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@ea158dc6f703a5ababd91ff54e7ddec35b4f389b"
 
 # Python library (name the same tools in the project's own dependencies)
 uv add "retman @ git+https://github.com/Daldek/Retman@develop"
@@ -195,7 +195,7 @@ Retman is built to be driven by agents as well as by people. [llms.txt](https://
 ## Related tools
 
 - [Kartograf](https://github.com/Daldek/Kartograf) downloads Polish and Czech geodata into a versioned store; Retman calls its Python library (command lists `kartograf-command-list/1` and `kartograf-commands/1`).
-- [Obserwator](https://github.com/Daldek/IMGWTools) provides IMGW-PIB and ČHMÚ hydro-meteorological data, PMAXTP and a versioned store; Retman calls its Python library.
+- [Obserwator](https://github.com/Daldek/Obserwator) provides IMGW-PIB and ČHMÚ hydro-meteorological data, PMAXTP and a versioned store; Retman calls its Python library.
 - [Hydrolog](https://github.com/Daldek/Hydrolog) computes watershed hydrology offline (design rainfall, SCS-CN, time of concentration, hydrographs, routing through a river network, flood frequency, morphometry, hydrologic soil groups of texture rasters); Retman calls its Python library. [Hydrograf](https://github.com/Daldek/Hydrograf) (watershed delineation and design hydrographs) is a planned Retman tool.
 - [Archiwista](https://github.com/Daldek/Archiwista) browses and manages the stores of Kartograf and Obserwator.
 - [Nogat](https://github.com/Daldek/Nogat) is the hub of the ecosystem: the standards, the registry of the tools and the shared settings file `nogat.toml`.
