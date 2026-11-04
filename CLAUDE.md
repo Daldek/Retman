@@ -1,7 +1,7 @@
 # Retman: instructions for agents developing the project
 
 Retman turns a task written in Polish into a checked plan for the tools of the Nogat ecosystem
-(Kartograf and Obserwator, formerly IMGWTools, today; Hydrolog and Hydrograf are planned): it
+(Kartograf, Obserwator, formerly IMGWTools, and Hydrolog today; Hydrograf is planned): it
 recognises the operation, asks for what is missing, shows the plan and, once confirmed, calls
 the public Python API of the tool. It is a CLI (`retman`) and a Python library; the language model is a
 separate service (basal-serve or any OpenAI-compatible server). Profile `tool` (DEV-1.1).
@@ -178,7 +178,7 @@ texts under `[catalog.<operation_id>]` in `pl.toml` and its schema in
 
 Registry entry:
 [ecosystem.yaml](https://github.com/Daldek/Nogat/blob/main/ecosystem.yaml) (Retman). Retman
-consumes Kartograf and Obserwator through their Python libraries; Hydrolog and Hydrograf are
+consumes Kartograf, Obserwator and Hydrolog through their Python libraries; Hydrograf is
 planned (PRD roadmap). No tool imports Retman. A change that spans projects is planned in Nogat
 (DEV-3.4); PROGRESS Next 2 lists the calls to migrate when the producers adopt DEV §19.
 

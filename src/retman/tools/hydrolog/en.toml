@@ -1,0 +1,237 @@
+[categories.rainfall_runoff]
+label = "Rainfall and runoff (Hydrolog)"
+description = "Hydrological computations of a catchment in Hydrolog: a design hyetograph (block, triangular, Beta, Euler II), effective rainfall by SCS-CN from a curve number and a rainfall total, the time of concentration of a watershed from the file of its parameters (Kirpich, NRCS, Giandotti, FAA, Kerby), the design direct-runoff hydrograph of a catchment of a given area, CN and time of concentration; computed locally, without the internet"
+
+[categories.hydrology_analysis]
+label = "Catchment and flow analyses (Hydrolog)"
+description = "Analyses in Hydrolog: maximum flows of a given exceedance probability (flood quantiles, log-normal, GEV, Pearson III, Weibull distributions) from a daily flow series exported by Obserwator, and the morphometric indicators of a watershed (shape, relief, slopes) from the file of its parameters; computed locally, without the internet"
+
+[operations.compute_concentration_time]
+label = "Time of concentration of a watershed (Hydrolog)"
+description = "Compute the time of concentration (tc) of a watershed by a chosen method from the file of its parameters (WatershedParameters JSON, e.g. from Hydrograf or result #N): the Kirpich formula, NRCS (TR-55 lag, from the CN), Giandotti, FAA, Kerby or Kerby–Kirpich; the result in minutes and hours."
+summary = "Done. Result #{number}: time of concentration by {method}: {tc_min} min ({tc_h} h)."
+
+[operations.compute_concentration_time.params.method]
+label = "Method of the time of concentration"
+question = "Which method should compute the time of concentration: Kirpich, NRCS (TR-55), Giandotti, FAA, Kerby or Kerby–Kirpich?"
+model_question = "Which method of computing the time of concentration does the command name?"
+help = "The methods give results that differ by a factor of several and need different fields of the watershed: NRCS needs the curve number, FAA a runoff coefficient, Kerby and Kerby–Kirpich a retardance and the length and slope of the overland flow. When the watershed lacks the fields of a method, I ask for the method again."
+options.kirpich.label = "Kirpich (channel length and slope)"
+options.kirpich.description = "kirpich — the Kirpich formula, from the length and slope of the main channel, the most common for small rural catchments"
+options.nrcs.label = "NRCS / TR-55 (from the curve number)"
+options.nrcs.description = "nrcs — the NRCS (SCS, TR-55) lag method from length, slope and curve number"
+options.giandotti.label = "Giandotti (area, length, elevations)"
+options.giandotti.description = "giandotti — the Giandotti formula from catchment area, channel length and elevations, for larger catchments"
+options.faa.label = "FAA (overland flow)"
+options.faa.description = "faa — the FAA (Federal Aviation Administration) overland flow formula with a runoff coefficient C"
+options.kerby.label = "Kerby (overland flow)"
+options.kerby.description = "kerby — the Kerby overland flow formula with a retardance coefficient"
+options.kerby_kirpich.label = "Kerby–Kirpich (overland and channel)"
+options.kerby_kirpich.description = "kerby_kirpich — composite: Kerby overland flow plus Kirpich channel flow"
+options.unspecified.description = "No method of the time of concentration given — ask"
+
+[operations.compute_effective_rainfall]
+label = "Effective rainfall by SCS-CN (Hydrolog)"
+description = "Compute the effective rainfall (surface runoff depth, net rainfall, rainfall losses) by the SCS-CN method from a curve number and a rainfall total in millimetres, under dry, average or wet antecedent conditions (AMC I, II, III); the result is the effective rainfall, the retention, the initial abstraction and the runoff coefficient."
+summary = "Done. Result #{number}: effective rainfall {effective_mm} mm of {precipitation_mm} mm (CN {cn_adjusted}, AMC {amc}), runoff coefficient {runoff_coefficient}."
+
+[operations.compute_effective_rainfall.params.cn]
+label = "Curve number"
+question = "What is the curve number CN of the catchment (1 to 100, for average conditions AMC II)?"
+example = "CN 72"
+help = "The curve number comes from the TR-55 tables for the soil group and the land cover; Hydrolog converts it for dry or wet conditions itself."
+
+[operations.compute_effective_rainfall.params.rainfall]
+label = "Rainfall total"
+question = "What is the rainfall total in millimetres?"
+example = "50 mm"
+
+[operations.compute_effective_rainfall.params.amc]
+label = "Antecedent moisture (AMC)"
+question = "What were the moisture conditions before the rain: dry (AMC I), average (AMC II) or wet (AMC III)?"
+model_question = "Which antecedent soil moisture conditions (AMC) does the command name?"
+help = "The CN tables are for average conditions (AMC II); after a drought the CN decreases, after long rain it increases."
+options.dry.label = "Dry (AMC I)"
+options.dry.description = "AMC I — dry antecedent conditions, drought, dry soil, little rain before the storm, CN lowered"
+options.normal.label = "Average (AMC II)"
+options.normal.description = "AMC II — average, normal moisture conditions, the standard CN of the tables"
+options.wet.label = "Wet (AMC III)"
+options.wet.description = "AMC III — wet antecedent conditions, saturated soil after earlier rain, CN raised"
+options.unspecified.description = "No moisture conditions given — take average conditions (AMC II)"
+
+[operations.build_design_hyetograph]
+label = "Design hyetograph (Hydrolog)"
+description = "Compute a design hyetograph (the distribution of rainfall in time) of a given total in millimetres, duration and time step: block (uniform), triangular, Beta distribution or Euler type II (DVWK); the result is the rainfall depths and intensities of the consecutive steps."
+summary = "Done. Result #{number}: {hyetograph} hyetograph — {total_mm} mm in {duration_min} min, {steps} steps of {timestep_min} min, peak intensity {peak_intensity_mm_per_h} mm/h."
+
+[operations.build_design_hyetograph.params.hyetograph]
+label = "Shape of the hyetograph"
+question = "Which shape should the hyetograph have: block, triangular, Beta or Euler type II?"
+model_question = "Which shape (time distribution) of the rainfall hyetograph does the command name?"
+help = "A block has a constant intensity, a triangle rises to a peak at half the duration and falls, Beta peaks early (α = 2, β = 5, Hydrolog's defaults) and Euler II (DVWK) at a third of the duration."
+options.block.label = "Block (constant intensity)"
+options.block.description = "block — block, rectangular, uniform hyetograph, constant intensity over the whole duration"
+options.triangular.label = "Triangular"
+options.triangular.description = "triangular — triangular hyetograph, linear rise to the peak and linear fall"
+options.beta.label = "Beta distribution"
+options.beta.description = "beta — hyetograph shaped like a Beta density, early peak, convective storm, cloudburst"
+options.euler_ii.label = "Euler type II (DVWK)"
+options.euler_ii.description = "euler_ii — Euler type II hyetograph after DVWK, peak at about a third of the duration"
+options.unspecified.description = "No shape of the hyetograph given — ask"
+
+[operations.build_design_hyetograph.params.rainfall]
+label = "Rainfall total"
+question = "What is the total of the design rainfall in millimetres?"
+example = "38.4 mm"
+
+[operations.build_design_hyetograph.params.duration]
+label = "Rainfall duration"
+question = "How long does the rain last (with a unit, e.g. 60 min or 2 hours)?"
+example = "60 min"
+
+[operations.build_design_hyetograph.params.time_step]
+label = "Time step"
+question = "What time step should the hyetograph have (e.g. 5 min)?"
+example = "step 5 min"
+help = "The step must not be longer than the rain; when the duration is not a multiple of it, the last incomplete step is not counted."
+
+[operations.generate_design_hydrograph]
+label = "Design hydrograph of a catchment (Hydrolog)"
+description = "Compute the design direct-runoff hydrograph of a catchment (flood wave, peak discharge, volume of runoff) from the catchment area in km², the curve number and the time of concentration, for a design rainfall of a given total, duration and hyetograph shape: SCS-CN and the SCS unit hydrograph."
+summary = "Done. Result #{number}: design hydrograph — peak discharge {peak_discharge_m3s} m³/s after {time_to_peak_min} min, volume {total_volume_m3} m³, effective rainfall {effective_mm} mm."
+
+[operations.generate_design_hydrograph.params.catchment_area]
+label = "Catchment area"
+question = "What is the catchment area in km²?"
+example = "45.3 km²"
+
+[operations.generate_design_hydrograph.params.cn]
+label = "Curve number"
+question = "What is the curve number CN of the catchment (1 to 100, for average conditions AMC II)?"
+example = "CN 72"
+
+[operations.generate_design_hydrograph.params.concentration_time]
+label = "Time of concentration"
+question = "What is the time of concentration of the catchment (with a unit, e.g. 90 min or 1.5 h)?"
+example = "time of concentration 90 min"
+help = "The SCS unit hydrograph needs the time of concentration; the operation “Time of concentration of a watershed” computes it from the file of the watershed parameters."
+
+[operations.generate_design_hydrograph.params.hyetograph]
+label = "Shape of the hyetograph"
+question = "Which shape should the hyetograph of the design rainfall have: block, triangular, Beta or Euler type II?"
+model_question = "Which shape (time distribution) of the rainfall hyetograph does the command name?"
+help = "A block has a constant intensity, a triangle rises to a peak at half the duration and falls, Beta peaks early (α = 2, β = 5, Hydrolog's defaults) and Euler II (DVWK) at a third of the duration."
+options.block.label = "Block (constant intensity)"
+options.block.description = "block — block, rectangular, uniform hyetograph, constant intensity over the whole duration"
+options.triangular.label = "Triangular"
+options.triangular.description = "triangular — triangular hyetograph, linear rise to the peak and linear fall"
+options.beta.label = "Beta distribution"
+options.beta.description = "beta — hyetograph shaped like a Beta density, early peak, convective storm, cloudburst"
+options.euler_ii.label = "Euler type II (DVWK)"
+options.euler_ii.description = "euler_ii — Euler type II hyetograph after DVWK, peak at about a third of the duration"
+options.unspecified.description = "No shape of the hyetograph given — ask"
+
+[operations.generate_design_hydrograph.params.rainfall]
+label = "Rainfall total"
+question = "What is the total of the design rainfall in millimetres?"
+example = "62 mm"
+
+[operations.generate_design_hydrograph.params.duration]
+label = "Rainfall duration"
+question = "How long does the design rain last (with a unit, e.g. 120 min or 2 hours)?"
+example = "120 min"
+
+[operations.generate_design_hydrograph.params.time_step]
+label = "Time step"
+question = "What time step should the computation have (e.g. 5 min)?"
+example = "step 5 min"
+help = "The hyetograph, the unit hydrograph and the result share the step; it must not be longer than the rain."
+
+[operations.generate_design_hydrograph.params.amc]
+label = "Antecedent moisture (AMC)"
+question = "What were the moisture conditions before the rain: dry (AMC I), average (AMC II) or wet (AMC III)?"
+model_question = "Which antecedent soil moisture conditions (AMC) does the command name?"
+help = "The CN tables are for average conditions (AMC II); after a drought the CN decreases, after long rain it increases."
+options.dry.label = "Dry (AMC I)"
+options.dry.description = "AMC I — dry antecedent conditions, drought, dry soil, little rain before the storm, CN lowered"
+options.normal.label = "Average (AMC II)"
+options.normal.description = "AMC II — average, normal moisture conditions, the standard CN of the tables"
+options.wet.label = "Wet (AMC III)"
+options.wet.description = "AMC III — wet antecedent conditions, saturated soil after earlier rain, CN raised"
+options.unspecified.description = "No moisture conditions given — take average conditions (AMC II)"
+
+[operations.estimate_flood_quantiles]
+label = "Maximum flows from a series (Hydrolog)"
+description = "Compute maximum flows of a given exceedance probability (flood quantiles, Q1%, hundred-year flood, flood frequency analysis) from the daily flow series Q of a station exported by Obserwator (result #N or a CSV file): annual maxima of the complete hydrological years, fitted log-normal, GEV, Pearson III or Weibull distributions."
+summary = "Done. Result #{number}: flow quantiles from {n_years} hydrological years, best distribution {best_distribution}: {quantile_text} m³/s."
+
+[operations.estimate_flood_quantiles.params.distribution]
+label = "Probability distribution"
+question = "Which distribution should be fitted: all four (the best by AIC), log-normal, GEV, Pearson III or Weibull?"
+model_question = "Which probability distribution does the command name?"
+help = "Without a choice Hydrolog fits four distributions and ranks them by AIC; the result gives the quantiles of the best one and its file all of them."
+options.all.label = "All four, the best by AIC"
+options.all.description = "all — fit every distribution and pick the best (AIC), a comparison of distributions"
+options.log_normal.label = "Log-normal"
+options.log_normal.description = "log_normal — the two-parameter log-normal distribution"
+options.gev.label = "GEV (generalized extreme value)"
+options.gev.description = "gev — the generalized extreme value distribution, Gumbel/Fréchet family"
+options.pearson3.label = "Pearson type III"
+options.pearson3.description = "pearson3 — the Pearson type III distribution, three-parameter gamma, used in Poland for maximum flows"
+options.weibull.label = "Weibull"
+options.weibull.description = "weibull — the Weibull distribution"
+options.unspecified.description = "No distribution given — fit all and pick the best"
+
+[operations.estimate_flood_quantiles.params.probability]
+label = "Exceedance probability"
+question = "For which exceedance probabilities or return periods should the flows be given (e.g. 1% and 10%, the hundred-year flood)?"
+example = "1% and 10%"
+unset = "Hydrolog's default return periods: 2, 5, 10, 20, 50, 100, 500 and 1000 years"
+
+[operations.compute_watershed_morphometry]
+label = "Morphometry of a watershed (Hydrolog)"
+description = "Compute the morphometric indicators of a watershed from the file of its parameters (WatershedParameters JSON, e.g. from Hydrograf or result #N): area, perimeter, length and width, shape indicators (Horton, Gravelius, Miller, Schumm), elevations, relief and slopes; the physiographic description of a catchment."
+summary = "Done. Result #{number}: morphometry of the watershed {name}: area {area_km2} km², relief {relief_m} m, form factor {form_factor}, compactness coefficient {compactness_coefficient}."
+
+# Warnings of a result. Keys equal to the codes of Hydrolog's notices say what the
+# notice is about; its English text (with the numbers) is {text}. Other warning notices
+# are shown verbatim (core: warnings.tool_notice); info notices stay in the result file.
+[warnings]
+outside_typical_range = "A parameter outside the typical range of the formula, the result may be unreliable: {text}"
+duration_not_covered = "The rainfall duration is not a multiple of the time step: {text}"
+incomplete_years = "Incomplete hydrological years were skipped (some days have no value): {text}"
+small_sample = "A short sample of annual maxima, the estimates may be uncertain: {text}"
+missing_values_removed = "Missing values of the series were removed: {text}"
+
+# Errors of Hydrolog by the code of the error registry (ERR §4); its own text is only
+# {detail}, and details.reason says which error of that code it is
+[errors]
+validation_error = "Hydrolog refuses these values: {detail}"
+not_found = "Hydrolog did not find the input file: {detail}"
+data_error = "The input file has an invalid format or lacks the data Hydrolog needs: {detail}"
+calculation_error = "Hydrolog could not compute a result from these data: {detail}"
+forbidden = "Hydrolog will not write a file there: {detail}"
+conflict = "Hydrolog will not overwrite an existing file: {detail}"
+missing_dependency = "Hydrolog lacks a library this operation needs: {detail}"
+io_error = "Hydrolog cannot read or write a file: {detail}"
+internal_error = "Internal error of Hydrolog: {detail}"
+
+# Reasons why a plan must be corrected before it is confirmed (offline preview)
+[problems]
+method_fields = "The watershed of the file lacks the fields the method {method} needs: {missing}. Choose another method or complete the watershed file."
+tool_refused = "Hydrolog does not accept this value: {detail}"
+input_refused = "Hydrolog cannot compute a result from the input file: {detail}"
+step_exceeds_duration = "The time step ({time_step} min) is longer than the rain ({duration} min). Give a shorter step or a longer rain."
+
+# Additional plan rows (offline preview)
+[preview.watershed]
+label = "Watershed of the file"
+value = "{name}"
+
+[preview.annual_maxima]
+label = "Annual maxima"
+value = "{count} complete hydrological years ({first}–{last})"
+
+[preview.incomplete_years]
+label = "Skipped years"
+value = "{count} incomplete hydrological years: {years}"

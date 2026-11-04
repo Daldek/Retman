@@ -13,7 +13,7 @@ Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial
 
 - The exact call and its options are known: use the tool itself (`kartograf`, `obserwator`), or its MCP server.
 - The command is not in Polish: other languages are not recognised.
-- Hydrological computation (design rainfall, hydrographs, runoff): use [Hydrolog](https://github.com/Daldek/Hydrolog); Retman only fetches data today.
+- Hydrological computation beyond the Hydrolog operations below (unit hydrographs other than SCS, routing, areal rainfall, low flows): use [Hydrolog](https://github.com/Daldek/Hydrolog) directly.
 - GIS processing of the downloaded files: use QGIS or GDAL.
 - Browsing and managing the tool stores: use [Archiwista](https://github.com/Daldek/Archiwista).
 - Planning without a language model: Retman contains none and needs a model server (basal-serve or any OpenAI-compatible server, for example LM Studio) to plan. Without one, only planning and `retman eval run` fail; the other commands work.
@@ -168,7 +168,7 @@ The commands of the catalog; each exists as a CLI command and as a Python functi
 | `retman scaffold list` | `retman.operations.scaffold_list` | List the data commands of a tool and the operations that use them | no |
 | `retman scaffold draft` | `retman.operations.scaffold_draft` | Draft an operation from a command of a tool, for review by hand | no |
 
-The operations that a Polish command can select, 29 operations in 7 categories (a command that names none of them is `unsupported`):
+The operations that a Polish command can select, 35 operations in 9 categories (a command that names none of them is `unsupported`):
 
 | Category | Id | Tool | Operations | Data source |
 |---|---|---|---|---|
@@ -179,6 +179,8 @@ The operations that a Polish command can select, 29 operations in 7 categories (
 | Maximum precipitation PMAXTP | `obserwator_pmaxtp` | Obserwator 3.0.0 | 2 | IMGW-PIB |
 | Station time series | `obserwator_series` | Obserwator 3.0.0 | 3 | IMGW-PIB, ČHMÚ |
 | Archives and the data store | `obserwator_archives` | Obserwator 3.0.0 | 8 | IMGW-PIB, ČHMÚ |
+| Rainfall and runoff: design hyetograph, SCS-CN effective rainfall, time of concentration of a watershed file, design hydrograph from area, CN and tc | `rainfall_runoff` | Hydrolog 1.0 | 4 | computed locally |
+| Catchment and flow analyses: flood quantiles of an Obserwator daily flow series, morphometry of a watershed file | `hydrology_analysis` | Hydrolog 1.0 | 2 | computed locally |
 
 ## For AI agents
 
@@ -194,7 +196,7 @@ Retman is built to be driven by agents as well as by people. [llms.txt](https://
 
 - [Kartograf](https://github.com/Daldek/Kartograf) downloads Polish and Czech geodata into a versioned store; Retman calls its Python library (command lists `kartograf-command-list/1` and `kartograf-commands/1`).
 - [Obserwator](https://github.com/Daldek/IMGWTools) provides IMGW-PIB and ČHMÚ hydro-meteorological data, PMAXTP and a versioned store; Retman calls its Python library.
-- [Hydrolog](https://github.com/Daldek/Hydrolog) (hydrological calculations) and [Hydrograf](https://github.com/Daldek/Hydrograf) (watershed delineation and design hydrographs) are planned Retman tools.
+- [Hydrolog](https://github.com/Daldek/Hydrolog) computes watershed hydrology offline (design rainfall, SCS-CN, time of concentration, hydrographs, flood frequency, morphometry); Retman calls its Python library. [Hydrograf](https://github.com/Daldek/Hydrograf) (watershed delineation and design hydrographs) is a planned Retman tool.
 - [Archiwista](https://github.com/Daldek/Archiwista) browses and manages the stores of Kartograf and Obserwator.
 - [Nogat](https://github.com/Daldek/Nogat) is the hub of the ecosystem: the standards, the registry of the tools and the shared settings file `nogat.toml`.
 - When the exact call is known, the CLI of the tool is shorter; when an assistant has to call the tools in any language through MCP, use the MCP servers of Kartograf and Obserwator. Retman is for Polish sentences and a plan that a person confirms.

@@ -4,12 +4,12 @@
 
 ## Purpose and scope
 
-Retman is a CLI and a Python library that turns a data task written in Polish into a plan for the tools of the Nogat ecosystem (Kartograf for spatial data, Obserwator for IMGW-PIB and ČHMÚ measurements), asks for what is missing, shows the plan and, once confirmed, runs it and saves the result in the project folder. A language model on a separate server (any OpenAI-compatible one) only chooses between listed options; numbers, dates, coordinates and identifiers are read by code. The commands are in Polish: the user's sentence is the input, everything else is English.
+Retman is a CLI and a Python library that turns a data task written in Polish into a plan for the tools of the Nogat ecosystem (Kartograf for spatial data, Obserwator for IMGW-PIB and ČHMÚ measurements, Hydrolog for hydrological computations), asks for what is missing, shows the plan and, once confirmed, runs it and saves the result in the project folder. A language model on a separate server (any OpenAI-compatible one) only chooses between listed options; numbers, dates, coordinates and identifiers are read by code. The commands are in Polish: the user's sentence is the input, everything else is English.
 
 Use it when a person states a download or export in Polish and wants to see a checked plan before anything is fetched. Not for:
 
-- exact calls of a tool with known options: use the tool itself (`kartograf ...`, `obserwator ...`);
-- commands in other languages, hydrological computation (Hydrolog) or GIS processing.
+- exact calls of a tool with known options: use the tool itself (`kartograf ...`, `obserwator ...`, `hydrolog ...`);
+- commands in other languages, hydrological computation beyond the listed Hydrolog operations, or GIS processing.
 
 ## Install
 

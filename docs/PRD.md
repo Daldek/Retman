@@ -211,7 +211,7 @@ Each item has its reason and what covers it instead; the same list is the "When 
 | Out of scope | Why | What covers it |
 | --- | --- | --- |
 | Answering substantive hydrology questions | Retman runs the operations of the tools; it does not interpret results or teach hydrology | a separate assistant project |
-| Hydrological computation (design rainfall, hydrographs, runoff) | Retman fetches data today; the adapters of Hydrolog and Hydrograf are planned for 0.2 (chapter 9) | Hydrolog and Hydrograf, called directly |
+| Hydrological computation beyond the Hydrolog operations (other unit hydrographs, routing, areal rainfall, low flows) | Retman offers six Hydrolog computations (design hyetograph, SCS-CN effective rainfall, time of concentration, design hydrograph, flood quantiles, morphometry); the rest of Hydrolog and the Hydrograf adapter are planned for 0.2 (chapter 9) | Hydrolog and Hydrograf, called directly |
 | GIS processing of the downloaded files | the files are the result; processing them is another job | QGIS, GDAL |
 | Browsing and managing the stores of the tools | Retman records the paths and sums of the files, not the stores | Archiwista |
 | Replacing the tools' GUIs | Retman is an additional path (chapter 2) | the GUIs of the tools |

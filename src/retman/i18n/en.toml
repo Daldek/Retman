@@ -98,6 +98,9 @@ outside_pmaxtp_frame = "The point lies outside the PMAXTP data area (latitude 49
 invalid_grid_cell = "A PMAXTP grid cell requires two non-negative integers: ind_x and ind_y."
 invalid_probability = "The probability must be a number greater than 0 and less than 1 (e.g. 1% is 0.01)."
 invalid_duration = "The duration must be a whole number of minutes, at least 1 (e.g. “15 min”, “2 hours”)."
+invalid_curve_number = "The curve number must be a number from 1 to 100 (e.g. “CN 72”)."
+invalid_rainfall_depth = "The rainfall depth must be a number of millimetres greater than 0 and at most 2000 (e.g. “50 mm”)."
+invalid_catchment_area = "The catchment area must be a number of square kilometres greater than 0 (e.g. “45.3 km²”)."
 
 # Station readings (src/retman/extractors/stations.py, places.py): question labels and texts for the plan.
 [extractors.station]
@@ -150,6 +153,18 @@ fraction = "p = {value} (fraction)"
 
 [extractors.duration]
 minutes = "duration {minutes} min"
+step = "time step {minutes} min"
+concentration = "time of concentration {minutes} min"
+
+# Readings of numbers with units (src/retman/extractors/quantities.py).
+[extractors.curve_number]
+value = "CN = {value}"
+
+[extractors.rainfall_depth]
+value = "rainfall depth {value} mm"
+
+[extractors.catchment_area]
+value = "area {value} km²"
 
 [extractors.variables.names]
 H = "H — water level"
@@ -192,6 +207,9 @@ grid_cell = "cell {ind_x}/{ind_y} (ind_x/ind_y)"
 probability = "{percent}% (T = {years} years)"
 duration = "{minutes} min"
 duration_hours = "{hours} h"
+curve_number = "CN {value}"
+rainfall_depth = "{value} mm"
+catchment_area = "{value} km²"
 
 # Hints for questions about a required parameter that could not be read (explain_missing).
 [extractors.hints]

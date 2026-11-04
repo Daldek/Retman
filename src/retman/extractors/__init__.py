@@ -59,6 +59,23 @@ from retman.extractors.probability import (
     read_probability_answer,
     validate_probability,
 )
+from retman.extractors.quantities import (
+    describe_catchment_area,
+    describe_curve_number,
+    describe_rainfall_depth,
+    extract_catchment_area,
+    extract_concentration_time,
+    extract_curve_number,
+    extract_rain_duration,
+    extract_rainfall_depth,
+    extract_time_step,
+    read_catchment_area_answer,
+    read_curve_number_answer,
+    read_rainfall_depth_answer,
+    validate_catchment_area,
+    validate_curve_number,
+    validate_rainfall_depth,
+)
 from retman.extractors.results import extract_result_refs, validate_result
 from retman.extractors.stations import (
     describe_station,
@@ -91,40 +108,58 @@ def _explain_period(text: str, ctx: ExtractionContext) -> Hint | None:
 
 EXTRACTORS: dict[str, Reader] = {
     "area": extract_area,
+    "catchment_area": extract_catchment_area,
+    "concentration_time": extract_concentration_time,
     "crs": extract_crs,
+    "curve_number": extract_curve_number,
     "duration": extract_duration,
     "grid_cell": extract_grid_cell,
     "path": extract_paths,
     "place_query": extract_place_query,
     "point": extract_point,
     "probability": extract_probability,
+    "rain_duration": extract_rain_duration,
+    "rainfall_depth": extract_rainfall_depth,
     "result": extract_result_refs,
     "synop_station": extract_synop_station,
+    "time_step": extract_time_step,
     "year_type": extract_year_type,
 }
 # Answers to a question about one parameter may need laxer reading than the
 # whole command (e.g. a bare "2180"); extractors not listed read answers as is.
 ANSWER_EXTRACTORS: dict[str, Reader] = {
+    "catchment_area": read_catchment_area_answer,
+    "concentration_time": read_duration_answer,
     "crs": read_crs_answer,
+    "curve_number": read_curve_number_answer,
     "duration": read_duration_answer,
     "grid_cell": read_grid_cell_answer,
     "place_query": read_place_query_answer,
     "point": read_point_answer,
     "probability": read_probability_answer,
+    "rain_duration": read_duration_answer,
+    "rainfall_depth": read_rainfall_depth_answer,
     "synop_station": read_synop_station_answer,
+    "time_step": read_duration_answer,
     "year_type": read_year_type_answer,
 }
 VALIDATORS: dict[str, Callable[[Any], str | None]] = {
     "area": validate_area,
+    "catchment_area": validate_catchment_area,
+    "concentration_time": validate_duration,
     "crs": validate_crs,
+    "curve_number": validate_curve_number,
     "duration": validate_duration,
     "grid_cell": validate_grid_cell,
     "path": validate_path,
     "place_query": validate_place_query,
     "point": validate_point,
     "probability": validate_probability,
+    "rain_duration": validate_duration,
+    "rainfall_depth": validate_rainfall_depth,
     "result": validate_result,
     "synop_station": validate_synop_station,
+    "time_step": validate_duration,
     "year_type": validate_year_type,
 }
 
@@ -152,14 +187,20 @@ CONTEXT_HINTS: dict[str, Callable[[str, ExtractionContext], Hint | None]] = {
 }
 # Plan text of a value, by extractor name; extractors not listed are shown as is.
 DESCRIBERS: dict[str, Callable[[Any, TextSource], str]] = {
+    "catchment_area": describe_catchment_area,
+    "concentration_time": describe_duration,
+    "curve_number": describe_curve_number,
     "duration": describe_duration,
     "grid_cell": describe_grid_cell,
     "period": describe_period,
     "place_query": describe_place_query,
     "point": describe_point,
     "probability": describe_probability,
+    "rain_duration": describe_duration,
+    "rainfall_depth": describe_rainfall_depth,
     "station": describe_station,
     "synop_station": describe_synop_station,
+    "time_step": describe_duration,
     "variables": describe_variable,
     "years": describe_period,
 }

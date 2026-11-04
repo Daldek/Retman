@@ -12,6 +12,23 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 ### Added
 
+- The Hydrolog adapter (`hydrolog` pinned in the `tools` group at `2eb8bd0c`, the Nogat
+  release set `candidate-1`): six operations in the categories `rainfall_runoff` and
+  `hydrology_analysis` — a design hyetograph (`precip hietogram`), SCS-CN effective rainfall
+  (`scs effective`), the design hydrograph of a catchment given by its area, CN and time of
+  concentration (`hydrograph generate`), the time of concentration (`tc watershed`) and the
+  morphometry (`morphometry watershed`) of a watershed file, and flood quantiles
+  (`stats flood-frequency`) of the daily flows of an Obserwator series export. Hydrolog needs
+  no settings; the preview lets it compute the plan offline, so a method the watershed lacks
+  fields for is asked again and the plan of the quantiles shows the hydrological years of the
+  sample. New data kinds `watershed_parameters` and `hydrolog_report`, the scaffold reader of
+  Hydrolog's catalog, 101 eval rows (the row that called a SCS-CN hydrograph out of scope now
+  expects the hydrograph). `route network` and `soil hsg` are not offered yet.
+- Extractors of numbers with units: `curve_number` („CN 72”), `rainfall_depth` („50 mm”),
+  `catchment_area` („45,3 km²”, „4530 ha”) and the durations of a role, `rain_duration`,
+  `time_step` („krok 5 min”, „co 10 min”) and `concentration_time` („czas koncentracji
+  90 min”, „tc = 1,5 h”); an answer may give the curve number, the depth and the area as a
+  bare number.
 - Project documentation: product requirements (`docs/PRD.md`), architecture
   (`docs/ARCHITECTURE.md`), the user guide (`docs/USAGE.md`), the decision log, the progress
   file and this changelog; `README.md`, `CLAUDE.md`, the MIT licence.

@@ -1,0 +1,237 @@
+[categories.rainfall_runoff]
+label = "Opad i odpływ (Hydrolog)"
+description = "Obliczenia hydrologiczne zlewni w Hydrologu: hietogram opadu projektowego (blokowy, trójkątny, Beta, Euler II), opad efektywny metodą SCS-CN z liczby CN i sumy opadu, czas koncentracji zlewni z pliku jej parametrów (Kirpich, NRCS, Giandotti, FAA, Kerby), projektowy hydrogram odpływu bezpośredniego zlewni o danej powierzchni, CN i czasie koncentracji; liczy lokalnie, bez internetu"
+
+[categories.hydrology_analysis]
+label = "Analizy zlewni i przepływów (Hydrolog)"
+description = "Analizy w Hydrologu: przepływy maksymalne o danym prawdopodobieństwie (kwantyle wezbrań, rozkłady log-normalny, GEV, Pearson III, Weibull) z dobowego szeregu przepływów eksportowanego z Obserwatora oraz wskaźniki morfometryczne zlewni (kształt, deniwelacja, spadki) z pliku jej parametrów; liczy lokalnie, bez internetu"
+
+[operations.compute_concentration_time]
+label = "Czas koncentracji zlewni (Hydrolog)"
+description = "Oblicz czas koncentracji (czas dobiegu, tc) zlewni wybraną metodą z pliku parametrów zlewni (JSON WatershedParameters, np. z Hydrografu albo z wyniku #N): wzór Kirpicha, NRCS (TR-55, czas opóźnienia, z CN), Giandottiego, FAA, Kerby'ego albo Kerby–Kirpich; wynik w minutach i godzinach."
+summary = "Gotowe. Wynik #{number}: czas koncentracji metodą {method}: {tc_min} min ({tc_h} h)."
+
+[operations.compute_concentration_time.params.method]
+label = "Metoda czasu koncentracji"
+question = "Którą metodą obliczyć czas koncentracji: Kirpicha, NRCS (TR-55), Giandottiego, FAA, Kerby'ego czy Kerby–Kirpich?"
+model_question = "Jaką metodę obliczenia czasu koncentracji wymienia polecenie?"
+help = "Metody dają wyniki różniące się nawet kilkukrotnie i potrzebują różnych pól zlewni: NRCS potrzebuje liczby CN, FAA współczynnika odpływu, a Kerby i Kerby–Kirpich szorstkości oraz długości i spadku spływu po stoku. Jeśli zlewni brakuje pól metody, zapytam o metodę ponownie."
+options.kirpich.label = "Kirpich (długość i spadek cieku)"
+options.kirpich.description = "kirpich — wzór Kirpicha, z długości i spadku cieku głównego, najczęstszy dla małych zlewni rolniczych"
+options.nrcs.label = "NRCS / TR-55 (z liczby CN)"
+options.nrcs.description = "nrcs — metoda NRCS (SCS, TR-55), czas opóźnienia (lag) z długości, spadku i liczby CN"
+options.giandotti.label = "Giandotti (powierzchnia, długość, wysokości)"
+options.giandotti.description = "giandotti — wzór Giandottiego z powierzchni zlewni, długości cieku i wysokości, dla większych zlewni"
+options.faa.label = "FAA (spływ po stoku)"
+options.faa.description = "faa — wzór FAA (Federal Aviation Administration) spływu powierzchniowego po stoku, ze współczynnikiem odpływu C"
+options.kerby.label = "Kerby (spływ po stoku)"
+options.kerby.description = "kerby — wzór Kerby'ego spływu po stoku ze współczynnikiem szorstkości (retardance)"
+options.kerby_kirpich.label = "Kerby–Kirpich (stok i koryto)"
+options.kerby_kirpich.description = "kerby_kirpich — metoda złożona: spływ po stoku wzorem Kerby'ego plus przepływ w korycie wzorem Kirpicha"
+options.unspecified.description = "Nie podano metody obliczenia czasu koncentracji — dopytaj"
+
+[operations.compute_effective_rainfall]
+label = "Opad efektywny SCS-CN (Hydrolog)"
+description = "Oblicz opad efektywny (odpływ powierzchniowy, opad netto, straty opadu) metodą SCS-CN z liczby CN (curve number) i sumy opadu w milimetrach, przy suchych, przeciętnych albo wilgotnych warunkach poprzedzających (AMC I, II, III); wynik to opad efektywny, retencja, straty początkowe i współczynnik odpływu."
+summary = "Gotowe. Wynik #{number}: opad efektywny {effective_mm} mm z {precipitation_mm} mm opadu (CN {cn_adjusted}, AMC {amc}), współczynnik odpływu {runoff_coefficient}."
+
+[operations.compute_effective_rainfall.params.cn]
+label = "Liczba CN"
+question = "Jaka jest liczba CN zlewni (od 1 do 100, dla przeciętnych warunków AMC II)?"
+example = "CN 72"
+help = "Liczbę CN odczytuje się z tablic TR-55 dla grupy glebowej i pokrycia terenu; dla warunków suchych albo wilgotnych Hydrolog przelicza ją sam."
+
+[operations.compute_effective_rainfall.params.rainfall]
+label = "Suma opadu"
+question = "Jaka jest suma opadu w milimetrach?"
+example = "50 mm"
+
+[operations.compute_effective_rainfall.params.amc]
+label = "Warunki wilgotnościowe (AMC)"
+question = "Jakie były warunki wilgotnościowe przed opadem: suche (AMC I), przeciętne (AMC II) czy wilgotne (AMC III)?"
+model_question = "Jakie warunki wilgotności gleby przed opadem (AMC) wymienia polecenie?"
+help = "Tablice CN są dla warunków przeciętnych (AMC II); po suszy CN maleje, po długich opadach rośnie."
+options.dry.label = "Suche (AMC I)"
+options.dry.description = "AMC I — suche warunki poprzedzające, susza, sucha gleba, mało opadów przed deszczem, CN obniżone"
+options.normal.label = "Przeciętne (AMC II)"
+options.normal.description = "AMC II — przeciętne, normalne warunki wilgotnościowe, standardowe CN z tablic"
+options.wet.label = "Wilgotne (AMC III)"
+options.wet.description = "AMC III — wilgotne warunki poprzedzające, mokra, nasycona gleba po wcześniejszych opadach, CN podwyższone"
+options.unspecified.description = "Nie podano warunków wilgotnościowych — przyjmij przeciętne (AMC II)"
+
+[operations.build_design_hyetograph]
+label = "Hietogram opadu projektowego (Hydrolog)"
+description = "Oblicz hietogram opadu projektowego (rozkład opadu w czasie, rozkład czasowy deszczu, hyetograph) o danej sumie w milimetrach, czasie trwania i kroku czasowym: blokowy (równomierny), trójkątny, rozkład Beta albo Euler typu II (DVWK); wynik to wysokości i natężenia opadu w kolejnych krokach."
+summary = "Gotowe. Wynik #{number}: hietogram {hyetograph} — {total_mm} mm w {duration_min} min, {steps} kroków po {timestep_min} min, natężenie maksymalne {peak_intensity_mm_per_h} mm/h."
+
+[operations.build_design_hyetograph.params.hyetograph]
+label = "Kształt hietogramu"
+question = "Jaki kształt ma mieć hietogram: blokowy, trójkątny, Beta czy Euler typu II?"
+model_question = "Jaki kształt (rozkład czasowy) hietogramu opadu wymienia polecenie?"
+help = "Blokowy ma stałe natężenie, trójkątny rośnie do szczytu w połowie czasu trwania i maleje, Beta ma szczyt wcześnie (α = 2, β = 5, domyślne Hydrologa), a Euler II (DVWK) w jednej trzeciej czasu trwania."
+options.block.label = "Blokowy (stałe natężenie)"
+options.block.description = "block — hietogram blokowy, prostokątny, równomierny, stałe natężenie przez cały czas trwania"
+options.triangular.label = "Trójkątny"
+options.triangular.description = "triangular — hietogram trójkątny, liniowy wzrost do szczytu i liniowy spadek"
+options.beta.label = "Rozkład Beta"
+options.beta.description = "beta — hietogram o kształcie rozkładu Beta, szczyt na początku deszczu, deszcz konwekcyjny, nawalny"
+options.euler_ii.label = "Euler typu II (DVWK)"
+options.euler_ii.description = "euler_ii — hietogram Eulera typu II według DVWK, szczyt w około jednej trzeciej czasu trwania, model Eulera"
+options.unspecified.description = "Nie podano kształtu hietogramu — dopytaj"
+
+[operations.build_design_hyetograph.params.rainfall]
+label = "Suma opadu"
+question = "Jaka jest suma opadu projektowego w milimetrach?"
+example = "38,4 mm"
+
+[operations.build_design_hyetograph.params.duration]
+label = "Czas trwania opadu"
+question = "Jak długo trwa opad (z jednostką, np. 60 min albo 2 godziny)?"
+example = "60 min"
+
+[operations.build_design_hyetograph.params.time_step]
+label = "Krok czasowy"
+question = "Jaki ma być krok czasowy hietogramu (np. 5 min)?"
+example = "krok 5 min"
+help = "Krok nie może być dłuższy niż czas trwania opadu; gdy czas trwania nie jest jego wielokrotnością, ostatni niepełny krok nie jest liczony."
+
+[operations.generate_design_hydrograph]
+label = "Hydrogram projektowy zlewni (Hydrolog)"
+description = "Oblicz projektowy hydrogram odpływu bezpośredniego zlewni (fala wezbraniowa, przepływ maksymalny, kulminacja, objętość odpływu) z powierzchni zlewni w km², liczby CN i czasu koncentracji, dla opadu projektowego o danej sumie, czasie trwania i kształcie hietogramu: SCS-CN i hydrogram jednostkowy SCS."
+summary = "Gotowe. Wynik #{number}: hydrogram projektowy — przepływ maksymalny {peak_discharge_m3s} m³/s po {time_to_peak_min} min, objętość {total_volume_m3} m³, opad efektywny {effective_mm} mm."
+
+[operations.generate_design_hydrograph.params.catchment_area]
+label = "Powierzchnia zlewni"
+question = "Jaka jest powierzchnia zlewni w km²?"
+example = "45,3 km²"
+
+[operations.generate_design_hydrograph.params.cn]
+label = "Liczba CN"
+question = "Jaka jest liczba CN zlewni (od 1 do 100, dla przeciętnych warunków AMC II)?"
+example = "CN 72"
+
+[operations.generate_design_hydrograph.params.concentration_time]
+label = "Czas koncentracji"
+question = "Jaki jest czas koncentracji zlewni (z jednostką, np. 90 min albo 1,5 h)?"
+example = "czas koncentracji 90 min"
+help = "Hydrogram jednostkowy SCS potrzebuje czasu koncentracji; można go obliczyć operacją „Czas koncentracji zlewni” z pliku parametrów zlewni."
+
+[operations.generate_design_hydrograph.params.hyetograph]
+label = "Kształt hietogramu"
+question = "Jaki kształt ma mieć hietogram opadu projektowego: blokowy, trójkątny, Beta czy Euler typu II?"
+model_question = "Jaki kształt (rozkład czasowy) hietogramu opadu wymienia polecenie?"
+help = "Blokowy ma stałe natężenie, trójkątny rośnie do szczytu w połowie czasu trwania i maleje, Beta ma szczyt wcześnie (α = 2, β = 5, domyślne Hydrologa), a Euler II (DVWK) w jednej trzeciej czasu trwania."
+options.block.label = "Blokowy (stałe natężenie)"
+options.block.description = "block — hietogram blokowy, prostokątny, równomierny, stałe natężenie przez cały czas trwania"
+options.triangular.label = "Trójkątny"
+options.triangular.description = "triangular — hietogram trójkątny, liniowy wzrost do szczytu i liniowy spadek"
+options.beta.label = "Rozkład Beta"
+options.beta.description = "beta — hietogram o kształcie rozkładu Beta, szczyt na początku deszczu, deszcz konwekcyjny, nawalny"
+options.euler_ii.label = "Euler typu II (DVWK)"
+options.euler_ii.description = "euler_ii — hietogram Eulera typu II według DVWK, szczyt w około jednej trzeciej czasu trwania, model Eulera"
+options.unspecified.description = "Nie podano kształtu hietogramu — dopytaj"
+
+[operations.generate_design_hydrograph.params.rainfall]
+label = "Suma opadu"
+question = "Jaka jest suma opadu projektowego w milimetrach?"
+example = "62 mm"
+
+[operations.generate_design_hydrograph.params.duration]
+label = "Czas trwania opadu"
+question = "Jak długo trwa opad projektowy (z jednostką, np. 120 min albo 2 godziny)?"
+example = "120 min"
+
+[operations.generate_design_hydrograph.params.time_step]
+label = "Krok czasowy"
+question = "Jaki ma być krok czasowy obliczeń (np. 5 min)?"
+example = "krok 5 min"
+help = "Ten sam krok mają hietogram, hydrogram jednostkowy i wynik; nie może być dłuższy niż czas trwania opadu."
+
+[operations.generate_design_hydrograph.params.amc]
+label = "Warunki wilgotnościowe (AMC)"
+question = "Jakie były warunki wilgotnościowe przed opadem: suche (AMC I), przeciętne (AMC II) czy wilgotne (AMC III)?"
+model_question = "Jakie warunki wilgotności gleby przed opadem (AMC) wymienia polecenie?"
+help = "Tablice CN są dla warunków przeciętnych (AMC II); po suszy CN maleje, po długich opadach rośnie."
+options.dry.label = "Suche (AMC I)"
+options.dry.description = "AMC I — suche warunki poprzedzające, susza, sucha gleba, mało opadów przed deszczem, CN obniżone"
+options.normal.label = "Przeciętne (AMC II)"
+options.normal.description = "AMC II — przeciętne, normalne warunki wilgotnościowe, standardowe CN z tablic"
+options.wet.label = "Wilgotne (AMC III)"
+options.wet.description = "AMC III — wilgotne warunki poprzedzające, mokra, nasycona gleba po wcześniejszych opadach, CN podwyższone"
+options.unspecified.description = "Nie podano warunków wilgotnościowych — przyjmij przeciętne (AMC II)"
+
+[operations.estimate_flood_quantiles]
+label = "Przepływy maksymalne z szeregu (Hydrolog)"
+description = "Oblicz przepływy maksymalne o danym prawdopodobieństwie przewyższenia (kwantyle wezbrań, Q1%, woda stuletnia, analiza częstości powodzi, flood frequency) z dobowego szeregu przepływów Q stacji eksportowanego z Obserwatora (wynik #N albo plik CSV): maksima roczne pełnych lat hydrologicznych, dopasowanie rozkładu log-normalnego, GEV, Pearsona III albo Weibulla."
+summary = "Gotowe. Wynik #{number}: kwantyle przepływów z {n_years} lat hydrologicznych, najlepszy rozkład {best_distribution}: {quantile_text} m³/s."
+
+[operations.estimate_flood_quantiles.params.distribution]
+label = "Rozkład prawdopodobieństwa"
+question = "Który rozkład dopasować: wszystkie cztery (najlepszy według AIC), log-normalny, GEV, Pearsona III czy Weibulla?"
+model_question = "Jaki rozkład prawdopodobieństwa wymienia polecenie?"
+help = "Bez wskazania Hydrolog dopasowuje cztery rozkłady i porządkuje je kryterium AIC; wynik podaje kwantyle najlepszego, a plik wyniku wszystkie."
+options.all.label = "Wszystkie cztery, najlepszy według AIC"
+options.all.description = "all — dopasuj wszystkie rozkłady i wybierz najlepszy (kryterium AIC), porównanie rozkładów"
+options.log_normal.label = "Log-normalny"
+options.log_normal.description = "log_normal — rozkład log-normalny (logarytmiczno-normalny), dwuparametrowy"
+options.gev.label = "GEV (uogólniony rozkład wartości ekstremalnych)"
+options.gev.description = "gev — uogólniony rozkład wartości ekstremalnych, generalized extreme value, rozkład Gumbela/Frécheta"
+options.pearson3.label = "Pearsona typu III"
+options.pearson3.description = "pearson3 — rozkład Pearsona typu III, gamma trójparametrowy, stosowany w Polsce do przepływów maksymalnych"
+options.weibull.label = "Weibulla"
+options.weibull.description = "weibull — rozkład Weibulla"
+options.unspecified.description = "Nie podano rozkładu — dopasuj wszystkie i wybierz najlepszy"
+
+[operations.estimate_flood_quantiles.params.probability]
+label = "Prawdopodobieństwo przewyższenia"
+question = "Dla jakich prawdopodobieństw przewyższenia albo okresów powtarzalności podać przepływy (np. 1% i 10%, woda stuletnia)?"
+example = "1% i 10%"
+unset = "okresy powtarzalności domyślne Hydrologa: 2, 5, 10, 20, 50, 100, 500 i 1000 lat"
+
+[operations.compute_watershed_morphometry]
+label = "Morfometria zlewni (Hydrolog)"
+description = "Oblicz wskaźniki morfometryczne zlewni z pliku jej parametrów (JSON WatershedParameters, np. z Hydrografu albo z wyniku #N): powierzchnia, obwód, długość i szerokość, wskaźniki kształtu (Hortona, Graveliusa, Millera, Schumma), wysokości, deniwelacja i spadki; charakterystyka fizjograficzna zlewni."
+summary = "Gotowe. Wynik #{number}: morfometria zlewni {name}: powierzchnia {area_km2} km², deniwelacja {relief_m} m, wskaźnik formy {form_factor}, współczynnik zwartości {compactness_coefficient}."
+
+# Ostrzeżenia wyniku. Klucze równe kodom uwag Hydrologa mówią po polsku, czego dotyczy
+# uwaga; jej angielski tekst (z liczbami) jest {text}. Pozostałe uwagi ostrzegawcze są
+# pokazywane dosłownie (core: warnings.tool_notice), informacyjne zostają w pliku wyniku.
+[warnings]
+outside_typical_range = "Parametr poza typowym zakresem wzoru, wynik może być niewiarygodny: {text}"
+duration_not_covered = "Czas trwania opadu nie jest wielokrotnością kroku czasowego: {text}"
+incomplete_years = "Pominięto niepełne lata hydrologiczne (brak wartości dla części dni): {text}"
+small_sample = "Krótka próba maksimów rocznych, oszacowania mogą być niepewne: {text}"
+missing_values_removed = "Usunięto brakujące wartości szeregu: {text}"
+
+# Błędy Hydrologa po kodzie rejestru błędów (ERR §4); jego własny tekst jest tylko
+# {detail}, a details.reason mówi, który to błąd tego kodu
+[errors]
+validation_error = "Hydrolog odrzuca te wartości: {detail}"
+not_found = "Hydrolog nie znalazł pliku wejściowego: {detail}"
+data_error = "Plik wejściowy ma niepoprawny format albo brakuje w nim danych potrzebnych Hydrologowi: {detail}"
+calculation_error = "Hydrolog nie mógł obliczyć wyniku z tych danych: {detail}"
+forbidden = "Hydrolog nie zapisze pliku w tym miejscu: {detail}"
+conflict = "Hydrolog nie nadpisze istniejącego pliku: {detail}"
+missing_dependency = "Hydrologowi brakuje biblioteki potrzebnej do tej operacji: {detail}"
+io_error = "Hydrolog nie może odczytać albo zapisać pliku: {detail}"
+internal_error = "Wewnętrzny błąd Hydrologa: {detail}"
+
+# Powody, dla których plan trzeba poprawić przed potwierdzeniem (podgląd bez sieci)
+[problems]
+method_fields = "Zlewnia z pliku nie ma pól, których potrzebuje metoda {method}: {missing}. Wybierz inną metodę albo uzupełnij plik zlewni."
+tool_refused = "Hydrolog nie przyjmuje tej wartości: {detail}"
+input_refused = "Hydrolog nie może policzyć wyniku z pliku wejściowego: {detail}"
+step_exceeds_duration = "Krok czasowy ({time_step} min) jest dłuższy niż czas trwania opadu ({duration} min). Podaj krótszy krok albo dłuższy opad."
+
+# Dodatkowe wiersze planu (podgląd bez sieci)
+[preview.watershed]
+label = "Zlewnia z pliku"
+value = "{name}"
+
+[preview.annual_maxima]
+label = "Maksima roczne"
+value = "{count} pełnych lat hydrologicznych ({first}–{last})"
+
+[preview.incomplete_years]
+label = "Pominięte lata"
+value = "{count} niepełnych lat hydrologicznych: {years}"

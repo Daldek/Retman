@@ -60,12 +60,15 @@ dev = [
 # and v3.0.0 exist; then pin the tags. The Kartograf commit is the head of its develop
 # (the marker obserwator-store.json, Nogat ECO-057), the Obserwator commit the head of
 # its branch feature/obserwator (IMGWTools renamed, ECO-057); both are pushed to GitHub,
-# and the repository of Obserwator keeps its URL until it is renamed.
-# The supported ranges of both tools admit their development versions while the commits
+# and the repository of Obserwator keeps its URL until it is renamed. The Hydrolog
+# commit is its member of the Nogat release set candidate-1, which holds the Kartograf
+# and Obserwator commits above as well.
+# The supported ranges of the tools admit their development versions while the commits
 # are pinned (REL-5.6).
 tools = [
     "kartograf @ git+https://github.com/Daldek/Kartograf@9deaa314c88f89ea2d9308481e0c0b04751fc792",
     "obserwator[store] @ git+https://github.com/Daldek/IMGWTools@ea158dc6f703a5ababd91ff54e7ddec35b4f389b",
+    "hydrolog @ git+https://github.com/Daldek/Hydrolog@2eb8bd0c0af7a4219bfe9a0f756c1fa27cc15c52",
 ]
 
 [tool.uv]
