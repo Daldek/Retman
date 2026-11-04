@@ -515,6 +515,8 @@ Kartograf data kinds (ADR-004, ADR-016) — the format is whatever Kartograf ret
 | `dem_archive` | DEM 100 m: ZIP archive with an XYZ file per voivodeship (`.zip`) | ZIP signature |
 | `soil_raster` | one SoilGrids property layer: GeoTIFF (`.tif`) with the integer values of SoilGrids (the unit and the divisor are in the result) | TIFF signature |
 | `hsg_raster` | hydrologic soil groups: GeoTIFF (`.tif`), classes 1–4 = A–D, 0 = no data | TIFF signature |
+| `landcover_raster` | CORINE Land Cover of an area: GeoTIFF (`.tif`) of class codes, or without CLMS credentials the coloured WMS preview (`.png`) | TIFF or PNG signature |
+| `topographic_archive` | BDOO: ZIP archive of the GML files of a voivodeship (`.zip`) | ZIP signature |
 | `area_geometry` | user file with area geometry: GeoPackage or Shapefile | as `topographic_vector`; validates the area from a file in the plan (section 6.1), also reserved as the output kind of future operations (chains, v0.2) |
 
 Obserwator data kinds (ADR-017) — tabular files and JSON documents; validators read only the
@@ -589,10 +591,10 @@ a description, builders or handlers, and a client in `src/retman/tools/`.
 
 #### 3.2.10. Kartograf 0.8.0 operations
 
-Eight operations (ADR-001, ADR-012, ADR-016) in two categories: `spatial_data` ("GUGiK spatial
-data") and `soil_data` ("SoilGrids soil data"). The six data operations go through the command
-layer (`calls`) and have an offline preview and an availability check (`check`); the seventh
-writes the store marker and the eighth reads the segments of the store (below the table):
+Ten operations (ADR-001, ADR-012, ADR-016) in two categories: `spatial_data` ("GUGiK spatial
+data") and `soil_data` ("SoilGrids soil data"). The eight data operations go through the command
+layer (`calls`) and have an offline preview and an availability check (`check`); one writes the
+store marker and one reads the segments of the store (below the table):
 
 | Operation (`id`) | Catalog commands | Area (`accepts`) | Parameters Retman asks about | Output kinds |
 | --- | --- | --- | --- | --- |
@@ -600,6 +602,8 @@ writes the store marker and the eighth reads the segments of the store (below th
 | `download_sheet_hierarchy` — child map sheets: DEM (NMT), DSM (NMPT) or orthophoto | `elevation download`, `imagery download` | `sheet`, `geometry` (orthophoto only `sheet`) | product; target scale (1:10000 in PL-1992; 1:5000, 1:2000, 1:1000, 1:500 in PL-2000); DEM resolution (0.15–10 m) or DSM resolution (0.5; 0.6; 1 m); vertical datum; orthophoto color (RGB, CIR, B/W) | `dem`, `dsm`, `orthophoto` |
 | `download_elevation_cutout` — DEM or DSM 1 m cutout | `elevation download` | `bbox`, `geometry` | product; result CRS (EPSG:2180, 5514, 3045 — read by code, not the model, ADR-009); vertical datum | `dem`, `dsm` |
 | `download_bdot10k` — BDOT10k (current county packages) | `landcover download` | `teryt`, `bbox`, `sheet`, `geometry` | format (GeoPackage or Shapefile) | `topographic_vector` |
+| `download_orthophoto_cutout` — one orthophoto GeoTIFF of an area (WCS, EPSG:2180) | `imagery download` | `bbox`, `geometry` | product (orthophoto, true orthophoto); WCS variant of the orthophoto (standard, high); pixel (0.05; 0.1; 0.25; 0.5; 1 m; 0.05 m true orthophoto only) | `orthophoto` |
+| `download_landcover` — CORINE Land Cover or BDOO | `landcover download` | `sheet`, `bbox`, `geometry` | product (CORINE, BDOO; BDOT10k is `download_bdot10k`); CORINE edition (2018, 2012, 2006, 2000, 1990) or BDOO release (2026–2021, 2015) | CORINE: `landcover_raster`; BDOO: `topographic_archive` |
 | `download_soil_layer` — one SoilGrids property layer | `soil download` | `sheet`, `bbox`, `geometry` | property (clay, sand, silt, organic carbon, pH, bulk density, coarse fragments, CEC, nitrogen); measure of organic carbon (content SOC, density OCD, stock OCS); depth (0–5 … 100–200 cm; 0–30 cm for the stock); statistic (mean, median, 5% and 95% quantiles, uncertainty) | `soil_raster` |
 | `classify_soil_hsg` — hydrologic soil groups A–D (SCS-CN) | `soil hsg` | `sheet`, `bbox`, `geometry` | depth of the texture (0–5 … 100–200 cm) | `hsg_raster` |
 | `init_kartograf_store` — create the store: write its marker | `store init` | — | — | — |

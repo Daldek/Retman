@@ -3,7 +3,7 @@
 A user guide: how to set up Retman, how to issue commands, answer questions, approve plans and
 find results — in the terminal and from Python.
 
-**Status:** before v0.1.0. Eight Kartograf 0.8.0 operations and 26 Obserwator 3.0.0 (formerly IMGWTools) operations work
+**Status:** before v0.1.0. Ten Kartograf 0.8.0 operations and 26 Obserwator 3.0.0 (formerly IMGWTools) operations work
 (section 9) with a decision model compatible with the OpenAI API (e.g. LM Studio); the basal backend
 does not exist yet.
 
@@ -735,10 +735,10 @@ Codes 10 and 11 do not mean an error: the result was printed, and the code says 
 Operations fall into seven groups (two of them for Kartograf); Retman first picks the group, then the
 operation.
 
-### 9.1. Kartograf 0.8.0 — GUGiK spatial data and SoilGrids soils (ADR-001, ADR-012, ADR-016)
+### 9.1. Kartograf 0.8.0 — spatial data and SoilGrids soils (ADR-001, ADR-012, ADR-016)
 
-Eight operations in two groups. Four of them download data from GUGiK and two from SoilGrids
-(ISRIC) into the Kartograf store (always the store, never plain files in the results folder) and
+Ten operations in two groups. Six of them download data from GUGiK and Copernicus (CORINE) and
+two from SoilGrids (ISRIC) into the Kartograf store (always the store, never plain files in the results folder) and
 have an offline preview and an availability check; one writes the marker of the store and one
 reads its segments:
 
@@ -748,6 +748,8 @@ reads its segments:
 | Download child map sheets | parent sheet code (godło); geometry file (not for orthophoto) | product DEM (NMT) / DSM (NMPT) / orthophoto; target scale 1:10000–1:500 (finer than 1:10000 only in PL-2000); for DEM resolution 0.15–10 m, for DSM 0.5 / 0.6 / 1 m; vertical datum; for orthophoto colour RGB / CIR / B-W | `Rozwiń N-34-130-D-d-2 do 1:10000, ściągnij DSM z arkuszy potomnych` |
 | Cutout of DEM (NMT) or DSM (NMPT) 1 m | rectangle in PL-1992 (EPSG:2180) or WGS84 (EPSG:4326); geometry file | product DEM (NMT) / DSM (NMPT); result CRS EPSG:2180 / 5514 / 3045 (code with the `EPSG:` prefix, the bare number or a name, e.g. `wynik w 2180`, `do S-JTSK`); vertical datum | `wytnij dsm z prostokąta 52.40 16.90 52.41 16.91 do 3045` |
 | Download BDOT10k | county (TERYT, 4 digits), sheet code (godło), rectangle or geometry file | format GeoPackage / Shapefile | `ściągnij bdot dla powiatu 2264 w gpkg` |
+| Orthophoto cutout | rectangle in PL-1992 (EPSG:2180) or WGS84 (EPSG:4326); geometry file (the rectangle around it) | product orthophoto (RGB) / true orthophoto (true orto, selected cities); for the orthophoto the WCS variant standard (newest photos) / high (pixel of 10 cm or less); pixel 5 cm (true orto only) / 10 cm / 25 cm / 50 cm / 1 m. One GeoTIFF in EPSG:2180 from the server's composition of flights (no year choice) | `Wytnij ortofotomapę standardową 25 cm z 16.90 52.40 16.91 52.41` |
+| Land cover: CORINE or BDOO | sheet code (godło), rectangle or geometry file | product CORINE Land Cover / BDOO; the CORINE edition 2018 / 2012 / 2006 / 2000 / 1990 or the BDOO release 2026–2021 / 2015. CORINE is one raster of the area: class codes (GeoTIFF) with CLMS credentials (`CLMS_CREDENTIALS`), otherwise a coloured WMS preview (PNG), which the result says; BDOO is the GML package (ZIP) of every voivodeship the area touches | `Pobierz CORINE Land Cover 2018 dla arkusza N-34-130-D` |
 | Create the Kartograf store | the folder `store_dir` of the settings | none; it writes the store marker `kartograf-store.json` (nothing is downloaded, no check), into a new or an empty folder or into a layout that has lost its marker, after Kartograf has checked the layout; a folder with other files or a store inside another store is refused in the plan | `Utwórz magazyn Kartografa` |
 | Overview of the Kartograf store | the folder `store_dir` of the settings | none; it lists the segments (product folders) with the product, the country, the dataset and whether the installed Kartograf knows them; a read, offline (a folder that does not exist is refused in the plan) | `Pokaż, co jest w magazynie Kartografa` |
 | Download a SoilGrids soil layer | sheet code (godło), rectangle or geometry file (the rectangle around it) | property: clay / sand / silt / organic carbon / pH / bulk density / coarse fragments / CEC / nitrogen; for organic carbon its measure: content SOC / density OCD / stock OCS; depth 0–5 / 5–15 / 15–30 / 30–60 / 60–100 / 100–200 cm (the stock: 0–30 cm); statistic mean / median / 5% / 95% quantile / uncertainty. The result gives the unit of the integer values of the file and the divisor to the usual unit (clay in g/kg: percent = value / 10) | `Pobierz zawartość iłu 0-5 cm, średnia, dla arkusza N-34-130-D-d-2-4` |

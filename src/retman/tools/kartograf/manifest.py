@@ -27,6 +27,21 @@ _SOIL_AREA: ParamSpec = {
     "required": True,
 }
 
+# The pixels of Kartograf's orthophoto cutout: 0.05 m is the true orthophoto's own
+# (Kartograf's validation rejects it for the orthophotomap)
+_CUTOUT_RESOLUTIONS = {
+    "0_05m": "0.05m",
+    "0_1m": "0.1m",
+    "0_25m": "0.25m",
+    "0_5m": "0.5m",
+    "1m": "1m",
+}
+
+# The editions of CORINE Land Cover (1990 is a WMS preview only) and the yearly
+# releases of BDOO, as Kartograf's registry lists them
+_CORINE_YEARS = ["2018", "2012", "2006", "2000", "1990"]
+_BDOO_YEARS = ["2026", "2025", "2024", "2023", "2022", "2021", "2015"]
+
 MANIFEST: ManifestSpec = {
     "tool": "kartograf",
     "distribution": "kartograf",
@@ -101,7 +116,8 @@ MANIFEST: ManifestSpec = {
                 "product": {
                     "laz": "LIDAR point clouds (LAZ): no operation or kind yet",
                     "intensity": "LIDAR intensity images: no operation or kind yet",
-                    "true-orto": "true orthophotomap of selected cities: not offered",
+                    "true-orto": "true orthophotomap: one cutout of an area in "
+                    "download_orthophoto_cutout, no sheets",
                     "oblique-orto": "oblique orthophotomap: 4 view files per sheet",
                 },
             },
@@ -259,6 +275,102 @@ MANIFEST: ManifestSpec = {
                     "options": ["gpkg", "shp"],
                     "tool_values": {"gpkg": "GPKG", "shp": "SHP"},
                     "required": True,
+                },
+            ],
+        },
+        {
+            "id": "download_orthophoto_cutout",
+            "category": "spatial_data",
+            "description": "Download one orthophoto GeoTIFF of an area from the GUGiK "
+            "WCS",
+            "inputs": [],
+            "outputs": ["orthophoto"],
+            "commands": ["imagery download"],
+            "calls": "retman.tools.kartograf.calls:download_orthophoto_cutout",
+            "describe": "retman.tools.kartograf.describe:download_orthophoto_cutout",
+            "preview": "retman.tools.kartograf.preview:download_orthophoto_cutout",
+            "check": "retman.tools.kartograf.checks:download_orthophoto_cutout",
+            "params": [
+                {
+                    "name": "product",
+                    "type": "choice",
+                    "options": ["orthophoto", "true_orthophoto"],
+                    "tool_values": {
+                        "orthophoto": "orto",
+                        "true_orthophoto": "true-orto",
+                    },
+                    "required": True,
+                },
+                {
+                    "name": "area",
+                    "type": "free",
+                    "extractor": "area",
+                    "accepts": ["bbox", "geometry"],
+                    "required": True,
+                },
+                {
+                    # The true orthophoto has one WCS service: Kartograf refuses
+                    # the variant for it
+                    "name": "coverage",
+                    "type": "choice",
+                    "options": ["standard", "high"],
+                    "required": True,
+                    "depends_on": {"product": ["orthophoto"]},
+                },
+                {
+                    "name": "resolution",
+                    "type": "choice",
+                    "options": list(_CUTOUT_RESOLUTIONS),
+                    "tool_values": _CUTOUT_RESOLUTIONS,
+                    "required": True,
+                },
+            ],
+        },
+        {
+            "id": "download_landcover",
+            "category": "spatial_data",
+            "description": "Download CORINE Land Cover or GUGiK BDOO land cover for an "
+            "area",
+            "inputs": [],
+            "outputs": ["landcover_raster", "topographic_archive"],
+            "commands": ["landcover download"],
+            "calls": "retman.tools.kartograf.calls:download_landcover",
+            "describe": "retman.tools.kartograf.describe:download_landcover",
+            "preview": "retman.tools.kartograf.preview:download_landcover",
+            "check": "retman.tools.kartograf.checks:download_landcover",
+            # ZABAGED, Data50 and Data250 need a Czech area (an S-JTSK rectangle or
+            # the national file), which Retman's area reader does not give:
+            # Kartograf refuses them for every area the operation accepts
+            "excluded": {"product": {"bdot10k": "download_bdot10k"}},
+            "params": [
+                {
+                    "name": "product",
+                    "type": "choice",
+                    "options": ["corine", "bdoo"],
+                    "required": True,
+                },
+                {
+                    # A voivodeship code (two digits) is no area Retman reads: BDOO
+                    # of an area is the package of every voivodeship it touches
+                    "name": "area",
+                    "type": "free",
+                    "extractor": "area",
+                    "accepts": ["sheet", "bbox", "geometry"],
+                    "required": True,
+                },
+                {
+                    "name": "corine_year",
+                    "type": "choice",
+                    "options": _CORINE_YEARS,
+                    "required": True,
+                    "depends_on": {"product": ["corine"]},
+                },
+                {
+                    "name": "bdoo_year",
+                    "type": "choice",
+                    "options": _BDOO_YEARS,
+                    "required": True,
+                    "depends_on": {"product": ["bdoo"]},
                 },
             ],
         },

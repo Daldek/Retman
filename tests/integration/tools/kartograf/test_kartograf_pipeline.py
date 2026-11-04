@@ -44,7 +44,8 @@ def make_app(
     client = OfflineClient(config.tools["kartograf"], **programmed)
     app = Retman(
         config,
-        FakeDecisionBackend(rules),
+        # More operations than one question offers: the category comes first
+        FakeDecisionBackend({"spatial_data": "spatial_data", **rules}),
         project,
         operations=operations(),
         clients={"kartograf": client},

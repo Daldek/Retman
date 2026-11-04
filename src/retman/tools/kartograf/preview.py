@@ -5,7 +5,7 @@ operation (``validate_command``), so these previews run only for requests the to
 accepts. They add what that validation cannot know: whether the store folder is one
 Kartograf will write into, how many sheets a sheet code or a geometry file stands for,
 the extent of a geometry file, and the rules that are Retman's own (an orthophoto
-only for sheet codes, BDOT10k only inside Poland). Everything goes through the
+only for sheet codes, BDOT10k and BDOO only inside Poland). Everything goes through the
 client's offline lookups and the store folder itself; nothing here uses the network
 or writes.
 """
@@ -244,6 +244,13 @@ def classify_soil_hsg(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput
     return _extent(params, ctx)
 
 
+def download_orthophoto_cutout(
+    params: dict[str, Any], ctx: ToolContext
+) -> PreviewOutput:
+    """Preview the extent of a geometry file: the cutout is one rectangle around it."""
+    return _extent(params, ctx)
+
+
 def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
     """Preview the extent of a geometry file, which must lie in Poland.
 
@@ -257,6 +264,24 @@ def download_bdot10k(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
     if box is not None and _outside_poland(box):
         output["problems"].append(
             {"params": ["area"], "key": "outside_poland", "args": {}}
+        )
+    return output
+
+
+def download_landcover(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Preview the extent of a geometry file; BDOO's must lie in Poland.
+
+    BDOO of an area is the package of every voivodeship the PRG says it touches
+    (network, after consent), so a file far outside Poland would fail only then.
+    CORINE covers Europe and takes the rectangle of the area as it is.
+    """
+    if (refused := _refused(ctx)) is not None:
+        return refused
+    output = _empty()
+    box = _envelope(params, ctx, output)
+    if params["product"] == "bdoo" and box is not None and _outside_poland(box):
+        output["problems"].append(
+            {"params": ["area"], "key": "bdoo_outside_poland", "args": {}}
         )
     return output
 

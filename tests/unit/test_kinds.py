@@ -117,6 +117,9 @@ def _reason(kind: str, file: Path) -> str:
         ("dem_archive", ".zip", b"PK\x03\x04"),
         ("soil_raster", ".tif", b"II*\x00"),
         ("hsg_raster", ".TIF", b"MM\x00*"),
+        ("landcover_raster", ".tif", b"II*\x00"),
+        ("landcover_raster", ".PNG", b"\x89PNG\r\n\x1a\n"),
+        ("topographic_archive", ".zip", b"PK\x03\x04"),
     ],
 )
 def test_validate_file_accepts_format_signature(
@@ -149,6 +152,11 @@ def test_validate_file_accepts_format_signature(
         ("hsg_raster", ".tif", b"", "invalid_header"),
         ("soil_raster", ".asc", b"ncols 2\n", "unsupported_extension"),
         ("hsg_raster", ".gpkg", GEOPACKAGE, "unsupported_extension"),
+        ("landcover_raster", ".png", b"<ServiceExceptionReport", "invalid_header"),
+        ("landcover_raster", ".png", b"\x89PNG", "invalid_header"),
+        ("landcover_raster", ".gpkg", GEOPACKAGE, "unsupported_extension"),
+        ("topographic_archive", ".zip", b"<html>", "invalid_header"),
+        ("topographic_archive", ".gml", b"<?xml", "unsupported_extension"),
     ],
 )
 def test_validate_file_rejects_wrong_header_or_format(

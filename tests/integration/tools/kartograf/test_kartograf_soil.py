@@ -224,7 +224,8 @@ def make_app(tmp_path: Path, rules: dict[str, Any]) -> tuple[Retman, OfflineClie
     client = OfflineClient(config.tools["kartograf"])
     app = Retman(
         config,
-        FakeDecisionBackend(rules),
+        # More operations than one question offers: the category comes first
+        FakeDecisionBackend({"soil_data": "soil_data", **rules}),
         project,
         operations=operations(),
         clients={"kartograf": client},

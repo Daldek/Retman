@@ -17,8 +17,11 @@ from retman.adapters.catalog import CatalogCall, PlanClient
 # function (``get_overall_bbox``), not as a catalog command
 ENVELOPE = "geometry envelope"
 
-# The one scale of PL-1992 sheets
+# The one scale of PL-1992 sheets, and of the sheets of the true orthophoto
 _PL1992_SCALE = "1:10000"
+_TRUE_ORTHO_SCALE = "1:5000"
+# The options of a call that give an area other than a sheet code
+_AREA_OPTIONS = ("geometry", "layer", "bbox", "bbox_crs")
 
 
 @dataclass(frozen=True)
@@ -47,12 +50,11 @@ def sheet_count(call: CatalogCall, client: PlanClient) -> SheetCount | None:
     options = call.options
     if options.get("resolution") == "100m":
         return None
-    if "geometry" in options:
-        scale = str(options.get("scale", _PL1992_SCALE))
+    if "geometry" in options or "bbox" in options:
+        own_scale = _TRUE_ORTHO_SCALE if options.get("product") == "true-orto" else None
+        scale = str(options.get("scale", own_scale or _PL1992_SCALE))
         system = str(options["sheet_system"])
-        area: dict[str, object] = {"geometry": options["geometry"]}
-        if "layer" in options:
-            area["layer"] = options["layer"]
+        area = {name: options[name] for name in _AREA_OPTIONS if name in options}
         found = client.lookup(
             CatalogCall("sheet find", {**area, "scale": scale, "sheet_system": system})
         )
