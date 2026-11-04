@@ -2,16 +2,21 @@
 
 The generic adapter has already had Hydrolog validate every call of the operation
 (``validate_command``), which checks the options but reads no file and computes
-nothing. These commands neither write nor use the network, so the preview lets the
-tool compute the plan through the client's offline ``lookup``: whatever Hydrolog would
-refuse at the run (a watershed without the fields of the method, a series without its
-flow column) is refused now, as a question about the parameter the tool names, or as
-the error of the input when no answer can help. The rule a time step needs (not
-longer than the rain) is Retman's own, because Hydrolog's refusal names no option.
-What the computation tells about an input (the years of a series, the name of a
-watershed) becomes rows of the plan; its results are shown only after the run.
+nothing. The computations neither write nor use the network, and ``route network``
+writes nothing while its call names no output (as it does while planning), so the
+preview lets the tool compute the plan through the client's offline ``lookup``:
+whatever Hydrolog would refuse at the run (a watershed without the fields of the
+method, a series without its flow column, a network it cannot route) is refused now,
+as a question about the parameter the tool names, or as the error of the input when
+no answer can help. The rule a time step needs (not longer than the rain) is Retman's
+own, because Hydrolog's refusal names no option. What the computation tells about an
+input (the years of a series, the name of a watershed or a network) becomes rows of
+the plan; its results are shown only after the run. ``soil hsg`` writes its raster
+in any case, so only Retman's own rule is checked before it runs.
 """
 
+from collections import Counter
+from pathlib import Path
 from typing import Any
 
 from retman.adapters.catalog import (
@@ -23,6 +28,12 @@ from retman.adapters.catalog import (
 )
 from retman.registry.manifest import PreviewOutput, PreviewProblem
 from retman.tools.hydrolog import calls
+
+# The field Hydrolog names when a subcatchment has no hydrograph of its own, cannot
+# compute one and reads no inflow table
+_FLOWS_FIELD = "discharge_m3s"
+# The inputs of ``soil hsg``: one texture raster each
+_TEXTURE_INPUTS = ("clay", "sand", "silt")
 
 
 def _refusal(ctx: ToolContext, err: ToolError) -> PreviewProblem:
@@ -187,3 +198,91 @@ def compute_watershed_morphometry(
     if documents:
         _watershed_row(output, documents[0].get("result") or {})
     return output
+
+
+def _route_network(
+    builder: CallBuilder, params: dict[str, Any], ctx: ToolContext, *, inflows: bool
+) -> PreviewOutput:
+    """Let Hydrolog route the network in memory; name it, its nodes and its outlet.
+
+    While planning the call names no output, so Hydrolog computes the network and
+    writes nothing: a document it cannot read or an inflow table without the column
+    of a subcatchment ends the plan before the user confirms. A subcatchment without
+    flows, planned without an inflow table, is said as such: the command has to name
+    the table, which makes it the other operation.
+    """
+    (call,) = builder(params, ctx)
+    try:
+        document = ctx.client.lookup(call)
+    except ToolError as err:
+        if err.call is None:
+            err.call = call
+        tool_details: dict[str, Any] = dict(err.details.get("tool_details") or {})
+        if (
+            not inflows
+            and tool_details.get("reason") == "missing_field"
+            and tool_details.get("field") == _FLOWS_FIELD
+        ):
+            return _output(
+                [
+                    {
+                        "params": [],
+                        "key": "network_needs_inflows",
+                        "args": {
+                            "node": str(tool_details.get("node_id", "")),
+                            "path": str(ctx.inputs["network"]),
+                        },
+                        "code": err.code,
+                        "reason": "missing_field",
+                    }
+                ]
+            )
+        return _output([_refusal(ctx, err)])
+    result = document.get("result") or {}
+    output = _output([])
+    output["rows"].append(
+        {
+            "key": "network",
+            "args": {
+                "name": str(result.get("name") or Path(ctx.inputs["network"]).stem),
+                "nodes": str(len(result.get("nodes") or ())),
+                "outlet": str(result.get("outlet", "")),
+            },
+        }
+    )
+    return output
+
+
+def route_river_network(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Check that the network routes without an inflow table; describe it."""
+    return _route_network(calls.route_river_network, params, ctx, inflows=False)
+
+
+def route_river_network_inflows(
+    params: dict[str, Any], ctx: ToolContext
+) -> PreviewOutput:
+    """Check that the network routes with the inflow table; describe it."""
+    return _route_network(calls.route_river_network_inflows, params, ctx, inflows=True)
+
+
+def classify_soil_groups(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
+    """Refuse one file given for two of the clay, sand and silt rasters.
+
+    Hydrolog would classify such a texture without complaint and the groups would be
+    wrong. The command writes the raster, so nothing is computed before the run.
+    """
+    paths = Counter(Path(ctx.inputs[name]).resolve() for name in _TEXTURE_INPUTS)
+    repeated = [path for path, count in paths.items() if count > 1]
+    if not repeated:
+        return _output([])
+    return _output(
+        [
+            {
+                "params": [],
+                "key": "same_texture_raster",
+                "args": {"path": str(repeated[0])},
+                "code": "validation_error",
+                "reason": "same_input",
+            }
+        ]
+    )

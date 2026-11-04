@@ -19,6 +19,8 @@ WATERSHED = {
     "cn": 72,
 }
 REPORT = {"schema": "hydrolog-result/1", "tool": "hydrolog", "status": "ok"}
+NETWORK = {"schema": "hydrolog-network/1", "nodes": []}
+SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>\n'
 
 
 def _reason(kind: str, file: Path) -> str:
@@ -37,6 +39,12 @@ def _reason(kind: str, file: Path) -> str:
         ("watershed_parameters", "zlewnia.json", json.dumps(WATERSHED)),
         ("watershed_parameters", "ZLEWNIA.JSON", json.dumps({**WATERSHED, "x": 1})),
         ("hydrolog_report", "tc.json", json.dumps(REPORT, indent=2)),
+        ("hydrolog_network", "siec.json", json.dumps(NETWORK)),
+        # A node's table as route network writes it, and an inflow table
+        ("hydrograph_table", "OUT.csv", "time_min,discharge_m3s\n0.0,0.0\n5.0,1.5\n"),
+        ("hydrograph_table", "doplywy.csv", "time_min,A,B\n0,0,0\n5,1.2,0.4\n"),
+        ("network_schematic", "siec.svg", SVG),
+        ("network_schematic", "siec.svg", '<?xml version="1.0"?>\n' + SVG),
     ],
 )
 def test_hydrolog_kinds_accept_their_documents(
@@ -52,6 +60,9 @@ def test_hydrolog_kinds_accept_their_documents(
     ("kind", "name", "content", "reason"),
     [
         ("watershed_parameters", "w.json", "", "empty_file"),
+        ("hydrolog_network", "n.json", json.dumps(WATERSHED), "invalid_schema"),
+        ("hydrograph_table", "t.csv", "time_h,discharge_m3s\n0,0\n", "invalid_columns"),
+        ("network_schematic", "s.svg", "<html></html>", "invalid_header"),
         ("watershed_parameters", "w.json", '{"area_km2": ', "invalid_json"),
         # A watershed needs all five required fields
         (

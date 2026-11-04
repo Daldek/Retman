@@ -1,12 +1,13 @@
 """Retman results of Hydrolog's computations.
 
-Every computation answers with a ``hydrolog-result/1`` envelope and writes no file of
-its own: the mapper keeps the envelope as the result file (kind ``hydrolog_report``,
-named after what it holds), takes the few numbers the summary of the result names and
-passes on Hydrolog's warning notices (a parameter outside the typical range of a
-formula, a skipped incomplete year, a short sample); info notices stay in the file.
-The full series (hyetograph depths, hydrograph ordinates, fitted distributions) are in
-the file, not in the values.
+Every computation answers with a ``hydrolog-result/1`` envelope: the mapper keeps the
+envelope as the result file (kind ``hydrolog_report``, named after what it holds),
+takes the few numbers the summary of the result names and passes on Hydrolog's
+warning notices (a parameter outside the typical range of a formula, a skipped
+incomplete year, a short sample); info notices stay in the file. The full series
+(hyetograph depths, hydrograph ordinates, fitted distributions) are in the file, not
+in the values. The commands that write (``route network``, ``soil hsg``) add the
+files Hydrolog wrote into the result folder, by their kinds.
 """
 
 import json
@@ -22,6 +23,9 @@ from retman.registry.operation import Operation
 from retman.tools.hydrolog.calls import REPORT
 
 Runs = Sequence[tuple[CatalogCall, ToolRun]]
+
+# The hydrologic soil groups in the counts of ``soil hsg`` (``nodata`` is apart)
+_HSG_GROUPS = ("A", "B", "C", "D")
 
 
 def _output_dir(ctx: ToolContext) -> Path:
@@ -209,3 +213,91 @@ def compute_watershed_morphometry(
         "watershed_slope_percent": _rounded(slopes.get("watershed_slope_percent"), 2),
     }
     return _output(operation, ctx, run, "morphometry.json", values)
+
+
+def _route_network(operation: Operation, runs: Runs, ctx: ToolContext) -> HandlerOutput:
+    """Describe the routed network: the outlet's peak, its time and volume, each node.
+
+    The hydrograph table ``<id>.csv`` of every node and the schematic are the files
+    Hydrolog wrote into the result folder; the envelope (with the parameters of every
+    reach and the schematic document) is the result file.
+    """
+    ((_, run),) = runs
+    result = _result(run)
+    nodes = [
+        {
+            "id": node["id"],
+            "type": node["type"],
+            "peak_m3s": _rounded(node["peak_m3s"], 3),
+            "time_to_peak_min": _rounded(node["time_to_peak_min"], 1),
+            "volume_m3": round(float(node["volume_m3"])),
+        }
+        for node in result["nodes"]
+    ]
+    outlet = next(node for node in nodes if node["id"] == result["outlet"])
+    tables = [item.path for item in run.files if item.path.suffix.lower() == ".csv"]
+    schematic = [item.path for item in run.files if item.path.suffix.lower() == ".svg"]
+    values = {
+        "name": result.get("name") or Path(ctx.inputs["network"]).stem,
+        "timestep_min": result["timestep_min"],
+        "node_count": len(nodes),
+        "outlet": outlet["id"],
+        "outlet_peak_m3s": outlet["peak_m3s"],
+        "outlet_time_to_peak_min": outlet["time_to_peak_min"],
+        "outlet_volume_m3": outlet["volume_m3"],
+        "nodes": nodes,
+    }
+    output = _output(operation, ctx, run, "route_network.json", values)
+    output["files"].update(hydrograph_table=tables, network_schematic=schematic)
+    return output
+
+
+def route_river_network(
+    operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
+) -> HandlerOutput:
+    """Describe a network whose subcatchments hold or compute their flows."""
+    return _route_network(operation, runs, ctx)
+
+
+def route_river_network_inflows(
+    operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
+) -> HandlerOutput:
+    """Describe a network whose subcatchments read the inflow table."""
+    return _route_network(operation, runs, ctx)
+
+
+def classify_soil_groups(
+    operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
+) -> HandlerOutput:
+    """Describe the raster of the groups A-D: the cells and the share of each group.
+
+    The shares are of the classified cells; the cells without data (no value in one
+    of the three rasters) are counted apart. A raster with no classified cell is a
+    warning: the groups of such a result are empty.
+    """
+    ((_, run),) = runs
+    result = _result(run)
+    counts = {str(key): int(value) for key, value in result["counts"].items()}
+    classified = sum(counts.get(group, 0) for group in _HSG_GROUPS)
+    percent = {
+        group: round(100 * counts.get(group, 0) / classified, 1)
+        for group in _HSG_GROUPS
+        if classified
+    }
+    rows, columns = (int(size) for size in result["shape"])
+    values = {
+        "rows": rows,
+        "columns": columns,
+        "crs": result["crs"],
+        "counts": counts,
+        "nodata_cells": counts.get("nodata", 0),
+        "percent": percent,
+        "group_text": ", ".join(
+            f"{group} {format_quantity(share)}%" for group, share in percent.items()
+        ),
+    }
+    output = _output(operation, ctx, run, "soil_groups.json", values)
+    output["files"]["hsg_raster"] = [item.path for item in run.files]
+    if not classified:
+        output["warnings"].append({"key": "no_classified_cells", "args": {}})
+    return output

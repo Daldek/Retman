@@ -45,6 +45,13 @@ _UTF8_BOM = b"\xef\xbb\xbf"
 _RESULT_SCHEMA = "obserwator-result/1"
 _PLAN_SCHEMA = "obserwator-plan/1"
 _HYDROLOG_RESULT_SCHEMA = "hydrolog-result/1"
+_HYDROLOG_NETWORK_SCHEMA = "hydrolog-network/1"
+# The time column of every hydrograph table of Hydrolog (``route network
+# --output-dir`` writes ``time_min,discharge_m3s``) and of its inflow tables, which
+# add a discharge column per subcatchment
+_HYDROGRAPH_TIME_COLUMN = "time_min"
+# An SVG drawing, with or without the XML declaration
+_SVG_START = re.compile(rb"\s*(<\?xml[^>]*>\s*)?(<!--.*?-->\s*)*<svg[\s>]", re.DOTALL)
 # The keys every watershed of ``WatershedParameters.to_json()`` (Hydrolog) has; the
 # document carries no ``schema`` key of its own
 _WATERSHED_KEYS = (
@@ -286,6 +293,14 @@ def _check_watershed(path: Path) -> str | None:
     return None
 
 
+def _check_svg(path: Path) -> str | None:
+    """Check an SVG drawing: text whose first element is ``<svg``."""
+    head = _first_text(path)
+    if not head.strip():
+        return "empty_file"
+    return None if _SVG_START.match(head) else "invalid_header"
+
+
 def _kinds(*kinds: Kind) -> dict[str, Kind]:
     return {kind.name: kind for kind in kinds}
 
@@ -348,6 +363,14 @@ KINDS: dict[str, Kind] = _kinds(
     # Hydrograf or written by hand) and the result document of a computation
     Kind("watershed_parameters", (".json",), _check_watershed),
     Kind("hydrolog_report", (".json",), _schema_first(_HYDROLOG_RESULT_SCHEMA)),
+    # The river network ``route network`` reads, a hydrograph table (one per node of
+    # a routed network, or the inflows of its subcatchments) and the schematic of a
+    # network drawn by Hydrolog
+    Kind(
+        "hydrolog_network", (".json",), _json_document_check(_HYDROLOG_NETWORK_SCHEMA)
+    ),
+    Kind("hydrograph_table", (".csv",), _csv_check((_HYDROGRAPH_TIME_COLUMN,))),
+    Kind("network_schematic", (".svg",), _check_svg),
 )
 
 

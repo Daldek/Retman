@@ -25,6 +25,8 @@ KNOWN_SCHEMAS = (
     "hydrolog-hydrograph-generate/1",
     "hydrolog-stats-flood-frequency/1",
     "hydrolog-morphometry-watershed/1",
+    "hydrolog-route-network/1",
+    "hydrolog-soil-hsg/1",
 )
 
 # Groups of commands about Hydrolog itself, not computations an operation is expected

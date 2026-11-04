@@ -12,11 +12,11 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
 | Kartograf 0.8.0 adapter (10 operations: spatial data of GUGiK and Copernicus, SoilGrids soils, the creation and the overview of the store), Obserwator 3.0.0 adapter (formerly IMGWTools; 19 operations, two-stage recognition) | done | the `tools` group pins `9deaa314` (Kartograf, the head of its `develop`, with `eab8612d` and the marker `obserwator-store.json`) and `651d4d73` (Obserwator, the head of its `feature/obserwator`), both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist (Next 3); the names of the tool in Retman follow Nogat ECO-057 (CHANGELOG, ADR-024 erratum 7); the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags; not yet offered by an operation: `imagery download` sheets of a rectangle or a geometry file (orthophoto, true orthophoto, LIDAR intensity, oblique orthophoto; CZ SM5 sheets), the BDOO class selection (`--layers`) and a voivodeship code as its area, and the Czech land cover (ZABAGED, Data50, Data250: an S-JTSK rectangle or the national file, which the area reader does not give) |
-| Hydrolog 1.0 adapter (6 operations in `rainfall_runoff` and `hydrology_analysis`: design hyetograph, SCS-CN effective rainfall, time of concentration of a watershed file, design hydrograph from area, CN and tc, flood quantiles of an Obserwator daily flow series, morphometry of a watershed file) | done | the `tools` group pins `2eb8bd0c` (Hydrolog, its member of the Nogat release set `candidate-1`); Hydrolog has no settings in Retman (no store) and its previews let the tool compute the plan offline (`lookup` of commands without effects); not yet offered: `route network` (a `hydrolog-network/1` document, inflows and the tables of `--output-dir`) and `soil hsg` (three `soil_raster` inputs of one kind, which the input resolution cannot yet tell apart), see Next 8 |
+| Hydrolog 1.0 adapter (9 operations in `rainfall_runoff`, `hydrology_analysis` and `soil_data`: design hyetograph, SCS-CN effective rainfall, time of concentration of a watershed file, design hydrograph from area, CN and tc, hydrographs routed through a river network file with or without an inflow table, flood quantiles of an Obserwator daily flow series, morphometry of a watershed file, hydrologic soil groups of clay, sand and silt rasters) | done | the `tools` group pins `2eb8bd0c` (Hydrolog, its member of the Nogat release set `candidate-1`); Hydrolog has no settings in Retman (no store) and its previews let the tool compute the plan offline (`lookup` of commands without effects, and of `route network` while its call names no output); `route network` and `soil hsg` write only into the result folder; the clay, sand and silt inputs of `soil hsg` are `soil_raster` results told apart by their `property` (`InputSpec.where`); all the basic routes of the Nogat registry are offered |
 | Extractors | in progress | numbers with units for Hydrolog done (`curve_number`, `rainfall_depth`, `catchment_area`, durations by role: `rain_duration`, `time_step`, `concentration_time`); missing: lengths, slopes and elevations (a watershed stated in a sentence); the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
-| `retman eval run` and the 687-command set | in progress | code done; the last run was on the old 83-command set; the rows `kartograf-soil-*`, `kartograf-hsg-*`, `kartograf-inspect-store-*`, `kartograf-orto-cutout-*`, `kartograf-landcover-*` and `hydrolog-*` are unmeasured |
+| `retman eval run` and the 734-command set | in progress | code done; the last run was on the old 83-command set; the rows `kartograf-soil-*`, `kartograf-hsg-*`, `kartograf-inspect-store-*`, `kartograf-orto-cutout-*`, `kartograf-landcover-*` and `hydrolog-*` are unmeasured |
 | Nogat standard 2.1, structure and tooling | done | on `develop` (merged from `chore/nogat-2.1`): gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
 | Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
 | Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
@@ -107,14 +107,11 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 6. Complete `docs/specs/2026-10-11-retman-eval.md`: geometry placeholder files, the offline
    station catalog, optional parameters never in `expect_clarify`.
 7. `retman collect export` and `retman collect draft` (ADR-011) when the author decides.
-8. **The rest of the Hydrolog routes of the Nogat registry**: `route network` (input kinds for
-   the `hydrolog-network/1` document and its inflow table, the `<id>.csv` tables written into
-   the result folder as a kind of their own, `check_command` as the plan of the files) and
-   `soil hsg` (three `soil_raster` inputs: the input resolution gives one result of a kind to
-   every input of that kind, so clay, sand and silt need inputs told apart by the property
-   of their earlier result, or kinds of their own). A watershed stated in a sentence needs
-   extractors of lengths, slopes and elevations; then `tc watershed` and `hydrograph
-   generate` can take one without a file. Run `retman eval run` on the `hydrolog-*` rows.
+8. **Hydrolog beyond its registry routes.** A watershed stated in a sentence needs extractors of
+   lengths, slopes and elevations; then `tc watershed` and `hydrograph generate` can take one
+   without a file. A range of result numbers („#1-#3”) gives its two ends only, so a command
+   names every result of `soil hsg` („#1, #2 i #3”). Run `retman eval run` on the `hydrolog-*`
+   rows.
 
 ## Open questions
 

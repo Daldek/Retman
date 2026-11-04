@@ -1,6 +1,7 @@
 """Numbered project results and validated input selection."""
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -63,11 +64,20 @@ class Workspace:
             except FileExistsError:
                 number += 1
 
-    def find_by_kind(self, kind: str) -> list[WorkspaceFile]:
-        """Find files in successful results without selecting the newest."""
+    def find_by_kind(
+        self, kind: str, where: Mapping[str, object] | None = None
+    ) -> list[WorkspaceFile]:
+        """Find files in successful results without selecting the newest.
+
+        ``where`` keeps only the results whose ``values`` hold those values, e.g.
+        ``{"property": "clay"}`` for the clay layer among SoilGrids results.
+        """
         candidates: list[WorkspaceFile] = []
         for record in self.list_results():
             if not record["ok"]:
+                continue
+            values = record.get("values") or {}
+            if where and any(values.get(key) != value for key, value in where.items()):
                 continue
             for file_info in record.get("files", {}).get(kind, []):
                 path = self.project_dir / file_info["path"]
@@ -82,9 +92,13 @@ class Workspace:
                 )
         return candidates
 
-    def resolve_result(self, number: int, kind: str) -> list[WorkspaceFile]:
+    def resolve_result(
+        self, number: int, kind: str, where: Mapping[str, object] | None = None
+    ) -> list[WorkspaceFile]:
         """Return every file of a kind in a specifically numbered result."""
-        return [item for item in self.find_by_kind(kind) if item.number == number]
+        return [
+            item for item in self.find_by_kind(kind, where) if item.number == number
+        ]
 
     def validate_input(self, path: Path, kind: str) -> Path:
         """Resolve and validate an explicit or previously saved input file."""

@@ -299,6 +299,34 @@ def test_check_needs_the_notice_text_the_user_confirms(dummy):
         validate_manifest(manifest, {"pl": Texts(data, "no notice")})
 
 
+def test_inputs_of_one_kind_need_names_and_valid_filters(dummy):
+    manifest, folder = dummy
+    data = tomllib.loads((folder / "pl.toml").read_text(encoding="utf-8"))
+    operation = _operation(manifest, "make_dem")
+    operation["inputs"] = [
+        {"name": "clay", "kind": "soil_raster", "where": {"property": "clay"}},
+        {"name": "sand", "kind": "soil_raster", "where": {"property": "sand"}},
+    ]
+
+    # Two questions about files of one kind must say which file each one is
+    with pytest.raises(ManifestError, match="make_dem.inputs.clay.label"):
+        validate_manifest(manifest, {"pl": Texts(data, "no input labels")})
+    data["operations"]["make_dem"]["inputs"] = {
+        "clay": {"label": "raster iłu"},
+        "sand": {"label": "raster piasku"},
+    }
+    validate_manifest(manifest, {"pl": Texts(data, "input labels")})
+    for inputs, message in (
+        ([{"name": "a", "kind": "dem"}, {"name": "a", "kind": "dsm"}], "duplicate"),
+        ([{"name": "area", "kind": "dem"}], "duplicate input"),
+        ([{"name": "a", "kind": "dem", "where": {}}], "a: invalid where"),
+        ([{"name": "a", "kind": "dem", "where": {"x": 1}}], "a: invalid where"),
+    ):
+        operation["inputs"] = inputs
+        with pytest.raises(ManifestError, match=message):
+            validate_manifest(manifest, {"pl": Texts(data, "inputs")})
+
+
 def _crowded(manifest, folder, monkeypatch, layout: dict[str, int], *, texts=True):
     """A tool with ``layout`` = operations per category (and category texts)."""
     template = _operation(manifest, "copy_dem")

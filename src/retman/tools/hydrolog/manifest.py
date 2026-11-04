@@ -4,7 +4,9 @@ The operations run the commands of Hydrolog's catalog that the Nogat registry ro
 to Hydrolog. Those whose inputs a Polish sentence states (a curve number, a rainfall,
 an area, durations) take numbers read by the extractors of numbers with units; those
 that need a document take it as an input of the plan: a watershed file
-(``WatershedParameters.to_json()``) or the daily flow series of an Obserwator export.
+(``WatershedParameters.to_json()``), the daily flow series of an Obserwator export, a
+river network (``hydrolog-network/1``) with its inflow table, or the clay, sand and
+silt rasters of SoilGrids (told apart by the property of their earlier result).
 """
 
 from retman.registry.manifest import InputSpec, ManifestSpec, ParamSpec
@@ -55,6 +57,10 @@ _TIME_STEP: ParamSpec = {
     "default": 5,
 }
 _WATERSHED: InputSpec = {"name": "watershed", "kind": "watershed_parameters"}
+_NETWORK: InputSpec = {"name": "network", "kind": "hydrolog_network"}
+# What ``route network`` writes: the hydrograph table of every node, the schematic of
+# the network and the envelope with the peaks, times and volumes of every node
+_ROUTED = ["hydrograph_table", "network_schematic", "hydrolog_report"]
 
 MANIFEST: ManifestSpec = {
     "tool": "hydrolog",
@@ -150,6 +156,32 @@ MANIFEST: ManifestSpec = {
             ],
         },
         {
+            "id": "route_river_network",
+            "category": "rainfall_runoff",
+            "description": "Route the hydrographs of a river network file through its "
+            "reaches, reservoirs and junctions to the outlet",
+            "inputs": [_NETWORK],
+            "outputs": _ROUTED,
+            "commands": ["route network"],
+            "calls": f"{_CALLS}:route_river_network",
+            "describe": f"{_DESCRIBE}:route_river_network",
+            "preview": f"{_PREVIEW}:route_river_network",
+            "params": [],
+        },
+        {
+            "id": "route_river_network_inflows",
+            "category": "rainfall_runoff",
+            "description": "Route the hydrographs of a river network file whose "
+            "subcatchment flows are in an inflow table",
+            "inputs": [_NETWORK, {"name": "inflows", "kind": "hydrograph_table"}],
+            "outputs": _ROUTED,
+            "commands": ["route network"],
+            "calls": f"{_CALLS}:route_river_network_inflows",
+            "describe": f"{_DESCRIBE}:route_river_network_inflows",
+            "preview": f"{_PREVIEW}:route_river_network_inflows",
+            "params": [],
+        },
+        {
             "id": "estimate_flood_quantiles",
             "category": "hydrology_analysis",
             "description": "Compute flood quantiles from the daily flows of an "
@@ -187,6 +219,26 @@ MANIFEST: ManifestSpec = {
             "calls": f"{_CALLS}:compute_watershed_morphometry",
             "describe": f"{_DESCRIBE}:compute_watershed_morphometry",
             "preview": f"{_PREVIEW}:compute_watershed_morphometry",
+            "params": [],
+        },
+        {
+            # Kartograf's classify_soil_hsg downloads the texture of an area itself;
+            # this one classifies rasters the project already has, which are told apart
+            # by the property of the SoilGrids layer that made them
+            "id": "classify_soil_groups",
+            "category": "soil_data",
+            "description": "Classify the hydrologic soil groups A-D (SCS-CN) from "
+            "clay, sand and silt rasters on one grid",
+            "inputs": [
+                {"name": "clay", "kind": "soil_raster", "where": {"property": "clay"}},
+                {"name": "sand", "kind": "soil_raster", "where": {"property": "sand"}},
+                {"name": "silt", "kind": "soil_raster", "where": {"property": "silt"}},
+            ],
+            "outputs": ["hsg_raster", "hydrolog_report"],
+            "commands": ["soil hsg"],
+            "calls": f"{_CALLS}:classify_soil_groups",
+            "describe": f"{_DESCRIBE}:classify_soil_groups",
+            "preview": f"{_PREVIEW}:classify_soil_groups",
             "params": [],
         },
     ],

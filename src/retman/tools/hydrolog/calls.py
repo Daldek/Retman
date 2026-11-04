@@ -3,11 +3,13 @@
 A builder never imports Hydrolog and never touches the file system; the same builder
 serves plan-time validation, the preview and the run. Numbers come in the units of the
 tool (mm, km², minutes) from the extractors; an input file is the path of the plan's
-input (``ctx.inputs``), which the workspace has already checked against its data kind.
+input (``ctx.inputs``), which the workspace has already checked against its data kind,
+and a file the tool writes lies in the result folder (``ctx.output_dir``).
 ``CatalogCall.params`` routes a rejected option of the tool back to the parameter the
 user answers again.
 """
 
+from pathlib import Path
 from typing import Any
 
 from retman.adapters.catalog import CatalogCall, ToolContext
@@ -22,6 +24,12 @@ SERIES_DATE_COLUMN = "date"
 # the command states; the other models need parameters no command states (Nash n and
 # K, Clark R, Snyder L and Lc)
 UNIT_HYDROGRAPH = "scs"
+# What ``route network`` writes into the result folder: the hydrograph table
+# ``<id>.csv`` of every node in a folder of its own (a node id never meets the files of
+# the result), and the schematic of the network
+HYDROGRAPH_FOLDER = "hydrographs"
+SCHEMATIC_FILE = "network.svg"
+HSG_FILE = "hsg.tif"
 
 
 def _input(ctx: ToolContext, name: str) -> str:
@@ -148,3 +156,48 @@ def compute_watershed_morphometry(
     """``morphometry watershed`` of a watershed file."""
     options: dict[str, object] = {"watershed_file": _input(ctx, "watershed")}
     return [CatalogCall("morphometry watershed", options, REPORT)]
+
+
+def _route_network(ctx: ToolContext, *, inflows: bool) -> list[CatalogCall]:
+    """``route network`` of a network file, with or without its inflow table.
+
+    The outputs are named only when the operation runs (``ctx.output_dir``): while
+    planning the call is the computation in memory, which Hydrolog validates and the
+    preview lets it run without writing anything.
+    """
+    options: dict[str, object] = {"network_file": _input(ctx, "network")}
+    if inflows:
+        options["inflows_file"] = _input(ctx, "inflows")
+    if ctx.output_dir is not None:
+        options["output_dir"] = str(Path(ctx.output_dir) / HYDROGRAPH_FOLDER)
+        options["schematic"] = str(Path(ctx.output_dir) / SCHEMATIC_FILE)
+    return [CatalogCall("route network", options, "hydrograph_table")]
+
+
+def route_river_network(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
+    """``route network`` of a network whose subcatchments have or make their flows."""
+    return _route_network(ctx, inflows=False)
+
+
+def route_river_network_inflows(
+    params: dict[str, Any], ctx: ToolContext
+) -> list[CatalogCall]:
+    """``route network`` of a network whose subcatchments read an inflow table."""
+    return _route_network(ctx, inflows=True)
+
+
+def classify_soil_groups(params: dict[str, Any], ctx: ToolContext) -> list[CatalogCall]:
+    """``soil hsg`` of a clay, a sand and a silt raster on one grid.
+
+    The output is the result folder's GeoTIFF; while planning there is no result
+    folder yet, so the project folder stands in for it (the tool only validates the
+    option; nothing is written there).
+    """
+    folder = ctx.output_dir if ctx.output_dir is not None else ctx.project_dir
+    options: dict[str, object] = {
+        "clay_path": _input(ctx, "clay"),
+        "sand_path": _input(ctx, "sand"),
+        "silt_path": _input(ctx, "silt"),
+        "output": str(Path(folder) / HSG_FILE),
+    }
+    return [CatalogCall("soil hsg", options, "hsg_raster")]

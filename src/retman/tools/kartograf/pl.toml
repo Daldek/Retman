@@ -4,7 +4,7 @@ description = "Pobieranie danych przestrzennych z GUGiK: numeryczny model terenu
 
 [categories.soil_data]
 label = "Dane glebowe SoilGrids"
-description = "Gleby z SoilGrids (ISRIC, siatka 250 m): pobranie warstwy jednej właściwości gleby (zawartość iłu, piasku albo pyłu, węgiel organiczny, pH, gęstość objętościowa, części szkieletowe, pojemność wymiany kationów, azot) na wybranej głębokości oraz grupy hydrologiczne gleb HSG (A–D) metody SCS-CN wyznaczone z uziarnienia"
+description = "Gleby z SoilGrids (ISRIC, siatka 250 m): pobranie warstwy jednej właściwości gleby (zawartość iłu, piasku albo pyłu, węgiel organiczny, pH, gęstość objętościowa, części szkieletowe, pojemność wymiany kationów, azot) na wybranej głębokości, grupy hydrologiczne gleb HSG (A–D) metody SCS-CN wyznaczone z uziarnienia obszaru pobranego z SoilGrids oraz grupy HSG z gotowych rastrów zawartości iłu, piasku i pyłu (wcześniejszych wyników albo plików GeoTIFF)"
 
 [operations.download_dem_sheet]
 label = "Pobranie NMT dla arkusza lub obszaru"
