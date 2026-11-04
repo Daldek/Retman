@@ -2473,7 +2473,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 #    obserwator[store] brings pyarrow: its time series are Parquet files
 uv tool install "git+https://github.com/Daldek/Retman@v0.1.0" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@v0.8.0" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/IMGWTools@v3.0.0"
+    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@v3.0.0"
 
 # 3. Model server: installed separately, following basal's instructions, then started
 basal-serve --model Remek/basal-1.5-mini --mode <depends on hardware>

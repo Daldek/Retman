@@ -174,6 +174,9 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 ### Changed
 
+- The repository URL of Obserwator is `github.com/Daldek/Obserwator` (renamed from
+  `Daldek/IMGWTools`; Nogat plan `2026-11-03-imgwtools-to-obserwator` step 5); same pinned commit.
+
 - **Breaking: agent interfaces** (AGI, ADR-022). One executable `retman <group> <verb>`
   generated from a command catalog; `retman commands list|schema|guide` serve the catalog and
   the guides for agents; `--json` prints the envelope `retman-result/1` (the outcomes `partial`
@@ -351,7 +354,7 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 - **Breaking: IMGWTools is called Obserwator** (Nogat ECO-057; the tool's ADR-009; ADR-024
   erratum 7, ADR-025 erratum 6). The `tools` group pins Obserwator `651d4d73`, the head of its
   branch `feature/obserwator` (distribution and import package `obserwator`, the extra
-  `obserwator[store]`; the repository keeps its URL `github.com/Daldek/IMGWTools`), and Kartograf
+  `obserwator[store]`), and Kartograf
   `9deaa314`, the head of its `develop`, whose `STORE_MARKERS` name `obserwator-store.json`.
   Retman follows the tool's name map: the settings table `[retman.tools.imgwtools]` is
   `[retman.tools.obserwator]` (variables `RETMAN_TOOLS_OBSERWATOR_STORE_DIR` and

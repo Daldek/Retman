@@ -304,7 +304,7 @@ def store_tools(dummy):
     manifest, folder = dummy[0]
     sources = {
         "kartograf": "git+https://github.com/Daldek/Kartograf",
-        "obserwator": "obserwator[store] @ git+https://github.com/Daldek/IMGWTools",
+        "obserwator": "obserwator[store] @ git+https://github.com/Daldek/Obserwator",
     }
     tools = []
     for tool, source in sources.items():
@@ -752,7 +752,7 @@ def test_missing_pyarrow_disables_series_and_skips_the_probe(
         for status, text in _stores(report)
     )
     assert (
-        "obserwator[store] @ git+https://github.com/Daldek/IMGWTools"
+        "obserwator[store] @ git+https://github.com/Daldek/Obserwator"
         in report.to_text(texts)
     )
     assert calls == []

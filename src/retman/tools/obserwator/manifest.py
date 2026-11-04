@@ -14,7 +14,7 @@ MANIFEST: ManifestSpec = {
     "tool": "obserwator",
     "distribution": "obserwator",
     # The series are Parquet files: the [store] extra brings pyarrow
-    "source": "obserwator[store] @ git+https://github.com/Daldek/IMGWTools",
+    "source": "obserwator[store] @ git+https://github.com/Daldek/Obserwator",
     "supported_versions": ">=3.0.0.dev0,<4",
     "translations": {"pl": "pl.toml", "en": "en.toml"},
     "client": "retman.tools.obserwator.client:create_client",
