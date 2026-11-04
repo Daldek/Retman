@@ -2,6 +2,7 @@
 
 import json
 import re
+from collections import Counter
 from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict
 
@@ -53,10 +54,18 @@ class ParamSpec(TypedDict):
 
 
 class InputSpec(TypedDict):
-    """An input file of a given data kind (ARCHITECTURE 5.3)."""
+    """An input file of a given data kind (ARCHITECTURE 5.3).
+
+    ``where`` tells inputs of one kind apart by the ``values`` of the earlier result
+    that made the file, e.g. ``{"property": "clay"}``: only such results are offered
+    and taken for the input (a path the user gives is taken as it is). Inputs that
+    share a kind each need the text ``operations.<id>.inputs.<name>.label``, which
+    names the input in its question and in the plan instead of the kind.
+    """
 
     name: str
     kind: str
+    where: NotRequired[dict[str, str]]
 
 
 class OperationSpec(TypedDict):
@@ -334,6 +343,33 @@ def _validate_operation_keys(
                 raise ManifestError(f"{op_id}.{name}: excluded {value} is offered")
 
 
+def _validate_inputs(
+    op_id: str, inputs: list[InputSpec], params: dict[str, ParamSpec]
+) -> list[str]:
+    """Rules of the inputs; return the names of the inputs that share a kind.
+
+    An input is a value of the plan beside the parameters, so names never repeat.
+    """
+    from retman.exceptions import ManifestError
+
+    names = [item["name"] for item in inputs]
+    if len(set(names)) != len(names) or set(names) & set(params):
+        raise ManifestError(f"{op_id}: duplicate input")
+    for item in inputs:
+        where = item.get("where")
+        if where is not None and (
+            not isinstance(where, dict)
+            or not where
+            or not all(
+                isinstance(key, str) and isinstance(value, str) and value
+                for key, value in where.items()
+            )
+        ):
+            raise ManifestError(f"{op_id}.{item['name']}: invalid where")
+    kinds = Counter(item["kind"] for item in inputs)
+    return [item["name"] for item in inputs if kinds[item["kind"]] > 1]
+
+
 def validate_manifest(
     manifest: ManifestSpec,
     translations: dict[str, Texts],
@@ -378,6 +414,7 @@ def validate_manifest(
         if len(params) != len(spec["params"]):
             raise ManifestError(f"{op_id}: duplicate parameter")
         _validate_operation_keys(manifest, spec, params)
+        shared_inputs = _validate_inputs(op_id, spec["inputs"], params)
         for param in spec["params"]:
             name = param["name"]
             _validate_param(op_id, param)
@@ -428,6 +465,9 @@ def validate_manifest(
             ]
             if "check" in spec:
                 required.append(f"operations.{op_id}.check.notice")
+            required.extend(
+                f"operations.{op_id}.inputs.{name}.label" for name in shared_inputs
+            )
             for param in spec["params"]:
                 prefix = f"operations.{op_id}.params.{param['name']}"
                 required.extend((f"{prefix}.label", f"{prefix}.question"))

@@ -1,10 +1,15 @@
 [categories.rainfall_runoff]
 label = "Opad i odpływ (Hydrolog)"
-description = "Obliczenia hydrologiczne zlewni w Hydrologu: hietogram opadu projektowego (blokowy, trójkątny, Beta, Euler II), opad efektywny metodą SCS-CN z liczby CN i sumy opadu, czas koncentracji zlewni z pliku jej parametrów (Kirpich, NRCS, Giandotti, FAA, Kerby), projektowy hydrogram odpływu bezpośredniego zlewni o danej powierzchni, CN i czasie koncentracji; liczy lokalnie, bez internetu"
+description = "Obliczenia hydrologiczne zlewni w Hydrologu: hietogram opadu projektowego (blokowy, trójkątny, Beta, Euler II), opad efektywny metodą SCS-CN z liczby CN i sumy opadu, czas koncentracji zlewni z pliku jej parametrów (Kirpich, NRCS, Giandotti, FAA, Kerby), projektowy hydrogram odpływu bezpośredniego zlewni o danej powierzchni, CN i czasie koncentracji, przejście hydrogramów przez sieć rzeczną z pliku sieci (odcinki koryta: opóźnienie, Muskingum, Muskingum-Cunge, kaskada zbiorników; zbiorniki retencyjne, złącza dopływów) do wylotu, z tabelą dopływów zlewni albo bez niej; liczy lokalnie, bez internetu"
 
 [categories.hydrology_analysis]
 label = "Analizy zlewni i przepływów (Hydrolog)"
 description = "Analizy w Hydrologu: przepływy maksymalne o danym prawdopodobieństwie (kwantyle wezbrań, rozkłady log-normalny, GEV, Pearson III, Weibull) z dobowego szeregu przepływów eksportowanego z Obserwatora oraz wskaźniki morfometryczne zlewni (kształt, deniwelacja, spadki) z pliku jej parametrów; liczy lokalnie, bez internetu"
+
+# Ten sam tekst co u Kartografa: kategoria ma operacje obu narzędzi
+[categories.soil_data]
+label = "Dane glebowe SoilGrids"
+description = "Gleby z SoilGrids (ISRIC, siatka 250 m): pobranie warstwy jednej właściwości gleby (zawartość iłu, piasku albo pyłu, węgiel organiczny, pH, gęstość objętościowa, części szkieletowe, pojemność wymiany kationów, azot) na wybranej głębokości, grupy hydrologiczne gleb HSG (A–D) metody SCS-CN wyznaczone z uziarnienia obszaru pobranego z SoilGrids oraz grupy HSG z gotowych rastrów zawartości iłu, piasku i pyłu (wcześniejszych wyników albo plików GeoTIFF)"
 
 [operations.compute_concentration_time]
 label = "Czas koncentracji zlewni (Hydrolog)"
@@ -193,6 +198,27 @@ label = "Morfometria zlewni (Hydrolog)"
 description = "Oblicz wskaźniki morfometryczne zlewni z pliku jej parametrów (JSON WatershedParameters, np. z Hydrografu albo z wyniku #N): powierzchnia, obwód, długość i szerokość, wskaźniki kształtu (Hortona, Graveliusa, Millera, Schumma), wysokości, deniwelacja i spadki; charakterystyka fizjograficzna zlewni."
 summary = "Gotowe. Wynik #{number}: morfometria zlewni {name}: powierzchnia {area_km2} km², deniwelacja {relief_m} m, wskaźnik formy {form_factor}, współczynnik zwartości {compactness_coefficient}."
 
+[operations.route_river_network]
+label = "Przejście hydrogramów przez sieć rzeczną (Hydrolog)"
+description = "Przeprowadź hydrogramy przez sieć rzeczną z pliku sieci Hydrologa (JSON hydrolog-network/1, plik albo wynik #N), której zlewnie mają własne hydrogramy albo liczą je z opadu (SCS-CN): odcinki koryta (opóźnienie, Muskingum, Muskingum-Cunge, kaskada zbiorników), zbiorniki retencyjne, złącza dopływów i wylot; transformacja fali wezbraniowej w sieci, routing; wynik to szczyt, czas do szczytu i objętość każdego węzła, tabele hydrogramów CSV i schemat sieci SVG."
+summary = "Gotowe. Wynik #{number}: sieć {name} ({node_count} węzłów): na wylocie {outlet} szczyt {outlet_peak_m3s} m³/s po {outlet_time_to_peak_min} min, objętość {outlet_volume_m3} m³."
+inputs.network.label = "Plik sieci rzecznej"
+
+[operations.route_river_network_inflows]
+label = "Przejście hydrogramów przez sieć z tabelą dopływów (Hydrolog)"
+description = "Przeprowadź hydrogramy przez sieć rzeczną z pliku sieci Hydrologa (JSON hydrolog-network/1), której zlewnie czytają przepływy z tabeli dopływów (CSV z kolumną time_min i kolumną przepływu każdej zlewni: zmierzone hydrogramy, hydrogramy dopływu albo tabela hydrogramu z wcześniejszego wyniku #N): odcinki koryta, zbiorniki retencyjne, złącza dopływów i wylot; wynik to szczyt, czas do szczytu i objętość każdego węzła, tabele hydrogramów CSV i schemat sieci SVG."
+summary = "Gotowe. Wynik #{number}: sieć {name} ({node_count} węzłów): na wylocie {outlet} szczyt {outlet_peak_m3s} m³/s po {outlet_time_to_peak_min} min, objętość {outlet_volume_m3} m³."
+inputs.network.label = "Plik sieci rzecznej"
+inputs.inflows.label = "Tabela dopływów zlewni"
+
+[operations.classify_soil_groups]
+label = "Grupy HSG z rastrów uziarnienia (Hydrolog)"
+description = "Wyznacz grupy hydrologiczne gleb HSG (A–D) metody SCS-CN z gotowych rastrów zawartości iłu, piasku i pyłu na jednej siatce (warstwy SoilGrids pobrane wcześniej, wyniki #N, albo własne pliki GeoTIFF) trójkątem uziarnienia USDA w każdej komórce; nic nie pobiera, w przeciwieństwie do grup HSG obszaru liczonych z SoilGrids; wynik to raster GeoTIFF grup i liczba komórek każdej grupy."
+summary = "Gotowe. Wynik #{number}: grupy HSG z rastra {rows}×{columns} komórek: {group_text}; komórek bez danych: {nodata_cells}."
+inputs.clay.label = "Raster zawartości iłu"
+inputs.sand.label = "Raster zawartości piasku"
+inputs.silt.label = "Raster zawartości pyłu"
+
 # Ostrzeżenia wyniku. Klucze równe kodom uwag Hydrologa mówią po polsku, czego dotyczy
 # uwaga; jej angielski tekst (z liczbami) jest {text}. Pozostałe uwagi ostrzegawcze są
 # pokazywane dosłownie (core: warnings.tool_notice), informacyjne zostają w pliku wyniku.
@@ -202,6 +228,7 @@ duration_not_covered = "Czas trwania opadu nie jest wielokrotnością kroku czas
 incomplete_years = "Pominięto niepełne lata hydrologiczne (brak wartości dla części dni): {text}"
 small_sample = "Krótka próba maksimów rocznych, oszacowania mogą być niepewne: {text}"
 missing_values_removed = "Usunięto brakujące wartości szeregu: {text}"
+no_classified_cells = "Żadna komórka nie ma wartości we wszystkich trzech rastrach uziarnienia: raster grup HSG nie ma danych."
 
 # Błędy Hydrologa po kodzie rejestru błędów (ERR §4); jego własny tekst jest tylko
 # {detail}, a details.reason mówi, który to błąd tego kodu
@@ -222,6 +249,8 @@ method_fields = "Zlewnia z pliku nie ma pól, których potrzebuje metoda {method
 tool_refused = "Hydrolog nie przyjmuje tej wartości: {detail}"
 input_refused = "Hydrolog nie może policzyć wyniku z pliku wejściowego: {detail}"
 step_exceeds_duration = "Krok czasowy ({time_step} min) jest dłuższy niż czas trwania opadu ({duration} min). Podaj krótszy krok albo dłuższy opad."
+network_needs_inflows = "Zlewnia {node} sieci z pliku {path} nie ma własnego hydrogramu ani danych do jego obliczenia: czyta przepływy z tabeli dopływów. Wydaj polecenie ponownie z tabelą dopływów (np. „z dopływami z pliku doplywy.csv” albo „z dopływami z wyniku #N”)."
+same_texture_raster = "Ten sam plik {path} podano jako dwa z rastrów iłu, piasku i pyłu, a każdy musi być inną warstwą. Wydaj polecenie ponownie z trzema różnymi rastrami."
 
 # Dodatkowe wiersze planu (podgląd bez sieci)
 [preview.watershed]
@@ -235,3 +264,7 @@ value = "{count} pełnych lat hydrologicznych ({first}–{last})"
 [preview.incomplete_years]
 label = "Pominięte lata"
 value = "{count} niepełnych lat hydrologicznych: {years}"
+
+[preview.network]
+label = "Sieć rzeczna"
+value = "{name}: {nodes} węzłów, wylot {outlet}"

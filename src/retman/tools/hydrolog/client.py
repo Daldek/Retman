@@ -10,8 +10,10 @@ table: the client adds nothing to a call. A file a command reads is the path of 
 input of the plan and a file it writes lies in the result folder, both named by the
 call builder. What each method may do is split by capability (PRD N-12): ``lookup``
 runs only the commands whose catalog entry is read-only, offline and without a plan,
-so a preview may let Hydrolog check a plan by computing it; the commands that write
-(``soil hsg``, ``route network``) or serve (``gui serve``) never run through it.
+and ``route network`` when the call names none of its output options (then it
+computes in memory and writes nothing), so a preview may let Hydrolog check a plan by
+computing it; every other command that writes (``soil hsg``, ``route network`` with
+``output_dir`` or ``schematic``) or serves (``gui serve``) never runs through it.
 """
 
 import functools
@@ -33,6 +35,10 @@ from retman.adapters.catalog import (
 )
 
 TOOL = "hydrolog"
+# Writing commands that compute the same result in memory, and write nothing, when the
+# call names none of their output options: ``route network`` without ``output_dir`` and
+# ``schematic`` returns the hydrograph of every node in its result
+_IN_MEMORY_WITHOUT_OUTPUT = frozenset({"route network"})
 
 
 @functools.cache
@@ -45,15 +51,26 @@ def _entry(command: str) -> Mapping[str, Any]:
     return cast(Mapping[str, Any], document["commands"][0])
 
 
-def effect_free(command: str) -> bool:
-    """Whether a run of the command only computes: no file, network or plan.
+def effect_free(call: CatalogCall) -> bool:
+    """Whether a run of the call only computes: no file, network or plan.
 
     A command with a plan (``check``) has an effect even when its entry says it is
-    read-only: ``gui serve`` serves until it is stopped.
+    read-only: ``gui serve`` serves until it is stopped. A command of
+    ``_IN_MEMORY_WITHOUT_OUTPUT`` is effect-free exactly when the call names none of
+    the options its catalog entry marks as written (``path_role`` ``output``).
     """
-    entry = _entry(command)
+    entry = _entry(call.command)
     effects = entry["effects"]
-    return bool(effects["read_only"]) and not effects["network"] and not entry["check"]
+    if effects["network"]:
+        return False
+    if call.command in _IN_MEMORY_WITHOUT_OUTPUT:
+        outputs = {
+            option["name"]
+            for option in entry["options"]
+            if option.get("path_role") == "output"
+        }
+        return not outputs & set(call.options)
+    return bool(effects["read_only"]) and not entry["check"]
 
 
 def to_tool_error(err: Exception, call: CatalogCall | None = None) -> ToolError:
@@ -104,13 +121,15 @@ def run_from_document(
     """Build a ``ToolRun`` from a ``hydrolog-result/1`` envelope.
 
     A computation is ``ok`` or an error (Hydrolog raises, it reports no failed units),
-    so the run has no failures; the files are the ``files[]`` of the envelope (what a
-    writing command wrote, with the checksum Hydrolog computed), the notices those of
-    the envelope, and the whole envelope is the tool's document.
+    so the run has no failures; the files are the ``files[]`` of the domain document
+    (what a writing command wrote, with the checksum Hydrolog computed), the notices
+    those of the envelope, and the whole envelope is the tool's document.
     """
+    result = document.get("result")
+    written = result.get("files") if isinstance(result, Mapping) else None
     files = tuple(
         ToolFile(Path(item["path"]), item.get("sha256"), None, item.get("status"))
-        for item in document.get("files") or ()
+        for item in written or ()
     )
     notices = tuple(
         ToolNotice(item["level"], item["code"], item["message"])
@@ -147,16 +166,16 @@ class HydrologClient:
             return hydrolog.format_command(call.command, dict(call.options))
 
     def lookup(self, call: CatalogCall) -> ToolDocument:
-        """Run a command without effects and return its envelope.
+        """Run a call without effects and return its envelope.
 
         Raises
         ------
         ToolError
-            ``not_offline`` for every command that writes a file or uses the network
-            (``soil hsg``, ``route network``, ``report generate``...).
+            ``not_offline`` for every call that would write a file or use the network
+            (``soil hsg``, ``route network`` with an output, ``report generate``...).
         """
         with translated(call):
-            if not effect_free(call.command):
+            if not effect_free(call):
                 raise ToolError(
                     TOOL,
                     "not_offline",

@@ -1,10 +1,15 @@
 [categories.rainfall_runoff]
 label = "Rainfall and runoff (Hydrolog)"
-description = "Hydrological computations of a catchment in Hydrolog: a design hyetograph (block, triangular, Beta, Euler II), effective rainfall by SCS-CN from a curve number and a rainfall total, the time of concentration of a watershed from the file of its parameters (Kirpich, NRCS, Giandotti, FAA, Kerby), the design direct-runoff hydrograph of a catchment of a given area, CN and time of concentration; computed locally, without the internet"
+description = "Hydrological computations of a catchment in Hydrolog: a design hyetograph (block, triangular, Beta, Euler II), effective rainfall by SCS-CN from a curve number and a rainfall total, the time of concentration of a watershed from the file of its parameters (Kirpich, NRCS, Giandotti, FAA, Kerby), the design direct-runoff hydrograph of a catchment of a given area, CN and time of concentration, routing hydrographs through a river network from a network file (channel reaches: lag, Muskingum, Muskingum-Cunge, reservoir cascade; reservoirs, tributary junctions) to the outlet, with or without an inflow table of the subcatchments; computed locally, without the internet"
 
 [categories.hydrology_analysis]
 label = "Catchment and flow analyses (Hydrolog)"
 description = "Analyses in Hydrolog: maximum flows of a given exceedance probability (flood quantiles, log-normal, GEV, Pearson III, Weibull distributions) from a daily flow series exported by Obserwator, and the morphometric indicators of a watershed (shape, relief, slopes) from the file of its parameters; computed locally, without the internet"
+
+# The same text as Kartograf's: the category holds operations of both tools
+[categories.soil_data]
+label = "SoilGrids soil data"
+description = "Soils from SoilGrids (ISRIC, 250 m grid): downloading the layer of one soil property (clay, sand or silt content, organic carbon, pH, bulk density, coarse fragments, cation exchange capacity, nitrogen) at a chosen depth, the hydrologic soil groups HSG (A–D) of the SCS-CN method derived from the texture of an area downloaded from SoilGrids, and the HSG of clay, sand and silt rasters at hand (earlier results or GeoTIFF files)"
 
 [operations.compute_concentration_time]
 label = "Time of concentration of a watershed (Hydrolog)"
@@ -193,6 +198,27 @@ label = "Morphometry of a watershed (Hydrolog)"
 description = "Compute the morphometric indicators of a watershed from the file of its parameters (WatershedParameters JSON, e.g. from Hydrograf or result #N): area, perimeter, length and width, shape indicators (Horton, Gravelius, Miller, Schumm), elevations, relief and slopes; the physiographic description of a catchment."
 summary = "Done. Result #{number}: morphometry of the watershed {name}: area {area_km2} km², relief {relief_m} m, form factor {form_factor}, compactness coefficient {compactness_coefficient}."
 
+[operations.route_river_network]
+label = "Routing hydrographs through a river network (Hydrolog)"
+description = "Route hydrographs through a river network from a Hydrolog network file (hydrolog-network/1 JSON, a file or result #N) whose subcatchments hold their hydrographs or compute them from rainfall (SCS-CN): channel reaches (lag, Muskingum, Muskingum-Cunge, reservoir cascade), retention reservoirs, tributary junctions and the outlet; flood wave routing in a network; the result is the peak, the time to peak and the volume of every node, CSV hydrograph tables and an SVG schematic of the network."
+summary = "Done. Result #{number}: network {name} ({node_count} nodes): at the outlet {outlet} a peak of {outlet_peak_m3s} m³/s after {outlet_time_to_peak_min} min, volume {outlet_volume_m3} m³."
+inputs.network.label = "River network file"
+
+[operations.route_river_network_inflows]
+label = "Routing hydrographs through a river network with an inflow table (Hydrolog)"
+description = "Route hydrographs through a river network from a Hydrolog network file (hydrolog-network/1 JSON) whose subcatchments read their flows from an inflow table (CSV with a time_min column and a discharge column per subcatchment: measured hydrographs, inflow hydrographs or the hydrograph table of an earlier result #N): channel reaches, retention reservoirs, tributary junctions and the outlet; the result is the peak, the time to peak and the volume of every node, CSV hydrograph tables and an SVG schematic of the network."
+summary = "Done. Result #{number}: network {name} ({node_count} nodes): at the outlet {outlet} a peak of {outlet_peak_m3s} m³/s after {outlet_time_to_peak_min} min, volume {outlet_volume_m3} m³."
+inputs.network.label = "River network file"
+inputs.inflows.label = "Inflow table of the subcatchments"
+
+[operations.classify_soil_groups]
+label = "HSG from texture rasters (Hydrolog)"
+description = "Classify the hydrologic soil groups HSG (A–D) of the SCS-CN method from clay, sand and silt content rasters at hand on one grid (SoilGrids layers downloaded earlier, results #N, or GeoTIFF files of your own) by the USDA texture triangle in every cell; downloads nothing, unlike the HSG of an area computed from SoilGrids; the result is a GeoTIFF raster of the groups and the cell count of each group."
+summary = "Done. Result #{number}: HSG of a raster of {rows}×{columns} cells: {group_text}; cells without data: {nodata_cells}."
+inputs.clay.label = "Clay content raster"
+inputs.sand.label = "Sand content raster"
+inputs.silt.label = "Silt content raster"
+
 # Warnings of a result. Keys equal to the codes of Hydrolog's notices say what the
 # notice is about; its English text (with the numbers) is {text}. Other warning notices
 # are shown verbatim (core: warnings.tool_notice); info notices stay in the result file.
@@ -202,6 +228,7 @@ duration_not_covered = "The rainfall duration is not a multiple of the time step
 incomplete_years = "Incomplete hydrological years were skipped (some days have no value): {text}"
 small_sample = "A short sample of annual maxima, the estimates may be uncertain: {text}"
 missing_values_removed = "Missing values of the series were removed: {text}"
+no_classified_cells = "No cell has a value in all three texture rasters: the HSG raster holds no data."
 
 # Errors of Hydrolog by the code of the error registry (ERR §4); its own text is only
 # {detail}, and details.reason says which error of that code it is
@@ -222,6 +249,8 @@ method_fields = "The watershed of the file lacks the fields the method {method} 
 tool_refused = "Hydrolog does not accept this value: {detail}"
 input_refused = "Hydrolog cannot compute a result from the input file: {detail}"
 step_exceeds_duration = "The time step ({time_step} min) is longer than the rain ({duration} min). Give a shorter step or a longer rain."
+network_needs_inflows = "The subcatchment {node} of the network in {path} has no hydrograph of its own and nothing to compute one from: it reads its flows from an inflow table. Give the command again with the inflow table (e.g. “with the inflows of the file inflows.csv” or “with the inflows of result #N”)."
+same_texture_raster = "The same file {path} is given as two of the clay, sand and silt rasters, which must be different layers. Give the command again with three different rasters."
 
 # Additional plan rows (offline preview)
 [preview.watershed]
@@ -235,3 +264,7 @@ value = "{count} complete hydrological years ({first}–{last})"
 [preview.incomplete_years]
 label = "Skipped years"
 value = "{count} incomplete hydrological years: {years}"
+
+[preview.network]
+label = "River network"
+value = "{name}: {nodes} nodes, outlet {outlet}"

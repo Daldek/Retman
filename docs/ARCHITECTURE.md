@@ -541,9 +541,15 @@ beginning of the file (header and the first few rows):
 Hydrolog (section 3.2.12) reads `watershed_parameters` (`.json`, the
 `WatershedParameters.to_json()` object: an object with `area_km2`, `perimeter_km`,
 `length_km`, `elevation_min_m` and `elevation_max_m`; from Hydrograf or written by hand) and
-the `hydro_series` of Obserwator, and returns `hydrolog_report` (`.json`, the
-`hydrolog-result/1` envelope of the computation, whose first key is `schema`). The kinds of
-Hydrograf and BasicHydraulics are an open question (chapter 12).
+the `hydro_series` of Obserwator, `hydrolog_network` (`.json`, a river network: a document
+whose `schema` is `hydrolog-network/1`), `hydrograph_table` (`.csv` with the column
+`time_min`: the inflow table of a network, which adds a discharge column per subcatchment,
+and the `<id>.csv` table of every routed node, `time_min,discharge_m3s`) and the
+`soil_raster` layers of Kartograf, and returns `hydrolog_report` (`.json`, the
+`hydrolog-result/1` envelope of the computation, whose first key is `schema`), the
+`hydrograph_table` of every node and the `network_schematic` (`.svg`, the drawing of a routed
+network, whose first element is `<svg`) of `route network`, and the `hsg_raster` of
+`soil hsg`. The kinds of Hydrograf and BasicHydraulics are an open question (chapter 12).
 
 #### 3.2.7. Versions and conformance
 
@@ -585,7 +591,7 @@ All tool-related tests live in the Retman repo:
 | --- | --- | --- | --- |
 | Kartograf | downloading spatial data (DEM (NMT), DSM (NMPT), orthophoto, BDOT10k) and SoilGrids soil data (a property layer, hydrologic soil groups) | — | v0.1, version 0.8.0 |
 | Obserwator (formerly IMGWTools) | IMGW-PIB and ČHMÚ measurement data: stations, current data, PMAXTP, time series, archives and store | — | v0.1, version 3.0.0 |
-| Hydrolog | hydrological calculations: design rainfall, SCS-CN, time of concentration, hydrographs, flood frequency, morphometry | — | v0.1, version 1.0 (6 operations, section 3.2.12); the rest planned (v0.2) |
+| Hydrolog | hydrological calculations: design rainfall, SCS-CN, time of concentration, hydrographs, routing through a river network, flood frequency, morphometry, hydrologic soil groups of texture rasters | — | v0.1, version 1.0 (9 operations, section 3.2.12); the rest planned (v0.2) |
 | BasicHydraulics | simple hydraulic calculations | — | planned (v0.2) |
 | Hydrograf | catchment delineation, composite procedures | Hydrolog (and others) | planned (v0.2) |
 
@@ -830,10 +836,12 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
 
 #### 3.2.12. Hydrolog 1.0 operations
 
-Six operations in two categories, on the commands that the Nogat registry routes to Hydrolog
-(`ecosystem.yaml`). Hydrolog computes offline and keeps no store: it has no
-`[retman.tools.hydrolog]` table, its client adds nothing to a call, and every result is the
-`hydrolog-result/1` envelope kept as a `hydrolog_report` file.
+Nine operations in three categories, on the commands that the Nogat registry routes to
+Hydrolog (`ecosystem.yaml`); the soil groups of texture rasters share `soil_data` with
+Kartograf's soil operations, whose category text Hydrolog repeats. Hydrolog computes offline
+and keeps no store: it has no `[retman.tools.hydrolog]` table, its client adds nothing to a
+call, and every result is the `hydrolog-result/1` envelope kept as a `hydrolog_report` file,
+beside the files a writing command wrote into the result folder.
 
 | Operation | Category | Command | Inputs | Parameters |
 | --- | --- | --- | --- | --- |
@@ -843,6 +851,9 @@ Six operations in two categories, on the commands that the Nogat registry routes
 | `compute_concentration_time` | `rainfall_runoff` | `tc watershed` | `watershed` (`watershed_parameters`) | `method` (six methods, always asked) |
 | `estimate_flood_quantiles` | `hydrology_analysis` | `stats flood-frequency` | `series` (`hydro_series`, the column `Q` of an Obserwator export) | `distribution` (default all), `probability` (optional: return periods T = 1/p, else the tool's own) |
 | `compute_watershed_morphometry` | `hydrology_analysis` | `morphometry watershed` | `watershed` (`watershed_parameters`) | — |
+| `route_river_network` | `rainfall_runoff` | `route network` | `network` (`hydrolog_network`; the subcatchments hold their hydrographs or compute them from rain) | — |
+| `route_river_network_inflows` | `rainfall_runoff` | `route network` | `network` (`hydrolog_network`), `inflows` (`hydrograph_table`, a column per subcatchment) | — |
+| `classify_soil_groups` | `soil_data` | `soil hsg` | `clay`, `sand`, `silt` (`soil_raster`, told apart by the `property` of their earlier result) | — |
 
 The commands only compute (read-only, no network, no plan in the catalog), so the client's
 `lookup` runs them, and the preview of every operation lets Hydrolog compute the plan before
@@ -851,8 +862,20 @@ without the fields of a method, `details.missing`, reopens `method`), any other 
 input file ends planning with Hydrolog's registry code and reason. The preview of the flood
 quantiles shows the complete hydrological years of the annual maxima and the skipped
 incomplete ones. A time step longer than the rain is Retman's own rule (Hydrolog's refusal
-names no option) and reopens both values. Not offered yet: `route network` and `soil hsg`
-(PROGRESS, Next).
+names no option) and reopens both values.
+
+`route network` and `soil hsg` write files, so the calls run them only into the result folder:
+the hydrograph table `<id>.csv` of every node into `hydrographs/` with the schematic
+`network.svg`, and the groups into `hsg.tif`. A network that reads an inflow table is a
+separate operation, because an input is never optional: the plan of a network without one,
+whose subcatchment has no flows (`missing_field`, `discharge_m3s`), ends with the advice to
+name the table. While planning the call of a network names no output, and then Hydrolog
+routes it in memory and writes nothing: the client's `lookup` takes `route network` exactly
+when the call names none of the options the catalog marks as written (`path_role` `output`),
+so the preview lets Hydrolog route the plan and shows the network, its nodes and its outlet.
+`soil hsg` always writes its raster, so its preview checks only Retman's rule that the three
+rasters are three files; Hydrolog's plan of the files (`check_command`) is not used, because
+a fresh result folder has nothing to overwrite.
 
 ### 3.3. Models: Retman contains no model [N-01], [N-02], [N-10]
 
@@ -1417,6 +1440,13 @@ When an operation needs an input of a given kind (e.g. `catchment_characteristic
 | the project has **one** matching result | proposes it in the plan, clearly marked |
 | there is **more than one** matching result | **always asks** which one to use — even when one of them is the newest |
 | there is none | says what is missing and how to obtain it (e.g. "first delineate the catchment") |
+| the command names several files or results for an operation with several inputs | each input takes the one named file that is valid for its kind (and the `where` of its input, below), else asks |
+
+Inputs of one kind (the clay, sand and silt rasters of `soil hsg`, all `soil_raster`) are told
+apart by `where` in their `InputSpec`: the values the earlier result must have (`{"property":
+"clay"}`), so only such results are offered and taken; a file the user names is taken as it
+is. Such inputs each have the text `operations.<id>.inputs.<name>.label`, which their
+question (`dialog.input_named`) and the plan show beside the kind.
 
 Retman **does not try to guess** which thread the user means. With more than one
 possibility it asks, so mixing threads in one project does not lead to silent mistakes.

@@ -10,7 +10,16 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from hydrolog_support import context, operations, series_file, watershed_file
+from hydrolog_support import (
+    TEXTURE_COUNTS,
+    context,
+    inflow_network,
+    operations,
+    rain_network,
+    series_file,
+    texture_rasters,
+    watershed_file,
+)
 
 from retman.adapters.catalog import CatalogCall, ToolError, run_calls
 from retman.kinds import validate_file
@@ -76,12 +85,49 @@ def test_probabilities_become_the_return_periods_hydrolog_takes(
     assert "return_periods" not in bare.options
 
 
-@pytest.mark.parametrize("command", ["soil hsg", "route network", "gui serve"])
-def test_a_lookup_never_runs_a_command_that_writes_or_serves(command: str) -> None:
+@pytest.mark.parametrize(
+    ("command", "options"),
+    [
+        ("soil hsg", {}),
+        ("gui serve", {}),
+        # A network routed into files: only the call that names no output is a lookup
+        ("route network", {"network_file": "siec.json", "output_dir": "out"}),
+        ("route network", {"network_file": "siec.json", "schematic": "siec.svg"}),
+    ],
+)
+def test_a_lookup_never_runs_a_call_that_writes_or_serves(
+    command: str, options: dict[str, object]
+) -> None:
     with pytest.raises(ToolError) as caught:
-        HydrologClient({}).lookup(CatalogCall(command, {}))
+        HydrologClient({}).lookup(CatalogCall(command, options))
 
     assert caught.value.tool_code == "not_offline"
+
+
+def test_a_network_is_routed_in_memory_while_planning_and_into_files_at_the_run(
+    tmp_path: Path,
+) -> None:
+    network = rain_network(tmp_path)
+
+    (planned,) = calls.route_river_network(
+        {}, context("route_river_network", inputs={"network": network})
+    )
+    (running,) = calls.route_river_network(
+        {},
+        context(
+            "route_river_network",
+            inputs={"network": network},
+            output_dir=tmp_path / "result",
+        ),
+    )
+
+    assert set(planned.options) == {"network_file"}
+    assert running.options["output_dir"] == str(tmp_path / "result" / "hydrographs")
+    assert running.options["schematic"] == str(tmp_path / "result" / "network.svg")
+    # The planning call computes and writes nothing
+    document = HydrologClient({}).lookup(planned)
+    assert document["result"]["outlet"] == "OUT"
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["siec.json"]
 
 
 def test_a_rejected_rainfall_is_asked_again_as_the_rainfall() -> None:
@@ -149,6 +195,82 @@ def test_the_hydrograph_reports_its_peak_and_volume(tmp_path: Path) -> None:
     assert values["total_volume_m3"] == pytest.approx(
         values["effective_mm"] / 1000 * 45.3e6, rel=0.01
     )
+
+
+def test_a_routed_network_writes_a_table_per_node_and_its_schematic(
+    tmp_path: Path,
+) -> None:
+    network, inflows = inflow_network(tmp_path / "case")
+
+    output = run(
+        tmp_path,
+        "route_river_network_inflows",
+        {},
+        {"network": network, "inflows": inflows},
+    )
+
+    values = output["values"]
+    assert (values["name"], values["outlet"], values["node_count"]) == (
+        "Culvert inflow",
+        "OUT",
+        5,
+    )
+    assert values["outlet_peak_m3s"] == pytest.approx(0.175, abs=0.001)
+    assert values["outlet_time_to_peak_min"] == 25.0
+    assert values["outlet_volume_m3"] == 279
+    tables = output["files"]["hydrograph_table"]
+    assert sorted(path.name for path in tables) == [
+        "A.csv",
+        "B.csv",
+        "J1.csv",
+        "OUT.csv",
+        "R1.csv",
+    ]
+    for path in tables:
+        assert path.parent == tmp_path / "result" / "hydrographs"
+        validate_file("hydrograph_table", path)
+    (schematic,) = output["files"]["network_schematic"]
+    validate_file("network_schematic", schematic)
+    (report,) = output["files"]["hydrolog_report"]
+    validate_file("hydrolog_report", report)
+
+
+def test_a_network_computed_from_rain_needs_no_inflow_table(tmp_path: Path) -> None:
+    output = run(
+        tmp_path, "route_river_network", {}, {"network": rain_network(tmp_path)}
+    )
+
+    values = output["values"]
+    assert (values["name"], values["node_count"]) == ("Three subcatchments", 8)
+    outlet = next(node for node in values["nodes"] if node["id"] == "OUT")
+    assert outlet["peak_m3s"] == values["outlet_peak_m3s"] > 0
+
+
+def test_the_soil_groups_count_the_cells_of_each_group(tmp_path: Path) -> None:
+    rasters = texture_rasters(tmp_path / "soil")
+
+    output = run(tmp_path, "classify_soil_groups", {}, rasters)
+
+    values = output["values"]
+    assert values["counts"] == TEXTURE_COUNTS
+    assert (values["rows"], values["columns"]) == (2, 3)
+    # The shares are of the five classified cells, the cell without data apart
+    assert values["percent"] == {"A": 20.0, "B": 40.0, "C": 20.0, "D": 20.0}
+    assert values["group_text"] == "A 20%, B 40%, C 20%, D 20%"
+    assert values["nodata_cells"] == 1
+    (raster,) = output["files"]["hsg_raster"]
+    assert raster == tmp_path / "result" / "hsg.tif"
+    validate_file("hsg_raster", raster)
+    assert output["warnings"] == []
+
+
+def test_rasters_without_any_classified_cell_are_a_warning(tmp_path: Path) -> None:
+    rasters = texture_rasters(tmp_path / "soil", nodata_only=True)
+
+    output = run(tmp_path, "classify_soil_groups", {}, rasters)
+
+    assert output["values"]["percent"] == {}
+    assert [warning["key"] for warning in output["warnings"]] == ["no_classified_cells"]
 
 
 def test_the_flood_quantiles_come_from_the_best_distribution(tmp_path: Path) -> None:
@@ -279,3 +401,82 @@ def test_a_step_longer_than_the_rain_asks_both_again(name: str) -> None:
     (problem,) = output["problems"]
     assert problem["key"] == "step_exceeds_duration"
     assert problem["params"] == ["duration", "time_step"]
+
+
+def test_a_network_that_reads_inflows_planned_without_them_ends_the_plan(
+    tmp_path: Path,
+) -> None:
+    network, _ = inflow_network(tmp_path)
+    ctx = context("route_river_network", inputs={"network": network})
+
+    output = preview.route_river_network({}, ctx)
+
+    (problem,) = output["problems"]
+    assert (problem["key"], problem["params"]) == ("network_needs_inflows", [])
+    assert problem["args"] == {"node": "A", "path": str(network)}
+    assert (problem["code"], problem["reason"]) == ("data_error", "missing_field")
+
+
+def test_an_inflow_table_without_a_subcatchment_column_ends_the_plan(
+    tmp_path: Path,
+) -> None:
+    network, _ = inflow_network(tmp_path)
+    inflows = tmp_path / "doplywy.csv"
+    inflows.write_text("time_min,A\n0,0\n5,1\n10,0\n", encoding="utf-8")
+    ctx = context(
+        "route_river_network_inflows",
+        inputs={"network": network, "inflows": inflows},
+    )
+
+    output = preview.route_river_network_inflows({}, ctx)
+
+    (problem,) = output["problems"]
+    assert problem["key"] == "input_refused"
+    assert (problem["code"], problem["reason"]) == ("data_error", "missing_column")
+    assert problem["args"]["path"] == str(inflows)
+
+
+def test_the_plan_of_a_network_names_it_its_nodes_and_its_outlet(
+    tmp_path: Path,
+) -> None:
+    network, inflows = inflow_network(tmp_path / "case")
+    ctx = context(
+        "route_river_network_inflows",
+        inputs={"network": network, "inflows": inflows},
+    )
+
+    output = preview.route_river_network_inflows({}, ctx)
+
+    assert output["problems"] == []
+    assert output["rows"] == [
+        {
+            "key": "network",
+            "args": {"name": "Culvert inflow", "nodes": "5", "outlet": "OUT"},
+        }
+    ]
+    # The preview wrote nothing beside the inputs
+    assert sorted(path.name for path in (tmp_path / "case").iterdir()) == [
+        "inflows.csv",
+        "network.json",
+        "out",
+    ]
+
+
+def test_one_raster_given_for_two_textures_ends_the_plan(tmp_path: Path) -> None:
+    rasters = texture_rasters(tmp_path)
+    ctx = context(
+        "classify_soil_groups",
+        inputs={**rasters, "sand": rasters["clay"]},
+    )
+
+    output = preview.classify_soil_groups({}, ctx)
+
+    (problem,) = output["problems"]
+    assert (problem["key"], problem["params"]) == ("same_texture_raster", [])
+    assert problem["args"] == {"path": str(rasters["clay"].resolve())}
+    assert (
+        preview.classify_soil_groups(
+            {}, context("classify_soil_groups", inputs=rasters)
+        )["problems"]
+        == []
+    )

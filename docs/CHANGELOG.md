@@ -23,7 +23,23 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   fields for is asked again and the plan of the quantiles shows the hydrological years of the
   sample. New data kinds `watershed_parameters` and `hydrolog_report`, the scaffold reader of
   Hydrolog's catalog, 101 eval rows (the row that called a SCS-CN hydrograph out of scope now
-  expects the hydrograph). `route network` and `soil hsg` are not offered yet.
+  expects the hydrograph).
+- The rest of Hydrolog's basic routes, three operations (ARCHITECTURE 3.2.12): hydrographs
+  routed through a river network file (`route network`, category `rainfall_runoff`), as
+  `route_river_network` for a network whose subcatchments hold or compute their flows and
+  `route_river_network_inflows` with an inflow table, and the hydrologic soil groups of
+  clay, sand and silt rasters at hand (`soil hsg`, `classify_soil_groups`, category
+  `soil_data` beside Kartograf's soil operations). A routed network gives the peak, the time
+  to peak and the volume of every node, the table `<id>.csv` of every node and the schematic
+  `network.svg`; its plan lets Hydrolog route it in memory first and shows the network, its
+  nodes and its outlet, and a network that reads an inflow table, planned without one, ends
+  with the advice to name it. The soil groups give the cells and the share of each group;
+  one file given for two textures ends the plan. New data kinds `hydrolog_network`,
+  `hydrograph_table` and `network_schematic`; 47 eval rows.
+- Inputs of one kind told apart (ARCHITECTURE 5.3): an input may name the values of the
+  earlier result it takes (`where`, e.g. the clay layer among SoilGrids results), and such
+  inputs are asked and shown by their own names; when a command names several files or
+  results for an operation with several inputs, each input takes the one that fits it.
 - Extractors of numbers with units: `curve_number` („CN 72”), `rainfall_depth` („50 mm”),
   `catchment_area` („45,3 km²”, „4530 ha”) and the durations of a role, `rain_duration`,
   `time_step` („krok 5 min”, „co 10 min”) and `concentration_time` („czas koncentracji

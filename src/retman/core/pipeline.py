@@ -60,7 +60,7 @@ from retman.extractors.base import ExtractionContext, Match, Reading
 from retman.i18n.loader import load_core_texts
 from retman.kinds import validate_file
 from retman.registry.loader import load_operations
-from retman.registry.manifest import ParamSpec
+from retman.registry.manifest import InputSpec, ParamSpec
 from retman.registry.operation import (
     Operation,
     category_groups,
@@ -837,6 +837,12 @@ class Retman:
             "dialog.input_no_result", number=number, kind=kind, how=how
         )
 
+    @staticmethod
+    def _input_label(operation: Operation, spec: InputSpec) -> str | None:
+        """Return the operation's name of an input, if its texts have one."""
+        key = f"operations.{operation.id}.inputs.{spec['name']}.label"
+        return operation.texts.get(key) if operation.texts.has(key) else None
+
     def _input_question(
         self,
         name: str,
@@ -844,12 +850,15 @@ class Retman:
         candidates: list[WorkspaceFile],
         *,
         error: str | None = None,
+        label: str | None = None,
     ) -> Question:
         if candidates:
             return Question(
                 name,
                 "choice",
-                self.texts.get("dialog.input", kind=kind),
+                self.texts.get("dialog.input_named", kind=kind, label=label)
+                if label
+                else self.texts.get("dialog.input", kind=kind),
                 [
                     Option(
                         str(index),
@@ -865,7 +874,9 @@ class Retman:
         return Question(
             name,
             "value",
-            self.texts.get("dialog.input_missing", kind=kind),
+            self.texts.get("dialog.input_missing_named", kind=kind, label=label)
+            if label
+            else self.texts.get("dialog.input_missing", kind=kind),
             example=self.texts.get("dialog.example_path"),
             error=error or self._no_inputs(kind),
             help=self.texts.get("dialog.help_fallback"),
@@ -878,6 +889,7 @@ class Retman:
         kind: str,
         path: Path,
         number: int | None,
+        label: str | None = None,
     ) -> str | None:
         try:
             checked = self.workspace.validate_input(path, kind)
@@ -887,54 +899,77 @@ class Retman:
             {"path": str(checked), "number": number, "kind": kind},
             "workspace" if number is not None else "command",
         )
-        plan.labels[name] = kind
+        plan.labels[name] = label or kind
         plan.display[name] = f"#{number}: {checked.name}" if number else str(checked)
         return None
 
-    def _resolve_input(self, plan: Plan, name: str, kind: str) -> Question | None:
-        candidates = self.workspace.find_by_kind(kind)
+    def _fits(self, path: Path, kind: str) -> bool:
+        """Whether a file named in the command is a valid file of ``kind``."""
+        try:
+            self.workspace.validate_input(path, kind)
+        except (KindValidationError, OSError):
+            return False
+        return True
+
+    def _resolve_input(
+        self, plan: Plan, operation: Operation, spec: InputSpec
+    ) -> Question | None:
+        name, kind, where = spec["name"], spec["kind"], spec.get("where")
+        label = self._input_label(operation, spec)
+        candidates = self.workspace.find_by_kind(kind, where)
         results = EXTRACTORS["result"](plan.command)
         paths = EXTRACTORS["path"](plan.command)
-        if len(results) > 1 or len(paths) > 1 or (results and paths):
-            return self._input_question(name, kind, candidates)
+
+        def take(
+            path: Path, number: int | None, offered: list[WorkspaceFile]
+        ) -> Question | None:
+            error = self._set_input(plan, name, kind, path, number, label)
+            if error:
+                return self._input_question(
+                    name, kind, offered, error=error, label=label
+                )
+            return None
+
+        named = len(results) + len(paths)
+        if named > 1 or (named and len(operation.spec["inputs"]) > 1):
+            # Files named for several inputs: this one takes the one file that fits
+            # it (its kind and ``where``), or asks when none or several do
+            fitting: list[tuple[Path, int | None]] = [
+                (item.path, item.number)
+                for match in results
+                for item in self.workspace.resolve_result(
+                    match.readings[0].value, kind, where
+                )
+            ]
+            fitting.extend(
+                (path, None)
+                for match in paths
+                if self._fits(path := Path(match.readings[0].value), kind)
+            )
+            if len(fitting) == 1:
+                return take(*fitting[0], candidates)
+            return self._input_question(name, kind, candidates, label=label)
         if results:
             number = results[0].readings[0].value
-            specific = self.workspace.resolve_result(number, kind)
+            specific = self.workspace.resolve_result(number, kind, where)
             if len(specific) == 1:
-                item = specific[0]
-                error = self._set_input(plan, name, kind, item.path, number)
-                return (
-                    self._input_question(name, kind, candidates, error=error)
-                    if error
-                    else None
-                )
+                return take(specific[0].path, number, candidates)
             if specific or candidates:
                 return self._input_question(
                     name,
                     kind,
                     specific or candidates,
                     error=None if specific else self.texts.get("dialog.invalid_choice"),
+                    label=label,
                 )
             return self._input_question(
-                name, kind, [], error=self._no_inputs(kind, number)
+                name, kind, [], error=self._no_inputs(kind, number), label=label
             )
         if paths:
-            path = Path(paths[0].readings[0].value)
-            error = self._set_input(plan, name, kind, path, None)
-            return (
-                self._input_question(name, kind, candidates, error=error)
-                if error
-                else None
-            )
+            return take(Path(paths[0].readings[0].value), None, candidates)
         if len(candidates) == 1:
-            item = candidates[0]
-            error = self._set_input(plan, name, kind, item.path, item.number)
-            return (
-                self._input_question(name, kind, candidates, error=error)
-                if error
-                else None
-            )
-        return self._input_question(name, kind, candidates)
+            return take(candidates[0].path, candidates[0].number, candidates)
+        return self._input_question(name, kind, candidates, label=label)
 
     def _populate(self, plan: Plan) -> Plan:
         assert plan.operation is not None
@@ -1000,20 +1035,25 @@ class Retman:
                 continue
             if name in plan.known:
                 known = plan.known[name]
+                label = self._input_label(operation, input_spec)
                 if isinstance(known, int):
-                    matches = self.workspace.resolve_result(known, kind)
+                    matches = self.workspace.resolve_result(
+                        known, kind, input_spec.get("where")
+                    )
                     if len(matches) != 1:
                         raise _invalid_known(
                             name, self.texts.get("dialog.invalid_choice")
                         )
-                    error = self._set_input(plan, name, kind, matches[0].path, known)
+                    error = self._set_input(
+                        plan, name, kind, matches[0].path, known, label
+                    )
                 else:
-                    error = self._set_input(plan, name, kind, Path(known), None)
+                    error = self._set_input(plan, name, kind, Path(known), None, label)
                 if error:
                     raise _invalid_known(name, error)
                 plan.inputs[name] = replace(plan.inputs[name], source="known")
                 continue
-            question = self._resolve_input(plan, name, kind)
+            question = self._resolve_input(plan, operation, input_spec)
             if question:
                 questions.append(question)
         plan.questions = questions
@@ -1288,12 +1328,9 @@ class Retman:
                         ]
         else:
             assert updated.operation is not None
-            input_spec = next(
-                i
-                for i in self.operations[updated.operation].spec["inputs"]
-                if i["name"] == name
-            )
-            kind = input_spec["kind"]
+            operation = self.operations[updated.operation]
+            input_spec = next(i for i in operation.spec["inputs"] if i["name"] == name)
+            kind, where = input_spec["kind"], input_spec.get("where")
             if isinstance(value, dict):
                 path, number = Path(value["path"]), value["number"]
             else:
@@ -1301,8 +1338,8 @@ class Retman:
                 path_matches = EXTRACTORS["path"](str(value))
                 if result_matches:
                     number = result_matches[0].readings[0].value
-                    candidates = self.workspace.resolve_result(number, kind)
-                    if not candidates and not self.workspace.find_by_kind(kind):
+                    candidates = self.workspace.resolve_result(number, kind, where)
+                    if not candidates and not self.workspace.find_by_kind(kind, where):
                         error = self._no_inputs(kind, number)
                     elif len(candidates) != 1:
                         error = self.texts.get("dialog.invalid_choice")
@@ -1313,7 +1350,14 @@ class Retman:
                 else:
                     error = self.texts.get("dialog.invalid")
             if error is None:
-                error = self._set_input(updated, name, kind, path, number)
+                error = self._set_input(
+                    updated,
+                    name,
+                    kind,
+                    path,
+                    number,
+                    self._input_label(operation, input_spec),
+                )
                 if error is None and number is None:
                     updated.inputs[name] = replace(updated.inputs[name], source="user")
         if error:
@@ -1364,7 +1408,10 @@ class Retman:
             question = self._input_question(
                 name,
                 input_spec["kind"],
-                self.workspace.find_by_kind(input_spec["kind"]),
+                self.workspace.find_by_kind(
+                    input_spec["kind"], input_spec.get("where")
+                ),
+                label=self._input_label(operation, input_spec),
             )
         updated.questions.insert(0, question)
         self.record_plan(plan, "changed", changed=name)

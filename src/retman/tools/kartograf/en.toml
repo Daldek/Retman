@@ -4,7 +4,7 @@ description = "Downloading spatial data from GUGiK: the DEM (NMT, numeryczny mod
 
 [categories.soil_data]
 label = "SoilGrids soil data"
-description = "Soils from SoilGrids (ISRIC, 250 m grid): downloading the layer of one soil property (clay, sand or silt content, organic carbon, pH, bulk density, coarse fragments, cation exchange capacity, nitrogen) at a chosen depth, and the hydrologic soil groups HSG (A–D) of the SCS-CN method derived from the texture"
+description = "Soils from SoilGrids (ISRIC, 250 m grid): downloading the layer of one soil property (clay, sand or silt content, organic carbon, pH, bulk density, coarse fragments, cation exchange capacity, nitrogen) at a chosen depth, the hydrologic soil groups HSG (A–D) of the SCS-CN method derived from the texture of an area downloaded from SoilGrids, and the HSG of clay, sand and silt rasters at hand (earlier results or GeoTIFF files)"
 
 [operations.download_dem_sheet]
 label = "Download DEM (NMT) for a map sheet or area"

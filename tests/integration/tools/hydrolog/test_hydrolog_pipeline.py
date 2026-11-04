@@ -10,9 +10,12 @@ from pathlib import Path
 
 from hydrolog_support import (
     asked,
+    earlier_result,
+    inflow_network,
     make_app,
     option_number,
     series_file,
+    texture_rasters,
     watershed_file,
 )
 
@@ -182,3 +185,87 @@ def test_a_morphometry_takes_the_watershed_of_a_file_named_in_the_command(
     assert result.ok, result.error
     assert result.values["area_km2"] == 45.3
     assert "45.3 km²" in result.summary
+
+
+def test_soil_groups_take_each_texture_from_the_result_of_its_property(
+    tmp_path: Path,
+) -> None:
+    app, client = make_app(tmp_path, {"classify_soil_groups": "classify_soil_groups"})
+    rasters = texture_rasters(app.workspace.project_dir / "soil")
+    for number, name in enumerate(("silt", "clay", "sand"), 1):
+        earlier_result(app, number, "soil_raster", rasters[name], {"property": name})
+
+    plan = app.plan(
+        "Wyznacz grupy HSG z rastrów iłu, piasku i pyłu z wyników #1, #2 i #3."
+    )
+
+    # The results are told apart by their property, not by the order of the numbers
+    assert plan.questions == []
+    assert {name: entry.value["number"] for name, entry in plan.inputs.items()} == {
+        "clay": 2,
+        "sand": 3,
+        "silt": 1,
+    }
+    assert plan.labels["clay"] == "Raster zawartości iłu"
+    assert client.network == []
+
+    result = app.execute(plan.confirm())
+
+    assert result.ok, result.error
+    assert result.values["counts"]["B"] == 2
+    assert "A 20%, B 40%, C 20%, D 20%" in result.summary
+
+
+def test_a_texture_with_two_results_of_its_property_is_asked_by_its_name(
+    tmp_path: Path,
+) -> None:
+    app, client = make_app(tmp_path, {"classify_soil_groups": "classify_soil_groups"})
+    rasters = texture_rasters(app.workspace.project_dir / "soil")
+    second = texture_rasters(app.workspace.project_dir / "soil_2")
+    for number, (name, path) in enumerate(
+        [*rasters.items(), ("clay", second["clay"])], 1
+    ):
+        earlier_result(app, number, "soil_raster", path, {"property": name})
+
+    plan = app.plan("Policz grupy hydrologiczne gleb z rastrów uziarnienia.")
+
+    # Sand and silt have one result each; clay has two, offered by name
+    assert asked(plan) == {"clay"}
+    (question,) = plan.questions
+    assert question.text == (
+        "Raster zawartości iłu: którego pliku rodzaju soil_raster użyć?"
+    )
+    assert [option.value["number"] for option in question.options] == [1, 4]
+    plan = plan.answer("clay", "2")
+    assert plan.questions == []
+    assert plan.inputs["clay"].value["number"] == 4
+    assert client.network == []
+
+
+def test_a_network_and_its_inflows_named_in_the_command_fill_both_inputs(
+    tmp_path: Path,
+) -> None:
+    app, client = make_app(
+        tmp_path, {"route_river_network_inflows": "route_river_network_inflows"}
+    )
+    inflow_network(app.workspace.project_dir)
+
+    plan = app.plan(
+        "Przeprowadź hydrogramy przez sieć z pliku network.json "
+        "z dopływami z pliku inflows.csv."
+    )
+
+    assert plan.questions == []
+    assert plan.inputs["network"].value["kind"] == "hydrolog_network"
+    assert plan.inputs["inflows"].value["kind"] == "hydrograph_table"
+    assert ("Sieć rzeczna", "Culvert inflow: 5 węzłów, wylot OUT") in (
+        plan.preview_rows
+    )
+    assert [call.command for call in client.lookups] == ["route network"]
+    assert client.network == []
+
+    result = app.execute(plan.confirm())
+
+    assert result.ok, result.error
+    assert len(result.files["hydrograph_table"]) == 5
+    assert "na wylocie OUT szczyt 0.175 m³/s po 25.0 min" in result.summary
