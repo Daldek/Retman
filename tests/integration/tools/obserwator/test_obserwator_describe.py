@@ -195,7 +195,7 @@ def test_the_registry_and_the_providers_are_kept_as_the_tools_documents(
     assert names == ["datasets.json", "providers.json"]
     datasets = json.loads(result.files["obserwator_report"][0].read_text("utf-8"))
     assert datasets["schema"] == "obserwator-result/1"
-    assert {item["provider"] for item in datasets["result"]["items"]} == {"CHMI"}
+    assert {item["provider"] for item in datasets["result"]} == {"CHMI"}
     assert result.values == {
         "calls": 2,
         "file_count": 2,

@@ -42,6 +42,9 @@ _FAILED_STATES = ("failed", "stale_plan", "check_failed")
 _WRITING_COMMANDS = ("series export", "store export", "datasets download")
 # The command that may write the freshness plan given as ``plan``
 _PLAN_COMMANDS = ("store check",)
+# Run flags of every command line: ``--json`` makes the CLI print the envelope
+# Retman keeps, not the summary for a person
+_RUN_FLAGS: Mapping[str, object] = {"json": True}
 
 
 def _sha256(path: Path) -> str:
@@ -112,7 +115,7 @@ class ObserwatorClient:
         """Build a ``ToolError`` for an exception of the tool, with the tool's code."""
         if isinstance(err, OSError):
             detail, details = self._exceptions.describe_os_error(err)
-            return ToolError(TOOL, "io_error", detail, details=details, call=call)
+            return ToolError(TOOL, "io_error", str(detail), details=details, call=call)
         if not isinstance(err, self._obserwator.ObserwatorError):
             return ToolError(TOOL, "internal_error", repr(err), call=call)
         details = dict(err.details)
@@ -125,6 +128,7 @@ class ObserwatorClient:
             TOOL,
             code,
             err.detail,
+            hint=err.hint,
             option=option if isinstance(option, str) else None,
             allowed=[str(item) for item in allowed]
             if isinstance(allowed, list | tuple)
@@ -161,14 +165,16 @@ class ObserwatorClient:
     def command_line(self, call: CatalogCall) -> str:
         """Return the call as the tool's command line, ``--root`` included."""
         try:
-            return cast(
-                str,
-                self._obserwator.format_command(
-                    call.command, options=self._options(call)
-                ),
-            )
+            return self._format(call.command, self._options(call))
         except Exception as err:
             raise self._error(err, call) from err
+
+    def _format(self, command: str, options: Mapping[str, object]) -> str:
+        """Return the tool's command line with ``--json``, which prints the envelope."""
+        return cast(
+            str,
+            self._obserwator.format_command(command, options=options, run=_RUN_FLAGS),
+        )
 
     def lookup(self, call: CatalogCall) -> ToolDocument:
         """Return the document of a command that neither uses the network nor writes.
@@ -242,13 +248,11 @@ class ObserwatorClient:
             files=self._files(call.command, options, document),
             failed=self._failures(call.command, status, document),
             notices=tuple(
-                ToolNotice(notice.level, notice.code, notice.text)
+                ToolNotice(notice.level, notice.code, notice.message)
                 for notice in result.notices
             ),
             document=document,
-            command_line=cast(
-                str, self._obserwator.format_command(call.command, options=options)
-            ),
+            command_line=self._format(call.command, options),
             schema=SCHEMA,
         )
 
@@ -277,23 +281,31 @@ class ObserwatorClient:
     def _failures(
         command: str, status: str, document: ToolDocument
     ) -> tuple[ToolFailure, ...]:
-        """Units a command could not handle: failed items, plans, series."""
+        """Units a command could not handle: failed items, plans, series.
+
+        The result of a list command is the list of its items; any other result is
+        one object whose ``items`` and ``files`` are its units.
+        """
         result = document.get("result")
-        if not isinstance(result, dict):
+        if isinstance(result, list):
+            units: list[Any] = list(result)
+            result = {}
+        elif isinstance(result, dict):
+            units = [*(result.get("items") or ()), *(result.get("files") or ())]
+        else:
             return ()
         failures: list[ToolFailure] = []
-        for key in ("items", "files"):
-            for item in result.get(key) or ():
-                state = item.get("status") if isinstance(item, dict) else None
-                if state in _FAILED_STATES:
-                    unit = item.get("slot") or item.get("server_path") or ""
-                    failures.append(
-                        ToolFailure(
-                            str(unit),
-                            str(item.get("error_code") or state),
-                            str(item.get("error") or state),
-                        )
+        for item in units:
+            state = item.get("status") if isinstance(item, dict) else None
+            if state in _FAILED_STATES:
+                unit = item.get("slot") or item.get("server_path") or ""
+                failures.append(
+                    ToolFailure(
+                        str(unit),
+                        str(item.get("error_code") or state),
+                        str(item.get("error") or state),
                     )
+                )
         for report in result.get("series") or ():
             if isinstance(report, dict) and report.get("status") == "failed":
                 problems = "; ".join(map(str, report.get("problems") or ()))

@@ -190,14 +190,19 @@ def result_of(run: ToolRun) -> Any:
 
 
 def document_items(document: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """Return the items of a list command's document (a ``Page``); empty if none."""
+    """Return the items of a document's result; empty if none.
+
+    The ``result`` of a list command is the list of its items (the paging is the
+    envelope's ``page``; Retman gives no ``limit``, so the list is complete); a
+    report (``datasets download``, ``store sync``) lists its units as ``items``.
+    """
     result = document.get("result")
-    items = result.get("items") if isinstance(result, dict) else None
+    items = result.get("items") if isinstance(result, dict) else result
     return [item for item in items if isinstance(item, dict)] if items else []
 
 
 def items_of(run: ToolRun) -> list[dict[str, Any]]:
-    """Return the items of a list command's result (``Page``); empty if none."""
+    """Return the items of a run's result (a list command's, a report's units)."""
     return document_items(run.document)
 
 

@@ -52,7 +52,7 @@ def test_series_export_files_are_valid_series(
 def test_archive_export_files_are_valid_archive_records(
     store: Path, tmp_path: Path
 ) -> None:
-    entries = _run("store scan", store, kind="archive").to_json()["result"]["items"]
+    entries = _run("store scan", store, kind="archive").to_json()["result"]
     version = next(
         entry["version"] for entry in entries if entry["slot"].endswith("codz_2024.zip")
     )

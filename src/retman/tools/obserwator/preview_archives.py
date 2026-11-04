@@ -56,7 +56,7 @@ def _listing(
     """
     document = ctx.client.lookup(archive_files_call(params, ctx))
     result = document.get("result")
-    raw = result.get("items") if isinstance(result, Mapping) else None
+    raw = result if isinstance(result, list) else None
     items = [item for item in raw or () if isinstance(item, Mapping)]
     if not items:
         return [], {"files": 0}

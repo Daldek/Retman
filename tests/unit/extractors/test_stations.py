@@ -79,7 +79,7 @@ def test_load_maps_tool_errors_to_an_empty_index_with_a_reason(
 @pytest.mark.parametrize(
     ("document", "reason"),
     [
-        ({"result": {"items": []}}, "no_catalog"),
+        ({"result": []}, "no_catalog"),
         ({"result": {}}, "unreadable"),
         ({"schema": "obserwator-result/1"}, "unreadable"),
     ],

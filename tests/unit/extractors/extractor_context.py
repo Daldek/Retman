@@ -70,7 +70,8 @@ def station_document(items: list[dict[str, Any]] | None = None) -> dict[str, Any
         "schema": "obserwator-result/1",
         "command": "stations find",
         "status": "ok",
-        "result": {"items": found, "total": len(found), "limit": None, "offset": 0},
+        "result": found,
+        "page": {"total": len(found), "next_cursor": None, "truncated": False},
         "notices": [],
     }
 

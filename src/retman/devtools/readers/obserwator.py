@@ -1,4 +1,4 @@
-"""Reader of Obserwator's command catalog (``obserwator.command_schema``, 3.x)."""
+"""Reader of Obserwator's command catalog (``command_schema``, Nogat commands-1)."""
 
 import importlib
 from collections.abc import Mapping
@@ -19,53 +19,60 @@ KNOWN_SCHEMAS = ("obserwator-result/1", "obserwator-plan/1")
 
 
 def _enum(prop: Mapping[str, Any]) -> tuple[str, ...] | None:
-    """Return the enumerated values of a JSON-Schema property or its array items."""
+    """Return the allowed values of an option or of its list items, as text.
+
+    An option's ``enum`` is a list of ``{value, meaning}``; the items of a list
+    option name their values in ``items.enum``.
+    """
     values = prop.get("enum")
     if values is None and isinstance(prop.get("items"), dict):
         values = prop["items"].get("enum")
-    return tuple(str(value) for value in values) if values else None
+    if not values:
+        return None
+    return tuple(
+        str(value["value"] if isinstance(value, dict) else value) for value in values
+    )
 
 
 def _kind(prop: Mapping[str, Any]) -> str:
-    """Return the tool's type label: ``path`` for ``x-obserwator-type``, else type."""
-    if "x-obserwator-type" in prop:
-        return str(prop["x-obserwator-type"])
+    """Return the type label of an option: ``path``, ``date`` or the JSON type."""
+    if prop.get("path_role"):
+        return "path"
     if prop.get("format") == "date":
         return "date"
-    return str(prop.get("type", "enum" if "enum" in prop else ""))
+    return str(prop["type"])
 
 
 def read_catalog() -> ToolCatalog:
-    """Obserwator's catalog: every command with its JSON-Schema options and effects."""
+    """Obserwator's catalog: every command with its options and effects."""
     obserwator = importlib.import_module("obserwator")
     document = obserwator.command_schema(lang="en")
     commands: dict[str, CommandInfo] = {}
-    for item in document["commands"]:
-        meta = item["x-obserwator"]
-        required = set(item.get("required", ()))
+    for entry in document["commands"]:
+        effects = entry["effects"]
         options = tuple(
             OptionInfo(
-                name=name,
-                required=name in required,
+                name=prop["name"],
+                required=bool(prop["required"]),
                 allowed=_enum(prop),
                 kind=_kind(prop),
                 default=prop.get("default"),
-                minimum=prop.get("minimum"),
-                maximum=prop.get("maximum"),
+                minimum=prop.get("min"),
+                maximum=prop.get("max"),
                 description=str(prop.get("description", "")),
             )
-            for name, prop in item.get("properties", {}).items()
+            for prop in entry["options"]
         )
-        commands[meta["command"]] = CommandInfo(
-            id=meta["command"],
-            group=str(meta.get("group", "")),
-            summary=str(item.get("description", "")),
+        commands[entry["name"]] = CommandInfo(
+            id=entry["name"],
+            group=str(entry.get("group") or entry["name"].split()[0]),
+            summary=str(entry["summary"]),
             options=options,
-            network=bool(meta.get("network")),
-            writes=meta.get("writes", "none") != "none",
+            network=bool(effects["network"]),
+            writes=effects["writes"] != "none",
             data=True,
-            result_schema=str(document["result_schema"]),
-            check_schema="obserwator-plan/1" if meta.get("check") else "",
+            result_schema=str(entry["result"]["schema"]),
+            check_schema="obserwator-plan/1" if entry["check"] else "",
         )
     registry = obserwator.ERROR_CODES
     return ToolCatalog(

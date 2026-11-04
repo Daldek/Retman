@@ -237,7 +237,7 @@ def stored_archives(params: Mapping[str, Any], ctx: ToolContext) -> list[StoredA
         CatalogCall("store scan", {"kind": "archive", "provider": provider})
     )
     result = document.get("result")
-    items = result.get("items") if isinstance(result, Mapping) else None
+    items = result if isinstance(result, list) else None
     return current_archive_versions(
         items or (), ctx.tool_value("dataset", params["dataset"]), years
     )
@@ -253,8 +253,7 @@ def expected_archives(params: Mapping[str, Any], ctx: ToolContext) -> int | None
         return None
     document = ctx.client.lookup(archive_files_call(params, ctx))
     result = document.get("result")
-    items = result.get("items") if isinstance(result, Mapping) else None
-    return len(items) if items else 0
+    return len(result) if isinstance(result, list) else 0
 
 
 def export_names(archives: Iterable[StoredArchive], extension: str) -> list[str]:

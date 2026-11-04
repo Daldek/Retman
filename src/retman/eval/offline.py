@@ -40,8 +40,8 @@ def _document(command: str, result: object) -> ToolDocument:
 
 
 def _page(command: str, items: list[dict[str, Any]]) -> ToolDocument:
-    result = {"items": items, "total": len(items), "limit": None, "offset": 0}
-    return _document(command, result)
+    page = {"total": len(items), "next_cursor": None, "truncated": False}
+    return {**_document(command, items), "page": page}
 
 
 class OfflineObserwatorClient:
