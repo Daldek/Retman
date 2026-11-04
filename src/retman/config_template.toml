@@ -40,6 +40,8 @@ results_dir = "retman-output"  # results folder created inside the project folde
 [retman.adapters]
 # By default Retman enables every supported tool that is installed in a supported version.
 # The optional "enabled" list only NARROWS that set.
+# Tools: "kartograf", "obserwator", "hydrolog". Hydrolog computes offline and keeps no
+# store, so it has no [retman.tools.hydrolog] table.
 # enabled = ["kartograf"]
 
 [retman.tools.kartograf]

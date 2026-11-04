@@ -98,6 +98,9 @@ outside_pmaxtp_frame = "Punkt leży poza obszarem danych PMAXTP (szerokość 49�
 invalid_grid_cell = "Komórka siatki PMAXTP wymaga dwóch nieujemnych liczb całkowitych: ind_x i ind_y."
 invalid_probability = "Prawdopodobieństwo musi być liczbą większą od 0 i mniejszą od 1 (np. 1% to 0,01)."
 invalid_duration = "Czas trwania musi być całkowitą liczbą minut, co najmniej 1 (np. „15 min”, „2 godziny”)."
+invalid_curve_number = "Liczba CN musi być liczbą od 1 do 100 (np. „CN 72”)."
+invalid_rainfall_depth = "Suma opadu musi być liczbą milimetrów większą od 0 i nie większą niż 2000 (np. „50 mm”)."
+invalid_catchment_area = "Powierzchnia zlewni musi być liczbą kilometrów kwadratowych większą od 0 (np. „45,3 km²”)."
 
 # Odczyty stacji (src/retman/extractors/stations.py, places.py): etykiety do pytań i teksty do planu.
 [extractors.station]
@@ -150,6 +153,18 @@ fraction = "p = {value} (ułamek)"
 
 [extractors.duration]
 minutes = "czas trwania {minutes} min"
+step = "krok czasowy {minutes} min"
+concentration = "czas koncentracji {minutes} min"
+
+# Odczyty liczb z jednostkami (src/retman/extractors/quantities.py).
+[extractors.curve_number]
+value = "CN = {value}"
+
+[extractors.rainfall_depth]
+value = "suma opadu {value} mm"
+
+[extractors.catchment_area]
+value = "powierzchnia {value} km²"
 
 [extractors.variables.names]
 H = "H — stan wody"
@@ -192,6 +207,9 @@ grid_cell = "komórka {ind_x}/{ind_y} (ind_x/ind_y)"
 probability = "{percent}% (T = {years} lat)"
 duration = "{minutes} min"
 duration_hours = "{hours} h"
+curve_number = "CN {value}"
+rainfall_depth = "{value} mm"
+catchment_area = "{value} km²"
 
 # Podpowiedzi do pytań o wymagany parametr, którego nie udało się odczytać (explain_missing).
 [extractors.hints]

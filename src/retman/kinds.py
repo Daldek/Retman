@@ -44,8 +44,15 @@ _UTF8_BOM = b"\xef\xbb\xbf"
 
 _RESULT_SCHEMA = "obserwator-result/1"
 _PLAN_SCHEMA = "obserwator-plan/1"
-_RESULT_SCHEMA_START = re.compile(
-    rb'\s*\{\s*"schema"\s*:\s*"' + re.escape(_RESULT_SCHEMA.encode()) + rb'"'
+_HYDROLOG_RESULT_SCHEMA = "hydrolog-result/1"
+# The keys every watershed of ``WatershedParameters.to_json()`` (Hydrolog) has; the
+# document carries no ``schema`` key of its own
+_WATERSHED_KEYS = (
+    "area_km2",
+    "perimeter_km",
+    "length_km",
+    "elevation_min_m",
+    "elevation_max_m",
 )
 
 # Obserwator series export: ``date,year,<variable> [<unit>],<variable>_flag,...,
@@ -251,12 +258,32 @@ def _json_document_check(schema: str) -> Check:
     return check
 
 
-def _check_obserwator_report(path: Path) -> str | None:
-    """Obserwator ``obserwator-result/1`` document: the first key is ``schema``."""
-    head = _first_text(path)
-    if not head.strip():
+def _schema_first(schema: str) -> Check:
+    """Check a tool's result document: its first key is ``schema`` of this value."""
+    start = re.compile(
+        rb'\s*\{\s*"schema"\s*:\s*"' + re.escape(schema.encode()) + rb'"'
+    )
+
+    def check(path: Path) -> str | None:
+        head = _first_text(path)
+        if not head.strip():
+            return "empty_file"
+        return None if start.match(head) else "invalid_schema"
+
+    return check
+
+
+def _check_watershed(path: Path) -> str | None:
+    """Hydrolog watershed parameters: a JSON object with the five required keys."""
+    if path.stat().st_size == 0:
         return "empty_file"
-    return None if _RESULT_SCHEMA_START.match(head) else "invalid_schema"
+    try:
+        document = json.loads(path.read_bytes())
+    except ValueError:
+        return "invalid_json"
+    if not isinstance(document, dict) or not set(_WATERSHED_KEYS) <= set(document):
+        return "invalid_schema"
+    return None
 
 
 def _kinds(*kinds: Kind) -> dict[str, Kind]:
@@ -316,7 +343,11 @@ KINDS: dict[str, Kind] = _kinds(
         _check_obserwator_archive,
     ),
     Kind("obserwator_plan", (".json",), _json_document_check(_PLAN_SCHEMA)),
-    Kind("obserwator_report", (".json",), _check_obserwator_report),
+    Kind("obserwator_report", (".json",), _schema_first(_RESULT_SCHEMA)),
+    # Hydrolog: the parameters of a watershed (``WatershedParameters.to_json()``, from
+    # Hydrograf or written by hand) and the result document of a computation
+    Kind("watershed_parameters", (".json",), _check_watershed),
+    Kind("hydrolog_report", (".json",), _schema_first(_HYDROLOG_RESULT_SCHEMA)),
 )
 
 

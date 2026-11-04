@@ -538,8 +538,12 @@ beginning of the file (header and the first few rows):
 | `obserwator_plan` | Obserwator download or synchronisation plan (JSON) | document with `schema` equal to `obserwator-plan/1` |
 | `obserwator_report` | Obserwator report (JSON) | `obserwator-result/1` document — the first key is `schema` |
 
-The kinds of the remaining tools (Hydrolog, Hydrograf, BasicHydraulics) are an open question
-(chapter 12).
+Hydrolog (section 3.2.12) reads `watershed_parameters` (`.json`, the
+`WatershedParameters.to_json()` object: an object with `area_km2`, `perimeter_km`,
+`length_km`, `elevation_min_m` and `elevation_max_m`; from Hydrograf or written by hand) and
+the `hydro_series` of Obserwator, and returns `hydrolog_report` (`.json`, the
+`hydrolog-result/1` envelope of the computation, whose first key is `schema`). The kinds of
+Hydrograf and BasicHydraulics are an open question (chapter 12).
 
 #### 3.2.7. Versions and conformance
 
@@ -581,7 +585,7 @@ All tool-related tests live in the Retman repo:
 | --- | --- | --- | --- |
 | Kartograf | downloading spatial data (DEM (NMT), DSM (NMPT), orthophoto, BDOT10k) and SoilGrids soil data (a property layer, hydrologic soil groups) | — | v0.1, version 0.8.0 |
 | Obserwator (formerly IMGWTools) | IMGW-PIB and ČHMÚ measurement data: stations, current data, PMAXTP, time series, archives and store | — | v0.1, version 3.0.0 |
-| Hydrolog | hydrological calculations (flows, methods) | — | planned (v0.2) |
+| Hydrolog | hydrological calculations: design rainfall, SCS-CN, time of concentration, hydrographs, flood frequency, morphometry | — | v0.1, version 1.0 (6 operations, section 3.2.12); the rest planned (v0.2) |
 | BasicHydraulics | simple hydraulic calculations | — | planned (v0.2) |
 | Hydrograf | catchment delineation, composite procedures | Hydrolog (and others) | planned (v0.2) |
 
@@ -823,6 +827,32 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
   file with license columns is produced by `export_station_series`); `commands list`, `commands schema`
   and `commands guide` describe the catalog itself (Retman reads schemas only in `retman scaffold`).
   Obserwator keeps no projects: they belong to Archiwista (Nogat ECO-054).
+
+#### 3.2.12. Hydrolog 1.0 operations
+
+Six operations in two categories, on the commands that the Nogat registry routes to Hydrolog
+(`ecosystem.yaml`). Hydrolog computes offline and keeps no store: it has no
+`[retman.tools.hydrolog]` table, its client adds nothing to a call, and every result is the
+`hydrolog-result/1` envelope kept as a `hydrolog_report` file.
+
+| Operation | Category | Command | Inputs | Parameters |
+| --- | --- | --- | --- | --- |
+| `build_design_hyetograph` | `rainfall_runoff` | `precip hietogram` | — | `hyetograph` (block, triangular, beta, euler_ii), `rainfall`, `duration`, `time_step` (default 5 min) |
+| `compute_effective_rainfall` | `rainfall_runoff` | `scs effective` | — | `cn`, `rainfall`, `amc` (dry, normal, wet; default normal) |
+| `generate_design_hydrograph` | `rainfall_runoff` | `hydrograph generate` | — | `catchment_area`, `cn`, `concentration_time`, the rain of the hyetograph, `amc`; SCS unit hydrograph |
+| `compute_concentration_time` | `rainfall_runoff` | `tc watershed` | `watershed` (`watershed_parameters`) | `method` (six methods, always asked) |
+| `estimate_flood_quantiles` | `hydrology_analysis` | `stats flood-frequency` | `series` (`hydro_series`, the column `Q` of an Obserwator export) | `distribution` (default all), `probability` (optional: return periods T = 1/p, else the tool's own) |
+| `compute_watershed_morphometry` | `hydrology_analysis` | `morphometry watershed` | `watershed` (`watershed_parameters`) | — |
+
+The commands only compute (read-only, no network, no plan in the catalog), so the client's
+`lookup` runs them, and the preview of every operation lets Hydrolog compute the plan before
+it is confirmed: a refusal with an option of the call asks the parameter again (a watershed
+without the fields of a method, `details.missing`, reopens `method`), any other refusal of an
+input file ends planning with Hydrolog's registry code and reason. The preview of the flood
+quantiles shows the complete hydrological years of the annual maxima and the skipped
+incomplete ones. A time step longer than the rain is Retman's own rule (Hydrolog's refusal
+names no option) and reopens both values. Not offered yet: `route network` and `soil hsg`
+(PROGRESS, Next).
 
 ### 3.3. Models: Retman contains no model [N-01], [N-02], [N-10]
 
@@ -1247,6 +1277,10 @@ and variables in the manifest) and `lookup` — an offline search in the tool's 
 | `variables` | measurement variables of a dataset (codes or words: "przepływ" (flow), "stan wody" (water level)), checked against `scope["variables"]` | list of variable codes |
 | `path` | a file path mentioned in the command | path |
 | `result` | a result number ("#3", section 5.2) | number |
+| `curve_number` | an SCS-CN curve number after the word "CN" ("CN 72", "CN=72,5", "CN wynosi 80") | number 1–100 |
+| `rainfall_depth` | a rainfall depth in millimetres ("50 mm", "pięćdziesiąt milimetrów"; never a rate "mm/h" or a range) | number of mm |
+| `catchment_area` | an area in km² ("45,3 km²", "km2", "km kw.") or hectares ("4530 ha") | number of km² |
+| `rain_duration`, `time_step`, `concentration_time` | a duration (as `duration`) told apart by the word before it: "krok", "co", "interwał" mark the time step, "czas koncentracji" or "tc" the time of concentration, no cue the duration of the rain | number of minutes |
 
 ### 4.4. Probability and return period [W-08]
 
