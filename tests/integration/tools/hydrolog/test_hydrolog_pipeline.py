@@ -121,7 +121,9 @@ def test_a_method_the_watershed_cannot_serve_is_asked_again(tmp_path: Path) -> N
         tmp_path,
         {"compute_concentration_time": "compute_concentration_time", "nrcs": "nrcs"},
     )
-    watershed_file(app.workspace.project_dir, "zlewnia.json", cn=None)
+    watershed_file(
+        app.workspace.project_dir, "zlewnia.json", mean_slope_m_per_m=0.05, cn=None
+    )
 
     plan = app.plan(
         "Oblicz czas koncentracji metodą NRCS dla zlewni z pliku zlewnia.json"

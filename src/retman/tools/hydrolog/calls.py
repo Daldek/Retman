@@ -140,14 +140,14 @@ def compute_concentration_time(
 ) -> list[CatalogCall]:
     """``tc watershed`` of a watershed file by a method.
 
-    A watershed that lacks the fields of the method is refused for ``watershed_file``:
-    the routing makes that a question about the method again.
+    A watershed that lacks the fields of the method is refused with the method named;
+    the preview makes that a question about the method again.
     """
     options: dict[str, object] = {
         "watershed_file": _input(ctx, "watershed"),
         "method": ctx.tool_value("method", params["method"]),
     }
-    return [CatalogCall("tc watershed", options, REPORT, {"watershed_file": "method"})]
+    return [CatalogCall("tc watershed", options, REPORT)]
 
 
 def compute_watershed_morphometry(

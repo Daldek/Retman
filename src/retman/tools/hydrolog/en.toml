@@ -241,6 +241,7 @@ forbidden = "Hydrolog will not write a file there: {detail}"
 conflict = "Hydrolog will not overwrite an existing file: {detail}"
 missing_dependency = "Hydrolog lacks a library this operation needs: {detail}"
 io_error = "Hydrolog cannot read or write a file: {detail}"
+source_unavailable = "Hydrolog got no answer from the IMGW-PIB server: {detail}. Try again later."
 internal_error = "Internal error of Hydrolog: {detail}"
 
 # Reasons why a plan must be corrected before it is confirmed (offline preview)

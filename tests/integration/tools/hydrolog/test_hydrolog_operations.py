@@ -327,7 +327,7 @@ def test_the_morphometry_of_a_watershed_file(tmp_path: Path) -> None:
 def test_a_method_the_watershed_lacks_fields_for_is_asked_again(
     tmp_path: Path,
 ) -> None:
-    watershed = watershed_file(tmp_path, cn=None)
+    watershed = watershed_file(tmp_path, mean_slope_m_per_m=0.05, cn=None)
     ctx = context("compute_concentration_time", inputs={"watershed": watershed})
 
     output = preview.compute_concentration_time({"method": "nrcs"}, ctx)
@@ -340,7 +340,7 @@ def test_a_method_the_watershed_lacks_fields_for_is_asked_again(
 def test_a_method_the_watershed_has_fields_for_names_the_watershed(
     tmp_path: Path,
 ) -> None:
-    watershed = watershed_file(tmp_path)
+    watershed = watershed_file(tmp_path, mean_slope_m_per_m=0.05)
     ctx = context("compute_concentration_time", inputs={"watershed": watershed})
 
     output = preview.compute_concentration_time({"method": "nrcs"}, ctx)
@@ -351,7 +351,7 @@ def test_a_method_the_watershed_has_fields_for_names_the_watershed(
 
 def test_a_watershed_file_hydrolog_cannot_read_ends_the_plan(tmp_path: Path) -> None:
     broken = tmp_path / "zlewnia.json"
-    broken.write_text('{"area_km2": 12.0}', encoding="utf-8")
+    broken.write_text('{"length_km": 6.0}', encoding="utf-8")
     ctx = context("compute_watershed_morphometry", inputs={"watershed": broken})
 
     output = preview.compute_watershed_morphometry({}, ctx)
