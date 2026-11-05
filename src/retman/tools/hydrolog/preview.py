@@ -36,26 +36,46 @@ _FLOWS_FIELD = "discharge_m3s"
 _TEXTURE_INPUTS = ("clay", "sand", "silt")
 
 
+def _method_fields(ctx: ToolContext, err: ToolError) -> PreviewProblem | None:
+    """Ask the method again when the watershed lacks the fields it needs, else None.
+
+    Hydrolog refuses it with ``missing_field``, the method in ``details.method`` and
+    the fields in ``details.missing`` (``details.option`` is the first field, which is
+    no option of the call). No field stands in for another, so the user picks the
+    method again or completes the watershed file.
+    """
+    tool_details: dict[str, Any] = dict(err.details.get("tool_details") or {})
+    missing = tool_details.get("missing")
+    method = tool_details.get("method")
+    if tool_details.get("reason") != "missing_field" or not missing or not method:
+        return None
+    name = err.call.params.get("method", "method") if err.call else "method"
+    if name not in ctx.specs:
+        return None
+    return {
+        "params": [name],
+        "key": "method_fields",
+        "args": {
+            "method": str(method),
+            "missing": ", ".join(str(field) for field in missing),
+        },
+    }
+
+
 def _refusal(ctx: ToolContext, err: ToolError) -> PreviewProblem:
     """Hydrolog's refusal of a computation as a problem of the plan.
 
-    A refusal routed to a parameter asks it again (a watershed that lacks the fields
-    of a method asks for another method); any other one is about the input file and
-    ends planning with Hydrolog's registry code and reason, the file as its path.
+    A refusal routed to a parameter asks it again, as does a watershed that lacks the
+    fields of a method (the method is asked again); any other one is about the input
+    file and ends planning with Hydrolog's registry code and reason, the file as its
+    path.
     """
+    method_fields = _method_fields(ctx, err)
+    if method_fields is not None:
+        return method_fields
     tool_details: dict[str, Any] = dict(err.details.get("tool_details") or {})
     routed = route_error(err.call, err, list(ctx.specs))
     if routed:
-        missing = tool_details.get("missing")
-        if tool_details.get("reason") == "missing_field" and missing:
-            return {
-                "params": routed,
-                "key": "method_fields",
-                "args": {
-                    "method": str(tool_details.get("method", "")),
-                    "missing": ", ".join(str(name) for name in missing),
-                },
-            }
         return {"params": routed, "key": "tool_refused", "args": {"detail": err.detail}}
     args = {"detail": err.detail}
     if isinstance(tool_details.get("path"), str):

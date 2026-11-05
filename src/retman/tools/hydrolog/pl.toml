@@ -241,6 +241,7 @@ forbidden = "Hydrolog nie zapisze pliku w tym miejscu: {detail}"
 conflict = "Hydrolog nie nadpisze istniejącego pliku: {detail}"
 missing_dependency = "Hydrologowi brakuje biblioteki potrzebnej do tej operacji: {detail}"
 io_error = "Hydrolog nie może odczytać albo zapisać pliku: {detail}"
+source_unavailable = "Hydrolog nie dostał odpowiedzi z serwera IMGW-PIB: {detail}. Spróbuj ponownie później."
 internal_error = "Wewnętrzny błąd Hydrologa: {detail}"
 
 # Powody, dla których plan trzeba poprawić przed potwierdzeniem (podgląd bez sieci)

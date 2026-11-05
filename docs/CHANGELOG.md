@@ -184,6 +184,15 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   `command_line` of an audit call ends with `--json`, so the line prints the envelope Retman
   keeps. An Obserwator document kept as a result (`obserwator_report`) has the new shape.
 
+- Hydrolog pinned at `1ffcd6b` (the Nogat release set `candidate-1`): its time of
+  concentration takes the inputs its source defines (Hydrolog ADR-0019), so Kirpich needs
+  `flow_path_length_km` and `flow_path_slope_m_per_m` of the watershed file, NRCS
+  `flow_path_length_km`, `mean_slope_m_per_m` and `cn`, and no field stands in for another.
+  A watershed that lacks the fields of the method still asks for the method again: the
+  preview reads the method and the missing fields from Hydrolog's refusal (`missing_field`),
+  which now names the first field, not the watershed file, as its option. Hydrolog's error
+  `source_unavailable` (IMGW-PIB did not answer) has Retman's text.
+
 - **Breaking: agent interfaces** (AGI, ADR-022). One executable `retman <group> <verb>`
   generated from a command catalog; `retman commands list|schema|guide` serve the catalog and
   the guides for agents; `--json` prints the envelope `retman-result/1` (the outcomes `partial`
