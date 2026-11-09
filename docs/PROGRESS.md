@@ -8,7 +8,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 
 | Component | State | Note |
 |---|---|---|
-| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-025) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
+| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-032) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
 | Kartograf 0.8.0 adapter (10 operations: spatial data of GUGiK and Copernicus, SoilGrids soils, the creation and the overview of the store), Obserwator 3.0.0 adapter (formerly IMGWTools; 19 operations, two-stage recognition) | done | the `tools` group pins `9deaa314` (Kartograf) and `ea158dc6` (Obserwator), their members of the Nogat release set `candidate-1`, both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist (Next 3); the names of the tool in Retman follow Nogat ECO-057 (CHANGELOG, ADR-024 erratum 7); the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags; not yet offered by an operation: `imagery download` sheets of a rectangle or a geometry file (orthophoto, true orthophoto, LIDAR intensity, oblique orthophoto; CZ SM5 sheets), the BDOO class selection (`--layers`) and a voivodeship code as its area, and the Czech land cover (ZABAGED, Data50, Data250: an S-JTSK rectangle or the national file, which the area reader does not give) |
@@ -116,14 +116,15 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 
 ## Open questions
 
-Decisions awaiting the author:
+Decisions awaiting the author. The author ruled on each on 2026-11-09:
 
 - Target values: recognition accuracy (PRD W-01), response time (N-07), success measures
-  (PRD ch. 8, ch. 11 item 5).
-- ADRs for the decisions of the first session, 2026-10-11 (the list is in the git history of
-  this file): record them retroactively or not.
-- Backend `basal`: waits for the API of basal-serve.
+  (PRD ch. 8, ch. 11 item 5): deferred until the first measurements.
+- Backend `basal`: keeps waiting for the API of basal-serve.
 - Chains as author-written recipes instead of the run-time resolver (alternative to
   ARCHITECTURE 4.5, PRD W-12, S-05), and n8n as an environment of Retman, not an executor of
-  steps (only where Retman cannot do it); to be judged when a second tool brings real chains
+  steps (only where Retman cannot do it): judged when a second tool brings real chains
   (ARCHITECTURE 12 item 14; the full proposals are in the git history of this file).
+
+Closed: the decisions of the first session, 2026-10-11, are recorded retroactively on
+2026-11-10 as ADR-026 to ADR-032 (the author's decision of 2026-11-09).

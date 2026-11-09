@@ -282,7 +282,7 @@ testers). The first version recommended for production deployments: **1.0.0**.
 2. Expectations and barriers of the individual groups (section 3.4).
 3. Whether and how to show Retman to the target groups before 1.0 (chapter 10).
 4. The list of first operations (section 7.2) — settled for Kartograf and Obserwator (ADR-001, ADR-012, ADR-016, ADR-017); to be settled for Hydrolog, Hydrograf and BasicHydraulics (from 0.2).
-5. Target values: response time, quality and success measures (chapters 5, 6 and 8).
+5. Target values: response time, quality and success measures (chapters 5, 6 and 8) — deferred until the first measurements (author, 2026-11-09).
 6. Cooperation with GUIs — decision once the GUIs exist.
 7. Scenarios characteristic of the main user groups (chapter 4).
 8. Result file formats (W-09; technical side: ARCHITECTURE chapter 12, item 7) — settled for Kartograf and Obserwator (ADR-004, ADR-016, ADR-017); open for the remaining tools.

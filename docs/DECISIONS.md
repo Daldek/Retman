@@ -54,6 +54,13 @@ ADR-x`); each relation is recorded on both sides.
 | [ADR-023](decisions/0023-structure-gate-ci-and-log.md) | Repository structure, quality gate, CI, test tree and technical log | accepted | 2026-10-24 |
 | [ADR-024](decisions/0024-imgwtools-data-output.md) | IMGWTools data output: plain files or a store, called as the tool defines them | accepted; amends ADR-012; amended by ADR-025; erratum 1 (REL-5.6 ranges, pin `97c1057`), erratum 2 (the Kartograf pin) | 2026-10-25 |
 | [ADR-025](decisions/0025-kartograf-data-output.md) | Kartograf data output: one store root, the registry codes, the marker states judged by Retman | accepted; amends ADR-012, ADR-024 | 2026-10-25 |
+| [ADR-026](decisions/0026-bare-probability-number-asks.md) | A bare probability number always asks | accepted | 2026-10-11 |
+| [ADR-027](decisions/0027-no-execution-without-confirmation-in-0x.md) | No execution without confirmation in 0.x | accepted | 2026-10-11 |
+| [ADR-028](decisions/0028-eval-in-the-base-package.md) | The evaluation runner and its command set in the base package | accepted | 2026-10-11 |
+| [ADR-029](decisions/0029-settings-read-with-tomllib.md) | Settings read with `tomllib`, written from a template | accepted | 2026-10-11 |
+| [ADR-030](decisions/0030-design-documents-in-docs.md) | Design documents in `docs/` | accepted | 2026-10-11 |
+| [ADR-031](decisions/0031-lf-line-endings.md) | LF line endings in every file | accepted | 2026-10-11 |
+| [ADR-032](decisions/0032-repository-on-github.md) | Repository `github.com/Daldek/Retman` | accepted | 2026-10-11 |
 
 ---
 
