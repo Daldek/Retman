@@ -20,13 +20,13 @@ Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial
 
 ## Install
 
-Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf) and `v3.0.0` (Obserwator) exist, the commits that Retman is tested with are named (Kartograf's is the head of its `develop`, Obserwator's the head of its branch `feature/obserwator`, [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) says whether they are pushed):
+Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf) and `v3.0.0` (Obserwator) exist, the commits that Retman is tested with are named (their members of the Nogat release set `candidate-2`, all on GitHub; [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) names them):
 
 ```sh
 # CLI
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@9deaa314c88f89ea2d9308481e0c0b04751fc792" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@ea158dc6f703a5ababd91ff54e7ddec35b4f389b"
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@d0990c89da88e73b9081fe33a151ba9d27b4f820" \
+    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@f9f4ee7927ba520d3e82d3e289872090ae24e2ec"
 
 # Python library (name the same tools in the project's own dependencies)
 uv add "retman @ git+https://github.com/Daldek/Retman@develop"
