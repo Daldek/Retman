@@ -2640,9 +2640,10 @@ in which version.
     system.
 14. **Chains: resolver or author's recipes** (section 4.5) — alternative: chains as recipes
     written and reviewed by the author, with resolver logic used only for drafting and checking
-    recipes. To evaluate after more tools are added; together with it, possible uses of n8n
-    as Retman's surroundings (monitoring, quality control, results registry, job channels).
-    Description: `docs/PROGRESS.md`, Backlog, "Do rozważenia" ("To consider").
+    recipes. To evaluate when a second tool brings real chains (the author's decision of
+    2026-11-09); together with it, possible uses of n8n as Retman's surroundings (monitoring,
+    quality control, results registry, job channels). Description: the git history of
+    `docs/PROGRESS.md` (Backlog, "Do rozważenia", "To consider"); PROGRESS Decided.
 15. **MCP clients and confirmation** (section 7.5.1) — which clients implement elicitation from
     the 2026-07-28 protocol release. Smoke test before v0.3; the emergency fallback applies
     regardless of the result.

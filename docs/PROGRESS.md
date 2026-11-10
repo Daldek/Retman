@@ -116,15 +116,20 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 
 ## Open questions
 
-Decisions awaiting the author. The author ruled on each on 2026-11-09:
+Decisions awaiting the author:
 
-- Target values: recognition accuracy (PRD W-01), response time (N-07), success measures
-  (PRD ch. 8, ch. 11 item 5): deferred until the first measurements.
-- Backend `basal`: keeps waiting for the API of basal-serve.
-- Chains as author-written recipes instead of the run-time resolver (alternative to
+- None.
+
+### Decided
+
+Author's decisions of 2026-11-09.
+
+- **Target values.** Recognition accuracy (PRD W-01), response time (N-07) and success
+  measures (PRD ch. 8, ch. 11 item 5) are deferred until the first measurements.
+- **Backend `basal`.** Keeps waiting for the API of basal-serve.
+- **Chains.** Author-written recipes instead of the run-time resolver (alternative to
   ARCHITECTURE 4.5, PRD W-12, S-05), and n8n as an environment of Retman, not an executor of
-  steps (only where Retman cannot do it): judged when a second tool brings real chains
+  steps (only where Retman cannot do it), are judged when a second tool brings real chains
   (ARCHITECTURE 12 item 14; the full proposals are in the git history of this file).
-
-Closed: the decisions of the first session, 2026-10-11, are recorded retroactively on
-2026-11-10 as ADR-026 to ADR-032 (the author's decision of 2026-11-09).
+- **ADRs for the first session's decisions (2026-10-11).** Recorded retroactively: done on
+  2026-11-10 as ADR-026 to ADR-032.
