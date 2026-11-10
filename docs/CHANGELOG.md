@@ -174,6 +174,15 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 ### Changed
 
+- The `tools` group pins the release set `candidate-2` (Nogat `587c909`), written by
+  `ecosystem.py set apply`: Kartograf `9deaa31` -> `d0990c8`, Obserwator `1ee5457` ->
+  `f9f4ee7`, Hydrolog `1ffcd6b` -> `759d7ef`; README and USAGE install the same Kartograf and
+  Obserwator commits. Hydrolog fits the flood quantiles (`estimate_flood_quantiles`, `stats
+  flood-frequency`) by L-moments, no longer by maximum likelihood, so the same series gives other
+  quantiles. Kartograf refuses a sheet whose grid has another cell size than its index record
+  declares (`data_error`, reason `resolution_mismatch`, exit 7), so the offline sheets of the
+  Kartograf tests have the declared 1 m cells.
+
 - The repository URL of Obserwator is `github.com/Daldek/Obserwator` (renamed from
   `Daldek/IMGWTools`; Nogat plan `2026-11-03-imgwtools-to-obserwator` step 5); same pinned commit.
 

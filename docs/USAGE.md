@@ -43,13 +43,13 @@ in **one** environment, a running model server, settings and the tools' data sto
 Installation is described in ARCHITECTURE 9.4. Until v0.1.0 is released there is no release tag, and
 the Kartograf `v0.8.0` and Obserwator `v3.0.0` tags have not been pushed yet, so you install Retman from
 the `develop` branch and the tools from pinned commits (the same ones the tests use, the `tools` group
-in `pyproject.toml`; Kartograf's is the head of its `develop`, Obserwator's the head of its branch
-`feature/obserwator`, and `docs/PROGRESS.md` says whether they are pushed):
+in `pyproject.toml`; they are the members of the Nogat release set `candidate-2`, all on GitHub, and
+`docs/PROGRESS.md` names them):
 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@9deaa314c88f89ea2d9308481e0c0b04751fc792" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@ea158dc6f703a5ababd91ff54e7ddec35b4f389b"
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@d0990c89da88e73b9081fe33a151ba9d27b4f820" \
+    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@f9f4ee7927ba520d3e82d3e289872090ae24e2ec"
 ```
 
 The Obserwator `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are

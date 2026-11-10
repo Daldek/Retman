@@ -51,16 +51,18 @@ NMT_URL = (
 ORTO_URL = "https://opendata.geoportal.gov.pl/ORTO/{ident}/{ident}_1_{sheet}.tif"
 
 
-def asc(sheet: str, seed: int = 0) -> bytes:
-    """A 2 x 2 ESRI ASCII grid of the frame of ``sheet`` (PL-1992), valid for Kartograf.
+def asc(sheet: str, seed: int = 0, cell_m: float = 1.0) -> bytes:
+    """A 2 x 2 ESRI ASCII grid in the frame of ``sheet`` (PL-1992), valid for Kartograf.
 
-    The four values follow ``seed``, so that two flights have different content.
+    The cells are ``cell_m`` wide, the resolution that the sheet's index record
+    declares (Kartograf refuses another, ``resolution_mismatch``), from the lower left
+    corner of the frame. The four values follow ``seed``, so that two flights have
+    different content.
     """
     frame = kartograf.SheetParser(sheet).get_bbox()
-    cell = min(frame.max_x - frame.min_x, frame.max_y - frame.min_y) / 2
     return (
         f"ncols 2\nnrows 2\nxllcorner {frame.min_x}\nyllcorner {frame.min_y}\n"
-        f"cellsize {cell}\nnodata_value -9999\n"
+        f"cellsize {cell_m}\nnodata_value -9999\n"
         f"{seed} {seed + 1}\n{seed + 2} {seed + 3}\n"
     ).encode()
 
@@ -144,7 +146,9 @@ class GugikIndex:
         if name.endswith(".tif"):
             path.write_bytes(TIFF)
         else:
-            path.write_bytes(asc(record.sheet, int(name.split("_")[0])))
+            # A record without a resolution is not checked: any cell size is valid
+            seed, cell_m = int(name.split("_")[0]), record.resolution_m or 1.0
+            path.write_bytes(asc(record.sheet, seed, cell_m))
         return path
 
     def length(self, record: SkorowidzRecord) -> int | None:

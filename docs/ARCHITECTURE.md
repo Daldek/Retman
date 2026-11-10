@@ -2429,8 +2429,8 @@ a GPU. The results go into the documentation as guidance for model selection (PR
   nor `mypy src tests` depends on what is installed.
 - The `tools` dependency group in `pyproject.toml` serves tests and manual runs; it is not
   a dependency of the user's environment. Until the tags `v0.8.0` (Kartograf) and `v3.0.0`
-  (Obserwator) it pins commits: Kartograf `9deaa314`, the head of its `develop`, and Obserwator
-  with the `store` extra (`651d4d73`), the head of its branch `feature/obserwator`, both on GitHub
+  (Obserwator) it pins commits, the members of the Nogat release set `candidate-2`: Kartograf
+  `d0990c89` and Obserwator with the `store` extra (`f9f4ee79`), both on GitHub
   (PROGRESS Next 3); after release it switches to tags (ADR-012, ADR-024). The Obserwator `store`
   extra installs `pyarrow` (time series are Parquet files).
 - Retman **has no extras that install tools** (`retman[hydrograf]` etc.). Dependencies pointing
