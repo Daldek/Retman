@@ -463,5 +463,8 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   (`results_dir = '\elsewhere'` or `'/elsewhere'`) is refused like any other folder outside the
   project (`invalid_value`, `output.results_dir`); it was accepted and put the results at the
   root of the project's drive (ARCHITECTURE 5.1).
+- On Windows, `retman config show` counts a hard-linked file of a store once, as on Linux and
+  macOS; the size of a store that keeps several versions of a file was overstated
+  (ARCHITECTURE 9.1).
 
 [Unreleased]: https://github.com/Daldek/Retman/commits/develop
