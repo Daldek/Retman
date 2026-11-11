@@ -459,5 +459,9 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   and names the operations that make one, e.g. „Sprawdzenie archiwów względem magazynu”, or
   asks for a file path when no operation makes it, also when the answer names a missing result
   (ARCHITECTURE 5.3).
+- On Windows, a results folder written as a path with a root but no drive
+  (`results_dir = '\elsewhere'` or `'/elsewhere'`) is refused like any other folder outside the
+  project (`invalid_value`, `output.results_dir`); it was accepted and put the results at the
+  root of the project's drive (ARCHITECTURE 5.1).
 
 [Unreleased]: https://github.com/Daldek/Retman/commits/develop
