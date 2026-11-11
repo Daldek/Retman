@@ -676,7 +676,7 @@ def test_symlink_in_a_store_path_is_refused_by_obserwator_but_tolerated_by_karto
     assert [status for status, _ in obserwator] == ["error"]
     assert report.exit_code == 10
     # The hint names the real path to write into the config
-    assert f"wpisz ścieżkę rzeczywistą {real}/obserwator" in report.to_text(texts)
+    assert f"wpisz ścieżkę rzeczywistą {real / 'obserwator'}" in report.to_text(texts)
 
 
 def test_a_file_system_without_hard_links_blocks_both_stores(

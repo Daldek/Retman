@@ -7,6 +7,7 @@ The real Kartograf runs in process on a store folder of the test.
 
 import hashlib
 import json
+import shlex
 from pathlib import Path
 from typing import Any
 
@@ -44,11 +45,12 @@ def test_init_marks_a_new_folder_and_a_second_run_leaves_it_as_it_is(
 
     assert first.ok and second.ok, (first.error, second.error)
     assert marker["schema"] == "kartograf-store/1" and marker["tool"] == "kartograf"
-    assert first.values == {
-        "store": str(store),
-        "marker": str(store / "kartograf-store.json"),
-        "created": True,
-    }
+    # The folder and the marker as the tool reports them: Kartograf writes every path
+    # of a document as a POSIX path, on Windows too
+    assert first.values.keys() == {"store", "marker", "created"}
+    assert Path(first.values["store"]) == store
+    assert Path(first.values["marker"]) == store / "kartograf-store.json"
+    assert first.values["created"] is True
     assert second.values["created"] is False
     assert json.loads((store / "kartograf-store.json").read_text("utf-8")) == marker
     # It writes the marker and no file of data, and says nothing that needs a warning
@@ -76,14 +78,17 @@ def test_init_is_given_the_store_only_and_the_audit_names_the_call(
         "ok",
         [],
     )
-    assert call["command_line"] == f"kartograf store init --root {store}"
+    # Kartograf quotes every word for a POSIX shell (a Windows path gets quotes)
+    assert (
+        call["command_line"] == f"kartograf store init --root {shlex.quote(str(store))}"
+    )
     assert hashlib.sha256(saved.read_bytes()).hexdigest() == call["sha256"]
     document = json.loads(saved.read_text("utf-8"))
     assert (document["schema"], document["command"]) == (
         "kartograf-result/1",
         "store init",
     )
-    assert document["result"]["marker"] == str(store / "kartograf-store.json")
+    assert Path(document["result"]["marker"]) == store / "kartograf-store.json"
 
 
 def test_init_marks_a_layout_whose_marker_is_gone_and_keeps_its_files(

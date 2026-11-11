@@ -152,7 +152,7 @@ def test_orthophoto_is_asked_of_the_provider_in_the_colour_the_user_chose(
     assert recorder.providers[0]["color"] == "CIR"
     # The cache is the configured file, never Kartograf's default in the cwd
     assert isinstance(cache, kartograf.MetadataCache)
-    assert str(settings(tmp_path)["cache_file"]) in repr(vars(cache).values())
+    assert Path(cache.db_path) == Path(settings(tmp_path)["cache_file"])
     assert recorder.managers == [
         {
             "root": store,

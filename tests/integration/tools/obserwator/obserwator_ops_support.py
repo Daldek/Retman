@@ -14,7 +14,8 @@ from retman.registry.operation import Operation
 from retman.testing import tool_context
 from retman.tools.obserwator.manifest import MANIFEST
 
-STORE = Path("/stores/obserwator")
+# A store setting is an absolute path; on Windows a rooted path needs its drive too
+STORE = Path("/stores/obserwator").absolute()
 PROJECT = Path("/projects/obserwator")
 TEXTS = load_core_texts("pl")
 YEARS = {"type": "years", "first": 2000, "last": 2002}
