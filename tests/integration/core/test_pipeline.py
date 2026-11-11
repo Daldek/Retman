@@ -221,7 +221,11 @@ def test_execute_records_input_output_checksums_and_history(create_app):
     assert saved[1]["environment"]["tools"]["dummy_tool"] == "1.2.0"
     assert any(item["event"] == "execution" and item["number"] == 2 for item in journal)
     assert (
-        json.loads((copier.workspace.root / "002_copy_dem" / "result.json").read_text())
+        json.loads(
+            (copier.workspace.root / "002_copy_dem" / "result.json").read_text(
+                encoding="utf-8"
+            )
+        )
         == saved[1]
     )
 
@@ -293,7 +297,9 @@ def test_journal_privacy_omits_raw_command_and_answers(create_app):
     plan = app.plan(f"NMT poufne dla {SHEET}").answer("style", "1")
     result = app.execute(plan.confirm())
     audit = json.loads(
-        (app.workspace.root / "001_make_dem" / "result.json").read_text()
+        (app.workspace.root / "001_make_dem" / "result.json").read_text(
+            encoding="utf-8"
+        )
     )
     events = app.journal.entries()
 

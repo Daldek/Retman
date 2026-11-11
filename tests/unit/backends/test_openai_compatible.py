@@ -87,7 +87,9 @@ def test_choose_logprobs_normalizes_option_token_scores():
 def test_choose_logprobs_picks_most_probable_option_not_sampled_token():
     # Arrange: the server sampled the unlikely "B" while "A" dominates the
     # distribution (seen live with LM Studio's default temperature).
-    body = json.loads((FIXTURES / "bielik_11b_enum_logprobs.json").read_text())
+    body = json.loads(
+        (FIXTURES / "bielik_11b_enum_logprobs.json").read_text(encoding="utf-8")
+    )
     choice = body["choices"][0]
     choice["message"]["content"] = "B"
     token = choice["logprobs"]["content"][0]
@@ -108,7 +110,9 @@ def test_choose_logprobs_picks_most_probable_option_not_sampled_token():
 
 def test_choose_logprobs_rejects_incomplete_option_scores():
     # Arrange: the saved answer is valid, but one alternative is missing.
-    body = json.loads((FIXTURES / "bielik_11b_enum_logprobs.json").read_text())
+    body = json.loads(
+        (FIXTURES / "bielik_11b_enum_logprobs.json").read_text(encoding="utf-8")
+    )
     alternatives = body["choices"][0]["logprobs"]["content"][0]["top_logprobs"]
     body["choices"][0]["logprobs"]["content"][0]["top_logprobs"] = alternatives[:-1]
     transport = httpx.MockTransport(lambda _: httpx.Response(200, json=body))

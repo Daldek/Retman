@@ -197,7 +197,7 @@ def test_result_records_only_the_checks_of_the_final_plan(app, create_app, clien
     recorded = json.loads(
         (
             app.workspace.root / f"{result.number:03d}_fetch_dem" / "result.json"
-        ).read_text()
+        ).read_text(encoding="utf-8")
     )
 
     assert "checks" not in recorded  # the check described an older plan
@@ -209,7 +209,7 @@ def test_result_records_only_the_checks_of_the_final_plan(app, create_app, clien
     saved = json.loads(
         (
             app.workspace.root / f"{second.number:03d}_fetch_dem" / "result.json"
-        ).read_text()
+        ).read_text(encoding="utf-8")
     )
 
     assert saved["checks"] == [report.to_dict()]

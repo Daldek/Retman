@@ -267,7 +267,9 @@ def test_export_runs_on_the_real_tool_and_reports_what_the_store_lacks(
 
     assert result.ok, result.error
     (path,) = result.files["archive_records"]
-    assert path == out / "1995_o.csv" and path.read_text().startswith("station_code,")
+    assert path == out / "1995_o.csv" and path.read_text(encoding="utf-8").startswith(
+        "station_code,"
+    )
     assert result.values["files"] == 1 and result.values["rows"] > 0
     # The store holds one of the two yearly archives: said, not hidden
     assert any("1 z 2" in warning for warning in result.warnings)
@@ -292,7 +294,9 @@ def test_init_runs_on_the_real_tool_and_is_idempotent(tmp_path: Path) -> None:
 
     assert first.ok and second.ok and first.values["store"] == str(folder)
     assert (
-        json.loads((folder / "obserwator-store.json").read_text())["schema"]
+        json.loads((folder / "obserwator-store.json").read_text(encoding="utf-8"))[
+            "schema"
+        ]
         == "obserwator-store/1"
     )
 
