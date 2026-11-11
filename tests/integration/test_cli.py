@@ -60,12 +60,14 @@ def test_main_interactive_question_plan_confirm_result_and_audit(
     )
     transcript = capsys.readouterr().out
     result = json.loads(
-        (project / "retman-output" / "001_make_dem" / "result.json").read_text()
+        (project / "retman-output" / "001_make_dem" / "result.json").read_text(
+            encoding="utf-8"
+        )
     )
     events = [
         json.loads(line)
         for line in (project / "retman-output" / "journal.jsonl")
-        .read_text()
+        .read_text(encoding="utf-8")
         .splitlines()
     ]
 
@@ -255,7 +257,7 @@ def test_main_reject_and_cancel_preserve_project_journal(
         backend=FakeDecisionBackend({"make_dem": "make_dem"}),
         project_dir=project,
     )
-    log = (project / "retman-output" / "journal.jsonl").read_text()
+    log = (project / "retman-output" / "journal.jsonl").read_text(encoding="utf-8")
 
     assert rejected == cancelled == 130
     assert '"status": "rejected"' in log
@@ -284,7 +286,7 @@ def test_main_the_dialog_speaks_english_and_takes_the_answer_words_of_the_langua
         project_dir=project,
     )
     transcript = capsys.readouterr().out
-    log = (project / "retman-output" / "journal.jsonl").read_text()
+    log = (project / "retman-output" / "journal.jsonl").read_text(encoding="utf-8")
 
     assert code == status
     assert "Run it? [y]es / [n]o / [c]hange" in transcript
@@ -402,16 +404,17 @@ def test_main_change_option_from_numbered_plan_list(
         project_dir=project,
     )
     audit = json.loads(
-        (project / "retman-output" / "001_make_dem" / "result.json").read_text()
+        (project / "retman-output" / "001_make_dem" / "result.json").read_text(
+            encoding="utf-8"
+        )
     )
 
     assert status == 0
     assert audit["params"]["style"]["value"] == "smooth"
     assert audit["params"]["detail"]["value"] == "high"
-    assert (
-        '"status": "changed"'
-        in (project / "retman-output" / "journal.jsonl").read_text()
-    )
+    assert '"status": "changed"' in (
+        project / "retman-output" / "journal.jsonl"
+    ).read_text(encoding="utf-8")
     assert "Którą wartość zmienić?" in capsys.readouterr().out
 
 
@@ -520,7 +523,11 @@ def run_fetch(command_args, monkeypatch, keys: str, *flags: str) -> int:
 
 
 def journal_events(project: Path) -> list[dict]:
-    lines = (project / "retman-output" / "journal.jsonl").read_text().splitlines()
+    lines = (
+        (project / "retman-output" / "journal.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
     return [json.loads(line) for line in lines]
 
 

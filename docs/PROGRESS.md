@@ -25,7 +25,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Nogat standard 2.1, English texts (DEV-2.2, AGI-9.2) | done | `en.toml` for the core and both adapters, `lang = en` and `--lang en`, the answer words in `[answers]`, English texts in the `--json` documents of `doctor check` and `scaffold check` (ADR-022 erratum 1) |
 | Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13), the CHANGELOG, the decision log, README, USAGE, PRD and ARCHITECTURE in English (the README examples run by `tests/contract/test_readme_examples.py`, DOC-2.1, DOC-2.6); open: Next 1.5 (`docs/research/`, `docs/specs/`) |
 | Gate | green | `scripts/gate.sh`: the offline tests, coverage 95%, ruff, mypy strict; run it with `TMPDIR` on a local disk (a network share breaks SQLite and links) |
-| CI (Linux, macOS, Windows) | written, not run | `.github/workflows/ci.yml` and `live.yml`; no run observed yet |
+| CI (Linux, macOS, Windows) | green | `.github/workflows/ci.yml`: the gate on Linux, macOS and Windows with Python 3.12 (required) and 3.15 (reported); every run on `develop` from the first one (2026-11-03) failed on macOS and Windows until pull request #1 (2026-11-11): on macOS the Obserwator fixture store lay under the `/var` link, on Windows tests assumed POSIX paths and the locale's encoding, and three bugs of Retman (CHANGELOG, Fixed) and one of `scripts/generate_errors.py` came to light; `live.yml` has not run (it is on `develop` only, and schedules run from `main`) |
 
 Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 
@@ -35,7 +35,7 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 | Rulesets for `main`, `develop` and `v*` tags, private vulnerability reporting, Dependabot security updates, default branch (DEV-3.6, DEV-13.6, DEV-13.7) | GitHub settings |
 | `docs/CLA.md` | the author's legal text; `CONTRIBUTING.md` and the pull request template already refer to it |
 | Tags, releases, replacing the commit pins of the `tools` group by tags, PyPI name `nogat-retman` (phases 5 and 6) | need the producers' tags and the author's approval |
-| Pull requests | none: on 2026-11-03 the author merged `feature/archiwista-projects` (`63685c5`, which carried `chore/nogat-2.1`, `feature/imgwtools-data-output` and `feature/kartograf-data-output`) into `develop` locally with `--no-ff`; the four branches are deleted, `main` and `develop` remain |
+| Pull requests | the first one is #1 (2026-11-11, the CI fixes, merged with the author's approval of that session); before it the author merged branches locally with `--no-ff`, e.g. on 2026-11-03 `feature/archiwista-projects` (`63685c5`, which carried `chore/nogat-2.1`, `feature/imgwtools-data-output` and `feature/kartograf-data-output`) |
 
 ## Next
 
@@ -103,8 +103,8 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
    with Bielik 11B on it (two-stage recognition, `0_5m` against `5m`; the keys the model reads
    for Obserwator are `obserwator_*` since ECO-057, and the store descriptions name both
    „magazyn Obserwatora” and „magazyn IMGW”), then set the confidence thresholds.
-5. Live tests of Obserwator (none in the `live` set), a smoke run of the CLI on Windows and
-   macOS (hard-link stores), the first CI run.
+5. Live tests of Obserwator (none in the `live` set) and a smoke run of the CLI on Windows and
+   macOS (hard-link stores; CI runs only the offline tests there).
 6. Complete `docs/specs/2026-10-11-retman-eval.md`: geometry placeholder files, the offline
    station catalog, optional parameters never in `expect_clarify`.
 7. `retman collect export` and `retman collect draft` (ADR-011) when the author decides.
@@ -118,7 +118,12 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 
 Decisions awaiting the author:
 
-- None.
+- **Paths that Kartograf reports, on Windows.** Kartograf writes every path of its documents as
+  a POSIX path (ADR-025 erratum 6), and the values Retman takes from them keep that form: on
+  Windows the result of „Utwórz magazyn Kartografa” ends with „magazyn Kartografa jest gotowy:
+  C:/Users/…/kartograf”, while its plan showed `C:\Users\…\kartograf`. Keep the tool's form, or
+  write such values in the form of the system (found by the CI fixes of 2026-11-11; the tests
+  compare them as paths, so either answer passes them).
 
 ### Decided
 

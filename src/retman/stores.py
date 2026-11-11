@@ -177,7 +177,9 @@ def tree_size(root: Path) -> int:
                     if entry.is_dir(follow_symlinks=False):
                         pending.append(Path(entry.path))
                     elif entry.is_file(follow_symlinks=False):
-                        info = entry.stat(follow_symlinks=False)
+                        # Not entry.stat(): on Windows it leaves the link count, the
+                        # device and the inode at zero
+                        info = os.lstat(entry.path)
                         if info.st_nlink > 1:
                             identity = (info.st_dev, info.st_ino)
                             if identity in seen:

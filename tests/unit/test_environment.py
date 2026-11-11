@@ -15,6 +15,10 @@ from retman.environment import (
 )
 from retman.exceptions import UsageError
 
+# Absolute on every system: on Windows a rooted path needs its drive too
+SHARED_DATA = Path("/shared/data").absolute()
+KARTOGRAF_STORE = Path("/data/k").absolute()
+
 
 def write(folder: Path, text: str, name: str = "nogat.toml") -> Path:
     path = folder / name
@@ -74,12 +78,13 @@ def test_only_the_shared_keys_are_read_from_nogat_variables_and_table(
 ) -> None:
     file = write(
         tmp_path,
-        '[nogat]\ndata_dir = "/shared/data"\nlog_level = "error"\n'
+        f"[nogat]\ndata_dir = '{SHARED_DATA}'\n"
+        'log_level = "error"\n'
         '[nogat.decision]\nurl = "http://wrong"\n',
     )
     env = environment(file, {"NOGAT_DECISION_URL": "http://wrong"})
 
-    assert env.setting("data_dir").value == Path("/shared/data")
+    assert env.setting("data_dir").value == SHARED_DATA
     assert env.setting("log_level").value == "error"
     assert env.setting("decision.url").value is None
 
@@ -194,7 +199,7 @@ def test_a_bad_variable_is_reported_with_the_variable_name(key: str, raw: str) -
         ("log.journal_commands", "No", False),
         ("privacy.collect_commands", "1", True),
         ("adapters.enabled", "kartograf, obserwator", ("kartograf", "obserwator")),
-        ("tools.kartograf.store_dir", "/data/k", Path("/data/k")),
+        ("tools.kartograf.store_dir", str(KARTOGRAF_STORE), KARTOGRAF_STORE),
     ],
 )
 def test_a_variable_is_parsed_to_the_kind_of_its_key(

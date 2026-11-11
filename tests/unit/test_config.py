@@ -75,7 +75,8 @@ def test_without_any_file_the_settings_follow_the_user_folders(
 def test_a_shared_data_directory_moves_both_stores_and_the_collection(
     tmp_path: Path,
 ) -> None:
-    file = write(tmp_path, f'[nogat]\ndata_dir = "{tmp_path / "shared"}"\n')
+    # A literal string, as `config init` writes it: a Windows path keeps backslashes
+    file = write(tmp_path, f"[nogat]\ndata_dir = '{tmp_path / 'shared'}'\n")
 
     settings = load_settings(file)
 

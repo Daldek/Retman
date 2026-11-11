@@ -10,6 +10,7 @@ what ``lookup`` may do, how the tool's errors become ``ToolError``, what a
 import hashlib
 import io
 import os
+import shlex
 import zipfile
 from dataclasses import replace
 from pathlib import Path
@@ -62,7 +63,8 @@ def client(tmp_path: Path) -> ObserwatorClient:
 def test_the_store_root_comes_from_the_settings_and_is_never_in_a_call(client):
     line = client.command_line(EXPORT)
 
-    assert f"--root {fixture_store()}" in line
+    # The tool quotes every word for a POSIX shell (a Windows path gets quotes)
+    assert f"--root {shlex.quote(str(fixture_store()))}" in line
     # The stream form is valid without a target: this is what planning validates
     client.validate(EXPORT)
 
@@ -73,7 +75,7 @@ def test_the_live_station_search_gets_no_root_but_the_store_search_does(client):
 
     # The tool refuses a root with the live source
     assert "--root" not in live
-    assert f"--root {fixture_store()}" in store
+    assert f"--root {shlex.quote(str(fixture_store()))}" in store
 
 
 def test_validation_is_the_tools_and_names_the_option_at_fault(client):
@@ -190,9 +192,9 @@ def test_run_of_an_export_returns_the_file_the_licence_and_the_command(
     assert [(n.level, n.code) for n in run.notices] == [("info", "license_terms")]
     assert run.document["result"]["output"] == str(target)
     assert run.command_line.startswith(
-        f"obserwator series export --root {fixture_store()}"
+        f"obserwator series export --root {shlex.quote(str(fixture_store()))}"
     )
-    assert f"--output {target}" in run.command_line
+    assert f"--output {shlex.quote(str(target))}" in run.command_line
 
 
 def test_a_stream_command_without_a_target_file_is_refused_before_it_runs(client):
@@ -347,10 +349,14 @@ def test_units_a_command_could_not_handle_are_listed_as_failures():
     ] == [("store catalog", "list unavailable")]
 
 
-def test_a_download_to_plain_files_gets_no_store_root_and_a_sync_gets_one(client):
+def test_a_download_to_plain_files_gets_no_store_root_and_a_sync_gets_one(
+    client, tmp_path
+):
     dataset = "pl.imgw.hydro_daily"
+    out = tmp_path / "out"
     download = CatalogCall(
-        "datasets download", {"dataset": dataset, "years": [2020], "output_dir": "/out"}
+        "datasets download",
+        {"dataset": dataset, "years": [2020], "output_dir": str(out)},
     )
     sync = CatalogCall("store sync", {"datasets": [dataset], "years": [2020]})
 
@@ -359,8 +365,8 @@ def test_a_download_to_plain_files_gets_no_store_root_and_a_sync_gets_one(client
 
     # The tool refuses both targets in one call; a call that names no directory
     # writes the store
-    assert "--output-dir /out" in plain and "--root" not in plain
-    assert f"--root {fixture_store()}" in stored
+    assert f"--output-dir {shlex.quote(str(out))}" in plain and "--root" not in plain
+    assert f"--root {shlex.quote(str(fixture_store()))}" in stored
 
 
 def test_a_download_writes_plain_files_and_reports_them_with_the_tools_checksums(
@@ -394,7 +400,7 @@ def test_a_download_writes_plain_files_and_reports_them_with_the_tools_checksums
         str(out),
         None,
     )
-    assert f"--output-dir {out}" in run.command_line
+    assert f"--output-dir {shlex.quote(str(out))}" in run.command_line
     assert "--root" not in run.command_line
     # The tool's staging folder is removed after the run
     assert [path.name for path in out.iterdir()] == ["dane_hydrologiczne"]

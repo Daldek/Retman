@@ -114,9 +114,13 @@ def context(
 
 
 def document(name: str, store: Path) -> dict[str, Any]:
-    """A recorded document of the tool with its ``<store>`` placeholder replaced."""
+    """A recorded document of the tool with its ``<store>`` placeholder replaced.
+
+    The store is written as Kartograf writes every path of a document
+    (``Path.as_posix()``): a Windows path keeps no backslash to escape in the JSON.
+    """
     text = (FIXTURES / f"{name}.json").read_text(encoding="utf-8")
-    return dict(json.loads(text.replace("<store>", str(store))))
+    return dict(json.loads(text.replace("<store>", store.as_posix())))
 
 
 def geometry(folder: Path, name: str = "granica.shp") -> dict[str, Any]:

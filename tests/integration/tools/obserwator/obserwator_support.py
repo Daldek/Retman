@@ -66,9 +66,12 @@ def fixture_store() -> Path:
     """A read-only Obserwator store with PL and CZ data (built once per process).
 
     Tests that write a store build their own with ``build_store``. The session removes
-    it at the end (``discard_fixture_store``).
+    it at the end (``discard_fixture_store``). The folder is resolved, as Retman's own
+    probe store is: Obserwator refuses a store path through a symbolic link (macOS
+    keeps the temporary folders under ``/var``, a link to ``/private/var``), and
+    Windows may name the temporary folder in its short form (``RUNNER~1``).
     """
-    folder = Path(tempfile.mkdtemp(prefix="retman-obserwator-test-"))
+    folder = Path(tempfile.mkdtemp(prefix="retman-obserwator-test-")).resolve()
     try:
         build_store(folder / "store")
     except BaseException:

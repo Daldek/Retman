@@ -459,5 +459,16 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   and names the operations that make one, e.g. „Sprawdzenie archiwów względem magazynu”, or
   asks for a file path when no operation makes it, also when the answer names a missing result
   (ARCHITECTURE 5.3).
+- On Windows, a results folder written as a path with a root but no drive
+  (`results_dir = '\elsewhere'` or `'/elsewhere'`) is refused like any other folder outside the
+  project (`invalid_value`, `output.results_dir`); it was accepted and put the results at the
+  root of the project's drive (ARCHITECTURE 5.1).
+- On Windows, `retman config show` counts a hard-linked file of a store once, as on Linux and
+  macOS; the size of a store that keeps several versions of a file was overstated
+  (ARCHITECTURE 9.1).
+- `retman eval run` records a geometry file that a command names as the command names it
+  (`granica.shp`) also on Windows and when the temporary folder lies behind a symbolic link
+  (macOS): the record held the absolute path of the temporary project, so the value counted as
+  wrong (ARCHITECTURE 8.2).
 
 [Unreleased]: https://github.com/Daldek/Retman/commits/develop

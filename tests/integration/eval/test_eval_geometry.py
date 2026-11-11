@@ -107,10 +107,23 @@ def test_a_command_gets_a_file_only_where_it_names_one_inside_the_project(
     assert not (project / "dane.geojson").exists()
 
 
+@pytest.mark.parametrize(
+    "linked", [False, True], ids=["folder", "folder_behind_a_link"]
+)
 def test_a_command_naming_a_file_is_planned_with_that_area(
-    context: tuple[Any, Any], tmp_path: Path
+    context: tuple[Any, Any], tmp_path: Path, linked: bool
 ) -> None:
     config, operations = context
+    temporary = tmp_path / "temporary"
+    temporary.mkdir()
+    if linked:
+        # The temporary folders of macOS lie behind a link (/var -> /private/var)
+        link = tmp_path / "link"
+        try:
+            link.symlink_to(temporary, target_is_directory=True)
+        except OSError:
+            pytest.skip("symbolic links are not available")
+        temporary = link
     entry = EvalCommand(
         "geometry-001",
         "Zrób surowy NMT dla obszaru z pliku granica.shp",
@@ -126,7 +139,7 @@ def test_a_command_naming_a_file_is_planned_with_that_area(
         config,
         backend=FakeDecisionBackend({"make_dem": "make_dem", "raw": "raw"}),
         operations=operations,
-        temporary_dir=tmp_path,
+        temporary_dir=temporary,
     )
 
     record = records[0]

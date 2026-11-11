@@ -179,7 +179,9 @@ def test_result_references_store_files_and_records_what_the_tool_did(
 
     result = app.execute(plan.confirm())
     saved = json.loads(
-        (app.workspace.root / "001_fetch_dem" / "result.json").read_text()
+        (app.workspace.root / "001_fetch_dem" / "result.json").read_text(
+            encoding="utf-8"
+        )
     )
 
     assert result.ok and result.warnings == [

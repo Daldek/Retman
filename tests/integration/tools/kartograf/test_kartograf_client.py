@@ -8,6 +8,7 @@ replaced by a recorder.
 
 import hashlib
 import json
+import shlex
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
@@ -163,7 +164,8 @@ def test_command_line_carries_store_workers_and_the_update_flag(
 
     line = client.command_line(DOWNLOAD)
 
-    words = line.split()
+    # Kartograf quotes every word for a POSIX shell (a Windows path gets quotes)
+    words = shlex.split(line)
     store = str(tmp_path / "store")
     # The store is the store root, never the plain directory of a write
     assert words[words.index("--root") + 1] == store
@@ -369,7 +371,7 @@ def test_run_writes_the_store_the_settings_name_and_nothing_into_the_working_dir
         "schema"
     ] == ("kartograf-store/1")
     assert run.command_line.startswith("kartograf elevation download")
-    assert f"--root {store}" in run.command_line
+    assert f"--root {shlex.quote(str(store))}" in run.command_line
     assert index.resolved == list(CHILDREN)
 
 
@@ -608,7 +610,8 @@ def test_check_of_a_request_returns_the_plan_of_the_store_and_writes_nothing(
 
     assert answer["schema"] == "kartograf-plan/1"
     assert answer["mode"] == "store"
-    assert answer["root"] == str(tmp_path / "store")
+    # Kartograf writes every path of a document as a POSIX path, on Windows too
+    assert Path(answer["root"]) == tmp_path / "store"
     assert [item["status"] for item in answer["items"]] == ["missing"]
     # A plan creates nothing, not even the store (DEV-19.10)
     assert not (tmp_path / "store").exists()

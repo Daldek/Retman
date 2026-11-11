@@ -337,8 +337,9 @@ def _coerce(key: Key, raw: object, *, parse: bool) -> object:
             return path
         case "folder":
             folder = Path(_text(raw))
-            if folder.is_absolute() or folder.drive or ".." in folder.parts:
-                # Results belong to the project folder (ARCHITECTURE 5.1)
+            # Results belong to the project folder (ARCHITECTURE 5.1); a drive or a
+            # root leads out of it, even one without the other (C:x, \x on Windows)
+            if folder.anchor or ".." in folder.parts:
                 raise _Invalid("must be a relative folder name inside the project")
             return str(folder)
         case "number":

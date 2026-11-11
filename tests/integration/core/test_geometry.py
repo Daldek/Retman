@@ -160,7 +160,7 @@ def test_audit_and_collection_keep_files_and_layer_without_local_paths(
     saved = json.loads(
         (
             app.workspace.root / f"{result.number:03d}_make_dem" / "result.json"
-        ).read_text()
+        ).read_text(encoding="utf-8")
     )
     plan_event = next(e for e in app.journal.entries() if e["event"] == "plan")
 

@@ -276,7 +276,8 @@ def test_creating_the_store_is_planned_without_a_write_and_made_after_confirmati
 
     assert result.ok, result.error
     assert (store / "kartograf-store.json").is_file()
-    assert result.values["store"] == str(store)
+    # The folder as Kartograf reports it, a POSIX path on Windows too
+    assert Path(result.values["store"]) == store
     assert "magazyn Kartografa jest gotowy" in result.summary
     _, record = _only_result(app)
     assert record["tool"]["calls"][0]["command"] == "store init"
