@@ -466,5 +466,9 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 - On Windows, `retman config show` counts a hard-linked file of a store once, as on Linux and
   macOS; the size of a store that keeps several versions of a file was overstated
   (ARCHITECTURE 9.1).
+- `retman eval run` records a geometry file that a command names as the command names it
+  (`granica.shp`) also on Windows and when the temporary folder lies behind a symbolic link
+  (macOS): the record held the absolute path of the temporary project, so the value counted as
+  wrong (ARCHITECTURE 8.2).
 
 [Unreleased]: https://github.com/Daldek/Retman/commits/develop

@@ -94,7 +94,8 @@ def _portable_value(value: Any, project: Path) -> Any:
     """Keep dataset-relative free values without leaking temporary project paths.
 
     A geometry area is recorded as the command said it: the file, not the layer
-    Retman read from the placeholder file.
+    Retman read from the placeholder file. A path inside ``project`` (resolved, as
+    the plan writes it) is written relative to it with ``/``, as the dataset is.
     """
     if isinstance(value, dict):
         portable = {key: _portable_value(item, project) for key, item in value.items()}
@@ -103,8 +104,10 @@ def _portable_value(value: Any, project: Path) -> Any:
         return portable
     if isinstance(value, list):
         return [_portable_value(item, project) for item in value]
-    if isinstance(value, str) and value.startswith(str(project) + "/"):
-        return str(Path(value).relative_to(project))
+    if isinstance(value, str):
+        path = Path(value)
+        if path != project and path.is_relative_to(project):
+            return path.relative_to(project).as_posix()
     return value
 
 
@@ -144,7 +147,7 @@ def evaluate_command(
     """Plan once in a clean project. Never confirm or execute the plan."""
     counting = CountingBackend(backend, config)
     with TemporaryDirectory(dir=temporary_dir) as folder:
-        project = Path(folder)
+        project = Path(folder).resolve()
         # A command naming a geometry file needs one: the project is empty
         create_geometry_files(command.command, project)
         # Evaluation commands are not the user's work: never collect them (ADR-010)
