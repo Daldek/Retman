@@ -8,6 +8,7 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 
 | Component | State | Note |
 |---|---|---|
+| Provider attribution (Nogat DEV §20) | done, waits for the pins | ADR-033: the tools' `attribution` and `terms_notice` pass into results, warnings and every CSV Retman writes; effective when the Obserwator and Hydrolog pins move to commits that emit them (next release set); then the download operations need a kind for the `ATTRIBUTION.txt` Obserwator lists in `files[]`, and 5 integration tests change their expectations (checked 2026-11-13 against the Obserwator worktree `fix/provider-attribution`) |
 | Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-032) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |

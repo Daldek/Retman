@@ -364,6 +364,8 @@ unexpected = "Unexpected error: {error}. This is a Retman bug: report it togethe
 tool_notice = "Tool {tool}: {text}"
 tool_notices_more = "Tool {tool}: …and {count} more similar messages ({code}); the full list is in the tool document in the result folder (tool_*.json)."
 tool_failure = "Not everything succeeded ({unit}): {detail}"
+# A line the data provider's terms require (Nogat DEV §20), verbatim as the tool gave it.
+attribution = "{text}"
 
 # Availability check: a separate step with network access and its own consent (ARCHITECTURE 6.5).
 [check]

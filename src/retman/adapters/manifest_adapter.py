@@ -150,6 +150,8 @@ def execute_operation(
             _warning_text(operation, texts, warning) for warning in data["warnings"]
         ]
         result.tool = data.get("tool")
+        result.attribution = list(data.get("attribution", ()))
+        result.terms_notice = list(data.get("terms_notice", ()))
         result.summary = _summary(
             operation, texts, number, output_dir, result.values, in_store, ctx
         )

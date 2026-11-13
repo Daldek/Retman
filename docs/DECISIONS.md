@@ -61,6 +61,7 @@ ADR-x`); each relation is recorded on both sides.
 | [ADR-030](decisions/0030-design-documents-in-docs.md) | Design documents in `docs/` | accepted | 2026-10-11 |
 | [ADR-031](decisions/0031-lf-line-endings.md) | LF line endings in every file | accepted | 2026-10-11 |
 | [ADR-032](decisions/0032-repository-on-github.md) | Repository `github.com/Daldek/Retman` | accepted | 2026-10-11 |
+| [ADR-033](decisions/0033-provider-attribution-passed-on.md) | The providers' attribution of the tools is passed on into every result and table | accepted | 2026-11-13 |
 
 ---
 

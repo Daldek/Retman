@@ -208,6 +208,62 @@ def test_notices_and_partial_failures_are_never_dropped(operations, tmp_path):
     ]
 
 
+def test_the_providers_lines_of_the_tool_reach_the_result_and_its_warnings(
+    operations, tmp_path
+):
+    store = tmp_path / "stores" / "dummy"
+    source = "Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wodnej"
+    notice = "Regulamin: https://danepubliczne.imgw.pl/regulations"
+    run = _ok_run(
+        store,
+        notices=(ToolNotice("warning", "all_nodata", "Wszystkie piksele sa NODATA"),),
+        document={
+            "schema": "dummy-download/1",
+            "attribution": [source, "Dane zostały przetworzone"],
+            "terms_notice": [notice],
+            "result": {"attribution": [source]},
+        },
+    )
+    client = FakeToolClient(runs={"elevation download": run})
+
+    result, _ = run_operation(
+        operations["fetch_dem"],
+        tmp_path,
+        FETCH_PARAMS,
+        client=client,
+        settings={"store_dir": str(store)},
+    )
+
+    assert result.attribution == [source, "Dane zostały przetworzone"]
+    assert result.terms_notice == [notice]
+    # every line is shown once, verbatim, after the other warnings
+    assert result.warnings == [
+        "Wszystkie piksele wyniku są bez danych.",
+        source,
+        "Dane zostały przetworzone",
+        notice,
+    ]
+    record = result.to_dict()
+    assert record["attribution"] == result.attribution
+    assert record["terms_notice"] == [notice]
+
+
+def test_a_result_without_provider_data_has_no_attribution_fields(operations, tmp_path):
+    store = tmp_path / "stores" / "dummy"
+    client = FakeToolClient(runs={"elevation download": lambda call: _ok_run(store)})
+
+    result, _ = run_operation(
+        operations["fetch_dem"],
+        tmp_path,
+        FETCH_PARAMS,
+        client=client,
+        settings={"store_dir": str(store)},
+    )
+
+    assert result.ok and result.attribution == [] and result.warnings == []
+    assert "attribution" not in result.to_dict()
+
+
 @pytest.mark.parametrize(
     ("code", "expected"),
     [

@@ -364,6 +364,8 @@ unexpected = "Nieoczekiwany błąd: {error}. To błąd Retmana: zgłoś go razem
 tool_notice = "Narzędzie {tool}: {text}"
 tool_notices_more = "Narzędzie {tool}: …i jeszcze {count} podobnych komunikatów ({code}); pełna lista jest w dokumencie narzędzia w folderze wyniku (tool_*.json)."
 tool_failure = "Nie wszystko się udało ({unit}): {detail}"
+# Wiersz wymagany przez warunki dostawcy danych (Nogat DEV §20), dosłownie jak podało go narzędzie.
+attribution = "{text}"
 
 # Sprawdzenie dostępności: osobny krok z siecią i własną zgodą (ARCHITECTURE 6.5).
 [check]

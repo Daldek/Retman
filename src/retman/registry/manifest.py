@@ -184,12 +184,17 @@ class HandlerOutput(TypedDict):
     ``values`` holds short JSON-serializable results (counts, areas).
     ``tool`` is the audit block of the catalog commands that were run; the
     generic runner fills it, custom handlers may.
+    ``attribution`` and ``terms_notice`` are the lines the data providers' terms
+    require (Nogat DEV §20), as the tools gave them; the generic runner fills them
+    from the tools' documents.
     """
 
     values: dict[str, Any]
     files: dict[str, list[Path]]
     warnings: list[HandlerWarning]
     tool: NotRequired[ToolAudit]
+    attribution: NotRequired[list[str]]
+    terms_notice: NotRequired[list[str]]
 
 
 class PreviewRow(TypedDict):
