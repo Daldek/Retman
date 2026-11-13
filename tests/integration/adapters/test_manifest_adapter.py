@@ -213,7 +213,7 @@ def test_the_providers_lines_of_the_tool_reach_the_result_and_its_warnings(
 ):
     store = tmp_path / "stores" / "dummy"
     source = "Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wodnej"
-    notice = "Regulamin: https://danepubliczne.imgw.pl/regulations"
+    notice = "Regulamin danych IMGW-PIB: https://danepubliczne.imgw.pl/regulations"
     run = _ok_run(
         store,
         notices=(ToolNotice("warning", "all_nodata", "Wszystkie piksele sa NODATA"),),
