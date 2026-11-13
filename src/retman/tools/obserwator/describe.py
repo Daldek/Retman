@@ -27,6 +27,7 @@ from retman.adapters.catalog import (
     failure_warnings,
     notice_warnings,
 )
+from retman.attribution import Attribution
 from retman.exceptions import RetmanError
 from retman.extractors.dates import period_dates
 from retman.registry.manifest import HandlerOutput, HandlerWarning
@@ -173,15 +174,28 @@ def _cell(value: object) -> object:
 
 
 def csv_write(
-    path: Path, columns: Sequence[str], rows: Iterable[Sequence[object]]
+    path: Path,
+    columns: Sequence[str],
+    rows: Iterable[Sequence[object]],
+    attribution: Attribution | None = None,
 ) -> Path:
-    """Write a UTF-8 CSV file (header first; the tool's CRLF line ends)."""
+    """Write a UTF-8 CSV file (header first; the tool's CRLF line ends).
+
+    ``attribution`` adds the trailing columns ``attribution`` and ``terms_notice``
+    of Nogat DEV-20.5 with the lines the tools gave (none when they gave none).
+    """
+    lines = attribution or Attribution()
     with path.open("w", encoding="utf-8", newline="") as target:
         writer = csv.writer(target)
-        writer.writerow(columns)
-        for row in rows:
-            writer.writerow([_cell(value) for value in row])
+        writer.writerow([*columns, *lines.header()])
+        for row in lines.rows([_cell(value) for value in row] for row in rows):
+            writer.writerow(row)
     return path
+
+
+def runs_attribution(runs: Runs) -> Attribution:
+    """Return the ``attribution`` and ``terms_notice`` of the runs' documents."""
+    return Attribution.from_documents(run.document for _, run in runs)
 
 
 def result_of(run: ToolRun) -> Any:
@@ -294,7 +308,10 @@ def base_output(
     Files are the runs' files by the call's ``kind``. Warnings: the tool's
     warning notices, a partial run (how many units failed of how many, the first
     ones named) and, last, every licence notice of the tool plus ``licenses``
-    (text the mapper derived itself), each once and verbatim.
+    (text the mapper derived from the provider registry), each once and verbatim.
+    ``licenses`` are left out when the tool's documents carry the lines of Nogat
+    DEV §20 (``attribution``, ``terms_notice``), which the generic runner adds
+    after them; an Obserwator without them still gets the registry's texts.
     """
     files: dict[str, list[Path]] = {}
     warnings: list[HandlerWarning] = []
@@ -304,7 +321,8 @@ def base_output(
             files.setdefault(call.kind, []).extend(item.path for item in run.files)
         warnings.extend(_run_warnings(operation, ctx, run))
         texts.extend(n.text for n in run.notices if n.code == LICENSE_CODE)
-    texts.extend(licenses)
+    if not runs_attribution(runs):
+        texts.extend(licenses)
     unique = list(dict.fromkeys(texts))
     warnings.extend({"key": LICENSE_CODE, "args": {"text": text}} for text in unique)
     values: dict[str, Any] = {
@@ -354,7 +372,10 @@ def describe_find_obserwator_stations(
     parts.append(slug(query["text"]) if query else None)
     name = "_".join(["stations", *(part for part in parts if part)]) + ".csv"
     path = csv_write(
-        output_dir(ctx) / name, STATION_COLUMNS, table_rows(items, STATION_COLUMNS)
+        output_dir(ctx) / name,
+        STATION_COLUMNS,
+        table_rows(items, STATION_COLUMNS),
+        runs_attribution(runs),
     )
     set_files(output, {"station_list": [path]})
     output["values"].update(
@@ -433,6 +454,7 @@ def describe_fetch_current_observations(
         output_dir(ctx) / f"{source}_current_{utc_stamp()}.csv",
         columns,
         table_rows(items, columns),
+        runs_attribution(runs),
     )
     set_files(output, {f"current_{source}": [path]})
     output["values"].update(rows=len(items), source=source, fetched_at=_fetched_at())
@@ -452,6 +474,7 @@ def describe_fetch_imgw_warnings(
         output_dir(ctx) / f"warnings_{utc_stamp()}.csv",
         WARNING_COLUMNS,
         table_rows(items, WARNING_COLUMNS),
+        runs_attribution(runs),
     )
     set_files(output, {"imgw_warnings": [path]})
     levels = [item["level"] for item in items if isinstance(item.get("level"), int)]
@@ -475,6 +498,7 @@ def describe_fetch_hydro_states(
         output_dir(ctx) / f"hydro_states_{utc_stamp()}.csv",
         HYDRO_STATE_COLUMNS,
         table_rows(items, HYDRO_STATE_COLUMNS),
+        runs_attribution(runs),
     )
     set_files(output, {"hydro_states": [path]})
     states = Counter(str(item.get("water_state") or "unknown") for item in items)
@@ -598,7 +622,12 @@ def _describe_pmaxtp(
         # Nothing asked for exists: the whole table is better than an empty file
         add_warnings(output, [{"key": "pmaxtp_nothing_selected", "args": {}}])
         selected = rows
-    source, processed = provider_attribution(runs, "IMGW-PIB")
+    # The source and processed lines of PMAXTP (PS, PP of Nogat DEV §20) when the
+    # tool gives them, the registry's IMGW-PIB lines from an Obserwator without them
+    lines = runs_attribution(runs).lines
+    source, processed = (
+        (*lines, "", "")[:2] if lines else provider_attribution(runs, "IMGW-PIB")
+    )
     body = [
         [
             row["duration_min"],
@@ -628,6 +657,7 @@ def _describe_pmaxtp(
         output_dir(ctx) / f"pmaxtp_{str(data['method']).lower()}_{label}.csv",
         PMAXTP_COLUMNS,
         body,
+        runs_attribution(runs),
     )
     set_files(output, {"pmaxtp_table": [path]})
     output["values"].update(

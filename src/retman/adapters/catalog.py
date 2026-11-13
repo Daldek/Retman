@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal, Protocol, cast
 
+from retman.attribution import Attribution
 from retman.exceptions import ERROR_CODES, ErrorCode, RetmanError
 from retman.i18n.loader import Texts
 from retman.registry.manifest import (
@@ -598,7 +599,9 @@ def run_calls(
     saved as ``output_dir/tool_<n>_<command>.json`` and referenced, with its
     SHA-256, from the ``tool`` audit block of the returned ``HandlerOutput``.
     The operation's ``describe`` function (or ``default_describe``) maps the runs
-    to files, values and warnings.
+    to files, values and warnings. The ``attribution`` and ``terms_notice`` of the
+    tools' documents (Nogat DEV §20) are merged into the output and added, one line
+    each, as its last warnings (``attribute``).
     """
     builder: CallBuilder = load_reference(operation.spec["calls"])
     client = ctx.runner
@@ -641,4 +644,30 @@ def run_calls(
         ],
     }
     output["tool"] = audit
+    attribute(output, Attribution.from_documents(run.document for _, run in runs))
     return output
+
+
+def attribute(output: HandlerOutput, attribution: Attribution) -> None:
+    """Carry the providers' lines into a handler output (Nogat DEV §20).
+
+    The lines join what the output already has, without duplicates; each line
+    that no warning shows yet becomes a warning (core text ``attribution``), so
+    every surface that shows the result shows them, after the other warnings.
+    """
+    merged = Attribution.of(
+        Attribution(
+            tuple(output.get("attribution", ())), tuple(output.get("terms_notice", ()))
+        ),
+        attribution,
+    )
+    if not merged:
+        return
+    output["attribution"] = list(merged.lines)
+    output["terms_notice"] = list(merged.notice)
+    shown = {warning["args"].get("text") for warning in output["warnings"]}
+    output["warnings"].extend(
+        {"key": "attribution", "args": {"text": line}}
+        for line in (*merged.lines, *merged.notice)
+        if line not in shown
+    )

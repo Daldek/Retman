@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+from retman.attribution import CSV_COLUMNS
 from retman.exceptions import KindValidationError
 
 # Validator of one file: ``None`` when valid, otherwise the failure reason, a key
@@ -169,17 +170,24 @@ def _csv_check(required: Iterable[str]) -> Check:
 
 
 def _series_check(*, hydrological: bool) -> Check:
-    """Obserwator station series (``series export``): hydrological or meteorological."""
+    """Obserwator station series (``series export``): hydrological or meteorological.
+
+    The trailing columns ``attribution`` and ``terms_notice`` of Nogat DEV-20.5 may
+    follow the tool's own attribution columns.
+    """
 
     def check(path: Path) -> str | None:
         head = _csv_head(path)
         if isinstance(head, str):
             return head
         header, rows = head
+        own = (
+            header[: -len(CSV_COLUMNS)] if header[-2:] == list(CSV_COLUMNS) else header
+        )
         if (
-            tuple(header[:2]) != _SERIES_START
-            or tuple(header[-2:]) != _SERIES_END
-            or len(header) <= len(_SERIES_START) + len(_SERIES_END)
+            tuple(own[:2]) != _SERIES_START
+            or tuple(own[-2:]) != _SERIES_END
+            or len(own) <= len(_SERIES_START) + len(_SERIES_END)
         ):
             return "invalid_columns"
         variables = [

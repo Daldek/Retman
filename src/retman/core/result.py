@@ -17,6 +17,9 @@ class Result:
     operation; ``tool`` is the audit block of the catalog commands that ran.
     ``failure`` is the ``retman-error/1`` document (English, registry code and exit
     code) of the failure when ``ok`` is false.
+    ``attribution`` and ``terms_notice`` are the lines the data providers' terms
+    require with the data or with what was made from them (Nogat DEV §20), passed on
+    verbatim from the tools; they are also the last warnings.
     """
 
     ok: bool
@@ -33,12 +36,14 @@ class Result:
     error_code: str | None = None
     tool: ToolAudit | None = None
     failure: dict[str, Any] | None = None
+    attribution: list[str] = field(default_factory=list)
+    terms_notice: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Represent the public result with JSON-compatible values.
 
-        ``error_code``, ``tool`` and ``failure`` appear only when they carry
-        information.
+        ``error_code``, ``tool``, ``failure``, ``attribution`` and ``terms_notice``
+        appear only when they carry information.
         """
         record: dict[str, Any] = {
             "ok": self.ok,
@@ -62,4 +67,8 @@ class Result:
             record["tool"] = self.tool
         if self.failure is not None:
             record["failure"] = self.failure
+        if self.attribution:
+            record["attribution"] = self.attribution
+        if self.terms_notice:
+            record["terms_notice"] = self.terms_notice
         return record

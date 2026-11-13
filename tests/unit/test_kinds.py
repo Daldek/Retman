@@ -250,6 +250,18 @@ def test_series_kinds_accept_chmi_quality_columns(tmp_path: Path) -> None:
     validate_file("meteo_series", _write(tmp_path, "cz.csv", _csv(header, row)))
 
 
+def test_series_kinds_accept_the_attribution_columns_of_the_standard_last(
+    tmp_path: Path,
+) -> None:
+    # Nogat DEV-20.5: attribution and terms_notice follow the tool's own columns;
+    # a cell may hold several lines
+    header, row = CSV_FILES["hydro_series"]
+    text = _csv([*header, "attribution", "terms_notice"], [*row, "S", "N"])
+    text += b'2023-12-02,2024,1.0,value,,missing,4.1,value,,,"P\nM",\r\n'
+
+    validate_file("hydro_series", _write(tmp_path, "dev20.csv", text))
+
+
 def test_hydro_series_accepts_monthly_extremum_variables(tmp_path: Path) -> None:
     header = [
         *["date", "year", "H_min [cm]", "H_min_flag", "Q_max [m3/s]", "Q_max_flag"],

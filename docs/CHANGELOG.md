@@ -12,6 +12,15 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 ### Added
 
+- The lines the data providers' terms require (Nogat DEV §20, ECO-060, ADR-033): the
+  `attribution` and `terms_notice` of the tools' documents reach the result (fields of
+  `Result` and `result.json`, and one warning per line after the others) and every CSV
+  table Retman writes (trailing columns `attribution` and `terms_notice`; the PMAXTP
+  table also fills its `attribution_source` and `attribution_processed` with PMAXTP's
+  own lines when the tool gives them). The series validator accepts these columns after
+  Obserwator's own. The registry-built licence text is shown only when the tool gives
+  no such lines.
+
 - The Hydrolog adapter (`hydrolog` pinned in the `tools` group at `2eb8bd0c`, the Nogat
   release set `candidate-1`): six operations in the categories `rainfall_runoff` and
   `hydrology_analysis` — a design hyetograph (`precip hietogram`), SCS-CN effective rainfall
