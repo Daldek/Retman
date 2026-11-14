@@ -20,14 +20,14 @@ Retman is a command layer for the Nogat hydrology tools: Kartograf (spatial data
 
 ## Install
 
-Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf), `v3.0.0` (Obserwator) and `v1.0.0` (Hydrolog) exist, the commits that Retman is tested with are named (their members of the Nogat release set `candidate-4`, all on GitHub; [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) names them):
+Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf), `v3.0.0` (Obserwator) and `v0.8.0` (Hydrolog) exist, the commits that Retman is tested with are named (their members of the Nogat release set `candidate-4`, all on GitHub; [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) names them):
 
 ```sh
 # CLI
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1" \
     --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@0394af7c66b60cccb88f14b6118893b78443dc21" \
-    --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@9e2cb618b115d94d93fb7caaf871a5fa5c1770a1"
+    --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@e5df06d85f7ca7a0fde2547393748bc17ea3669c"
 
 # Python library (name the same tools in the project's own dependencies)
 uv add "retman @ git+https://github.com/Daldek/Retman@develop"
@@ -174,14 +174,14 @@ The operations that a Polish command can select, 38 operations in 9 categories (
 | Category | Id | Tool | Operations | Data source |
 |---|---|---|---|---|
 | Spatial data: DEM, DSM, orthophoto, BDOT10k, BDOO, CORINE land cover, the store | `spatial_data` | Kartograf 0.8.0 | 8 | GUGiK, Copernicus (CORINE) |
-| Soil data: a SoilGrids layer, hydrologic soil groups (HSG) of an area or of clay, sand and silt rasters at hand | `soil_data` | Kartograf 0.8.0, Hydrolog 1.0 | 3 | ISRIC SoilGrids; the rasters computed locally |
+| Soil data: a SoilGrids layer, hydrologic soil groups (HSG) of an area or of clay, sand and silt rasters at hand | `soil_data` | Kartograf 0.8.0, Hydrolog 0.8.0 | 3 | ISRIC SoilGrids; the rasters computed locally |
 | Stations and data register | `obserwator_catalog` | Obserwator 3.0.0 | 3 | IMGW-PIB, ČHMÚ |
 | Current data and warnings | `obserwator_current` | Obserwator 3.0.0 | 3 | IMGW-PIB |
 | Maximum precipitation PMAXTP | `obserwator_pmaxtp` | Obserwator 3.0.0 | 2 | IMGW-PIB |
 | Station time series | `obserwator_series` | Obserwator 3.0.0 | 3 | IMGW-PIB, ČHMÚ |
 | Archives and the data store | `obserwator_archives` | Obserwator 3.0.0 | 8 | IMGW-PIB, ČHMÚ |
-| Rainfall and runoff: design hyetograph, SCS-CN effective rainfall, time of concentration of a watershed file, design hydrograph from area, CN and tc, hydrographs routed through a river network file (with or without an inflow table) | `rainfall_runoff` | Hydrolog 1.0 | 6 | computed locally |
-| Catchment and flow analyses: flood quantiles of an Obserwator daily flow series, morphometry of a watershed file | `hydrology_analysis` | Hydrolog 1.0 | 2 | computed locally |
+| Rainfall and runoff: design hyetograph, SCS-CN effective rainfall, time of concentration of a watershed file, design hydrograph from area, CN and tc, hydrographs routed through a river network file (with or without an inflow table) | `rainfall_runoff` | Hydrolog 0.8.0 | 6 | computed locally |
+| Catchment and flow analyses: flood quantiles of an Obserwator daily flow series, morphometry of a watershed file | `hydrology_analysis` | Hydrolog 0.8.0 | 2 | computed locally |
 
 ## For AI agents
 
@@ -263,6 +263,6 @@ Rules, commands and the documentation map for people and agents who work on the 
 
 ## Status, licence, author
 
-Under construction (before v0.1.0). Working: ten Kartograf 0.8.0 operations (DEM for a map sheet or an area from a file, child sheets with the orthophoto in three colour variants, a DEM or DSM cutout, an orthophoto cutout of an area, BDOT10k, CORINE or BDOO land cover, a SoilGrids soil layer, the hydrologic soil groups HSG, and the creation and the overview of the store), 19 Obserwator 3.0.0 operations and nine Hydrolog 1.0 operations (two-stage recognition: category, then operation), from the CLI and from Python, with a decision model on any OpenAI-compatible server (for example Bielik 11B in LM Studio); the offline plan preview, the availability check on request, `retman doctor check`, `retman eval run` and `retman scaffold`. The `basal` backend does not exist yet. Versions 0.x are public but not recommended for production before 1.0.0.
+Under construction (before v0.1.0). Working: ten Kartograf 0.8.0 operations (DEM for a map sheet or an area from a file, child sheets with the orthophoto in three colour variants, a DEM or DSM cutout, an orthophoto cutout of an area, BDOT10k, CORINE or BDOO land cover, a SoilGrids soil layer, the hydrologic soil groups HSG, and the creation and the overview of the store), 19 Obserwator 3.0.0 operations and nine Hydrolog 0.8.0 operations (two-stage recognition: category, then operation), from the CLI and from Python, with a decision model on any OpenAI-compatible server (for example Bielik 11B in LM Studio); the offline plan preview, the availability check on request, `retman doctor check`, `retman eval run` and `retman scaffold`. The `basal` backend does not exist yet. Versions 0.x are public but not recommended for production before 1.0.0.
 
 MIT licence, see [LICENSE](https://github.com/Daldek/Retman/blob/main/LICENSE). Author: [Piotr de Bever](https://www.linkedin.com/in/piotr-de-bever/).

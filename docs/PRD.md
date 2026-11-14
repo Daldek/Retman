@@ -165,7 +165,7 @@ Varied — Retman must support **two paths**:
 - Single operations (no chains) of three tools: Kartograf 0.8.0 (ten operations: six on spatial data of GUGiK and Copernicus, two on SoilGrids soils, the creation and the overview of its store),
   the whole of Obserwator 3.0.0 (all user-facing capabilities, including ČHMÚ data;
   19 operations in 5 categories; projects belong to Archiwista, Nogat ECO-054) and the basic
-  routes of Hydrolog 1.0 in the Nogat registry (nine operations) — section 7.2, ADR-012, ADR-017.
+  routes of Hydrolog 0.8.0 in the Nogat registry (nine operations) — section 7.2, ADR-012, ADR-017.
 - Scenarios S-01 to S-04.
 - Requirements W-01 to W-11, W-15 and W-17, plus N-12.
 
@@ -207,7 +207,7 @@ commands of the tool are deliberately excluded, with justification (a URL builde
 cannot verify a cell not downloaded yet, a duplicated read and the commands describing the
 catalog itself; ARCHITECTURE section 3.2.11).
 
-**Hydrolog 1.0** (ARCHITECTURE section 3.2.12): its basic routes in the Nogat registry, nine
+**Hydrolog 0.8.0** (ARCHITECTURE section 3.2.12): its basic routes in the Nogat registry, nine
 operations computed offline: a design hyetograph, SCS-CN effective rainfall, the time of
 concentration and the morphometry of a watershed file, a design hydrograph from area, CN and tc,
 hydrographs routed through a river network file (with or without an inflow table), flood
@@ -251,7 +251,7 @@ testers). The first version recommended for production deployments: **1.0.0**.
 
 | Version | What the user (tester) gets |
 | --- | --- |
-| **0.1** | single operations from the CLI and Python on Kartograf 0.8.0, all of Obserwator 3.0.0 and the basic routes of Hydrolog 1.0 (two-stage recognition of operations), geometry file as area, asking follow-up questions, plan with offline preview and confirmation, data availability check on request, step-by-step work, tool data stores in the configuration, environment diagnostics; model locally or on the organisation's server; project journal and audit trail |
+| **0.1** | single operations from the CLI and Python on Kartograf 0.8.0, all of Obserwator 3.0.0 and the basic routes of Hydrolog 0.8.0 (two-stage recognition of operations), geometry file as area, asking follow-up questions, plan with offline preview and confirmation, data availability check on request, step-by-step work, tool data stores in the configuration, environment diagnostics; model locally or on the organisation's server; project journal and audit trail |
 | 0.2 | chains of operations, result descriptions in Polish, the rest of Hydrolog and the remaining tools of the ecosystem (Hydrograf, BasicHydraulics) |
 | 0.3 | MCP server (optional extra `retman[mcp]`): an external AI assistant plans, and a human confirms execution in their own client (W-16, ADR-018) |
 | 0.4 | access to Retman via an HTTP API (e.g. for a web application and GUI) |
@@ -272,7 +272,7 @@ testers). The first version recommended for production deployments: **1.0.0**.
 | unknown accuracy of a small model on hydrological vocabulary | a lot of follow-up questions or errors | test set from day one, synonyms in descriptions, option of a larger model |
 | weak hardware of users | Retman too slow or impossible to run | smallest model, diagnostics, model on the organisation's server (from 0.1, section 3.3) |
 | maintaining conformance with five tools | Retman breaks after changes in the tools | tests on tool versions and conformance check by execution (`retman scaffold check`, ADR-019) in CI |
-| Kartograf 0.8.0, Obserwator 3.0.0 and Hydrolog 1.0 without pushed release tags | Retman depends on unreleased commits | the `tools` group pins commits until tags exist (none is pushed yet, PROGRESS), then tags; version ranges in manifests (`>=0.8.0.dev0,<0.9`, `>=3.0.0.dev0,<4` and `>=1.0.0.dev0,<2` while commits are pinned, REL-5.6; `>=0.8.0,<0.9`, `>=3.0.0,<4` and `>=1.0.0,<2` with the tags; ADR-012, ADR-024, ADR-025) |
+| Kartograf 0.8.0, Obserwator 3.0.0 and Hydrolog 0.8.0 without pushed release tags | Retman depends on unreleased commits | the `tools` group pins commits until tags exist (none is pushed yet, PROGRESS), then tags; version ranges in manifests (`>=0.8.0.dev0,<0.9`, `>=3.0.0.dev0,<4` and `>=0.8.0.dev0,<0.9` while commits are pinned, REL-5.6; `>=0.8.0,<0.9`, `>=3.0.0,<4` and `>=0.8.0,<0.9` with the tags; ADR-012, ADR-024, ADR-025) |
 | tool stores on a disk without hard links (FAT/exFAT, some network shares) | tools will not save data | `retman config init` checks hard links before writing the configuration file, `retman doctor check` — in every store folder, the Kartograf store and the two Obserwator roots (ARCHITECTURE sections 7.2, 9.1; ADR-034) |
 | MCP client without the ability to confirm or with a model in the cloud (from 0.3) | execution without a human or leakage of command content | fail-safe closure: without confirmation the client gets only the plan; command content and paths are hidden by default (ADR-018, ARCHITECTURE section 7.5.1) |
 | GUI part missing | integration with GUI postponed | plan as data from v0.1, decision on integration later |

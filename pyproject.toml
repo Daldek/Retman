@@ -65,7 +65,7 @@ dev = [
 tools = [
     "kartograf @ git+https://github.com/Daldek/Kartograf@c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1",
     "obserwator[store] @ git+https://github.com/Daldek/Obserwator@0394af7c66b60cccb88f14b6118893b78443dc21",
-    "hydrolog @ git+https://github.com/Daldek/Hydrolog@9e2cb618b115d94d93fb7caaf871a5fa5c1770a1",
+    "hydrolog @ git+https://github.com/Daldek/Hydrolog@e5df06d85f7ca7a0fde2547393748bc17ea3669c",
 ]
 
 [tool.uv]

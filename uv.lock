@@ -557,8 +557,8 @@ wheels = [
 
 [[package]]
 name = "hydrolog"
-version = "1.0.0.dev0"
-source = { git = "https://github.com/Daldek/Hydrolog?rev=9e2cb618b115d94d93fb7caaf871a5fa5c1770a1#9e2cb618b115d94d93fb7caaf871a5fa5c1770a1" }
+version = "0.8.0.dev0"
+source = { git = "https://github.com/Daldek/Hydrolog?rev=e5df06d85f7ca7a0fde2547393748bc17ea3669c#e5df06d85f7ca7a0fde2547393748bc17ea3669c" }
 dependencies = [
     { name = "numpy" },
     { name = "platformdirs" },
@@ -1401,7 +1401,7 @@ dev = [
     { name = "ruff", specifier = ">=0.6" },
 ]
 tools = [
-    { name = "hydrolog", git = "https://github.com/Daldek/Hydrolog?rev=9e2cb618b115d94d93fb7caaf871a5fa5c1770a1" },
+    { name = "hydrolog", git = "https://github.com/Daldek/Hydrolog?rev=e5df06d85f7ca7a0fde2547393748bc17ea3669c" },
     { name = "kartograf", git = "https://github.com/Daldek/Kartograf?rev=c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1" },
     { name = "obserwator", extras = ["store"], git = "https://github.com/Daldek/Obserwator?rev=0394af7c66b60cccb88f14b6118893b78443dc21" },
 ]

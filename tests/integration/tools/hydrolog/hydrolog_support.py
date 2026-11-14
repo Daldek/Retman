@@ -60,9 +60,9 @@ ATTRIBUTION = [
 
 @cache
 def operations() -> dict[str, Operation]:
-    """The Hydrolog operations as the registry loads them (version 1.0.0.dev0)."""
+    """The Hydrolog operations as the registry loads them (version 0.8.0.dev0)."""
     return load_operations(
-        "pl", manifests=[(MANIFEST, TOOL_DIR)], version_lookup=lambda _: "1.0.0.dev0"
+        "pl", manifests=[(MANIFEST, TOOL_DIR)], version_lookup=lambda _: "0.8.0.dev0"
     )
 
 
