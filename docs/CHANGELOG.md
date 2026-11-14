@@ -10,6 +10,12 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 ## [Unreleased]
 
+### Changed
+
+- The CP line of Nogat DEV §20 is „Dane ČHMÚ zostały przetworzone” without the detail of
+  processing (ECO-071): `retman.attribution` orders it in the CP place and reads an old
+  „Dane ČHMÚ zostały przetworzone (…)” as CP, merged into one line.
+
 ### Added
 
 - The lines the data providers' terms require (Nogat DEV §20, ECO-060, ADR-033): the

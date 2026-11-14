@@ -79,7 +79,7 @@ C = (
     "Źródło danych: Český hydrometeorologický ústav (ČHMÚ), https://opendata.chmi.cz, "
     f"{_CC_BY}"
 )
-CP = "Dane ČHMÚ zostały przetworzone (agregacja do dobowych sum)"
+CP = "Dane ČHMÚ zostały przetworzone"
 G = (
     "Źródło: Główny Urząd Geodezji i Kartografii – GUGiK, NMT, BDOT10k (wytworzono "
     "2020–2025, pozyskano 2026-03-24 – 2026-10-29); dane przetworzone"
@@ -116,3 +116,11 @@ def test_attribution_keeps_two_gugik_lines_in_the_g_place_in_the_order_first_see
     merged = Attribution.of(Attribution((SG, other)), Attribution((G, S)))
 
     assert merged.lines == (S, other, G, SG)
+
+
+def test_attribution_reads_an_old_cp_with_the_detail_as_the_cp_once() -> None:
+    old = f"{CP} (agregacja do dobowych sum)"
+
+    merged = Attribution.of(Attribution((G, old)), Attribution((CP, C, f"{CP} (x)")))
+
+    assert merged.lines == (C, CP, G)
