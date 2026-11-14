@@ -9,6 +9,7 @@ or querying is never allowed: evaluation plans and never executes.
 """
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any, NoReturn, cast
 
 from retman.adapters.catalog import (
@@ -47,14 +48,16 @@ def _page(command: str, items: list[dict[str, Any]]) -> ToolDocument:
 class OfflineObserwatorClient:
     """The real Obserwator client for validation, fixed answers for the store.
 
-    The store is "initialised and complete": ``store info`` says so, ``series
+    The store is "initialised and complete": ``store info`` says that each root is
+    ready (the raw root ``raw_root``, any other folder the data root), ``series
     summary`` covers every requested station for the whole dataset, a PMAXTP
     cell is "stored" and the station catalog is the synthetic one. Pure catalog
     commands (``datasets files``…) go to the real tool.
     """
 
-    def __init__(self, real: RunClient) -> None:
+    def __init__(self, real: RunClient, *, raw_root: str | None = None) -> None:
         self._real = real
+        self._raw_root = None if raw_root is None else str(Path(raw_root))
 
     def validate(self, call: CatalogCall) -> None:
         """Validate ``call`` with the real tool (offline)."""
@@ -70,9 +73,11 @@ class OfflineObserwatorClient:
         if call.command == "stations find" and options.get("source") == "store":
             return synthetic_station_document(options)
         if call.command == "store info":
+            raw = options.get("root") == self._raw_root
+            schema = "obserwator-store/1" if raw else "obserwator-data/1"
             return _document(
                 "store info",
-                {"exists": True, "supported": True, "schema": "obserwator-store/1"},
+                {"exists": True, "supported": True, "store_schema": schema},
             )
         if call.command == "series summary":
             return self._summary(call)
@@ -170,6 +175,7 @@ def offline_clients(
             if settings is None:
                 raise RetmanError("[retman.tools.obserwator] is missing in the config")
             clients["obserwator"] = OfflineObserwatorClient(
-                create_client(operation.client, settings)
+                create_client(operation.client, settings),
+                raw_root=settings.get("raw_store_dir"),
             )
     return clients

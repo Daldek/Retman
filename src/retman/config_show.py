@@ -32,9 +32,12 @@ SCHEMA: Final = "retman-config/1"
 # A key of the file that no setting uses and whose name asks for a secret is said
 # to be a credential: those come from the environment only
 _CREDENTIAL_WORDS: Final = ("key", "token", "secret", "password", "credential")
+# The store roots of the tools by their key in ``stores`` (JSON) and their setting;
+# Obserwator keeps two, its data root and its raw root (ADR-034)
 _STORES: Final = {
     "kartograf": "tools.kartograf.store_dir",
     "obserwator": "tools.obserwator.store_dir",
+    "obserwator_raw": "tools.obserwator.raw_store_dir",
 }
 
 
@@ -291,7 +294,7 @@ def render_config(report: ConfigReport, texts: Texts) -> str:
     else:
         lines.append(texts.get("config_show.no_credentials"))
     lines += ["", texts.get("config_show.stores")]
-    for tool, info in report.stores.items():
+    for key, info in report.stores.items():
         assert info.root is not None
         if info.exists and info.size_bytes is not None:
             state_text = texts.get(
@@ -299,7 +302,8 @@ def render_config(report: ConfigReport, texts: Texts) -> str:
             )
         else:
             state_text = texts.get("config_show.store_missing")
+        label = texts.get(f"config_show.store_label_{key}")
         lines.append(
-            texts.get("config_show.store", tool=tool, root=info.root, state=state_text)
+            texts.get("config_show.store", tool=label, root=info.root, state=state_text)
         )
     return "\n".join(lines) + "\n"

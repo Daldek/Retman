@@ -29,7 +29,7 @@ _MEGABYTE = 1_000_000
 
 @dataclass(frozen=True)
 class PlanSummary:
-    """Counts of an ``obserwator-plan/1`` plan: archives by freshness, size, actions."""
+    """Counts of an ``obserwator-plan/1`` plan: archives by freshness and size."""
 
     total: int
     to_download: int
@@ -37,15 +37,14 @@ class PlanSummary:
     unpublished: int
     failed: int
     size_bytes: int | None
-    actions: dict[str, str]
 
 
 def summarize_plan(document: Mapping[str, Any]) -> PlanSummary:
-    """Count the items and actions of a check's document.
+    """Count the items of a check's document.
 
     ``to_download`` are the ``newer`` and ``missing`` archives; ``size_bytes`` is
     the sum of their sizes when the server reported them (``None`` when it
-    reported none). ``actions`` maps each planned command to its status.
+    reported none).
     """
     result = document.get("result")
     plan: Mapping[str, Any] = result if isinstance(result, dict) else {}
@@ -62,11 +61,6 @@ def summarize_plan(document: Mapping[str, Any]) -> PlanSummary:
         if item.get("status") in ("newer", "missing")
         and isinstance(item.get("content_length"), int)
     ]
-    actions = {
-        str(action.get("command")): str(action.get("status"))
-        for action in plan.get("actions") or ()
-        if isinstance(action, dict)
-    }
     return PlanSummary(
         total=len(items),
         to_download=states["newer"] + states["missing"],
@@ -74,7 +68,6 @@ def summarize_plan(document: Mapping[str, Any]) -> PlanSummary:
         unpublished=unpublished,
         failed=states["check_failed"],
         size_bytes=sum(sizes) if sizes else None,
-        actions=actions,
     )
 
 
@@ -104,22 +97,32 @@ def _status(
 def check_build_obserwator_station_catalog(
     params: dict[str, Any], ctx: ToolContext
 ) -> CheckOutput:
-    """Operation 2: are the station lists reachable and is the catalog out of date."""
-    (call,) = build_obserwator_station_catalog(params, ctx)
-    document = ctx.runner.check(call)
+    """Operation 2: are the station sources reachable and how many are new.
+
+    The catalog itself is built offline from the sources the sync stores, so the
+    check is that of the sync of the provider's station sources.
+    """
+    sync, _ = build_obserwator_station_catalog(params, ctx)
+    document = ctx.runner.check(sync)
     if (refused := _refusal(document)) is not None:
         return refused
     summary = summarize_plan(document)
     items: list[CheckItem] = []
-    state = summary.actions.get("store catalog")
-    if state is not None:
-        items.append({"key": f"catalog_{state}", "args": {}})
     if summary.total:
         items.append(
             {
                 "key": "sources",
                 "args": {
                     "reachable": str(summary.total - summary.failed),
+                    "total": str(summary.total),
+                },
+            }
+        )
+        items.append(
+            {
+                "key": "sources_to_download",
+                "args": {
+                    "to_download": str(summary.to_download),
                     "total": str(summary.total),
                 },
             }

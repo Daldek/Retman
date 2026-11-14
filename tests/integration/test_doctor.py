@@ -25,6 +25,8 @@ from retman.testing import FakeDecisionBackend
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 MODEL_URL = "http://model.test/v1"
+# The marker of each Obserwator root, spelled out (not taken from ``retman.stores``)
+MARKERS = {"raw": "obserwator-store.json", "data": "obserwator-data.json"}
 
 
 @pytest.fixture
@@ -320,16 +322,17 @@ def pyarrow(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _make_stores(
-    tmp_path: Path, obserwator_store_template: Path, **skip: bool
+    tmp_path: Path, obserwator_store_template: dict[str, Path], **skip: bool
 ) -> dict[str, Path]:
     """Create the folders a healthy installation has; ``skip`` leaves one out.
 
-    The Obserwator store is a copy of the fixture store the tool builds itself.
+    The two Obserwator roots are copies of the fixture roots the tool builds itself.
     """
     paths = {
         "kartograf": tmp_path / "stores" / "kartograf",
         "cache": tmp_path / "cache" / "kartograf" / "metadata.db",
         "obserwator": tmp_path / "stores" / "obserwator",
+        "obserwator_raw": tmp_path / "stores" / "obserwator-raw",
         "reference": tmp_path / "cache" / "obserwator" / "reference",
     }
     for name, path in paths.items():
@@ -337,10 +340,11 @@ def _make_stores(
             continue
         folder = path.parent if name == "cache" else path
         folder.mkdir(parents=True)
-    if not skip.get("obserwator"):
-        shutil.copytree(
-            obserwator_store_template, paths["obserwator"], dirs_exist_ok=True
-        )
+    for name, kind in (("obserwator", "data"), ("obserwator_raw", "raw")):
+        if not skip.get(name):
+            shutil.copytree(
+                obserwator_store_template[kind], paths[name], dirs_exist_ok=True
+            )
     return paths
 
 
@@ -351,6 +355,17 @@ def _stores(report) -> list[tuple[str, str]]:
         for found in report.sections
         if found.key == "stores"
         for check in found.checks
+    ]
+
+
+def _store_checks(report, status: str) -> list:
+    """The checks of the stores section with ``status``."""
+    return [
+        check
+        for found in report.sections
+        if found.key == "stores"
+        for check in found.checks
+        if check.status == status
     ]
 
 
@@ -387,7 +402,7 @@ def _run_stores(
 
 
 def test_healthy_stores_are_listed_and_the_slow_probe_is_not_run(
-    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
+    tmp_path: Path, obserwator_store_template: dict[str, Path], store_tools, pyarrow
 ):
     paths = _make_stores(tmp_path, obserwator_store_template)
     calls: list[str] = []
@@ -397,16 +412,16 @@ def test_healthy_stores_are_listed_and_the_slow_probe_is_not_run(
 
     assert report.exit_code == 0
     assert all(status == "ok" for status, _ in stores)
-    text = "\n".join(text for _, text in stores)
-    for expected in (
-        f"magazyn {paths['kartograf']} (zapis możliwy, dowiązania twarde działają)",
-        f"cache metadanych {paths['cache']}",
-        f"magazyn {paths['obserwator']} (znacznik obserwator-store.json",
-        "schemat obserwator-store/1, dowiązania twarde działają)",
-        "pyarrow 26.0.0",
-        f"dane referencyjne {paths['reference']} (hydro_stations_locations.csv: brak)",
+    # Each Obserwator root is a line of its own that names its marker and schema
+    for name, marker, schema in (
+        ("obserwator", "obserwator-data.json", "obserwator-data/1"),
+        ("obserwator_raw", "obserwator-store.json", "obserwator-store/1"),
     ):
-        assert expected in text
+        (line,) = [text for _, text in stores if f"{paths[name]} " in text]
+        assert marker in line and schema in line
+    for name in ("kartograf", "cache", "reference"):
+        assert any(str(paths[name]) in text for _, text in stores)
+    assert any("pyarrow 26.0.0" in text for _, text in stores)
     assert calls == []
     # The write and link tests leave nothing behind in a user's store
     assert list(paths["kartograf"].iterdir()) == []
@@ -420,67 +435,135 @@ def test_stores_not_created_yet_warn_with_a_hint_and_do_not_block(
 
     assert report.exit_code == 0
     stores = _stores(report)
-    assert [s for s, line in stores if "pyarrow" not in line] == ["warning"] * 4
-    assert "Kartograf utworzy go przy pierwszym pobraniu" in text
-    assert (
-        "nie został jeszcze utworzony (brak obserwator-store.json) → utwórz go: "
-        "retman config init" in text
-    )
+    # Kartograf store, its cache, both Obserwator roots and the reference folder
+    assert [s for s, line in stores if "pyarrow" not in line] == ["warning"] * 5
+    # Each root's hint gives the command that initialises that root alone
+    stores_dir = tmp_path / "stores"
+    assert f"--kind data --root {stores_dir / 'obserwator'}" in text
+    assert f"--kind raw --root {stores_dir / 'obserwator-raw'}" in text
     # Nothing was created while looking
-    assert not (tmp_path / "stores").exists()
+    assert not stores_dir.exists()
     assert not (tmp_path / "cache").exists()
 
 
 @pytest.mark.parametrize(
-    ("marker", "expected"),
-    [
-        (None, "nie jest pusty i nie jest magazynem Obserwatora"),
-        (
-            '{"schema": "obserwator-store/2"}',
-            "nieobsługiwany schemat (obserwator-store/2)",
-        ),
-        ("{", "jest nieczytelny"),
-    ],
-    ids=["foreign_files", "unsupported_schema", "unreadable_marker"],
+    ("root", "kind"), [("obserwator", "data"), ("obserwator_raw", "raw")]
 )
-def test_obserwator_folder_that_is_not_a_usable_store_blocks_work(
+@pytest.mark.parametrize(
+    ("setup", "reason"),
+    [
+        ("foreign_files", "foreign_folder"),
+        ("unsupported_schema", "marker_unsupported"),
+        ("unreadable_marker", "marker_unreadable"),
+    ],
+)
+def test_obserwator_folder_that_is_not_a_usable_root_blocks_work(
     tmp_path: Path,
-    obserwator_store_template: Path,
+    obserwator_store_template: dict[str, Path],
     store_tools,
     pyarrow,
-    marker: str | None,
-    expected: str,
+    root: str,
+    kind: str,
+    setup: str,
+    reason: str,
 ):
     paths = _make_stores(tmp_path, obserwator_store_template)
-    store = paths["obserwator"]
-    if marker is None:
+    store = paths[root]
+    marker = store / MARKERS[kind]
+    if setup == "foreign_files":
         shutil.rmtree(store)
         store.mkdir()
         (store / "notes.txt").write_text("not a store", encoding="utf-8")
+    elif setup == "unsupported_schema":
+        schema = json.loads(marker.read_text(encoding="utf-8"))["schema"]
+        marker.write_text(
+            json.dumps({"schema": schema.replace("/1", "/2")}), encoding="utf-8"
+        )
     else:
-        (store / "obserwator-store.json").write_text(marker, encoding="utf-8")
+        marker.write_text("{", encoding="utf-8")
 
     report, _ = _run_stores(tmp_path, store_tools)
-    problems = [text for status, text in _stores(report) if status == "error"]
+    (problem,) = _store_checks(report, "error")
 
     assert report.exit_code == 10
-    assert len(problems) == 1 and expected in problems[0]
+    assert (problem.blocking, problem.code, problem.reason) == (
+        True,
+        "store_unavailable",
+        reason,
+    )
+    assert str(store) in localize(problem.text, load_core_texts("pl"))
 
 
-def test_obserwator_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
-    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
+@pytest.mark.parametrize(
+    ("root", "kind", "setting"),
+    [
+        ("obserwator", "data", "[retman.tools.obserwator] store_dir"),
+        ("obserwator_raw", "raw", "[retman.tools.obserwator] raw_store_dir"),
+    ],
+)
+def test_obserwator_root_of_the_other_kind_blocks_work_and_names_its_setting(
+    tmp_path: Path,
+    obserwator_store_template: dict[str, Path],
+    store_tools,
+    pyarrow,
+    root: str,
+    kind: str,
+    setting: str,
 ):
-    store = _make_stores(tmp_path, obserwator_store_template)["obserwator"]
-    (store / "obserwator-store.json").unlink()
+    paths = _make_stores(tmp_path, obserwator_store_template)
+    other = "raw" if kind == "data" else "data"
+    shutil.rmtree(paths[root])
+    shutil.copytree(obserwator_store_template[other], paths[root])
 
     report, texts = _run_stores(tmp_path, store_tools)
-    (problem,) = [
-        check
-        for found in report.sections
-        if found.key == "stores"
-        for check in found.checks
-        if check.status == "error"
-    ]
+    (problem,) = _store_checks(report, "error")
+
+    assert report.exit_code == 10
+    assert (problem.code, problem.reason) == ("store_unavailable", "wrong_root")
+    assert setting in localize(problem.hint, texts)
+
+
+def test_obserwator_store_not_yet_split_is_refused_as_the_data_root(
+    tmp_path: Path, obserwator_store_template: dict[str, Path], store_tools, pyarrow
+):
+    paths = _make_stores(tmp_path, obserwator_store_template)
+    # The combined store of Obserwator before ADR-017: the raw marker and all trees
+    store = paths["obserwator"]
+    shutil.rmtree(store)
+    shutil.copytree(obserwator_store_template["raw"], store)
+    for tree in ("series", "stations"):
+        shutil.copytree(obserwator_store_template["data"] / tree, store / tree)
+    held = set(store.rglob("*"))
+
+    report, texts = _run_stores(tmp_path, store_tools)
+    (problem,) = _store_checks(report, "error")
+
+    assert report.exit_code == 10
+    assert (problem.code, problem.reason) == ("store_unavailable", "wrong_root")
+    # The hint gives the commands that split it, as Obserwator's USAGE describes
+    hint = localize(problem.hint, texts)
+    assert "cp -al" in hint and "store init --kind data" in hint
+    # Looking changes nothing in the old store
+    assert set(store.rglob("*")) == held
+
+
+@pytest.mark.parametrize(
+    ("root", "kind"), [("obserwator", "data"), ("obserwator_raw", "raw")]
+)
+def test_obserwator_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
+    tmp_path: Path,
+    obserwator_store_template: dict[str, Path],
+    store_tools,
+    pyarrow,
+    root: str,
+    kind: str,
+):
+    store = _make_stores(tmp_path, obserwator_store_template)[root]
+    (store / MARKERS[kind]).unlink()
+    held = set(store.rglob("*"))
+
+    report, texts = _run_stores(tmp_path, store_tools)
+    (problem,) = _store_checks(report, "error")
 
     assert report.exit_code == 10
     assert (problem.blocking, problem.code, problem.reason) == (
@@ -488,23 +571,13 @@ def test_obserwator_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
         "store_unavailable",
         "no_marker",
     )
-    text = report.to_text(texts)
-    assert (
-        "ma układ magazynu Obserwatora, ale nie ma znacznika obserwator-store.json"
-        in text
-    )
-    assert "zapisz znacznik poleceniem „Utwórz magazyn Obserwatora”" in text
+    assert f"store init --kind {kind} --root {store}" in localize(problem.hint, texts)
     # Looking changes nothing in a folder that may hold data: no probe, no marker
-    assert {path.name for path in store.iterdir()} == {
-        ".incoming",
-        "archives",
-        "series",
-        "stations",
-    }
+    assert set(store.rglob("*")) == held
 
 
 def test_obserwator_folder_with_only_the_key_file_of_the_server_is_not_created_yet(
-    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
+    tmp_path: Path, obserwator_store_template: dict[str, Path], store_tools, pyarrow
 ):
     store = _make_stores(tmp_path, obserwator_store_template)["obserwator"]
     shutil.rmtree(store)
@@ -516,17 +589,13 @@ def test_obserwator_folder_with_only_the_key_file_of_the_server_is_not_created_y
 
     assert report.exit_code == 0
     assert all(status != "error" for status, _ in stores)
-    assert [
-        status
-        for status, text in stores
-        if "obserwator: magazyn" in text and "nie został jeszcze utworzony" in text
-    ] == ["warning"]
+    assert [status for status, text in stores if f"{store} " in text] == ["warning"]
     assert [path.name for path in store.iterdir()] == ["api_keys.json"]
 
 
 def test_kartograf_store_with_its_marker_is_listed_with_it(
     tmp_path: Path,
-    obserwator_store_template: Path,
+    obserwator_store_template: dict[str, Path],
     kartograf_store_template: Path,
     store_tools,
     pyarrow,
@@ -564,7 +633,7 @@ def test_kartograf_store_with_its_marker_is_listed_with_it(
 )
 def test_kartograf_folder_that_is_not_a_usable_store_blocks_work(
     tmp_path: Path,
-    obserwator_store_template: Path,
+    obserwator_store_template: dict[str, Path],
     store_tools,
     pyarrow,
     setup: str,
@@ -602,7 +671,7 @@ def test_kartograf_folder_that_is_not_a_usable_store_blocks_work(
 
 def test_kartograf_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
     tmp_path: Path,
-    obserwator_store_template: Path,
+    obserwator_store_template: dict[str, Path],
     kartograf_store_template: Path,
     store_tools,
     pyarrow,
@@ -638,7 +707,7 @@ def test_kartograf_layout_without_a_marker_blocks_work_and_says_how_to_mark_it(
 
 
 def test_store_path_that_is_a_file_blocks_work(
-    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
+    tmp_path: Path, obserwator_store_template: dict[str, Path], store_tools, pyarrow
 ):
     paths = _make_stores(tmp_path, obserwator_store_template, kartograf=True)
     paths["kartograf"].write_text("a file", encoding="utf-8")
@@ -653,7 +722,7 @@ def test_store_path_that_is_a_file_blocks_work(
 
 
 def test_symlink_in_a_store_path_is_refused_by_obserwator_but_tolerated_by_kartograf(
-    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
+    tmp_path: Path, obserwator_store_template: dict[str, Path], store_tools, pyarrow
 ):
     real = tmp_path / "real"
     real.mkdir()
@@ -666,54 +735,60 @@ def test_symlink_in_a_store_path_is_refused_by_obserwator_but_tolerated_by_karto
     # init writes resolved paths, so the symlink comes from a hand-edited config
     rewrite = (str(real), str(tmp_path / "stores"))
     report, texts = _run_stores(tmp_path, store_tools, rewrite=rewrite)
-    stores = _stores(report)
-    kartograf = [item for item in stores if item[1].startswith("kartograf: w ścieżce")]
-    obserwator = [
-        item for item in stores if item[1].startswith("obserwator: w ścieżce")
-    ]
+    (tolerated,) = _store_checks(report, "warning")
+    refused = _store_checks(report, "error")
 
-    assert [status for status, _ in kartograf] == ["warning"]
-    assert [status for status, _ in obserwator] == ["error"]
+    assert "[retman.tools.kartograf] store_dir" in localize(tolerated.hint, texts)
+    assert [check.reason for check in refused] == ["symlink_refused"] * 2
     assert report.exit_code == 10
-    # The hint names the real path to write into the config
-    assert f"wpisz ścieżkę rzeczywistą {real / 'obserwator'}" in report.to_text(texts)
+    # Each hint names the real path to write into the setting of its root
+    hints = [localize(check.hint, texts) for check in refused]
+    assert str(real / "obserwator") in hints[0]
+    assert "[retman.tools.obserwator] store_dir" in hints[0]
+    assert str(real / "obserwator-raw") in hints[1]
+    assert "[retman.tools.obserwator] raw_store_dir" in hints[1]
 
 
-def test_a_file_system_without_hard_links_blocks_both_stores(
+def test_a_file_system_without_hard_links_blocks_every_store_folder(
     tmp_path: Path,
-    obserwator_store_template: Path,
+    obserwator_store_template: dict[str, Path],
     store_tools,
     pyarrow,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    _make_stores(tmp_path, obserwator_store_template)
+    paths = _make_stores(tmp_path, obserwator_store_template)
     refusal = OSError(errno.EPERM, "Operation not permitted")
     monkeypatch.setattr("retman.doctor.hardlink_error", lambda folder: refusal)
 
     report, texts = _run_stores(tmp_path, store_tools)
-    stores = _stores(report)
-    refused = [line for status, line in stores if status == "error"]
+    refused = _store_checks(report, "error")
 
     assert report.exit_code == 10
-    assert len(refused) == 2
-    assert all(
-        "nie obsługuje dowiązań twardych (Operation not permitted)" in r
-        for r in refused
-    )
-    assert {line.split(":")[0] for line in refused} == {"kartograf", "obserwator"}
-    text = report.to_text(texts)
-    assert (
-        "[retman.tools.kartograf] store_dir" in text
-        and "[retman.tools.obserwator] store_dir" in text
-    )
+    assert [check.reason for check in refused] == ["no_hardlinks"] * 3
+    # Each line names its folder and the reason, each hint the setting to change
+    for check, name, setting in zip(
+        refused,
+        ("kartograf", "obserwator", "obserwator_raw"),
+        (
+            "[retman.tools.kartograf] store_dir",
+            "[retman.tools.obserwator] store_dir",
+            "[retman.tools.obserwator] raw_store_dir",
+        ),
+        strict=True,
+    ):
+        text = localize(check.text, texts)
+        assert f"{paths[name]}" in text and "Operation not permitted" in text
+        assert setting in localize(check.hint, texts)
     # No "all is well" line next to the problem
-    assert not any("zapis możliwy" in line for _, line in stores)
-    assert not any("dowiązania twarde działają" in line for _, line in stores)
+    assert not any(
+        str(tmp_path / "stores") in localize(check.text, texts)
+        for check in _store_checks(report, "ok")
+    )
 
 
-def test_hard_links_are_tried_where_a_missing_obserwator_store_will_be_created(
+def test_hard_links_are_tried_where_a_missing_obserwator_root_will_be_created(
     tmp_path: Path,
-    obserwator_store_template: Path,
+    obserwator_store_template: dict[str, Path],
     store_tools,
     pyarrow,
     monkeypatch: pytest.MonkeyPatch,
@@ -728,15 +803,19 @@ def test_hard_links_are_tried_where_a_missing_obserwator_store_will_be_created(
 
     report, _ = _run_stores(tmp_path, store_tools)
 
-    # The Kartograf store itself, and for the missing Obserwator store the closest
-    # existing folder: the same disk
-    assert tried == [paths["kartograf"], paths["kartograf"].parent]
+    # The Kartograf store and the raw root themselves, and for the missing data root
+    # the closest existing folder: the same disk
+    assert tried == [
+        paths["kartograf"],
+        paths["obserwator"].parent,
+        paths["obserwator_raw"],
+    ]
     assert report.exit_code == 0
 
 
 def test_missing_pyarrow_disables_series_and_skips_the_probe(
     tmp_path: Path,
-    obserwator_store_template: Path,
+    obserwator_store_template: dict[str, Path],
     store_tools,
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -760,7 +839,11 @@ def test_missing_pyarrow_disables_series_and_skips_the_probe(
 
 @pytest.mark.parametrize("deep", [False, True])
 def test_obserwator_write_probe_runs_only_with_deep(
-    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow, deep: bool
+    tmp_path: Path,
+    obserwator_store_template: dict[str, Path],
+    store_tools,
+    pyarrow,
+    deep: bool,
 ):
     _make_stores(tmp_path, obserwator_store_template)
     calls: list[str] = []
@@ -775,7 +858,7 @@ def test_obserwator_write_probe_runs_only_with_deep(
 
 
 def test_failed_write_probe_blocks_work_and_quotes_the_tool(
-    tmp_path: Path, obserwator_store_template: Path, store_tools, pyarrow
+    tmp_path: Path, obserwator_store_template: dict[str, Path], store_tools, pyarrow
 ):
     _make_stores(tmp_path, obserwator_store_template)
     refusal = ToolOutcome("refused", "System plików nie zapewnia atomowego zapisu")

@@ -2,7 +2,8 @@
 
 The tool is driven through its public command layer (``validate_command``,
 ``format_command``, ``run_command``, ``check_command``); the client adds the
-environment Retman owns (``root`` from ``[retman.tools.obserwator] store_dir``), turns
+environment Retman owns (``root`` and ``raw_root`` from ``[retman.tools.obserwator]``
+``store_dir`` and ``raw_store_dir``), turns
 the tool's ``obserwator-result/1`` envelope into a ``ToolRun`` and its exceptions into
 ``ToolError``. What each method may do is split by capability (PRD N-12):
 ``validate``, ``command_line`` and ``lookup`` are offline and effects-free
@@ -45,6 +46,22 @@ _PLAN_COMMANDS = ("store check",)
 # Run flags of every command line: ``--json`` makes the CLI print the envelope
 # Retman keeps, not the summary for a person
 _RUN_FLAGS: Mapping[str, object] = {"json": True}
+# The commands whose ``root`` is the raw root (downloaded archives, station sources,
+# PMAXTP cells; Obserwator ADR-017 D4); ``store init`` creates the kind of its
+# ``kind`` option, the raw root by default. Every other command with a root works on
+# the data root (series, station catalogs, analyses), and ``store info`` and
+# ``store scan`` read the data root unless the call names a root
+RAW_ROOT_COMMANDS: frozenset[str] = frozenset(
+    {
+        "datasets download",
+        "pmaxtp check",
+        "pmaxtp sync",
+        "pmaxtp read",
+        "store check",
+        "store sync",
+        "store export",
+    }
+)
 
 
 def _sha256(path: Path) -> str:
@@ -59,10 +76,13 @@ def _tool_file(path: Path, status: str | None = None) -> ToolFile:
 class ObserwatorClient:
     """A ``RunClient`` over the command catalog of Obserwator 3.x.
 
-    ``settings`` is the ``[retman.tools.obserwator]`` table: ``store_dir`` is added as
-    ``root`` to every command that has that option and the call omits it, except where
-    the call names plain files (``output_dir``), which the tool does not combine with
-    a store; ``reference_data_dir`` is exported as ``OBSERWATOR_REFERENCE_DIR`` once,
+    ``settings`` is the ``[retman.tools.obserwator]`` table: the data root
+    ``store_dir`` or the raw root ``raw_store_dir``, by the kind of the command
+    (``RAW_ROOT_COMMANDS``), is added as ``root`` to every command that has that
+    option and the call omits it, except where the call names plain files
+    (``output_dir``), which the tool does not combine with a store; the raw root is
+    also the ``raw_root`` the builders read (``series build``, ``store catalog``).
+    ``reference_data_dir`` is exported as ``OBSERWATOR_REFERENCE_DIR`` once,
     before the tool is imported, so that ``store catalog`` reads its static station
     locations from there and not from the tool's own default
     (``<cache_dir>/obserwator/reference``).
@@ -80,14 +100,22 @@ class ObserwatorClient:
 
     # --- options and errors -------------------------------------------------
 
-    def _store_root(self) -> Path:
+    def _setting(self, name: str) -> Path:
         try:
-            return Path(self._settings["store_dir"])
+            return Path(self._settings[name])
         except KeyError:
-            raise RetmanError(f"[retman.tools.{TOOL}] has no store_dir") from None
+            raise RetmanError(f"[retman.tools.{TOOL}] has no {name}") from None
+
+    def _store_root(self, command: str, options: Mapping[str, object]) -> Path:
+        """Return the root of ``command``: the raw or the data root, by its kind."""
+        if command == "store init":
+            raw = options.get("kind", "raw") == "raw"
+        else:
+            raw = command in RAW_ROOT_COMMANDS
+        return self._setting("raw_store_dir" if raw else "store_dir")
 
     def _options(self, call: CatalogCall) -> dict[str, object]:
-        """Return the call's options plus ``root`` where the command reads a store.
+        """Return the call's options plus ``root`` and ``raw_root`` where they apply.
 
         ``stations find`` takes a root only for ``source="store"`` and refuses it
         for the live source; the catalog names such conditions in ``env_root_when``.
@@ -96,10 +124,12 @@ class ObserwatorClient:
         """
         options = dict(call.options)
         spec = self._commands.get(call.command)
+        if spec is None:
+            return options
+        names = {option.name for option in spec.options}
         if (
-            spec is not None
-            and "root" not in options
-            and any(option.name == "root" for option in spec.options)
+            "root" not in options
+            and "root" in names
             and all(
                 options.get(name) == value for name, value in spec.env_root_when.items()
             )
@@ -108,7 +138,9 @@ class ObserwatorClient:
                 for group in spec.exclusive
             )
         ):
-            options["root"] = str(self._store_root())
+            options["root"] = str(self._store_root(call.command, options))
+        if "raw_root" in names and "raw_root" not in options:
+            options["raw_root"] = str(self._setting("raw_store_dir"))
         return options
 
     def _error(self, err: Exception, call: CatalogCall) -> ToolError:
@@ -281,7 +313,7 @@ class ObserwatorClient:
     def _failures(
         command: str, status: str, document: ToolDocument
     ) -> tuple[ToolFailure, ...]:
-        """Units a command could not handle: failed items, plans, series.
+        """Units a command could not handle: failed items and plans, a failed build.
 
         The result of a list command is the list of its items; any other result is
         one object whose ``items`` and ``files`` are its units.
@@ -306,10 +338,6 @@ class ObserwatorClient:
                         str(item.get("error") or state),
                     )
                 )
-        for report in result.get("series") or ():
-            if isinstance(report, dict) and report.get("status") == "failed":
-                problems = "; ".join(map(str, report.get("problems") or ()))
-                failures.append(ToolFailure("series", "failed", problems or "failed"))
         if not failures and status == "failed":
             problems = "; ".join(map(str, result.get("problems") or ()))
             failures.append(ToolFailure(command, "failed", problems or "failed"))

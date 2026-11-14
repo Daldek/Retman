@@ -112,6 +112,7 @@ def scratch_settings(root: Path) -> dict[str, Any]:
     """``[retman.tools.obserwator]`` in a scratch folder: nothing outside it is used."""
     return {
         "store_dir": str(root / "obserwator"),
+        "raw_store_dir": str(root / "obserwator-raw"),
         "reference_data_dir": str(root / "obserwator-reference"),
     }
 

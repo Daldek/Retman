@@ -14,8 +14,10 @@ from retman.registry.operation import Operation
 from retman.testing import tool_context
 from retman.tools.obserwator.manifest import MANIFEST
 
-# A store setting is an absolute path; on Windows a rooted path needs its drive too
+# A root setting is an absolute path; on Windows a rooted path needs its drive too
 STORE = Path("/stores/obserwator").absolute()
+RAW_STORE = Path("/stores/obserwator-raw").absolute()
+SETTINGS = {"store_dir": str(STORE), "raw_store_dir": str(RAW_STORE)}
 PROJECT = Path("/projects/obserwator")
 TEXTS = load_core_texts("pl")
 YEARS = {"type": "years", "first": 2000, "last": 2002}
@@ -59,7 +61,7 @@ def context(
     return tool_context(
         operations()[operation],
         client=client,
-        settings=settings if settings is not None else {"store_dir": str(STORE)},
+        settings=settings if settings is not None else SETTINGS,
         project_dir=project_dir or PROJECT,
         output_dir=output_dir,
         inputs=inputs,

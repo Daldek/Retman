@@ -43,14 +43,14 @@ in **one** environment, a running model server, settings and the tools' data sto
 Installation is described in ARCHITECTURE 9.4. Until v0.1.0 is released there is no release tag, and
 the Kartograf `v0.8.0` and Obserwator `v3.0.0` tags have not been pushed yet, so you install Retman from
 the `develop` branch and the tools from pinned commits (the same ones the tests use, the `tools` group
-in `pyproject.toml`; they are the members of the Nogat release set `candidate-2`, all on GitHub, and
+in `pyproject.toml`; they are the members of the Nogat release set `candidate-4`, all on GitHub, and
 `docs/PROGRESS.md` names them):
 
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@d0990c89da88e73b9081fe33a151ba9d27b4f820" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@f9f4ee7927ba520d3e82d3e289872090ae24e2ec" \
-    --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@759d7ef0e99b654c4aff172d69439a6d8df42db2"
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1" \
+    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@0394af7c66b60cccb88f14b6118893b78443dc21" \
+    --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@9e2cb618b115d94d93fb7caaf871a5fa5c1770a1"
 ```
 
 The Obserwator `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are
@@ -89,11 +89,14 @@ retman config show           # text; with --json a retman-config/1 document
 It shows the settings file (even an unreadable one — then with the error description), every key with
 its value and source (default, variable or file), the variable with the model provider's key (`jest`
 "present" or `brak` "missing", never the value) and the tools' stores with their size. Stores and caches
-are by default located in the user's folders: the Kartograf store in `<data_dir>/kartograf`, the
-Obserwator store in `<data_dir>/obserwator`, the Kartograf cache in `<cache_dir>/kartograf/metadata.db`,
+are by default located in the user's folders: the Kartograf store in `<data_dir>/kartograf`, the two
+Obserwator folders — the data root in `<data_dir>/obserwator` and the raw root in
+`<data_dir>/obserwator-raw` — the Kartograf cache in `<cache_dir>/kartograf/metadata.db`,
 Obserwator reference data in `<cache_dir>/obserwator/reference`, the command set in
 `<data_dir>/retman/collected.jsonl` (`data_dir` and `cache_dir` are the nogat user's data and cache
-folders; on Linux `~/.local/share/nogat` and `~/.cache/nogat`).
+folders; on Linux `~/.local/share/nogat` and `~/.cache/nogat`). Obserwator keeps what the providers
+publish (downloaded archives, the station sources of the catalogs, PMAXTP cells) in its raw root and
+what it builds from them (series, station catalogs, analyses) in its data root (ADR-034).
 
 ```bash
 retman config init   # appends the [retman] tables to nogat.toml and creates the tool store folders
@@ -102,7 +105,7 @@ retman config init   # appends the [retman] tables to nogat.toml and creates the
 All of this can be left at the defaults, but `retman config init` writes the complete set of settings
 to the file so that nothing is hidden. In the terminal it asks about collecting commands (section 6.4)
 and about the folder for the **tools' data stores**, creates the folders, checks that the disk supports
-hard links, writes the tables, and finally — with your consent — creates the Obserwator store (no
+hard links, writes the tables, and finally — with your consent — creates both Obserwator folders (no
 network). The run (Enter accepts the default value; paths were shortened):
 
 ```
@@ -112,26 +115,30 @@ Zapisywane są: polecenie, plan, Twoje odpowiedzi i decyzje modelu — do budowy
 Plik zostaje na tym komputerze; nic nie jest nigdzie wysyłane. Ustawienie można zmienić w [retman.privacy] collect_commands.
 Zbierać polecenia? [t]ak / [N]ie:
 Gdzie trzymać dane pobierane przez narzędzia (Kartograf, Obserwator)?
-Magazyny to dwa osobne foldery w wybranym folderze — kartograf i obserwator — więc oba są na jednym dysku. Wybierz dysk z dużą ilością miejsca: rastry i archiwa zajmują gigabajty, a magazyny są wspólne dla wszystkich projektów.
+Magazyny to trzy osobne foldery w wybranym folderze — kartograf, a dla Obserwatora obserwator (folder danych: szeregi, katalogi stacji, analizy) i obserwator-raw (folder surowy: pobrane archiwa) — więc wszystkie są na jednym dysku. Wybierz dysk z dużą ilością miejsca: rastry i archiwa zajmują gigabajty, a magazyny są wspólne dla wszystkich projektów.
 Plik cache Kartografa trafi na dysk lokalny użytkownika: ~/.cache/nogat/kartograf/metadata.db.
 Folder na magazyny [Enter = ~/.local/share/nogat]:
 ~/.config/nogat/nogat.toml
 Zbieranie poleceń wyłączone ([retman.privacy] collect_commands = false).
 Magazyny narzędzi (ustawienia [retman.tools.*] w pliku):
   Kartograf: ~/.local/share/nogat/kartograf
-  Obserwator: ~/.local/share/nogat/obserwator
-Czy utworzyć teraz magazyn Obserwatora w ~/.local/share/nogat/obserwator?
-Tworzenie nie używa sieci: znacznik magazynu powstaje w pustym folderze albo w folderze, który ma już układ magazynu, po jego sprawdzeniu przez Obserwatora. Bez magazynu nie działają operacje na danych IMGW, które zapisują się lokalnie.
-Utworzyć magazyn Obserwatora? [t]ak / [N]ie: t
-Magazyn Obserwatora gotowy: ~/.local/share/nogat/obserwator
+  Obserwator, folder danych: ~/.local/share/nogat/obserwator
+  Obserwator, folder surowy: ~/.local/share/nogat/obserwator-raw
+Czy utworzyć teraz magazyn Obserwatora? To dwa foldery:
+  folder surowy (pobrane archiwa, źródła katalogów stacji, komórki PMAXTP): ~/.local/share/nogat/obserwator-raw
+  folder danych (szeregi, katalogi stacji, analizy): ~/.local/share/nogat/obserwator
+Tworzenie nie używa sieci: znacznik powstaje w pustym folderze albo w folderze, który ma już układ swojego rodzaju, po jego sprawdzeniu przez Obserwatora. Bez nich nie działają operacje na danych IMGW, które zapisują się lokalnie.
+Utworzyć oba foldery Obserwatora? [t]ak / [N]ie: t
+Folder surowy Obserwatora gotowy: ~/.local/share/nogat/obserwator-raw
+Folder danych Obserwatora gotowy: ~/.local/share/nogat/obserwator
 ```
 
 `retman config init` prints the path of the file it wrote the tables to. An existing file stays as it was:
 the `[retman]` tables are appended at the end, and other tables (`[nogat]`, tables of other tools) are not
 touched. If the file already has a `[retman]` table, `retman config init` ends with a `conflict` error
 (code 4) and changes nothing. Without a terminal it writes the tables with the visible default paths and
-creates nothing (Kartograf writes the marker of its store on the first download, and you create the
-Obserwator store with the command "Utwórz magazyn Obserwatora" (create the Obserwator store)). If the disk of the chosen folder **has no hard
+creates nothing (Kartograf writes the marker of its store on the first download, and you create both
+Obserwator folders with the command "Utwórz magazyn Obserwatora" (create the Obserwator store)). If the disk of the chosen folder **has no hard
 links** (FAT/exFAT, some network shares), `retman config init` ends with a `store_unavailable` error
 (code 8) and does not write the file — point to a folder on another disk.
 
@@ -145,14 +152,41 @@ workers = 4                                               # parallel transfers
 update = "local"                                          # "local" | "upgrade" | "force"
 
 [retman.tools.obserwator]
-store_dir = '~/.local/share/nogat/obserwator'                   # next to the Kartograf store, in a separate folder
+store_dir = '~/.local/share/nogat/obserwator'                   # data root: series, station catalogs, analyses
+raw_store_dir = '~/.local/share/nogat/obserwator-raw'           # raw root: archives, station sources, PMAXTP cells
 reference_data_dir = '~/.cache/nogat/obserwator/reference'      # optional station locations file
 ```
 
-Stores cannot be nested inside one another, and their paths cannot contain symbolic links.
+Stores cannot be nested inside one another (the Kartograf store and the two Obserwator folders are
+three separate folders), and their paths cannot contain symbolic links.
 `update = "local"` means: use the saved versions and do not ask the sources for newer ones. The table
 template is in `src/retman/config_template.toml`. A copy of a store is made preserving hard links
 (`rsync -aH`); what will not be downloaded again is described in the tool's README.
+
+**Splitting an older Obserwator store.** An Obserwator store written before release set
+`candidate-4` holds archives, PMAXTP, series and station catalogs in one folder marked by
+`obserwator-store.json`. Used as the data root it is refused (`store_unavailable`, reason
+`wrong_root`, in `retman doctor check` and in every plan that needs the data root). Split it once,
+with hard links, as Obserwator's USAGE ("Splitting a store") describes; with the default folders:
+
+```bash
+cd ~/.local/share/nogat
+mv obserwator obserwator-old                       # the default path is now the data root
+mkdir obserwator-raw obserwator
+cp -al obserwator-old/archives obserwator-old/pmaxtp obserwator-raw/   # name only the trees the old store has
+cp -al obserwator-old/series obserwator-old/stations obserwator/       # and analyses/, if it has one
+retman plan run --text "Utwórz magazyn Obserwatora"   # store init of both folders, after confirmation
+retman doctor check                                # both Obserwator folders: ✓
+```
+
+"Utwórz magazyn Obserwatora" (create the Obserwator store) runs `store init` of the raw folder and
+then of the data folder; Obserwator verifies the layout of each before it writes its marker
+(`obserwator-store.json`, `obserwator-data.json`). With the `obserwator` command of a separate
+installation the same is `obserwator store init --root RAW` and
+`obserwator store init --kind data --root DATA`. The copy takes almost no space, because the files
+are hard links, and it must stay on the disk of the old folder; once both folders check clean, the
+old folder can be removed. The `api_keys.json` of the Obserwator server, if the old folder had one,
+goes into the data root. Folders elsewhere are named by `store_dir` (data) and `raw_store_dir` (raw).
 
 **The model server has no default values.** The template is set up for basal, so for LM Studio you have to
 change the `[retman.decision]` table (the address and model values — your own); you can also pass them as
@@ -669,7 +703,7 @@ stays on your computer; it serves to build a test set for `retman eval run` from
 | `--json` | in every command: a single `retman-result/1` envelope on stdout and nothing else; never asks |
 | `--lang pl\|en` | language of the texts for people: `pl` (default) or `en`; inside `--json` documents the reports of `doctor check` and `scaffold check` and the error messages are English whatever `--lang` says, while the labels, questions and summaries of plans and results are in the language they were made in |
 | `--verbose`, `--quiet` | technical log level on stderr: `debug` or errors only; without the option `RETMAN_LOG_LEVEL` decides, then `NOGAT_LOG_LEVEL`, then `log_level` in `[retman]` and `[nogat]` (default `warning`); the log contains neither commands nor answers |
-| `--deep` | with `doctor check`: also slower checks (a trial write to the Obserwator store) |
+| `--deep` | with `doctor check`: also slower checks (a trial write of both Obserwator folders) |
 
 ```
 $ retman plan run --check --text "Pobierz NMT 1 m EVRF2007 dla arkusza N-34-130-D-d-2-4"
@@ -784,20 +818,23 @@ Ways of writing the area:
 
 ### 9.2. Obserwator 3.0.0 — IMGW-PIB and ČHMÚ data (ADR-017)
 
-19 operations in five groups. The operations that read or write the store (station search in the store,
-the station catalog, series, PMAXTP kept in the store, the archives of the store, the store description)
-require an initialised Obserwator store (section 1.3); current data, warnings, the list of datasets, a
+19 operations in five groups. Obserwator keeps two folders (section 1.3, ADR-034): the raw folder
+(`raw_store_dir`) with what it downloads into the store (archives, the station sources of the
+catalogs, PMAXTP cells) and the data folder (`store_dir`) with what it builds from them (series,
+station catalogs). The operations that read or write them (station search in the store, the station
+catalog, series, PMAXTP kept in the store, the archives of the store, the store description) require
+the initialised Obserwator folders (section 1.3); current data, warnings, the list of datasets, a
 PMAXTP table not kept in the store and archive downloads to the result folder need none. Recognising
-stations by name works offline from the station catalog in the store. The "Network" column says whether
+stations by name works offline from the station catalog in the data folder. The "Network" column says whether
 execution connects to the server (only after `t`):
 
 | Group | Operations | Network |
 | --- | --- | --- |
-| IMGW stations and data registry | search for IMGW and ČHMÚ stations (by name, river, kind); build the station catalog in the store (`s`); list of datasets and providers | search from the "server" source and catalog build |
+| IMGW stations and data registry | search for IMGW and ČHMÚ stations (by name, river, kind); build the station catalog (`s`): the station lists of the provider are downloaded into the raw folder, then the catalog is built in the data folder; list of datasets and providers | search from the "server" source and catalog build |
 | Current data and warnings | current measurements of a hydrological, meteorological or synoptic station; hydrological and meteorological warnings; water levels (alarm and warning) | yes |
 | PMAXTP maximum precipitation | table for a point (POT or AMP method; saving the cell in the store or not; narrowing to selected probabilities and durations); reading a saved cell | download yes, read no |
-| Station time series | export of a station's time series to CSV (dataset, period, year kind, variables; source "store" or "server", `s`); data coverage of a station in the store; building time series | "server" source |
-| IMGW data archives and the Obserwator store | download of hydrological or meteorological archives to the result folder; check of archives against the store (plan); download of archives into the store (`s`), also per a plan from an earlier result (e.g. "#5"); export of stored archives to CSV or JSON Lines; store creation; store description | downloads and check yes |
+| Station time series | export of a station's time series to CSV (dataset, period, year kind, variables; source "store" or "server", `s`; "server" downloads the archives and builds the series first); data coverage of a station in the store; building time series | "server" source |
+| IMGW data archives and the Obserwator store | download of hydrological or meteorological archives to the result folder; check of archives against the store (plan); download of archives into the store, followed by building the dataset's series (`s`), also per a plan from an earlier result (e.g. "#5", archives only); export of stored archives to CSV or JSON Lines; creation of both folders; store description (the data folder; the raw folder for archives, PMAXTP and observations) | downloads and check yes |
 
 Example commands (illustrative; not all are in the `retman eval run` set yet): "Znajdź stacje hydrologiczne
 na Wiśle" (find hydrological stations on the Vistula), "Zbuduj katalog stacji IMGW" (build the IMGW station
@@ -814,7 +851,7 @@ Obserwator store?; a command may still name the store after the IMGW data).
 Rules for Obserwator operations:
 
 - **stations**: a code (9 digits for IMGW-PIB, WIGOS identifier for ČHMÚ) or a name from the catalog in the
-  store; an inflected name requires confirmation; without a catalog Retman reads only codes and suggests
+  data folder; an inflected name requires confirmation; without a catalog Retman reads only codes and suggests
   "Zbuduj katalog stacji IMGW": a station named in words ("ze stacji Racibórz-Miedonia") is then a question
   for its code, never a request for every station;
 - **period**: archives take years in the tool's archive numbering (for IMGW-PIB hydrological data —
@@ -825,9 +862,10 @@ Rules for Obserwator operations:
 - **licence**: the data provider's licence lines are shown after execution as the last warnings, and the
   lines of Nogat DEV §20 that the tool gives also go into `result.json` and the CSV tables Retman writes
   (section 5.2);
-- the store is created only deliberately (`retman config init` or the "Utwórz magazyn Obserwatora" operation) — a missing
-  store ends the plan with the error `store_unavailable` (code 8) and a hint how to create it; it is
-  never created silently.
+- the folders are created only deliberately (`retman config init` or the "Utwórz magazyn Obserwatora"
+  operation, which creates both) — a missing folder ends the plan with the error `store_unavailable`
+  (code 8) and a hint how to create it, and a store not yet split (reason `wrong_root`) with the
+  hint to split it (section 1.3); nothing is created silently.
 
 ### 9.3. Hydrolog 1.0 — catchment hydrology, computed offline
 
@@ -947,7 +985,8 @@ Narzędzia
 Magazyny danych narzędzi
   ✓ kartograf: magazyn ~/.local/share/nogat/kartograf (zapis możliwy, dowiązania twarde działają)
   ✓ kartograf: cache metadanych ~/.cache/nogat/kartograf/metadata.db
-  ✓ obserwator: magazyn ~/.local/share/nogat/obserwator (znacznik obserwator-store.json, schemat obserwator-store/1, dowiązania twarde działają)
+  ✓ obserwator, folder danych: ~/.local/share/nogat/obserwator (znacznik obserwator-data.json, schemat obserwator-data/1, dowiązania twarde działają)
+  ✓ obserwator, folder surowy: ~/.local/share/nogat/obserwator-raw (znacznik obserwator-store.json, schemat obserwator-store/1, dowiązania twarde działają)
   ✓ obserwator: pyarrow 26.0.0 (szeregi czasowe)
   ✓ obserwator: dane referencyjne ~/.cache/nogat/obserwator/reference (hydro_stations_locations.csv: brak)
 
@@ -964,14 +1003,17 @@ Model tekstowy
 ```
 
 (Report layout; the values of addresses, versions and paths depend on the environment.) The "Stores"
-section checks paths (without symbolic links), write permission, **hard links in both stores**, the
-store marker of each tool (`kartograf-store.json`, `obserwator-store.json`), the Kartograf cache,
-`pyarrow` and the reference data folder. A missing Obserwator store (also a folder that holds only the
+section checks paths (without symbolic links), write permission, **hard links in every store folder**, the
+store marker of each tool (`kartograf-store.json`; for Obserwator `obserwator-data.json` in the data
+folder and `obserwator-store.json` in the raw folder), the Kartograf cache,
+`pyarrow` and the reference data folder. A missing Obserwator folder (also a folder that holds only the
 `api_keys.json` of the Obserwator server) is a warning with the hint "create it: retman config init
 (in a terminal) or the command 'Utwórz magazyn Obserwatora'"; a missing Kartograf store is only a
 warning and an empty one is fine, because Kartograf marks it by itself at the first download. A disk
 without hard links, a foreign folder in the store's place, a marker that the tool cannot read, a store
-inside another store and a folder with the layout of a store but no marker are blocking problems,
+inside another store, a folder with the layout of a store but no marker and an Obserwator folder that
+holds only the marker of the other kind (`wrong_root`: an Obserwator store not yet split, see
+section 1.3) are blocking problems,
 each with a hint which folder to choose instead; for the layout without a marker the hint is the
 command "Utwórz magazyn Obserwatora" for Obserwator and "Utwórz magazyn Kartografa" (or
 `kartograf store init --root <folder>`) for Kartograf, and either makes the tool check the layout
@@ -981,7 +1023,7 @@ The "Conformance" section is a lightweight version of `retman scaffold check`: i
 installed tool accepts a value that the descriptions neither offer nor exclude; it does not block
 work.
 
-`retman doctor check --deep` adds a slower check: a trial write to the Obserwator store on the tool's
+`retman doctor check --deep` adds a slower check: a trial write of both Obserwator folders on the tool's
 built-in test data, in a temporary directory and without network access:
 
 ```

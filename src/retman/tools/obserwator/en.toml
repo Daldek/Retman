@@ -69,7 +69,7 @@ description = "Build or refresh the catalog of IMGW-PIB or ČHMÚ stations in th
 summary = "Done. Result #{number}: {provider} station catalog in the store ({station_count} stations, without location: {without_location}, status: {status})."
 
 [operations.build_obserwator_station_catalog.check]
-notice = "I will ask the IMGW-PIB or ČHMÚ servers (station lists) whether the catalog in the store is up to date."
+notice = "I will ask the IMGW-PIB or ČHMÚ servers (station lists and station metadata) which station sources are new or changed since the store's copies."
 
 [operations.build_obserwator_station_catalog.params.provider]
 label = "Data provider"
@@ -585,8 +585,8 @@ options.unspecified.description = "The command does not specify the export forma
 
 [operations.init_obserwator_store]
 label = "Create the Obserwator store"
-description = "Create (initialise) an empty local Obserwator store in the folder from the configuration: the first step before downloading data into the store, setting up the IMGW data store (magazyn danych IMGW); does not download data and does not change an existing store."
-summary = "Done. Result #{number}: the Obserwator store is ready: {store}."
+description = "Create (initialise) an empty local Obserwator store in the folders from the configuration, its raw data folder and its data folder: the first step before downloading data into the store, setting up the IMGW data store (magazyn danych IMGW); does not download data and does not change an existing store."
+summary = "Done. Result #{number}: the Obserwator store is ready: data {store}, raw data {raw_store}."
 
 [operations.inspect_obserwator_store]
 label = "Describe the Obserwator store"
@@ -596,8 +596,8 @@ summary = "Done. Result #{number}: the description of the Obserwator store has b
 [operations.inspect_obserwator_store.params.kind]
 unset = "all kinds of entries"
 label = "Kind of entries"
-question = "Which store entries should the description cover: archives, series, station catalogs, PMAXTP cells, observations or problems?"
-model_question = "Does the command limit the store description to one kind of entries: archives, series, station catalogs, PMAXTP cells, observations or problems?"
+question = "Which store entries should the description cover: archives, series, station catalogs, PMAXTP cells, analyses, observations or problems?"
+model_question = "Does the command limit the store description to one kind of entries: archives, series, station catalogs, PMAXTP cells, analyses, observations or problems?"
 help = "If no kind is given, I describe all store entries."
 options.archive.label = "Archives"
 options.archive.description = "archives (archiwa), archive files, ZIP, downloaded data archives"
@@ -607,6 +607,8 @@ options.catalog.label = "Station catalogs"
 options.catalog.description = "station catalogs (katalogi stacji), station catalog, stations.geojson, list of stations with locations"
 options.pmaxtp.label = "PMAXTP cells"
 options.pmaxtp.description = "PMAXTP, PMAXTP cells (komórki PMAXTP), maximum precipitation, saved grid cells"
+options.analyses.label = "Stored analyses"
+options.analyses.description = "analyses (analizy), stored station analyses computed by Hydrolog, characteristic levels and flows, trends"
 options.observation.label = "Observations"
 options.observation.description = "observations (obserwacje), saved server signals, ETag, modification dates"
 options.problem.label = "Problems"
@@ -657,11 +659,12 @@ arch_export_partial = "The store has only {found} of {total} archive files for t
 
 # Plan problems detected offline: with parameters — the question is asked again, without — the plan will fail.
 [problems]
-store_missing = "The Obserwator store ({path}) has not been created yet. Create it with the command “Create the Obserwator store” or with “retman config init”."
-store_not_obserwator = "The folder {path} contains other files and is not an Obserwator store. Specify an empty folder in the store_dir setting of the [retman.tools.obserwator] table in nogat.toml."
-store_no_marker = "The folder {path} has the layout of an Obserwator store but no marker. Write the marker with the command “Create the Obserwator store”; the tool checks the layout first."
-store_marker_unreadable = "The marker obserwator-store.json in {path} is unreadable. The store is damaged or comes from a different version of Obserwator; specify another folder in the store_dir setting of the [retman.tools.obserwator] table in nogat.toml."
-store_unsupported = "The Obserwator store in {path} has an unsupported schema ({schema}). Update Obserwator."
+store_missing = "The Obserwator folder {path} (setting {setting}) has not been created yet. Create it with the command “Create the Obserwator store” or with “retman config init”."
+store_not_obserwator = "The folder {path} contains other files and is not an Obserwator folder. Specify an empty folder in the {setting} setting of the [retman.tools.obserwator] table in nogat.toml."
+store_no_marker = "The folder {path} (setting {setting}) has the layout of an Obserwator folder but no marker. Write the marker with the command “Create the Obserwator store”; the tool checks the layout first."
+store_marker_unreadable = "The marker {marker} in {path} is unreadable. The folder is damaged or comes from a different version of Obserwator; specify another folder in the {setting} setting of the [retman.tools.obserwator] table in nogat.toml."
+store_unsupported = "The Obserwator folder {path} (setting {setting}) has an unsupported schema ({schema}). Update Obserwator."
+store_wrong_root = "The folder {path} is not the Obserwator folder the {setting} setting names: it holds the marker of Obserwator's other folder ({marker} expected), or it is a store from before Obserwator split its data into a raw data folder (raw_store_dir) and a data folder (store_dir). Split such a store as Obserwator's documentation says (“Splitting a store”), or specify the right folder in the {setting} setting of the [retman.tools.obserwator] table in nogat.toml."
 pyarrow_missing = "The pyarrow package is required for series in the Obserwator store. Install Obserwator with the store extra (obserwator[store])."
 station_catalog_missing = "The Obserwator store has no station catalog. Choose the “server” source or build the catalog first (“Build the IMGW station catalog”)."
 user_locations_missing = "Cannot read the station locations file ({path})."
@@ -678,7 +681,11 @@ arch_nothing_to_export_all = "The store has no archives of dataset {dataset}. Ch
 
 # Plan preview rows (offline).
 [preview.store]
-label = "Obserwator store"
+label = "Obserwator store, data"
+value = "{path} (from configuration)"
+
+[preview.raw_store]
+label = "Obserwator store, raw data"
 value = "{path} (from configuration)"
 
 [preview.station_matches]
@@ -787,12 +794,8 @@ value = "the store already exists — the operation will change nothing"
 
 # Availability check rows (with network access, separate consent).
 [check]
-catalog_current = "The station catalog in the store is up to date."
-catalog_newer = "The station lists at the source are newer than the catalog; it will be rebuilt."
-catalog_missing = "The station catalog is not in the store yet; it will be built."
-catalog_unverifiable = "The catalog cannot be compared with the station lists at the source."
-catalog_check_failed = "Could not check the station lists at the source."
-sources = "Station lists at the source: {reachable} of {total} available."
+sources = "Station sources on the server: {reachable} of {total} available."
+sources_to_download = "Station sources to download: {to_download} of {total} (new or changed); the catalog is then built from them without the network."
 from_store = "The data comes from the store; no network is needed."
 store_refused = "The tool will refuse to write into this store, so nothing will be downloaded: {detail}"
 archives = "To download: {to_download} of {total} files ({size} MB); {current} already up to date in the store."

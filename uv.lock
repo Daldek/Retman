@@ -558,7 +558,7 @@ wheels = [
 [[package]]
 name = "hydrolog"
 version = "1.0.0.dev0"
-source = { git = "https://github.com/Daldek/Hydrolog?rev=759d7ef0e99b654c4aff172d69439a6d8df42db2#759d7ef0e99b654c4aff172d69439a6d8df42db2" }
+source = { git = "https://github.com/Daldek/Hydrolog?rev=9e2cb618b115d94d93fb7caaf871a5fa5c1770a1#9e2cb618b115d94d93fb7caaf871a5fa5c1770a1" }
 dependencies = [
     { name = "numpy" },
     { name = "platformdirs" },
@@ -613,7 +613,7 @@ wheels = [
 [[package]]
 name = "kartograf"
 version = "0.8.0.dev0"
-source = { git = "https://github.com/Daldek/Kartograf?rev=d0990c89da88e73b9081fe33a151ba9d27b4f820#d0990c89da88e73b9081fe33a151ba9d27b4f820" }
+source = { git = "https://github.com/Daldek/Kartograf?rev=c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1#c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1" }
 dependencies = [
     { name = "numpy" },
     { name = "platformdirs" },
@@ -866,7 +866,7 @@ wheels = [
 [[package]]
 name = "obserwator"
 version = "3.0.0.dev0"
-source = { git = "https://github.com/Daldek/Obserwator?rev=f9f4ee7927ba520d3e82d3e289872090ae24e2ec#f9f4ee7927ba520d3e82d3e289872090ae24e2ec" }
+source = { git = "https://github.com/Daldek/Obserwator?rev=0394af7c66b60cccb88f14b6118893b78443dc21#0394af7c66b60cccb88f14b6118893b78443dc21" }
 dependencies = [
     { name = "httpx" },
     { name = "platformdirs" },
@@ -1401,9 +1401,9 @@ dev = [
     { name = "ruff", specifier = ">=0.6" },
 ]
 tools = [
-    { name = "hydrolog", git = "https://github.com/Daldek/Hydrolog?rev=759d7ef0e99b654c4aff172d69439a6d8df42db2" },
-    { name = "kartograf", git = "https://github.com/Daldek/Kartograf?rev=d0990c89da88e73b9081fe33a151ba9d27b4f820" },
-    { name = "obserwator", extras = ["store"], git = "https://github.com/Daldek/Obserwator?rev=f9f4ee7927ba520d3e82d3e289872090ae24e2ec" },
+    { name = "hydrolog", git = "https://github.com/Daldek/Hydrolog?rev=9e2cb618b115d94d93fb7caaf871a5fa5c1770a1" },
+    { name = "kartograf", git = "https://github.com/Daldek/Kartograf?rev=c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1" },
+    { name = "obserwator", extras = ["store"], git = "https://github.com/Daldek/Obserwator?rev=0394af7c66b60cccb88f14b6118893b78443dc21" },
 ]
 
 [[package]]

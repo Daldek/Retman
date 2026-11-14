@@ -49,10 +49,25 @@ def make_app(
         ],
         version_lookup=lambda _: "3.0.0",
     )
+    project = tmp_path / "project"
+    project.mkdir()
+    config = load_config(init_config(tmp_path / "config.toml"))
+    raw = Path(config.tools["obserwator"]["raw_store_dir"])
+
+    def store_info(call: CatalogCall) -> ToolDocument:
+        # A ready root of the kind asked for, unless the test says otherwise
+        kind = "store" if Path(str(call.options["root"])) == raw else "data"
+        ready = {
+            "exists": True,
+            "supported": True,
+            "store_schema": f"obserwator-{kind}/1",
+        }
+        return {"result": {**ready, **(store or {})}}
+
     client = FakeToolClient(
         documents={
             "stations find": lambda call: synthetic_station_document(call.options),
-            "store info": {"result": store or {"exists": True, "supported": True}},
+            "store info": store_info,
             "series summary": {"result": []},
             "datasets files": {
                 "result": [
@@ -62,9 +77,6 @@ def make_app(
             },
         }
     )
-    project = tmp_path / "project"
-    project.mkdir()
-    config = load_config(init_config(tmp_path / "config.toml"))
     app = Retman(
         config,
         FakeDecisionBackend(rules),
@@ -99,7 +111,11 @@ def test_a_complete_plan_is_previewed_offline_and_offers_the_check(tmp_path):
     assert plan.questions == []
     assert plan.values["year_type"].value == "calendar"
     labels = [label for label, _ in plan.preview_rows]
-    assert "Magazyn Obserwatora" in labels and "Pliki archiwów do sprawdzenia" in labels
+    assert {
+        "Magazyn Obserwatora, dane surowe",
+        "Magazyn Obserwatora, dane",
+        "Pliki archiwów do sprawdzenia",
+    } <= set(labels)
     assert plan.can_check
     # Planning used the offline half of the client only
     assert client.network_calls == []
@@ -113,7 +129,9 @@ def test_a_store_that_does_not_exist_ends_planning_with_store_unavailable(tmp_pa
         "build_obserwator_series": "build_obserwator_series",
         "pl_meteo_precip_daily": "pl_meteo_precip_daily",
     }
-    app, _ = make_app(tmp_path, {"exists": False, "supported": False}, rules)
+    app, _ = make_app(
+        tmp_path, {"exists": False, "supported": False, "store_schema": None}, rules
+    )
 
     with pytest.raises(RetmanError) as caught:
         app.plan("Zbuduj szereg dobowych opadów")
@@ -122,7 +140,7 @@ def test_a_store_that_does_not_exist_ends_planning_with_store_unavailable(tmp_pa
     assert caught.value.code == "store_unavailable"
     assert caught.value.details["reason"] == "not_initialised"
     text = str(caught.value.text)
-    assert f"({caught.value.details['path']})" in text
+    assert caught.value.details["path"] in text
     assert "nie jest jeszcze utworzony" in text and "Utwórz magazyn Obserwatora" in text
 
 

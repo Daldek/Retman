@@ -59,13 +59,13 @@ dev = [
 # Not a runtime dependency of Retman (ARCHITECTURE 9.3). Commits until the tags v0.8.0
 # and v3.0.0 exist; then pin the tags. The Kartograf, Obserwator (formerly IMGWTools,
 # Nogat ECO-057) and Hydrolog commits are their members of the Nogat release set
-# candidate-2 (Nogat 587c909), written by `ecosystem.py set apply`; all are on GitHub.
+# candidate-4; all are on GitHub.
 # The supported ranges of the tools admit their development versions while the commits
 # are pinned (REL-5.6).
 tools = [
-    "kartograf @ git+https://github.com/Daldek/Kartograf@d0990c89da88e73b9081fe33a151ba9d27b4f820",
-    "obserwator[store] @ git+https://github.com/Daldek/Obserwator@f9f4ee7927ba520d3e82d3e289872090ae24e2ec",
-    "hydrolog @ git+https://github.com/Daldek/Hydrolog@759d7ef0e99b654c4aff172d69439a6d8df42db2",
+    "kartograf @ git+https://github.com/Daldek/Kartograf@c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1",
+    "obserwator[store] @ git+https://github.com/Daldek/Obserwator@0394af7c66b60cccb88f14b6118893b78443dc21",
+    "hydrolog @ git+https://github.com/Daldek/Hydrolog@9e2cb618b115d94d93fb7caaf871a5fa5c1770a1",
 ]
 
 [tool.uv]

@@ -125,7 +125,21 @@ CASES: list[tuple[str, dict[str, Any], list[tuple[str, dict, str | None]]]] = [
     (
         "build_obserwator_station_catalog",
         {"provider": "imgw_pib"},
-        [("store catalog", {"provider": "IMGW-PIB"}, None)],
+        [
+            (
+                "store sync",
+                {
+                    "datasets": [
+                        "pl.imgw.hydro_stations",
+                        "pl.imgw.meteo_stations",
+                        "pl.imgw.hydro_now",
+                        "pl.imgw.meteo_now",
+                    ]
+                },
+                None,
+            ),
+            ("store catalog", {"provider": "IMGW-PIB"}, None),
+        ],
     ),
     (
         "list_obserwator_datasets",
@@ -290,15 +304,18 @@ def select(options: dict) -> list[tuple[str, dict, str | None]]:
     return [("series select", options, None)]
 
 
-def test_a_series_export_from_the_server_syncs_the_archives_first(operations, tmp_path):
+def test_a_series_export_from_the_server_syncs_the_archives_and_builds_the_series_first(
+    operations, tmp_path
+):
     calls = build(operations, "export_station_series", export_params(), tmp_path)
 
     assert summary(calls) == [
         (
             "store sync",
-            {"datasets": [PRECIP], "series": True, "years": list(range(2000, 2021))},
+            {"datasets": [PRECIP], "years": list(range(2000, 2021))},
             None,
         ),
+        ("series build", {"dataset": PRECIP}, None),
         (
             "series export",
             {
@@ -335,8 +352,8 @@ def test_hydrological_years_are_numbered_like_the_archives_of_the_tool(
 
     # Hydrological 2000–2020 is 1.11.1999 – 31.10.2020: archives 2000–2020
     assert hydrological[0].options["years"] == list(range(2000, 2021))
-    assert hydrological[1].options["start"] == "1999-11-01"
-    assert hydrological[1].kind == "hydro_series"
+    assert hydrological[2].options["start"] == "1999-11-01"
+    assert hydrological[2].kind == "hydro_series"
     # Calendar 2000–2020 reaches November 2020, which is archive year 2021
     assert calendar[0].options["years"] == list(range(2000, 2022))
 
@@ -361,9 +378,9 @@ def test_a_czech_series_names_its_station_and_a_whole_history_has_no_years(
     assert hydro[0].options["years"] == list(range(2000, 2021))
     assert meteo[0].options == {
         "datasets": ["cz.chmi.meteo_daily"],
-        "series": True,
         "stations": ["0-203-0-90001"],
     }
+    assert meteo[1].options == {"dataset": "cz.chmi.meteo_daily"}
     client = real_client(tmp_path)
     for call in (*hydro, *meteo):
         client.validate(call)

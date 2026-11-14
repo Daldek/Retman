@@ -198,3 +198,11 @@ unchanged.
 `587c909`; `candidate-1` kept `9deaa314`), which is on GitHub. The head refuses a sheet whose
 grid has another cell size than its index record declares (`data_error`, reason
 `resolution_mismatch`); Retman's operations are unchanged (CHANGELOG, Changed).
+
+**Erratum 8 (2026-11-14, Nogat release set `candidate-4`):** the pin is now Kartograf
+`c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1`, its member of the release set `candidate-4`, which
+is on GitHub. The head moves `opentelemetry-api` to 1.45.2, retries on Windows a directory that a
+cleanup is still removing and removes dead code; Retman's Kartograf operations are unchanged. Its
+`STORE_MARKERS` do not name `obserwator-data.json`, the marker of the data root of Obserwator
+(ADR-034), so Retman's `STORE_MARKERS`, which follow Kartograf's rule of a nested store, do not
+name it either.

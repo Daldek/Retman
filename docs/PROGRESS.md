@@ -8,12 +8,12 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 
 | Component | State | Note |
 |---|---|---|
-| Provider attribution (Nogat DEV §20) | done, waits for the pins | ADR-033: the tools' `attribution` and `terms_notice` pass into results, warnings and every CSV Retman writes; effective when the Obserwator and Hydrolog pins move to commits that emit them (next release set); then the download operations need a kind for the `ATTRIBUTION.txt` Obserwator lists in `files[]`, and 5 integration tests change their expectations (checked 2026-11-13 against the Obserwator worktree `fix/provider-attribution`); since ECO-068 DEV §20 also has the GUGiK, ISRIC SoilGrids and ČÚZK lines (G, SG, Z), which pass on from Kartograf's documents the same way once its pin emits them (`d0990c89` emits none), except for the orthophoto sheets of `download_sheet_hierarchy`, which Kartograf's provider class fetches without a `kartograf-result/1` document (ADR-033 erratum 1) |
-| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-033) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
+| Provider attribution (Nogat DEV §20) | done, in effect for Obserwator and Hydrolog | ADR-033: the tools' `attribution` and `terms_notice` pass into results, warnings and every CSV Retman writes; the pins of the release set `candidate-4`, Obserwator `0394af7c` and Hydrolog `9e2cb618`, emit them, so the registry-built licence text is no longer shown for them (ADR-033 erratum 3); open: a kind for the `ATTRIBUTION.txt` that Obserwator lists in `files[]` of a plain download (ADR-033, Consequences); since ECO-068 DEV §20 also has the GUGiK, ISRIC SoilGrids and ČÚZK lines (G, SG, Z), which pass on from Kartograf's documents the same way once its pin emits them (`c9afdd3f` emits none), except for the orthophoto sheets of `download_sheet_hierarchy`, which Kartograf's provider class fetches without a `kartograf-result/1` document (ADR-033 erratum 1) |
+| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-034) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
-| Kartograf 0.8.0 adapter (10 operations: spatial data of GUGiK and Copernicus, SoilGrids soils, the creation and the overview of the store), Obserwator 3.0.0 adapter (formerly IMGWTools; 19 operations, two-stage recognition) | done | the `tools` group pins `d0990c89` (Kartograf) and `f9f4ee79` (Obserwator), their members of the Nogat release set `candidate-2` (Nogat `587c909`), both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist (Next 3); the names of the tool in Retman follow Nogat ECO-057 (CHANGELOG, ADR-024 erratum 7); the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags; not yet offered by an operation: `imagery download` sheets of a rectangle or a geometry file (orthophoto, true orthophoto, LIDAR intensity, oblique orthophoto; CZ SM5 sheets), the BDOO class selection (`--layers`) and a voivodeship code as its area, and the Czech land cover (ZABAGED, Data50, Data250: an S-JTSK rectangle or the national file, which the area reader does not give) |
-| Hydrolog 1.0 adapter (9 operations in `rainfall_runoff`, `hydrology_analysis` and `soil_data`: design hyetograph, SCS-CN effective rainfall, time of concentration of a watershed file, design hydrograph from area, CN and tc, hydrographs routed through a river network file with or without an inflow table, flood quantiles of an Obserwator daily flow series, morphometry of a watershed file, hydrologic soil groups of clay, sand and silt rasters) | done | the `tools` group pins `759d7ef0` (Hydrolog, its member of the Nogat release set `candidate-2`); Hydrolog has no settings in Retman (no store) and its previews let the tool compute the plan offline (`lookup` of commands without effects, and of `route network` while its call names no output); `route network` and `soil hsg` write only into the result folder; the clay, sand and silt inputs of `soil hsg` are `soil_raster` results told apart by their `property` (`InputSpec.where`); all the basic routes of the Nogat registry are offered |
+| Kartograf 0.8.0 adapter (10 operations: spatial data of GUGiK and Copernicus, SoilGrids soils, the creation and the overview of the store), Obserwator 3.0.0 adapter (formerly IMGWTools; 19 operations, two-stage recognition) | done | the `tools` group pins `c9afdd3f` (Kartograf) and `0394af7c` (Obserwator), their members of the Nogat release set `candidate-4` (pinned with the author's approval of 2026-11-14), both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist (Next 3); Obserwator keeps a raw and a data root, the settings `raw_store_dir` and `store_dir` (ADR-034); the names of the tool in Retman follow Nogat ECO-057 (CHANGELOG, ADR-024 erratum 7); the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags; not yet offered by an operation: `imagery download` sheets of a rectangle or a geometry file (orthophoto, true orthophoto, LIDAR intensity, oblique orthophoto; CZ SM5 sheets), the BDOO class selection (`--layers`) and a voivodeship code as its area, the Czech land cover (ZABAGED, Data50, Data250: an S-JTSK rectangle or the national file, which the area reader does not give), and Obserwator's `stations export` and `analyses *` (excluded, ARCHITECTURE 3.2.11) |
+| Hydrolog 1.0 adapter (9 operations in `rainfall_runoff`, `hydrology_analysis` and `soil_data`: design hyetograph, SCS-CN effective rainfall, time of concentration of a watershed file, design hydrograph from area, CN and tc, hydrographs routed through a river network file with or without an inflow table, flood quantiles of an Obserwator daily flow series, morphometry of a watershed file, hydrologic soil groups of clay, sand and silt rasters) | done | the `tools` group pins `9e2cb618` (Hydrolog, its member of the Nogat release set `candidate-4`); Hydrolog has no settings in Retman (no store) and its previews let the tool compute the plan offline (`lookup` of commands without effects, and of `route network` while its call names no output); `route network` and `soil hsg` write only into the result folder; the clay, sand and silt inputs of `soil hsg` are `soil_raster` results told apart by their `property` (`InputSpec.where`); all the basic routes of the Nogat registry are offered |
 | Smoke of every operation with the real tools at the release set's commits | done 2026-11-04 | `develop` `d08c4b5`, Kartograf `9deaa314`, Obserwator `ea158dc6`, Hydrolog `2eb8bd0c`, the model's choices scripted (no model server): 43 cases of the 38 operations planned, 41 ran, 2 skipped as large downloads (`download_sheet_hierarchy` with four 1 m DEM sheets, `download_bdot10k` of a whole county), none failed; the defects of the first run (a missing store reported as `invalid_known_value`, a station named without a catalog dropped silently, a `plan` question without options) are fixed (CHANGELOG) |
 | Extractors | in progress | numbers with units for Hydrolog done (`curve_number`, `rainfall_depth`, `catchment_area`, durations by role: `rain_duration`, `time_step`, `concentration_time`); missing: lengths, slopes and elevations (a watershed stated in a sentence); the rest of ARCHITECTURE 4.3 is done |
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
@@ -59,24 +59,26 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
    - **Obserwator (formerly IMGWTools): done (the calls, the marker states, the documents,
      ADR-024); projects are gone (Nogat ECO-054, plan `2026-10-31-archiwista-projects` step 4);
      the tool is renamed (Nogat ECO-057, plan `2026-11-03-imgwtools-to-obserwator` step 3).**
-     The `tools` group pins `f9f4ee7927ba520d3e82d3e289872090ae24e2ec` and Kartograf `d0990c89…`,
-     the commits of Nogat's release set `candidate-2` (`ecosystem.py set apply`),
+     The `tools` group pins `0394af7c66b60cccb88f14b6118893b78443dc21` and Kartograf `c9afdd3f…`,
+     the commits of Nogat's release set `candidate-4`,
      so `uv lock` and `uv sync` resolve it normally. The tool keeps no projects, so the category
      `imgw_projects` and its seven operations are removed; projects belong to Archiwista. Retman
-     sets no `OBSERWATOR_ROOT` and uses no `obserwator_*` tool of the MCP and REST surfaces: it
-     calls the command layer by command name and passes `root` from `store_dir`.
+     sets no `OBSERWATOR_ROOT` or `OBSERWATOR_RAW_ROOT` and uses no `obserwator_*` tool of the MCP
+     and REST surfaces: it calls the command layer by command name and passes `root` by the kind
+     of the command, the data root `store_dir` or the raw root `raw_store_dir`, and `raw_root`
+     from `raw_store_dir` (ADR-034).
      The texts of the tool stay English inside Polish messages (decided, ADR-024, USAGE 13). The
      refusals of that head are read (ADR-024 erratum 3): the availability checks report a root
      that the tool turns away (`not_empty`, `nested_store`) as `store_refused`, the plans name a
      marker that cannot be read (`data_error`, `invalid_marker`), and `tests/unit/test_stores.py`
      holds `obserwator_store_state` against the check of the tool. Not part of the migration:
      `docs/research/` still names the old variables, the project operations and IMGWTools, which
-     is history. The fixture store of the Obserwator tests is removed when the test session ends.
+     is history. The fixture roots of the Obserwator tests are removed when the test session ends.
    - **Kartograf: done (the calls, the marker states, the operation that writes the marker, the
      documents, ADR-025); projects are gone (Nogat ECO-054, plan
      `2026-10-31-archiwista-projects` step 4).** The `tools` group pins
-     `d0990c89da88e73b9081fe33a151ba9d27b4f820`, Kartograf's member of Nogat's release set
-     `candidate-2`, which is on GitHub; it carries `feature/archiwista-projects` up to `eab8612d` and the marker
+     `c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1`, Kartograf's member of Nogat's release set
+     `candidate-4`, which is on GitHub; it carries `feature/archiwista-projects` up to `eab8612d` and the marker
      `obserwator-store.json` of Nogat ECO-057 (ADR-025 erratum 6). Retman's Kartograf operations used no
      project command; with projects the task name extractor and the path of an option inside
      another option went too (ADR-025 erratum 5, ADR-017 erratum 2). Done: `root=` and `--root` (client and `DownloadManager(provider,
@@ -114,6 +116,9 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
    without a file. A range of result numbers („#1-#3”) gives its two ends only, so a command
    names every result of `soil hsg` („#1, #2 i #3”). Run `retman eval run` on the `hydrolog-*`
    rows.
+9. File a `request` issue in Kartograf: its `STORE_MARKERS` do not name `obserwator-data.json`,
+   the marker of Obserwator's data root, so neither Kartograf nor Retman's nested-store check,
+   which follows it, knows a data root as a store (ADR-034, ADR-025 erratum 8).
 
 ## Open questions
 
@@ -139,3 +144,7 @@ Author's decisions of 2026-11-09.
   (ARCHITECTURE 12 item 14; the full proposals are in the git history of this file).
 - **ADRs for the first session's decisions (2026-10-11).** Recorded retroactively: done on
   2026-11-10 as ADR-026 to ADR-032.
+- **Release set `candidate-4` (2026-11-14).** The author approved its pins (Kartograf
+  `c9afdd3f`, Obserwator `0394af7c`, Hydrolog `9e2cb618`); Obserwator's raw and data roots are
+  two settings routed by command (ADR-034). Existing users split their old Obserwator store
+  once (USAGE 1.3, CHANGELOG).

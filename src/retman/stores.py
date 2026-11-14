@@ -16,14 +16,30 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-# Obserwator marks a folder as its store with this file (schema ``obserwator-store/1``)
+# Obserwator keeps two roots (its ADR-017), each marked by a file of its own: the raw
+# root (downloaded archives, station sources, PMAXTP cells) by ``obserwator-store.json``
+# and the data root (series, station catalogs, analyses) by ``obserwator-data.json``
+ObserwatorRoot = Literal["raw", "data"]
 OBSERWATOR_MARKER = "obserwator-store.json"
 OBSERWATOR_SCHEMA = "obserwator-store/1"
-# The trees whose presence is the layout of a store, marked or not (the tool's
-# ``_LAYOUT_TREES``): ``store init`` verifies such a folder and writes its marker
-OBSERWATOR_LAYOUT_TREES = ("archives", "series", "stations", "pmaxtp")
-# State files of the tool's REST server, kept in the default store folder; they are
-# not store content, so a folder holding only them counts as empty
+OBSERWATOR_DATA_MARKER = "obserwator-data.json"
+OBSERWATOR_DATA_SCHEMA = "obserwator-data/1"
+OBSERWATOR_MARKERS: dict[ObserwatorRoot, str] = {
+    "raw": OBSERWATOR_MARKER,
+    "data": OBSERWATOR_DATA_MARKER,
+}
+OBSERWATOR_SCHEMAS: dict[ObserwatorRoot, str] = {
+    "raw": OBSERWATOR_SCHEMA,
+    "data": OBSERWATOR_DATA_SCHEMA,
+}
+# The trees whose presence is the layout of a root of each kind, marked or not (the
+# tool's ``_LAYOUT_TREES``): ``store init`` verifies such a folder and writes its marker
+OBSERWATOR_LAYOUT_TREES: dict[ObserwatorRoot, tuple[str, ...]] = {
+    "raw": ("archives", "pmaxtp"),
+    "data": ("series", "stations", "analyses"),
+}
+# State files of the tool's REST server, kept in the default root folder; they are
+# not root content, so a folder holding only them counts as empty
 OBSERWATOR_STATE_FILES = ("api_keys.json",)
 # The static station locations Obserwator reads from ``reference_data_dir``
 OBSERWATOR_REFERENCE_FILE = "hydro_stations_locations.csv"
@@ -31,8 +47,10 @@ OBSERWATOR_REFERENCE_FILE = "hydro_stations_locations.csv"
 # Kartograf marks a folder as its store with this file (schema ``kartograf-store/1``)
 KARTOGRAF_MARKER = "kartograf-store.json"
 KARTOGRAF_SCHEMA = "kartograf-store/1"
-# The marker files of the stores of the Nogat tools: a tool knows the store of another
-# by the file name alone, and a store never lies in, holds or is another one (DEV 19)
+# The marker files by which Kartograf knows the stores of the Nogat tools (its
+# ``marker.STORE_MARKERS``): a store never lies in, holds or is another one (DEV 19).
+# Kartograf c9afdd3f does not know Obserwator's data root marker yet, so the states
+# of a Kartograf store, judged by Kartograf's rules, do not either
 STORE_MARKERS = (KARTOGRAF_MARKER, OBSERWATOR_MARKER)
 # The top folders Kartograf writes into a store, one per product and ``hsg`` (the
 # tool's ``managed_trees()``, which a test holds this set against): files in them are
@@ -71,6 +89,7 @@ ObserwatorStoreState = Literal[
     "foreign",
     "unreadable",
     "unsupported",
+    "wrong_root",
 ]
 KartografStoreState = Literal[
     "missing",
@@ -88,12 +107,14 @@ Outcome = Literal["ok", "existing", "tool_missing", "refused"]
 
 @dataclass(frozen=True)
 class ObserwatorStore:
-    """What a configured Obserwator store folder holds.
+    """What a configured Obserwator root folder holds.
 
     ``detail`` is the schema named by the marker (``ready`` and ``unsupported``) and
     empty otherwise. ``empty`` also covers a folder that holds only the state file of
-    the tool's REST server; ``no_marker`` is a folder with the layout of a store and
-    no marker (``store init`` verifies the layout and writes it).
+    the tool's REST server; ``no_marker`` is a folder with the layout of a root of
+    the kind and no marker (``store init`` verifies the layout and writes it);
+    ``wrong_root`` a folder with the marker of the other kind of root only, such as
+    a store not yet split used as the data root.
     """
 
     state: ObserwatorStoreState
@@ -219,29 +240,33 @@ def hardlink_error(folder: Path) -> OSError | None:
     return None
 
 
-def obserwator_store_state(folder: Path) -> ObserwatorStore:
-    """Whether ``folder`` is an initialised Obserwator store, judged without the tool.
+def obserwator_store_state(folder: Path, *, kind: ObserwatorRoot) -> ObserwatorStore:
+    """Whether ``folder`` is an initialised Obserwator root of ``kind`` (no tool used).
 
-    The rules are those of ``store init`` (offline, in the tool): it writes the marker
-    into an empty folder, where the state files of its REST server do not count, and
-    into a folder with the layout of a store (``archives/``, ``series/``,
-    ``stations/`` or ``pmaxtp/``) after verifying that layout. Any other folder
+    The rules are those of ``store init --kind`` (offline, in the tool): a folder
+    with the marker of the other kind and not its own is a root of the other kind;
+    the marker of the kind is read; the marker is written into an empty folder,
+    where the state files of its REST server do not count, and into a folder with
+    the layout of a root of the kind after verifying that layout. Any other folder
     without the marker is ``foreign``. The verification itself is left to the tool.
     """
     if not folder.exists():
         return ObserwatorStore("missing")
     if not folder.is_dir():
         return ObserwatorStore("not_a_directory")
-    marker = folder / OBSERWATOR_MARKER
+    marker = folder / OBSERWATOR_MARKERS[kind]
+    other: ObserwatorRoot = "data" if kind == "raw" else "raw"
+    if (folder / OBSERWATOR_MARKERS[other]).is_file() and not marker.exists():
+        return ObserwatorStore("wrong_root")
     if marker.exists():
         try:
             schema = json.loads(marker.read_text(encoding="utf-8"))["schema"]
         except (OSError, ValueError, KeyError, TypeError):
             return ObserwatorStore("unreadable")
-        if schema != OBSERWATOR_SCHEMA:
+        if schema != OBSERWATOR_SCHEMAS[kind]:
             return ObserwatorStore("unsupported", str(schema))
-        return ObserwatorStore("ready", OBSERWATOR_SCHEMA)
-    if any((folder / tree).is_dir() for tree in OBSERWATOR_LAYOUT_TREES):
+        return ObserwatorStore("ready", OBSERWATOR_SCHEMAS[kind])
+    if any((folder / tree).is_dir() for tree in OBSERWATOR_LAYOUT_TREES[kind]):
         return ObserwatorStore("no_marker")
     content = any(
         entry.name not in OBSERWATOR_STATE_FILES for entry in folder.iterdir()
@@ -360,21 +385,24 @@ def kartograf_store_state(folder: Path) -> KartografStore:
     return KartografStore("foreign" if has_other_files else "empty")
 
 
-def init_obserwator_store(folder: Path) -> ToolOutcome:
-    """Initialise an Obserwator store in ``folder`` through the tool (``store init``).
+def init_obserwator_store(folder: Path, *, kind: ObserwatorRoot) -> ToolOutcome:
+    """Initialise an Obserwator root of ``kind`` in ``folder`` (``store init --kind``).
 
-    Offline and idempotent: an initialised store is left as it is. Obserwator
-    refuses a folder with other files, a layout that is not that of its store, a
-    path with a symbolic link, a place inside another store and a file system
-    without hard links; the refusal is returned, not raised.
+    Offline and idempotent: an initialised root is left as it is. Obserwator
+    refuses a folder with other files, a layout that is not that of its root of the
+    kind, a root of the other kind, a path with a symbolic link, a place inside
+    another store and a file system without hard links; the refusal is returned,
+    not raised.
     """
     try:
         obserwator = importlib.import_module("obserwator")
     except ImportError as error:
         return ToolOutcome("tool_missing", str(error))
-    existed = (folder / OBSERWATOR_MARKER).exists()
+    existed = (folder / OBSERWATOR_MARKERS[kind]).exists()
     try:
-        obserwator.run_command("store init", options={"root": str(folder)})
+        obserwator.run_command(
+            "store init", options={"root": str(folder), "kind": kind}
+        )
     except (obserwator.ObserwatorError, OSError) as error:
         return _refused(error, obserwator.__version__)
     return ToolOutcome(
@@ -383,12 +411,13 @@ def init_obserwator_store(folder: Path) -> ToolOutcome:
 
 
 def probe_obserwator_write() -> ToolOutcome:
-    """Check that Obserwator can write a store on this system (end to end).
+    """Check that Obserwator can write its roots on this system (end to end).
 
-    Lets the tool build its packaged offline fixture store (no network): an
-    initialised store, archives, a series and a station catalog, in a temporary
-    folder. It shows what a hard-link test cannot: that the installed build
-    publishes versions on this operating system.
+    Lets the tool build its packaged offline fixture roots (no network): an
+    initialised raw root with archives and station sources and a data root with a
+    series and a station catalog built from them, in a temporary folder. It shows
+    what a hard-link test cannot: that the installed build publishes versions on
+    this operating system.
     """
     try:
         testing = importlib.import_module("obserwator.testing")
@@ -399,7 +428,7 @@ def probe_obserwator_write() -> ToolOutcome:
     # A symbolic link in the path would be refused by Obserwator (macOS: /var, /tmp)
     folder = Path(tempfile.mkdtemp(prefix="retman-obserwator-probe-")).resolve()
     try:
-        testing.build_fixture_store(folder / "store")
+        testing.build_fixture_store(folder / "raw", data_root=folder / "data")
     except (obserwator.ObserwatorError, OSError) as error:
         return _refused(error, version)
     finally:

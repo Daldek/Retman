@@ -182,8 +182,11 @@ def _config_init() -> Schema:
             "config_file": STRING,
             "collect_commands": BOOLEAN,
             "collect_path": STRING,
+            # ``obserwator_raw`` came with the raw root of Obserwator (ADR-034): an
+            # added optional field keeps the version (AGI-4.1)
             "stores": _record(
-                {"kartograf": STRING, "obserwator": STRING}, ["kartograf", "obserwator"]
+                {"kartograf": STRING, "obserwator": STRING, "obserwator_raw": STRING},
+                ["kartograf", "obserwator"],
             ),
             "files": FILES,
         },

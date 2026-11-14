@@ -43,17 +43,17 @@ ADR-x`); each relation is recorded on both sides.
 | [ADR-012](#adr-012-kartograf-080-and-imgwtools-300) | Kartograf 0.8.0 and IMGWTools 3.0.0 | accepted; amends ADR-003, ADR-006; amended by ADR-024, ADR-025 | 2026-10-19 |
 | [ADR-013](#adr-013-tools-called-through-the-command-layer) | Tools called through the command layer | accepted | 2026-10-19 |
 | [ADR-014](#adr-014-no-network-before-confirmation-preview-and-check) | No network before confirmation: preview and check | accepted | 2026-10-19 |
-| [ADR-015](#adr-015-tool-stores-outside-results-folders) | Tool stores outside results folders | accepted; amended by ADR-021 | 2026-10-19 |
+| [ADR-015](#adr-015-tool-stores-outside-results-folders) | Tool stores outside results folders | accepted; amended by ADR-021, ADR-034 | 2026-10-19 |
 | [ADR-016](#adr-016-geometry-file-as-an-area) | Geometry file as an area | accepted; amends ADR-001, ADR-004 | 2026-10-19 |
 | [ADR-017](#adr-017-all-of-imgwtools-in-v01-and-two-stage-recognition) | All of IMGWTools in v0.1 and two-stage recognition | accepted; amends ADR-001, ADR-004; erratum 1 (projects removed, Nogat ECO-054), erratum 2 (task name extractor removed) | 2026-10-19 |
 | [ADR-018](#adr-018-mcp-tools-via-the-python-api-retman-server-in-v03) | MCP: tools via the Python API, Retman server in v0.3 | accepted | 2026-10-19 |
 | [ADR-019](#adr-019-static-manifests-and-retman-scaffold-from-tool-catalogs) | Static manifests and `retman-scaffold` from tool catalogs | accepted; amended by ADR-022 | 2026-10-19 |
 | [ADR-020](decisions/0020-error-registry.md) | Adopt the shared error registry | accepted | 2026-10-24 |
-| [ADR-021](decisions/0021-user-environment.md) | User environment: `[retman]` in `nogat.toml`, variables and user directories | accepted; amends ADR-010, ADR-015; erratum 2 (the option layer of ADR-022) | 2026-10-24 |
+| [ADR-021](decisions/0021-user-environment.md) | User environment: `[retman]` in `nogat.toml`, variables and user directories | accepted; amends ADR-010, ADR-015; amended by ADR-034; erratum 2 (the option layer of ADR-022) | 2026-10-24 |
 | [ADR-022](decisions/0022-agent-interfaces.md) | Agent interfaces: one command catalog, one `retman` executable | accepted; amends ADR-011, ADR-019 | 2026-10-24 |
-| [ADR-023](decisions/0023-structure-gate-ci-and-log.md) | Repository structure, quality gate, CI, test tree and technical log | accepted; erratum 2 (the pins on GitHub, CI runs) | 2026-10-24 |
-| [ADR-024](decisions/0024-imgwtools-data-output.md) | IMGWTools data output: plain files or a store, called as the tool defines them | accepted; amends ADR-012; amended by ADR-025; erratum 1 (REL-5.6 ranges, pin `97c1057`), erratum 2 (the Kartograf pin), erratum 8 (the pin of the release sets, the repository renamed) | 2026-10-25 |
-| [ADR-025](decisions/0025-kartograf-data-output.md) | Kartograf data output: one store root, the registry codes, the marker states judged by Retman | accepted; amends ADR-012, ADR-024; erratum 7 (the pin of the release set `candidate-2`) | 2026-10-25 |
+| [ADR-023](decisions/0023-structure-gate-ci-and-log.md) | Repository structure, quality gate, CI, test tree and technical log | accepted; erratum 2 (the pins on GitHub, CI runs), erratum 3 (the pin of the release set `candidate-4`) | 2026-10-24 |
+| [ADR-024](decisions/0024-imgwtools-data-output.md) | IMGWTools data output: plain files or a store, called as the tool defines them | accepted; amends ADR-012; amended by ADR-025, ADR-034; erratum 1 (REL-5.6 ranges, pin `97c1057`), erratum 2 (the Kartograf pin), erratum 8 (the pin of the release sets, the repository renamed), erratum 9 (the pin of the release set `candidate-4`, two roots) | 2026-10-25 |
+| [ADR-025](decisions/0025-kartograf-data-output.md) | Kartograf data output: one store root, the registry codes, the marker states judged by Retman | accepted; amends ADR-012, ADR-024; erratum 7 (the pin of the release set `candidate-2`), erratum 8 (the pin of the release set `candidate-4`) | 2026-10-25 |
 | [ADR-026](decisions/0026-bare-probability-number-asks.md) | A bare probability number always asks | accepted | 2026-10-11 |
 | [ADR-027](decisions/0027-no-execution-without-confirmation-in-0x.md) | No execution without confirmation in 0.x | accepted | 2026-10-11 |
 | [ADR-028](decisions/0028-eval-in-the-base-package.md) | The evaluation runner and its command set in the base package | accepted | 2026-10-11 |
@@ -61,7 +61,8 @@ ADR-x`); each relation is recorded on both sides.
 | [ADR-030](decisions/0030-design-documents-in-docs.md) | Design documents in `docs/` | accepted | 2026-10-11 |
 | [ADR-031](decisions/0031-lf-line-endings.md) | LF line endings in every file | accepted | 2026-10-11 |
 | [ADR-032](decisions/0032-repository-on-github.md) | Repository `github.com/Daldek/Retman` | accepted | 2026-10-11 |
-| [ADR-033](decisions/0033-provider-attribution-passed-on.md) | The providers' attribution of the tools is passed on into every result and table | accepted; erratum 1 (DEV §20 after Nogat ECO-065 and ECO-068), erratum 2 (the order of DEV-20.4) | 2026-11-13 |
+| [ADR-033](decisions/0033-provider-attribution-passed-on.md) | The providers' attribution of the tools is passed on into every result and table | accepted; erratum 1 (DEV §20 after Nogat ECO-065 and ECO-068), erratum 2 (the order of DEV-20.4), erratum 3 (the pins of `candidate-4` emit the lines) | 2026-11-13 |
+| [ADR-034](decisions/0034-obserwator-raw-and-data-roots.md) | The raw and data roots of Obserwator: two settings, routed by command | accepted; amends ADR-015, ADR-021, ADR-024 | 2026-11-14 |
 
 ---
 
@@ -495,7 +496,7 @@ number; a `check` event in the journal.
 ## ADR-015: Tool stores outside results folders
 
 **Date:** 2026-10-19
-**Status:** accepted; amended by ADR-021 (2026-10-24, the settings file `nogat.toml` and the default paths of stores and cache replace those of this ADR)
+**Status:** accepted; amended by ADR-021 (2026-10-24, the settings file `nogat.toml` and the default paths of stores and cache replace those of this ADR), ADR-034 (2026-11-14, Obserwator keeps two roots: `store_dir` is its data root, `raw_store_dir` its raw root)
 
 **Context:** Kartograf 0.8.0 writes to a version store (immutable versions, sidecars, hard
 links), IMGWTools 3.0.0 to its own store. Author: the IMGW store next to the Kartograf store

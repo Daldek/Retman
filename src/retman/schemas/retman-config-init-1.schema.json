@@ -36,6 +36,9 @@
         },
         "obserwator": {
           "type": "string"
+        },
+        "obserwator_raw": {
+          "type": "string"
         }
       }
     },

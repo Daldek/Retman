@@ -21,9 +21,11 @@ import pytest
 from obserwator_support import (
     PMAXTP_URL,
     copy_store,
+    data_root,
     fixture_store,
     isolate_environment,
     pmaxtp_payload,
+    raw_root,
     real_client,
     replay_http,
     settings_for,
@@ -64,7 +66,7 @@ def test_the_store_root_comes_from_the_settings_and_is_never_in_a_call(client):
     line = client.command_line(EXPORT)
 
     # The tool quotes every word for a POSIX shell (a Windows path gets quotes)
-    assert f"--root {shlex.quote(str(fixture_store()))}" in line
+    assert f"--root {shlex.quote(str(data_root(fixture_store())))}" in line
     # The stream form is valid without a target: this is what planning validates
     client.validate(EXPORT)
 
@@ -75,7 +77,38 @@ def test_the_live_station_search_gets_no_root_but_the_store_search_does(client):
 
     # The tool refuses a root with the live source
     assert "--root" not in live
-    assert f"--root {shlex.quote(str(fixture_store()))}" in store
+    assert f"--root {shlex.quote(str(data_root(fixture_store())))}" in store
+
+
+@pytest.mark.parametrize(
+    ("call", "root"),
+    [
+        (CatalogCall("store sync", {"datasets": [PRECIP]}), raw_root),
+        (CatalogCall("store check", {}), raw_root),
+        (CatalogCall("pmaxtp read", {"latitude": 52.23, "longitude": 21.01}), raw_root),
+        (CatalogCall("store init", {}), raw_root),
+        (CatalogCall("store init", {"kind": "raw"}), raw_root),
+        (CatalogCall("store init", {"kind": "data"}), data_root),
+        (CatalogCall("series build", {"dataset": PRECIP}), data_root),
+        (CatalogCall("store catalog", {"provider": "IMGW-PIB"}), data_root),
+        (CatalogCall("store info", {}), data_root),
+    ],
+)
+def test_each_command_gets_the_root_of_the_data_it_works_on(client, call, root):
+    options = client._options(call)
+
+    assert options["root"] == str(root(fixture_store()))
+    # The builders read the raw root beside the data root they write
+    if call.command in ("series build", "store catalog"):
+        assert options["raw_root"] == str(raw_root(fixture_store()))
+    else:
+        assert "raw_root" not in options
+
+
+def test_a_call_that_names_its_root_keeps_it(client, tmp_path):
+    call = CatalogCall("store info", {"root": str(tmp_path)})
+
+    assert client._options(call)["root"] == str(tmp_path)
 
 
 def test_validation_is_the_tools_and_names_the_option_at_fault(client):
@@ -133,8 +166,8 @@ def test_lookup_serves_the_store_and_the_registry_as_the_tools_envelope(client):
     datasets = client.lookup(CatalogCall("datasets list", {"provider": "CHMI"}))
 
     assert stations["schema"] == "obserwator-result/1" and stations["status"] == "ok"
-    assert stations["page"] == {"total": 11, "next_cursor": None, "truncated": False}
-    assert len(stations["result"]) == 11
+    assert stations["page"] == {"total": 13, "next_cursor": None, "truncated": False}
+    assert len(stations["result"]) == 13
     assert info["result"]["exists"] and info["result"]["supported"]
     assert {item["key"] for item in datasets["result"]} >= {
         "cz.chmi.hydro_daily",
@@ -192,7 +225,8 @@ def test_run_of_an_export_returns_the_file_the_licence_and_the_command(
     assert [(n.level, n.code) for n in run.notices] == [("info", "license_terms")]
     assert run.document["result"]["output"] == str(target)
     assert run.command_line.startswith(
-        f"obserwator series export --root {shlex.quote(str(fixture_store()))}"
+        "obserwator series export --root "
+        f"{shlex.quote(str(data_root(fixture_store())))}"
     )
     assert f"--output {shlex.quote(str(target))}" in run.command_line
 
@@ -321,9 +355,9 @@ def test_units_a_command_could_not_handle_are_listed_as_failures():
                 },
                 {"slot": "archive:c", "status": "stale_plan", "error": "changed"},
             ],
-            "series": [{"status": "failed", "problems": ["no archives"]}],
         }
     }
+    build = {"result": {"status": "failed", "problems": ["no archives"]}}
     download = {
         "result": {
             "items": [
@@ -340,8 +374,10 @@ def test_units_a_command_could_not_handle_are_listed_as_failures():
     ] == [
         ("archive:b", "source_unavailable", "HTTP error 500"),
         ("archive:c", "stale_plan", "changed"),
-        ("series", "failed", "no archives"),
     ]
+    assert [
+        (f.unit, f.kind, f.detail) for f in failures("series build", "failed", build)
+    ] == [("series build", "failed", "no archives")]
     # An archive the source does not publish is not a failure
     assert failures("datasets download", "ok", download) == ()
     assert [
@@ -366,7 +402,7 @@ def test_a_download_to_plain_files_gets_no_store_root_and_a_sync_gets_one(
     # The tool refuses both targets in one call; a call that names no directory
     # writes the store
     assert f"--output-dir {shlex.quote(str(out))}" in plain and "--root" not in plain
-    assert f"--root {shlex.quote(str(fixture_store()))}" in stored
+    assert f"--root {shlex.quote(str(raw_root(fixture_store())))}" in stored
 
 
 def test_a_download_writes_plain_files_and_reports_them_with_the_tools_checksums(
@@ -388,9 +424,14 @@ def test_a_download_writes_plain_files_and_reports_them_with_the_tools_checksums
         run = client.run(call)
 
     written = out / "dane_hydrologiczne" / "dobowe" / "2020" / "zjaw_2020.zip"
+    attribution = out / "ATTRIBUTION.txt"
     assert requested == [PHENOMENA_URL]
     assert run.status == "ok" and run.failed == ()
-    assert [(file.path, file.status) for file in run.files] == [(written, "written")]
+    # The tool passes the provider's terms on beside the data (Retman ADR-033)
+    assert [(file.path, file.status) for file in run.files] == [
+        (written, "written"),
+        (attribution, "written"),
+    ]
     # The checksum comes from the tool, which computed it while it wrote the file
     assert run.files[0].sha256 == hashlib.sha256(written.read_bytes()).hexdigest()
     assert run.files[0].sha256 == hashlib.sha256(payload).hexdigest()
@@ -403,13 +444,16 @@ def test_a_download_writes_plain_files_and_reports_them_with_the_tools_checksums
     assert f"--output-dir {shlex.quote(str(out))}" in run.command_line
     assert "--root" not in run.command_line
     # The tool's staging folder is removed after the run
-    assert [path.name for path in out.iterdir()] == ["dane_hydrologiczne"]
+    assert sorted(path.name for path in out.iterdir()) == [
+        "ATTRIBUTION.txt",
+        "dane_hydrologiczne",
+    ]
 
 
 def test_a_download_into_a_store_is_refused_by_its_directory_before_any_request(
     client, tmp_path
 ):
-    folder = copy_store(tmp_path) / "results" / "1_download"
+    folder = raw_root(copy_store(tmp_path)) / "results" / "1_download"
     call = CatalogCall(
         "datasets download",
         {

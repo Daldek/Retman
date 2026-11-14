@@ -4,8 +4,16 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from obserwator_ops_support import PROJECT, STORE, YEARS, context, operations, station
-from obserwator_support import fixture_store, real_client
+from obserwator_ops_support import (
+    PROJECT,
+    RAW_STORE,
+    STORE,
+    YEARS,
+    context,
+    operations,
+    station,
+)
+from obserwator_support import fixture_store, raw_root, real_client
 
 from retman.adapters.catalog import CatalogCall, ToolError, route_error
 from retman.testing import FakeToolClient
@@ -98,7 +106,7 @@ def test_store_check_writes_its_plan_into_the_result_and_sync_builds_series(
         params,
         output_dir=tmp_path,
     )
-    (sync,) = build(calls.sync_obserwator_store, "sync_obserwator_store", params)
+    sync, series = build(calls.sync_obserwator_store, "sync_obserwator_store", params)
 
     selection = {
         "datasets": ["pl.imgw.meteo_precip_daily"],
@@ -106,9 +114,15 @@ def test_store_check_writes_its_plan_into_the_result_and_sync_builds_series(
     }
     assert planned.options == selection and planned.kind == "obserwator_plan"
     assert check.options == {**selection, "plan": str(tmp_path / "plan.json")}
-    assert sync.options == {**selection, "series": True} and sync.kind is None
+    # The sync writes archives only; the series of the dataset is built after it
+    assert sync == CatalogCall("store sync", selection, params={"datasets": "dataset"})
+    assert (series.command, series.options) == (
+        "series build",
+        {"dataset": "pl.imgw.meteo_precip_daily"},
+    )
     # A rejected dataset goes back to the "dataset" parameter, not to "datasets"
     assert planned.params == sync.params == {"datasets": "dataset"}
+    assert series.params == {"dataset": "dataset"}
 
 
 def test_sync_by_plan_hands_the_workspace_plan_to_the_tool(tmp_path: Path) -> None:
@@ -172,7 +186,7 @@ def test_years_before_the_dataset_begins_are_routed_back_to_the_years(
     }
     ctx = context("sync_obserwator_store", client)
 
-    (call,) = calls.sync_obserwator_store(params, ctx)
+    call, _ = calls.sync_obserwator_store(params, ctx)
     with pytest.raises(ToolError) as caught:
         client.validate(call)
 
@@ -187,8 +201,11 @@ def test_the_current_version_is_the_one_the_tool_calls_current() -> None:
     from obserwator.store import current_version
 
     store = fixture_store()
+    raw = raw_root(store)
     client = real_client(store.parent, store)
-    document = client.lookup(CatalogCall("store scan", {"kind": "archive"}))
+    document = client.lookup(
+        CatalogCall("store scan", {"root": str(raw), "kind": "archive"})
+    )
     items = document["result"]
 
     for dataset, years, slot in (
@@ -208,9 +225,9 @@ def test_the_current_version_is_the_one_the_tool_calls_current() -> None:
             for archive in calls.current_archive_versions(items, dataset, years)
             if archive.slot == slot
         ]
-        expected = current_version(store, slot=slot)
+        expected = current_version(raw, slot=slot)
         assert expected is not None and expected.version is not None
-        assert (store / mine.version).resolve() == expected.version.resolve()
+        assert (raw / mine.version).resolve() == expected.version.resolve()
 
 
 def _entry(slot: str, version: str, **meta: Any) -> dict[str, Any]:
@@ -304,7 +321,10 @@ def test_export_makes_one_call_per_stored_archive(tmp_path: Path) -> None:
 
     assert client.calls[0] == (
         "lookup",
-        CatalogCall("store scan", {"kind": "archive", "provider": "IMGW-PIB"}),
+        CatalogCall(
+            "store scan",
+            {"root": str(RAW_STORE), "kind": "archive", "provider": "IMGW-PIB"},
+        ),
     )
     assert [call.options for call in planned] == [
         {"version": "v/1", "format": "jsonl"},
@@ -320,17 +340,34 @@ def test_export_makes_one_call_per_stored_archive(tmp_path: Path) -> None:
 def test_init_and_inspect_pass_only_what_the_user_chose() -> None:
     client = FakeToolClient()
 
-    (init,) = calls.init_obserwator_store({}, context("init_obserwator_store", client))
+    init = calls.init_obserwator_store({}, context("init_obserwator_store", client))
     everything = calls.inspect_obserwator_store(
         {}, context("inspect_obserwator_store", client)
     )
-    chosen = calls.inspect_obserwator_store(
+    archives = calls.inspect_obserwator_store(
         {"kind": "archive", "provider": "chmi"},
         context("inspect_obserwator_store", client),
     )
+    series = calls.inspect_obserwator_store(
+        {"kind": "series"}, context("inspect_obserwator_store", client)
+    )
 
-    assert init == CatalogCall("store init", {})
-    assert [call.options for call in everything] == [{}, {}]
-    assert [call.command for call in chosen] == ["store info", "store scan"]
-    assert chosen[1].options == {"kind": "archive", "provider": "CHMI"}
-    assert STORE.is_absolute()
+    assert init == [
+        CatalogCall("store init", {"kind": "raw"}),
+        CatalogCall("store init", {"kind": "data"}),
+    ]
+    data, raw = {"root": str(STORE)}, {"root": str(RAW_STORE)}
+    # Without a kind both roots are read: their state and all their entries
+    assert [(call.command, call.options) for call in everything] == [
+        ("store info", data),
+        ("store scan", data),
+        ("store info", raw),
+        ("store scan", raw),
+    ]
+    # Archives are in the raw root, series in the data root: only that root is read
+    assert [(call.command, call.options) for call in archives] == [
+        ("store info", raw),
+        ("store scan", {**raw, "kind": "archive", "provider": "CHMI"}),
+    ]
+    assert [call.options for call in series] == [data, {**data, "kind": "series"}]
+    assert STORE.is_absolute() and RAW_STORE.is_absolute()

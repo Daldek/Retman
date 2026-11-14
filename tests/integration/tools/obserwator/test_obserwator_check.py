@@ -12,7 +12,14 @@ from typing import Any
 
 import obserwator
 import pytest
-from obserwator_support import PlanStatus, real_client, replay_http, settings_for
+from obserwator_support import (
+    PlanStatus,
+    data_root,
+    raw_root,
+    real_client,
+    replay_http,
+    settings_for,
+)
 
 from retman.adapters.catalog import PlanClient, PlanView, RunStatus
 from retman.adapters.manifest_adapter import run_check
@@ -197,21 +204,17 @@ def test_the_store_as_the_source_needs_no_network_to_check(operations, tmp_path)
     assert client.calls == []
 
 
-def test_a_check_of_the_station_catalog_says_what_is_stale_and_what_is_reachable(
+def test_a_check_of_the_station_catalog_counts_the_reachable_and_new_station_sources(
     operations, tmp_path
 ):
-    (archive,) = obserwator.archive_files(
-        "pl.imgw.hydro_daily", years=(2001,), months=(1,)
-    )
+    hydro, meteo = obserwator.station_source_files(provider="IMGW-PIB")
     items = [
-        obserwator.PlanItem(archive, "current", None, None, None, None, None, None),
+        obserwator.PlanItem(hydro, "newer", None, None, None, None, None, None),
         obserwator.PlanItem(
-            archive, "check_failed", None, None, None, None, None, "HTTP 503"
+            meteo, "check_failed", None, None, None, None, None, "HTTP 503"
         ),
     ]
-    action = obserwator.PlanAction("store catalog", "newer", "listy są nowsze")
-    document = plan_document(items, (action,), command="store catalog")
-    client = FakeToolClient(documents={"check:store catalog": document})
+    client = FakeToolClient(documents={"check:store sync": plan_document(items)})
 
     report = check(
         operations,
@@ -221,32 +224,34 @@ def test_a_check_of_the_station_catalog_says_what_is_stale_and_what_is_reachable
         client,
     )
 
+    # The catalog is built offline: only the sync of the station sources is checked
     assert report.status == "partial"
-    assert report.lines == [
-        "Listy stacji u źródła są nowsze niż katalog; zostanie zbudowany od nowa.",
-        "Listy stacji u źródła: 1 z 2 dostępne.",
+    assert [(item["key"], item["args"]) for item in report.items] == [
+        ("sources", {"reachable": "1", "total": "2"}),
+        ("sources_to_download", {"to_download": "1", "total": "2"}),
     ]
+    assert len(report.lines) == 2
     ((method, call),) = client.calls
-    assert (method, call.command, dict(call.options)) == (
-        "check",
-        "store catalog",
-        {"provider": "IMGW-PIB"},
-    )
+    assert (method, call.command) == ("check", "store sync")
+    assert dict(call.options) == {
+        "datasets": [
+            "pl.imgw.hydro_stations",
+            "pl.imgw.meteo_stations",
+            "pl.imgw.hydro_now",
+            "pl.imgw.meteo_now",
+        ]
+    }
 
 
-@pytest.mark.parametrize(
-    ("state", "line"),
-    [
-        ("current", "Katalog stacji w magazynie jest aktualny."),
-        ("missing", "Katalogu stacji nie ma jeszcze w magazynie; zostanie zbudowany."),
-        ("unverifiable", "Nie da się porównać katalogu z listami stacji u źródła."),
-        ("check_failed", "Nie udało się sprawdzić list stacji u źródła."),
-    ],
-)
-def test_every_state_of_the_catalog_has_its_own_text(operations, tmp_path, state, line):
-    action = obserwator.PlanAction("store catalog", state, "szczegóły")
-    document = plan_document([], (action,), command="store catalog")
-    client = FakeToolClient(documents={"check:store catalog": document})
+def test_a_check_of_the_station_catalog_with_no_reachable_source_is_unavailable(
+    operations, tmp_path
+):
+    hydro, meteo = obserwator.station_source_files(provider="CHMI")
+    items = [
+        obserwator.PlanItem(source, "check_failed", None, None, None, None, None, "x")
+        for source in (hydro, meteo)
+    ]
+    client = FakeToolClient(documents={"check:store sync": plan_document(items)})
 
     report = check(
         operations,
@@ -256,7 +261,8 @@ def test_every_state_of_the_catalog_has_its_own_text(operations, tmp_path, state
         client,
     )
 
-    assert report.lines == [line]
+    assert report.status == "unavailable"
+    assert report.items[0]["args"] == {"reachable": "0", "total": "2"}
 
 
 def test_a_check_given_only_the_planning_client_cannot_use_the_network(
@@ -294,8 +300,9 @@ def test_a_store_the_tool_refuses_is_the_whole_answer_of_the_check(
     operations, tmp_path, operation, params
 ):
     store = tmp_path / "other-files"
-    store.mkdir()
-    (store / "notes.txt").write_text("not a store", encoding="utf-8")
+    for root in (raw_root(store), data_root(store)):
+        root.mkdir(parents=True)
+        (root / "notes.txt").write_text("not a store", encoding="utf-8")
 
     # The real tool plans the refusal of the root as its one action (conflict,
     # not_empty), asks the servers for nothing and calls the plan ok
@@ -308,7 +315,8 @@ def test_a_store_the_tool_refuses_is_the_whole_answer_of_the_check(
     assert report.status == "unavailable"
     (item,) = report.items
     assert item["key"] == "store_refused"
-    assert "odmówi zapisu" in report.lines[0] and str(store) in report.lines[0]
+    assert "odmówi zapisu" in report.lines[0]
+    assert str(raw_root(store)) in report.lines[0]
 
 
 def test_the_summary_of_a_plan_counts_what_the_checks_need():
@@ -319,7 +327,8 @@ def test_the_summary_of_a_plan_counts_what_the_checks_need():
         plan_item(4, "current", 99),
         plan_item(5, "unverifiable", error="not published"),
     ]
-    action = obserwator.PlanAction("series build", "missing", "no series")
+    # An action of the plan is no archive: it is counted nowhere
+    action = obserwator.PlanAction("store catalog", "missing", "no catalog")
 
     summary = summarize_plan(plan_document(items, (action,)))
 
@@ -327,7 +336,6 @@ def test_the_summary_of_a_plan_counts_what_the_checks_need():
     assert (summary.unpublished, summary.failed) == (1, 0)
     # Only the archives to fetch count, and only the sizes the server gave
     assert summary.size_bytes == 30
-    assert summary.actions == {"series build": "missing"}
     assert summarize_plan({}).total == 0
 
 

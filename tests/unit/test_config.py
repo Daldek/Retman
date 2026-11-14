@@ -14,7 +14,6 @@ from retman.config import (
 )
 from retman.environment import BY_NAME, KEYS, environment
 from retman.exceptions import ConfigError
-from retman.i18n.loader import load_core_texts
 from retman.testing import FakeDecisionBackend
 
 MODEL = {
@@ -57,6 +56,9 @@ def test_without_any_file_the_settings_follow_the_user_folders(
         user_environment / "cache" / "kartograf" / "metadata.db"
     )
     assert obserwator["store_dir"] == str(user_environment / "data" / "obserwator")
+    assert obserwator["raw_store_dir"] == str(
+        user_environment / "data" / "obserwator-raw"
+    )
     assert obserwator["reference_data_dir"] == str(
         user_environment / "cache" / "obserwator" / "reference"
     )
@@ -72,7 +74,7 @@ def test_without_any_file_the_settings_follow_the_user_folders(
     assert settings.enabled_tools is None
 
 
-def test_a_shared_data_directory_moves_both_stores_and_the_collection(
+def test_a_shared_data_directory_moves_the_stores_and_the_collection(
     tmp_path: Path,
 ) -> None:
     # A literal string, as `config init` writes it: a Windows path keeps backslashes
@@ -85,6 +87,9 @@ def test_a_shared_data_directory_moves_both_stores_and_the_collection(
     )
     assert settings.tools["obserwator"]["store_dir"] == str(
         tmp_path / "shared/obserwator"
+    )
+    assert settings.tools["obserwator"]["raw_store_dir"] == str(
+        tmp_path / "shared/obserwator-raw"
     )
     assert settings.collect_path == tmp_path / "shared" / "retman" / "collected.jsonl"
 
@@ -245,7 +250,7 @@ def test_init_writes_the_users_collection_answer_and_full_path(tmp_path: Path) -
     assert str(agreed.collect_path) in (tmp_path / "yes.toml").read_text("utf-8")
 
 
-def test_init_writes_both_tool_stores_in_full_next_to_each_other(
+def test_init_writes_the_tool_stores_in_full_next_to_each_other(
     tmp_path: Path,
 ) -> None:
     stores = tmp_path / "data"
@@ -256,6 +261,7 @@ def test_init_writes_both_tool_stores_in_full_next_to_each_other(
 
     assert kartograf["store_dir"] == str(stores / "kartograf")
     assert obserwator["store_dir"] == str(stores / "obserwator")
+    assert obserwator["raw_store_dir"] == str(stores / "obserwator-raw")
     assert kartograf["workers"] == 4
     assert kartograf["update"] == "local"
     # Cache and reference files stay on the local disk, outside the shared stores
@@ -263,7 +269,9 @@ def test_init_writes_both_tool_stores_in_full_next_to_each_other(
         assert Path(path).is_absolute()
         assert not Path(path).is_relative_to(stores)
     # No hidden defaults (N-11): the paths are in the file
-    assert str(stores / "kartograf") in (tmp_path / "nogat.toml").read_text("utf-8")
+    text = (tmp_path / "nogat.toml").read_text("utf-8")
+    for folder in ("kartograf", "obserwator", "obserwator-raw"):
+        assert f"{stores / folder}'" in text or f'{stores / folder}"' in text
 
 
 def test_init_writes_a_folder_that_needs_quoting_as_valid_toml(tmp_path: Path) -> None:
@@ -342,19 +350,63 @@ def test_the_template_names_only_known_keys_and_every_key_with_a_default() -> No
 
 
 @pytest.mark.parametrize(
-    ("key", "folder"),
+    ("key", "folder", "other"),
     [
         # the same folder, inside the other store and around it
-        ("tools.obserwator.store_dir", "data/kartograf"),
-        ("tools.obserwator.store_dir", "data/kartograf/obserwator"),
-        ("tools.obserwator.store_dir", "data"),
+        ("tools.obserwator.store_dir", "data/kartograf", "tools.kartograf.store_dir"),
+        (
+            "tools.obserwator.store_dir",
+            "data/kartograf/obserwator",
+            "tools.kartograf.store_dir",
+        ),
+        # around both the Kartograf store and the raw root
+        (
+            "tools.obserwator.store_dir",
+            "data",
+            "tools.kartograf.store_dir tools.obserwator.raw_store_dir",
+        ),
+        # the two roots of Obserwator are separate folders too, and apart from
+        # the Kartograf store
+        (
+            "tools.obserwator.raw_store_dir",
+            "data/obserwator",
+            "tools.obserwator.store_dir",
+        ),
+        (
+            "tools.obserwator.raw_store_dir",
+            "data/obserwator/raw",
+            "tools.obserwator.store_dir",
+        ),
+        (
+            "tools.obserwator.store_dir",
+            "data/obserwator-raw/data",
+            "tools.obserwator.raw_store_dir",
+        ),
+        (
+            "tools.obserwator.raw_store_dir",
+            "data/kartograf/raw",
+            "tools.kartograf.store_dir",
+        ),
         # the cache and the reference files are not store content
-        ("tools.kartograf.cache_file", "data/kartograf/cache.db"),
-        ("tools.obserwator.reference_data_dir", "data/obserwator/reference"),
+        (
+            "tools.kartograf.cache_file",
+            "data/kartograf/cache.db",
+            "tools.kartograf.store_dir",
+        ),
+        (
+            "tools.obserwator.reference_data_dir",
+            "data/obserwator/reference",
+            "tools.obserwator.store_dir",
+        ),
+        (
+            "tools.obserwator.reference_data_dir",
+            "data/obserwator-raw/reference",
+            "tools.obserwator.raw_store_dir",
+        ),
     ],
 )
 def test_stores_must_be_siblings_and_hold_nothing_but_their_data(
-    user_environment: Path, key: str, folder: str
+    user_environment: Path, key: str, folder: str, other: str
 ) -> None:
     environ = {BY_NAME[key].variable: str(user_environment / folder)}
 
@@ -362,13 +414,12 @@ def test_stores_must_be_siblings_and_hold_nothing_but_their_data(
         load_settings(environ=environ)
 
     assert error.value.problems == ["paths_overlap"]
-    assert key in error.value.problem_details["paths_overlap"]
-    message = load_core_texts("pl").get(
-        "config.paths_overlap",
-        path=error.value.path,
-        keys=error.value.problem_details["paths_overlap"],
+    # Each pair that overlaps is named, the given key with each folder it meets
+    named = error.value.problem_details["paths_overlap"].split(", ")
+    pairs = [set(pair.split(" / ")) for pair in named]
+    assert sorted(pairs, key=sorted) == sorted(
+        ({key, name} for name in other.split()), key=sorted
     )
-    assert str(error.value.path) in message
 
 
 def test_folders_with_a_common_name_prefix_are_not_nested(tmp_path: Path) -> None:
