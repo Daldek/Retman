@@ -81,8 +81,10 @@ _RANGES_RE = re.compile(
 # Geographic ranges deliberately do not overlap (latitudes 49-55, lon 14-24.2).
 _LATITUDE = (49.0, 55.0)
 _LONGITUDE = (14.0, 24.2)
-_EASTING_M = (120_000.0, 900_000.0)
-_NORTHING_M = (110_000.0, 830_000.0)
+EASTING_M: tuple[float, float] = (120_000.0, 900_000.0)
+NORTHING_M: tuple[float, float] = (110_000.0, 830_000.0)
+# Either PL-1992 axis: the union of the easting and northing ranges.
+PROJECTED_M: tuple[float, float] = (NORTHING_M[0], EASTING_M[1])
 
 
 def _valid_sheet(code: str) -> bool:
@@ -120,7 +122,8 @@ def _normalize_sheet(code: str) -> str:
     )
 
 
-def _in_range(value: float, limits: tuple[float, float]) -> bool:
+def in_range(value: float, limits: tuple[float, float]) -> bool:
+    """Whether ``value`` lies within ``limits`` (both ends included)."""
     return limits[0] <= value <= limits[1]
 
 
@@ -147,8 +150,8 @@ def _bbox_readings(
     values: tuple[float, float, float, float], labels: tuple[str | None, ...]
 ) -> tuple[Reading, ...]:
     first, second, third, fourth = values
-    if all(_in_range(v, _LONGITUDE) for v in (first, third)) and all(
-        _in_range(v, _LATITUDE) for v in (second, fourth)
+    if all(in_range(v, _LONGITUDE) for v in (first, third)) and all(
+        in_range(v, _LATITUDE) for v in (second, fourth)
     ):
         if any(
             label is not None and label != expected
@@ -160,8 +163,8 @@ def _bbox_readings(
                 _bbox(first, second, third, fourth, "EPSG:4326"), "bbox_4326_lon_lat"
             ),
         )
-    if all(_in_range(v, _LATITUDE) for v in (first, third)) and all(
-        _in_range(v, _LONGITUDE) for v in (second, fourth)
+    if all(in_range(v, _LATITUDE) for v in (first, third)) and all(
+        in_range(v, _LONGITUDE) for v in (second, fourth)
     ):
         if any(
             label is not None and label != expected
@@ -173,7 +176,7 @@ def _bbox_readings(
                 _bbox(second, first, fourth, third, "EPSG:4326"), "bbox_4326_lat_lon"
             ),
         )
-    if not all(_in_range(v, (110_000.0, 900_000.0)) for v in values):
+    if not all(in_range(v, PROJECTED_M) for v in values):
         return ()
     readings = []
     for expected, coords, key in (
@@ -195,7 +198,8 @@ def _label(match: re.Match[str], index: int) -> str | None:
     return "x" if letter.lower() in ("x", "e") else "y"
 
 
-def _number(token: str) -> float:
+def parse_decimal(token: str) -> float:
+    """Read a number written with a decimal point or a decimal comma."""
     return float(token.replace(",", "."))
 
 
@@ -252,10 +256,10 @@ def extract_area(text: str) -> list[Match]:
     for found in _RANGES_RE.finditer(text):
         label0, label1 = _label(found, 0), _label(found, 1)
         values = (
-            _number(found.group("low0")),
-            _number(found.group("low1")),
-            _number(found.group("high0")),
-            _number(found.group("high1")),
+            parse_decimal(found.group("low0")),
+            parse_decimal(found.group("low1")),
+            parse_decimal(found.group("high0")),
+            parse_decimal(found.group("high1")),
         )
         labels = (label0, label1, label0, label1)
         readings = _bbox_readings(values, labels)
@@ -265,10 +269,10 @@ def extract_area(text: str) -> list[Match]:
         if _overlaps(found.start(), found.end(), matches):
             continue
         values = (
-            _number(found.group("value0")),
-            _number(found.group("value1")),
-            _number(found.group("value2")),
-            _number(found.group("value3")),
+            parse_decimal(found.group("value0")),
+            parse_decimal(found.group("value1")),
+            parse_decimal(found.group("value2")),
+            parse_decimal(found.group("value3")),
         )
         labels = (
             _label(found, 0),
@@ -354,15 +358,15 @@ def validate_area(value: Any) -> str | None:
     if crs == "EPSG:4326":
         x_limits, y_limits = _LONGITUDE, _LATITUDE
     elif crs == "EPSG:2180":
-        x_limits, y_limits = _EASTING_M, _NORTHING_M
+        x_limits, y_limits = EASTING_M, NORTHING_M
     else:
         return "extractors.errors.invalid_bbox"
     if not all(
         (
-            _in_range(min_x, x_limits),
-            _in_range(max_x, x_limits),
-            _in_range(min_y, y_limits),
-            _in_range(max_y, y_limits),
+            in_range(min_x, x_limits),
+            in_range(max_x, x_limits),
+            in_range(min_y, y_limits),
+            in_range(max_y, y_limits),
         )
     ):
         return "extractors.errors.outside_poland"

@@ -75,11 +75,3 @@ class DecisionBackend(Protocol):
     def yes_no(self, state: str, question: str) -> Decision:
         """Ask a yes/no question; ``Decision.key`` is ``"yes"`` or ``"no"``."""
         ...
-
-
-class TextBackend(Protocol):
-    """A model that writes text — used only to describe results (v0.2)."""
-
-    def describe(self, result_summary: dict[str, object], language: str) -> str:
-        """Describe a result in the given language."""
-        ...

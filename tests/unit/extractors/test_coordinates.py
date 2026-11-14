@@ -19,7 +19,6 @@ from retman.extractors.coordinates import (
     read_point_answer,
     validate_grid_cell,
     validate_point,
-    wgs84_to_pl1992,
 )
 
 OUTSIDE = "extractors.errors.outside_pmaxtp_frame"
@@ -77,17 +76,6 @@ def _only(text: str, extract: Any = extract_point) -> Match:
 @pytest.mark.parametrize(
     ("latitude", "longitude", "easting", "northing"), REFERENCE_POINTS
 )
-def test_wgs84_to_pl1992_reference_points(
-    latitude: float, longitude: float, easting: float, northing: float
-) -> None:
-    assert wgs84_to_pl1992(latitude, longitude) == pytest.approx(
-        (easting, northing), abs=2e-3
-    )
-
-
-@pytest.mark.parametrize(
-    ("latitude", "longitude", "easting", "northing"), REFERENCE_POINTS
-)
 def test_pl1992_to_wgs84_reference_points(
     latitude: float, longitude: float, easting: float, northing: float
 ) -> None:
@@ -96,36 +84,16 @@ def test_pl1992_to_wgs84_reference_points(
     )
 
 
-def test_pl1992_round_trip_over_the_frame() -> None:
-    for latitude, longitude in _frame_grid():
-        assert pl1992_to_wgs84(*wgs84_to_pl1992(latitude, longitude)) == pytest.approx(
-            (latitude, longitude), abs=1e-9
-        )
-
-
-def test_conversion_agrees_with_pyproj_over_the_frame() -> None:
+def test_pl1992_to_wgs84_agrees_with_pyproj_over_the_frame() -> None:
     pyproj = pytest.importorskip("pyproj")
     forward = pyproj.Transformer.from_crs("EPSG:4326", "EPSG:2180", always_xy=True)
     inverse = pyproj.Transformer.from_crs("EPSG:2180", "EPSG:4326", always_xy=True)
     for latitude, longitude in _frame_grid():
         easting, northing = forward.transform(longitude, latitude)
-        assert wgs84_to_pl1992(latitude, longitude) == pytest.approx(
-            (easting, northing), abs=1e-3
-        )
         expected_longitude, expected_latitude = inverse.transform(easting, northing)
         assert pl1992_to_wgs84(easting, northing) == pytest.approx(
             (expected_latitude, expected_longitude), abs=1e-8
         )
-
-
-@pytest.mark.parametrize(
-    "arguments", [(math.nan, 21.0), (52.0, math.inf), (91.0, 21.0), (52.0, 80.0)]
-)
-def test_wgs84_to_pl1992_rejects_what_the_series_cannot_convert(
-    arguments: tuple[float, float],
-) -> None:
-    with pytest.raises(ValueError):
-        wgs84_to_pl1992(*arguments)
 
 
 @pytest.mark.parametrize(

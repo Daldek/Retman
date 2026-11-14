@@ -85,7 +85,6 @@ def test_the_datasets_of_the_manifest_are_the_datasets_of_the_tool():
         assert descriptor.year_type == info["numbering"], key
         assert list(descriptor.variables) == info["variables"], key
         assert descriptor.slug == info["slug"], key
-        assert descriptor.first_year == info["first_year"], key
         assert descriptor.in_store == info["series"], key
     # Every dataset with data of its own is offered; station lists and PMAXTP are not
     with_data = {

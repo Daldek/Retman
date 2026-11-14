@@ -132,7 +132,7 @@ src/retman/
 ├── registry/       # operation model, manifest schema, loader of tool descriptions
 ├── adapters/       # command layer of the tools (catalog.py), generic manifest adapter
 ├── tools/<tool>/   # kartograf, obserwator: manifest, calls, client, preview, check, handlers, texts
-├── backends/       # DecisionBackend and TextBackend; openai_compatible.py
+├── backends/       # DecisionBackend; openai_compatible.py
 ├── extractors/     # numbers, dates, coordinates, areas, stations... (code, no model)
 ├── i18n/           # translation loader, pl.toml and en.toml (core texts); the tools carry their own
 ├── eval/           # command set commands.jsonl, runner, metrics, offline clients

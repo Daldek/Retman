@@ -17,7 +17,7 @@ import retman.operations
 from retman._errors import CODES
 from retman.catalog import Command, Option, data_commands, execute, validate_command
 from retman.catalog.document import catalog_document
-from retman.cli.parser import PRESENTATION, build_parser, options_of
+from retman.cli.parser import build_parser, options_of
 from retman.exceptions import InvalidValueError
 from retman.i18n.loader import load_core_texts
 
@@ -122,7 +122,6 @@ class TestDeclarations:
 
     def test_an_option_never_takes_the_name_of_a_presentation_option(self) -> None:
         reserved = {"json", "lang", "verbose", "quiet", "help", "version", "as_json"}
-        assert set(PRESENTATION) <= reserved
         for command, option in _options():
             assert option.name not in reserved, (command.name, option.name)
 

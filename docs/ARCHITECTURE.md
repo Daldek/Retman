@@ -141,7 +141,7 @@ src/retman/
 │   ├── pl.toml              # Polish texts for core messages, the answer words and the Polish catalog texts
 │   └── en.toml              # English texts for core messages and the answer words (the catalog texts are English in catalog/commands.py)
 ├── backends/                # connections to separately installed models (section 3.3)
-│   ├── base.py              # DecisionBackend and TextBackend interfaces
+│   ├── base.py              # DecisionBackend interface (TextBackend from v0.2; not written yet)
 │   ├── openai_compatible.py # any OpenAI-compatible API: LM Studio, Ollama, vLLM, providers
 │   └── basal.py, native/    # basal-serve API (blocked: no specification) and providers with their own API (v0.2); not written yet
 ├── extractors/

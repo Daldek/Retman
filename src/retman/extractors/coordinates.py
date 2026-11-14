@@ -17,7 +17,14 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, TypeGuard
 
-from retman.extractors.areas import extract_area
+from retman.extractors.areas import (
+    EASTING_M,
+    NORTHING_M,
+    PROJECTED_M,
+    extract_area,
+    in_range,
+    parse_decimal,
+)
 from retman.extractors.base import Match, Reading, TextSource
 from retman.extractors.text import (
     Word,
@@ -42,29 +49,9 @@ _FALSE_NORTHING = -5_300_000.0
 _E2 = _F * (2 - _F)
 _E = math.sqrt(_E2)
 _N = _F / (2 - _F)
-# Rectifying radius and the Krüger n-series to order n^6 (Karney 2011,
-# "Transverse Mercator with an accuracy of a few nanometers", eqs. 14, 35, 36).
+# Rectifying radius and the inverse Krüger n-series to order n^6 (Karney 2011,
+# "Transverse Mercator with an accuracy of a few nanometers", eqs. 14, 36).
 _RADIUS = _A / (1 + _N) * (1 + _N**2 / 4 + _N**4 / 64 + _N**6 / 256)
-_ALPHA = (
-    _N / 2
-    - 2 / 3 * _N**2
-    + 5 / 16 * _N**3
-    + 41 / 180 * _N**4
-    - 127 / 288 * _N**5
-    + 7891 / 37800 * _N**6,
-    13 / 48 * _N**2
-    - 3 / 5 * _N**3
-    + 557 / 1440 * _N**4
-    + 281 / 630 * _N**5
-    - 1983433 / 1935360 * _N**6,
-    61 / 240 * _N**3
-    - 103 / 140 * _N**4
-    + 15061 / 26880 * _N**5
-    + 167603 / 181440 * _N**6,
-    49561 / 161280 * _N**4 - 179 / 168 * _N**5 + 6601661 / 7257600 * _N**6,
-    34729 / 80640 * _N**5 - 3418889 / 1995840 * _N**6,
-    212378941 / 319334400 * _N**6,
-)
 _BETA = (
     _N / 2
     - 2 / 3 * _N**2
@@ -107,59 +94,13 @@ def _tau(tau_prime: float) -> float:
     return tau
 
 
-def wgs84_to_pl1992(latitude: float, longitude: float) -> tuple[float, float]:
-    """
-    Convert WGS84 degrees to PL-1992 (EPSG:2180) metres.
-
-    WGS84 is treated as GRS80 (the ellipsoids differ by less than 0.2 mm).
-    The series are accurate to nanometres within 35° of the central meridian
-    (19°E), so the whole of Poland and its surroundings are covered.
-
-    Parameters
-    ----------
-    latitude, longitude : float
-        Degrees; latitude within ±90° and at most 35° from 19°E.
-
-    Returns
-    -------
-    tuple[float, float]
-        ``(easting, northing)`` in metres (GIS order: x = easting, y = northing).
-
-    Raises
-    ------
-    ValueError
-        If an argument is not finite or outside the supported range.
-
-    Examples
-    --------
-    >>> easting, northing = wgs84_to_pl1992(52.2297, 21.0122)
-    >>> round(easting, 3), round(northing, 3)
-    (637382.204, 486757.209)
-    """
-    if not (math.isfinite(latitude) and math.isfinite(longitude)):
-        raise ValueError("coordinates must be finite")
-    if abs(latitude) > 90 or abs(longitude - _LON0) > 35:
-        raise ValueError("point outside the range of the series")
-    phi = math.radians(latitude)
-    lam = math.radians(longitude - _LON0)
-    tau_prime = _tau_prime(math.tan(phi))
-    xi0 = math.atan2(tau_prime, math.cos(lam))
-    eta0 = math.asinh(math.sin(lam) / math.hypot(tau_prime, math.cos(lam)))
-    xi, eta = xi0, eta0
-    for j, alpha in enumerate(_ALPHA, 1):
-        xi += alpha * math.sin(2 * j * xi0) * math.cosh(2 * j * eta0)
-        eta += alpha * math.cos(2 * j * xi0) * math.sinh(2 * j * eta0)
-    return (
-        _FALSE_EASTING + _K0 * _RADIUS * eta,
-        _FALSE_NORTHING + _K0 * _RADIUS * xi,
-    )
-
-
 def pl1992_to_wgs84(easting: float, northing: float) -> tuple[float, float]:
     """
     Convert PL-1992 (EPSG:2180) metres to WGS84 degrees.
 
-    Inverse of :func:`wgs84_to_pl1992` (same accuracy and ellipsoid remark).
+    WGS84 is treated as GRS80 (the ellipsoids differ by less than 0.2 mm). The
+    series are accurate to nanometres within 35° of the central meridian (19°E),
+    so the whole of Poland and its surroundings are covered.
 
     Parameters
     ----------
@@ -198,11 +139,8 @@ def pl1992_to_wgs84(easting: float, northing: float) -> tuple[float, float]:
     return math.degrees(math.atan(_tau(tau_prime))), _LON0 + math.degrees(lam)
 
 
-# Envelope of PL-1992 points, the constants of ``areas`` (conservative, rounded
-# outwards); the digits of a coordinate are always six.
-_EASTING_M = (120_000.0, 900_000.0)
-_NORTHING_M = (110_000.0, 830_000.0)
-_PROJECTED_MIN, _PROJECTED_MAX = 110_000.0, 900_000.0
+# PL-1992 points use the envelope of ``areas``; the digits of a coordinate are
+# always six.
 _PROJECTED_DIGITS = 6
 
 # Folding turns some signs into letters or blanks; commands also use typographic
@@ -314,10 +252,6 @@ def _canonical(text: str) -> str:
     )
 
 
-def _decimal(token: str) -> float:
-    return float(token.replace(",", "."))
-
-
 def _numbers(ctx: _Context, skipped: list[tuple[int, int]]) -> list[_Number]:
     """Numbers of the text that can be coordinates, in order of appearance."""
     found: list[_Number] = []
@@ -336,8 +270,8 @@ def _numbers(ctx: _Context, skipped: list[tuple[int, int]]) -> list[_Number]:
             and fraction is not None
             and len(integer) == len(fraction) == _PROJECTED_DIGITS
             and ctx.canon[start + _PROJECTED_DIGITS] == ","
-            and _PROJECTED_MIN <= float(integer) <= _PROJECTED_MAX
-            and _PROJECTED_MIN <= float(fraction) <= _PROJECTED_MAX
+            and in_range(float(integer), PROJECTED_M)
+            and in_range(float(fraction), PROJECTED_M)
         ):
             # "637382,486757": a pair without a space, not metres to the micrometre
             digits = _PROJECTED_DIGITS
@@ -348,7 +282,7 @@ def _numbers(ctx: _Context, skipped: list[tuple[int, int]]) -> list[_Number]:
                 _Number(end - digits, end, float(fraction), "integer", digits, False)
             )
             continue
-        degrees = _decimal(
+        degrees = parse_decimal(
             match.group("int")
             + ("." + match.group("frac") if match.group("frac") else "")
         )
@@ -358,11 +292,13 @@ def _numbers(ctx: _Context, skipped: list[tuple[int, int]]) -> list[_Number]:
             minutes = match.group("min")
             seconds = match.group("sec")
             if minutes is not None:
-                if _decimal(minutes) >= 60 or (seconds and _decimal(seconds) >= 60):
+                if parse_decimal(minutes) >= 60 or (
+                    seconds and parse_decimal(seconds) >= 60
+                ):
                     continue
-                degrees += _decimal(minutes) / 60
+                degrees += parse_decimal(minutes) / 60
                 if seconds is not None:
-                    degrees += _decimal(seconds) / 3600
+                    degrees += parse_decimal(seconds) / 3600
                 degrees = round(degrees, 9)
         negative = match.group("sign") is not None
         found.append(
@@ -473,10 +409,6 @@ def _metres(value: float) -> str:
     return f"{value:.2f}".rstrip("0").rstrip(".")
 
 
-def _in_range(value: float, limits: tuple[float, float]) -> bool:
-    return limits[0] <= value <= limits[1]
-
-
 def _group(tags: list[str], *, projected: bool) -> tuple[str | None, bool]:
     """Axis group ("north" or "east") the tags of one number agree on."""
     groups = set()
@@ -572,7 +504,7 @@ def _geographic(
     if candidates and not decided:
 
         def fit(candidate: tuple[_Number, _Number, bool]) -> int:
-            return _in_range(candidate[0].value, PMAXTP_LATITUDE) + _in_range(
+            return in_range(candidate[0].value, PMAXTP_LATITUDE) + in_range(
                 candidate[1].value, PMAXTP_LONGITUDE
             )
 
@@ -591,7 +523,7 @@ def _is_projected(number: _Number) -> bool:
         number.kind != "dms"
         and not number.negative
         and number.digits == _PROJECTED_DIGITS
-        and _PROJECTED_MIN <= number.value <= _PROJECTED_MAX
+        and in_range(number.value, PROJECTED_M)
     )
 
 
@@ -606,7 +538,7 @@ def _projected(
     return [
         _pl1992_reading(east.value, north.value, not north_first)
         for north, east, north_first in sorted(candidates, key=lambda c: c[2])
-        if _in_range(east.value, _EASTING_M) and _in_range(north.value, _NORTHING_M)
+        if in_range(east.value, EASTING_M) and in_range(north.value, NORTHING_M)
     ]
 
 
@@ -782,7 +714,7 @@ def validate_point(value: Any) -> str | None:
     else:
         return invalid
     if not (
-        _in_range(latitude, PMAXTP_LATITUDE) and _in_range(longitude, PMAXTP_LONGITUDE)
+        in_range(latitude, PMAXTP_LATITUDE) and in_range(longitude, PMAXTP_LONGITUDE)
     ):
         return "extractors.errors.outside_pmaxtp_frame"
     return None

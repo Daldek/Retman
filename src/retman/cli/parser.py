@@ -25,9 +25,6 @@ from retman.environment import LANGUAGES, environment
 from retman.exceptions import UsageError
 from retman.i18n.loader import Texts
 
-PRESENTATION: tuple[str, ...] = ("as_json", "lang", "verbose", "quiet")
-"""``dest`` of the options that every verb has and the catalog does not."""
-
 
 class _Parser(argparse.ArgumentParser):
     """An argument parser whose mistakes are errors of the registry (AGI-3.3)."""
