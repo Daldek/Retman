@@ -385,6 +385,9 @@ def test_inspect_runs_on_the_real_tool_and_keeps_both_documents(tmp_path: Path) 
 def test_download_reports_files_size_and_what_the_server_does_not_publish(
     tmp_path: Path,
 ) -> None:
+    from obserwator.attribution import attribution, provider_origin
+    from obserwator.output import write_attribution
+
     out = tmp_path / "out"
     out.mkdir()
     content = b"PK\x03\x04" + b"0" * 2000
@@ -394,6 +397,10 @@ def test_download_reports_files_size_and_what_the_server_does_not_publish(
         target = Path(str(call.options["output_dir"])) / "dane" / "codz.zip"
         target.parent.mkdir(parents=True)
         target.write_bytes(content)
+        # The tool writes the providers' lines beside the archives and lists them
+        lines = attribution(provider_origin("CHMI"), processed=False)
+        noted = write_attribution(out, lines)
+        assert noted is not None
         report = DownloadReport(
             "plain",
             out,
@@ -416,7 +423,7 @@ def test_download_reports_files_size_and_what_the_server_does_not_publish(
                     None,
                 ),
             ),
-            (FileResult(target, len(content), digest, "written"),),
+            (FileResult(target, len(content), digest, "written"), noted),
             False,
         )
         return synthetic_run("datasets download", report)
@@ -436,19 +443,20 @@ def test_download_reports_files_size_and_what_the_server_does_not_publish(
 
     assert result.ok, result.error
     assert result.files["obserwator_archive"] == [out / "dane" / "codz.zip"]
+    # ATTRIBUTION.txt is a file of its own kind, neither counted nor sized as an archive
+    assert result.files["provider_attribution"] == [out / "ATTRIBUTION.txt"]
     assert result.values["files"] == 1 and result.values["not_published"] == 1
     assert result.values["size"] == "2.0 kB"
+    assert result.summary is not None and "plików: 1 (2.0 kB)" in result.summary
     assert "Serwer nie publikuje 1 z 2 żądanych plików" in result.warnings[0]
     # The audit keeps the checksum the tool computed while it wrote the file
     assert result.tool is not None
-    assert result.tool["calls"][0]["files"] == [
-        {
-            "path": str(out / "dane" / "codz.zip"),
-            "sha256": digest,
-            "version": None,
-            "status": "written",
-        }
-    ]
+    assert result.tool["calls"][0]["files"][0] == {
+        "path": str(out / "dane" / "codz.zip"),
+        "sha256": digest,
+        "version": None,
+        "status": "written",
+    }
 
 
 def test_a_check_saves_the_tools_plan_and_counts_it(tmp_path: Path) -> None:

@@ -296,6 +296,18 @@ def _run_warnings(
     return warnings
 
 
+def _unshown(text: str, shown: Sequence[str]) -> str:
+    """Return what a licence notice says beyond the lines a result already shows.
+
+    Obserwator words a ``license_terms`` notice from the lines of Nogat DEV §20
+    (``{attribution}. {notice}``), so the notice is cut at every line shown and
+    only what is left between them stays, verbatim; empty when nothing is.
+    """
+    pattern = "|".join(re.escape(line) for line in sorted(shown, key=len, reverse=True))
+    pieces = (piece.lstrip(". ").rstrip() for piece in re.split(pattern, text))
+    return " ".join(piece for piece in pieces if piece)
+
+
 def base_output(
     operation: Operation,
     params: dict[str, Any],
@@ -310,9 +322,11 @@ def base_output(
     warning notices, a partial run (how many units failed of how many, the first
     ones named) and, last, every licence notice of the tool plus ``licenses``
     (text the mapper derived from the provider registry), each once and verbatim.
-    ``licenses`` are left out when the tool's documents carry the lines of Nogat
-    DEV §20 (``attribution``, ``terms_notice``), which the generic runner adds
-    after them; an Obserwator without them still gets the registry's texts.
+    When the tool's documents carry the lines of Nogat DEV §20 (``attribution``,
+    ``terms_notice``), which the generic runner adds after them in the order of
+    DEV-20.4, ``licenses`` are left out and a licence notice keeps only what it
+    says beyond these lines, so no line is shown twice; an Obserwator without
+    them still gets the registry's texts.
     """
     files: dict[str, list[Path]] = {}
     warnings: list[HandlerWarning] = []
@@ -322,7 +336,11 @@ def base_output(
             files.setdefault(call.kind, []).extend(item.path for item in run.files)
         warnings.extend(_run_warnings(operation, ctx, run))
         texts.extend(n.text for n in run.notices if n.code == LICENSE_CODE)
-    if not runs_attribution(runs):
+    lines = runs_attribution(runs)
+    if lines:
+        shown = (*lines.lines, *lines.notice)
+        texts = [rest for text in texts if (rest := _unshown(text, shown))]
+    else:
         texts.extend(licenses)
     unique = list(dict.fromkeys(texts))
     warnings.extend({"key": LICENSE_CODE, "args": {"text": text}} for text in unique)

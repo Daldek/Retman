@@ -565,6 +565,7 @@ beginning of the file (header and the first few rows):
 | `obserwator_archive` | IMGW archive as published (`.zip`, `.json`, `.csv`, `.txt`) | ZIP signature, JSON start (`{` or `[`) or non-binary text |
 | `obserwator_plan` | Obserwator download or synchronisation plan (JSON) | document with `schema` equal to `obserwator-plan/1` |
 | `obserwator_report` | Obserwator report (JSON) | `obserwator-result/1` document — the first key is `schema` |
+| `provider_attribution` | the providers' attribution lines a tool writes beside the files of a plain download (`ATTRIBUTION.txt`, Nogat DEV-20.5; ADR-033) | UTF-8 text, not empty, no NUL byte |
 
 The CSV tables that Retman writes itself from Obserwator's results (`station_list`,
 `current_hydro`, `current_meteo`, `current_synop`, `imgw_warnings`, `hydro_states`,
@@ -784,7 +785,7 @@ plan is confirmed. Operations marked `check` offer an availability check (sectio
 | `obserwator_series` — station time series | `export_station_series` — station series (dataset, period, year type, variables) to CSV; `check` | `hydro_series`, `meteo_series` | from the data root without network; from the server download of archives to the raw root and a series build in the data root (network, writes) |
 | | `show_station_coverage` — data coverage of a station in the data root (years, gaps) | `obserwator_report` | no network |
 | | `build_obserwator_series` — build dataset series in the data root from archives in the raw root | — | writes the data root |
-| `obserwator_archives` — archives and store | `download_hydro_archives`, `download_meteo_archives` — download archives as plain files to the results folder (`output_dir`), without the store | `obserwator_archive` | network |
+| `obserwator_archives` — archives and store | `download_hydro_archives`, `download_meteo_archives` — download archives as plain files to the results folder (`output_dir`), without the store | `obserwator_archive`, `provider_attribution` | network |
 | | `check_obserwator_archives` — plan: what needs to be downloaded relative to the raw root | `obserwator_plan` | network |
 | | `sync_obserwator_store` — download archives to the raw root, then build the dataset's series in the data root (`store sync`, `series build`); `check` | — | network; writes both roots |
 | | `sync_obserwator_store_by_plan` — download per a plan from the result of `check_obserwator_archives` (input `obserwator_plan`, e.g. "#5") into the raw root | — | network; writes the raw root |
@@ -871,11 +872,14 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
 - **Licence and attribution** (ADR-033): the tool's `license_terms` notices are shown verbatim in
   the result warnings; the lines of Nogat DEV §20 (`attribution`, `terms_notice`) of its documents
   follow them, one warning per line, are kept in the result and end every CSV table Retman writes
-  (sections 3.2.4, 3.2.6); the PMAXTP table keeps its columns `attribution_source` and
-  `attribution_processed`, which take PMAXTP's own lines when the tool gives them. An Obserwator of
-  the supported range that gives no such lines gets instead the licence text the mappers build from
-  its provider registry (`datasets providers`), and the PMAXTP columns the attribution of IMGW-PIB
-  from that registry.
+  (sections 3.2.4, 3.2.6). A `license_terms` notice that restates these lines keeps only what it
+  says beyond them (ČHMÚ's note on CC BY 4.0), so no line is shown twice and the lines stay in
+  the order of DEV-20.4. The `ATTRIBUTION.txt` that a plain download writes beside the archives is
+  a file of the kind `provider_attribution`, not counted as an archive. The PMAXTP table keeps its
+  columns `attribution_source` and `attribution_processed`, which take PMAXTP's own lines when the
+  tool gives them. An Obserwator of the supported range that gives no such lines gets instead the
+  licence text the mappers build from its provider registry (`datasets providers`), and the PMAXTP
+  columns the attribution of IMGW-PIB from that registry.
 - **Preview** (offline) adds to the plan, among other things, the state of the roots and the number of
   stations matching the name, the range of data in the data root (years, gaps) and the number of archive
   files to check, and rejects a plan the roots cannot serve (e.g. no series for the dataset or no station
