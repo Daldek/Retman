@@ -364,6 +364,33 @@ def test_obserwator_archive_rejects_error_pages_and_binary_text(
     assert _reason("obserwator_archive", _write(tmp_path, name, content)) == reason
 
 
+def test_provider_attribution_accepts_the_lines_a_tool_writes(tmp_path: Path) -> None:
+    lines = "".join(f"{line}\n" for line in ATTRIBUTION).encode("utf-8")
+
+    validate_file("provider_attribution", _write(tmp_path, "ATTRIBUTION.txt", lines))
+    validate_file(
+        "provider_attribution", _write(tmp_path, "bom.txt", b"\xef\xbb\xbf" + lines)
+    )
+    # Only the beginning is read: a character cut by its end is no encoding error
+    long = b"x" * 4095 + "Ź\n".encode()
+    validate_file("provider_attribution", _write(tmp_path, "long.txt", long))
+
+
+@pytest.mark.parametrize(
+    ("name", "content", "reason"),
+    [
+        ("ATTRIBUTION.txt", b" \n", "empty_file"),
+        ("ATTRIBUTION.txt", "Źródło danych".encode("cp1250"), "invalid_encoding"),
+        ("ATTRIBUTION.txt", b"Source\x00\x01", "invalid_header"),
+        ("ATTRIBUTION.csv", b"Source\n", "unsupported_extension"),
+    ],
+)
+def test_provider_attribution_rejects_what_is_not_utf8_lines(
+    tmp_path: Path, name: str, content: bytes, reason: str
+) -> None:
+    assert _reason("provider_attribution", _write(tmp_path, name, content)) == reason
+
+
 @pytest.mark.parametrize(
     ("kind", "schema", "other", "not_json"),
     [

@@ -4,6 +4,7 @@ A kind is a name, the file extensions it accepts and an offline validator built
 from the standard library only: no GIS or data libraries, no network.
 """
 
+import codecs
 import csv
 import json
 import re
@@ -256,6 +257,19 @@ def _check_obserwator_archive(path: Path) -> str | None:
     return "invalid_header" if b"\x00" in text else None
 
 
+def _check_provider_attribution(path: Path) -> str | None:
+    """``ATTRIBUTION.txt`` beside downloaded files: the providers' lines, UTF-8 text."""
+    text = _first_text(path)
+    if not text.strip():
+        return "empty_file"
+    try:
+        # The probe may end inside a character; only a wrong byte before it counts
+        codecs.getincrementaldecoder("utf-8")().decode(text)
+    except UnicodeDecodeError:
+        return "invalid_encoding"
+    return "invalid_header" if b"\x00" in text else None
+
+
 def _json_document_check(schema: str) -> Check:
     """JSON document that is an object with the given ``schema`` value."""
 
@@ -367,6 +381,9 @@ KINDS: dict[str, Kind] = _kinds(
     ),
     Kind("obserwator_plan", (".json",), _json_document_check(_PLAN_SCHEMA)),
     Kind("obserwator_report", (".json",), _schema_first(_RESULT_SCHEMA)),
+    # The providers' attribution lines a tool writes beside the files of a plain
+    # download (``ATTRIBUTION.txt``, Nogat DEV-20.5)
+    Kind("provider_attribution", (".txt",), _check_provider_attribution),
     # Hydrolog: the parameters of a watershed (``WatershedParameters.to_json()``, from
     # Hydrograf or written by hand) and the result document of a computation
     Kind("watershed_parameters", (".json",), _check_watershed),

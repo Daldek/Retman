@@ -559,9 +559,10 @@ def test_a_series_from_the_store_is_the_tools_csv_with_its_extent(operations, tm
         "Gotowe. Wynik #1: szereg stacji 123750000 "
         "(31 wierszy, 2001-01-01 – 2001-01-31) zapisany w pliku CSV."
     )
-    # The tool's licence lines, verbatim, and nothing else
+    # The tool's licence lines, verbatim, each once, in the order of DEV-20.4, and
+    # nothing else: its license_terms notice restates them
     assert_imgw_lines(result)
-    assert set(result.warnings) == set(licence_texts(result))
+    assert result.warnings == [*result.attribution, *result.terms_notice]
     assert audit_commands(result) == ["series export", "series select"]
     assert result.tool is not None
     assert result.tool["calls"][0]["files"][0]["path"] == str(path)
@@ -724,12 +725,13 @@ def test_building_a_series_names_the_version_and_says_when_it_was_unchanged(
         "Gotowe. Wynik #1: szereg zbioru pl.imgw.hydro_daily w magazynie: unchanged, "
         "stacji: 2."
     )
-    # A new series version brings the same provider's lines
+    # A new series version brings the same provider's lines, each once: the
+    # license_terms notice the tool adds for a new version restates them
     assert new.ok, new.error
     assert new.values["status"] == "new"
     assert new.values["series_version"].endswith("series.json")
     assert_imgw_lines(new)
-    assert set(new.warnings) == set(licence_texts(new))
+    assert new.warnings == [*new.attribution, *new.terms_notice]
 
 
 def test_a_disk_without_hard_links_is_explained_not_quoted(

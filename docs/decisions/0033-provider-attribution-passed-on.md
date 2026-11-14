@@ -69,3 +69,11 @@ DEV §20 (G, CP and Z by their fixed parts); it still words none.
 pins Obserwator `0394af7c` and Hydrolog `9e2cb618` emit the lines, so Retman shows and writes them
 and the registry text is no longer shown for these pins. Kartograf `c9afdd3f` still emits none
 (a deviation the tool records).
+
+**Erratum 4 (2026-11-14, the follow-ups of the pin update):** the second consequence is met: a plain
+download gives the `ATTRIBUTION.txt` that Obserwator lists in `files[]` the kind
+`provider_attribution` (UTF-8 text), so it is not counted as an archive. Obserwator words its
+`license_terms` notice from the same lines (`{attribution}. {notice}`), so a result showed them twice
+(a series export from the store, a new series build); a notice is now cut at every line of
+`attribution` and `terms_notice` and keeps only what it says beyond them, verbatim (nothing for
+IMGW-PIB, the note on CC BY 4.0 for ČHMÚ). Each line is shown once, in the order of DEV-20.4.

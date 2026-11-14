@@ -106,7 +106,7 @@ OPERATIONS: list[OperationSpec] = [
         "description": "Download the archive files of a hydrological dataset "
         "(IMGW-PIB or ČHMÚ) to the result folder, as published",
         "inputs": [],
-        "outputs": ["obserwator_archive"],
+        "outputs": ["obserwator_archive", "provider_attribution"],
         "params": [
             dataset_param(HYDRO_DOWNLOAD_DATASETS),
             years_param(HYDRO_DOWNLOAD_DATASETS),
@@ -126,7 +126,7 @@ OPERATIONS: list[OperationSpec] = [
         "description": "Download the archive files of a meteorological dataset "
         "(IMGW-PIB or ČHMÚ) to the result folder, as published",
         "inputs": [],
-        "outputs": ["obserwator_archive"],
+        "outputs": ["obserwator_archive", "provider_attribution"],
         "params": [
             dataset_param(METEO_DOWNLOAD_DATASETS),
             years_param(METEO_DOWNLOAD_DATASETS),

@@ -9,7 +9,7 @@ failures of a partial run come from ``base_output``.
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 from retman.adapters.catalog import CatalogCall, ToolContext, ToolError, ToolRun
 from retman.registry.manifest import HandlerOutput
@@ -21,12 +21,17 @@ from retman.tools.obserwator.describe import (
     output_dir,
     result_of,
     run_of,
+    set_files,
     write_report,
 )
 from retman.tools.obserwator.folders import root_dir
 from retman.tools.obserwator.plans import format_bytes, plan_summary
 
 Runs = Sequence[tuple[CatalogCall, ToolRun]]
+
+# The file of the providers' lines that the tool writes beside the files of a plain
+# download and lists in ``files[]`` with them (Nogat DEV-20.5)
+ATTRIBUTION_FILE: Final = "ATTRIBUTION.txt"
 
 
 def _result(run: ToolRun) -> Mapping[str, Any]:
@@ -41,13 +46,25 @@ def _size(path: Path) -> int:
 def describe_download_archives(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """Describe the downloaded files (as published), their size and what is missing."""
+    """Describe the downloaded files (as published), their size and what is missing.
+
+    The tool's ``ATTRIBUTION.txt`` is a file of its own kind, not an archive: it
+    is neither counted nor sized with them.
+    """
     output = base_output(operation, params, runs, ctx)
     (_, run) = runs[0]
     items = items_of(run)
     status = Counter(str(item.get("status")) for item in items)
-    paths = [file.path for file in run.files]
-    output["files"] = {"obserwator_archive": paths}
+    files: dict[str, list[Path]] = {"obserwator_archive": []}
+    for file in run.files:
+        kind = (
+            "provider_attribution"
+            if file.path.name == ATTRIBUTION_FILE
+            else "obserwator_archive"
+        )
+        files.setdefault(kind, []).append(file.path)
+    set_files(output, files)
+    paths = files["obserwator_archive"]
     total = sum(_size(path) for path in paths)
     output["values"].update(
         files=len(paths),
