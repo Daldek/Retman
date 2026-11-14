@@ -17,6 +17,12 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   and numeric confidence thresholds to tune. `basal` remains accepted and still reports
   `backend_unavailable` when used for planning (PRD N-02, ARCHITECTURE 3.3.2, 9.1).
 
+### Changed
+
+- The CP line of Nogat DEV §20 is „Dane ČHMÚ zostały przetworzone” without the detail of
+  processing (ECO-071): `retman.attribution` orders it in the CP place and reads an old
+  „Dane ČHMÚ zostały przetworzone (…)” as CP, merged into one line.
+
 ### Added
 
 - The lines the data providers' terms require (Nogat DEV §20, ECO-060, ADR-033): the

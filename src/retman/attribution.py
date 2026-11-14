@@ -8,7 +8,8 @@ top level of the ``<tool>-result/1`` envelope; Retman words none of them itself
 (ADR-024: the texts of the tool are passed on as they are). It merges the lines of the
 runs of an operation, each once, in the order of DEV-20.4 (``attribution`` S, P, PS, PP,
 M, C, CP, G, SG, Z; ``terms_notice`` RD, RH, RK of DEV-20.7), a line it does not know
-after those, in the order first seen, and carries them into what it writes and shows
+after those, in the order first seen (an old CP with the detail in parentheses is
+the CP of ECO-071, once), and carries them into what it writes and shows
 (ADR-033):
 
 * the result (``Result.attribution`` and ``Result.terms_notice``, also in
@@ -38,6 +39,8 @@ _IMGW_OF: Final = (
 _PMAXTP: Final = "https://klimat.imgw.pl/opady-maksymalne"
 _CC_BY: Final = "licencja CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)"
 _PROCESSED: Final = "; dane przetworzone"
+_CP: Final = "Dane ČHMÚ zostały przetworzone"
+"""The CP line of DEV §20 (ECO-071); an old ``CP (…)`` with the detail is read as it."""
 
 # The lines of DEV §20 in the order of DEV-20.4 (S, P, PS, PP, M, C, CP, G, SG, Z) and
 # DEV-20.7 (RD, RH, RK): a line with placeholders by its fixed start and end, any other
@@ -58,7 +61,7 @@ _ORDER: Final[tuple[tuple[str, str], ...]] = (
         f"https://opendata.chmi.cz, {_CC_BY}",
         "",
     ),
-    ("Dane ČHMÚ zostały przetworzone (", ")"),
+    (_CP, ""),
     ("Źródło: Główny Urząd Geodezji i Kartografii – GUGiK, ", _PROCESSED),
     (f"Źródło: ISRIC – World Soil Information, SoilGrids, {_CC_BY}{_PROCESSED}", ""),
     ("Źródło: Český úřad zeměměřický a katastrální (ČÚZK), ", _PROCESSED),
@@ -88,11 +91,16 @@ def _fills(line: str, start: str, end: str) -> bool:
     )
 
 
+def _canonical(line: str) -> str:
+    """Return the CP line for an old ``CP (…)`` with the detail (DEV-20.4)."""
+    return _CP if _fills(line, f"{_CP} (", ")") else line
+
+
 def _merge(groups: Iterable[Iterable[str]]) -> tuple[str, ...]:
     found: dict[str, None] = {}
     for group in groups:
         for line in group:
-            text = line.strip()
+            text = _canonical(line.strip())
             if text:
                 found.setdefault(text)
     return tuple(sorted(found, key=_rank))
