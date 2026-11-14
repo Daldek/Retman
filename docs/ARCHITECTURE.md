@@ -206,7 +206,7 @@ From the tools Retman expects only good practices that are beneficial regardless
 - a **stable public API** and semantic versioning (a compatibility-breaking change = new major version),
 - a **machine-readable command catalog** (command names, options with allowed values, effects:
   network and writes), **offline validation** (`validate_command`), JSON result documents with a
-  `schema` field and stable error codes — Kartograf 0.8.0, Obserwator 3.0.0 and Hydrolog 1.0
+  `schema` field and stable error codes — Kartograf 0.8.0, Obserwator 3.0.0 and Hydrolog 0.8.0
   have these, and the command layer builds on them (section 3.2.4),
 - for tools without a catalog: **type hints**, especially `Literal` (or `Enum`) for choices
   and `Path` for files, plus **NumPy-style docstrings**.
@@ -593,12 +593,12 @@ and Retman adapts to them:
 
 - Each tool has a **supported version range** in its manifest: Kartograf `>=0.8.0.dev0,<0.9`
   (0.x releases may break compatibility), Obserwator `>=3.0.0.dev0,<4` (semantic versioning and
-  `/1` document contracts; ADR-012), Hydrolog `>=1.0.0.dev0,<2`. The range corresponds to release
-  tags in the tool's repository on GitHub; until the `v0.8.0`, `v3.0.0` and `v1.0.0` tags are
+  `/1` document contracts; ADR-012), Hydrolog `>=0.8.0.dev0,<0.9`. The range corresponds to release
+  tags in the tool's repository on GitHub; until the `v0.8.0` (Kartograf and Hydrolog) and `v3.0.0` tags are
   pushed, the `tools` dependency group pins commits (section 9.3) and the range starts at the
   development version of the pending release (`.dev0`, REL-5.6), because PEP 440 puts `0.8.0.dev0`
   below `0.8.0`; the release change that replaces the commits by tags narrows the ranges to
-  `>=0.8.0,<0.9`, `>=3.0.0,<4` and `>=1.0.0,<2`. Every check of a version (the loader,
+  `>=0.8.0,<0.9`, `>=3.0.0,<4` and `>=0.8.0,<0.9`. Every check of a version (the loader,
   `retman doctor check`, `retman scaffold check`, the conformance tests) reads that one range, as a
   PEP 440 specifier set with development versions admitted
   (`retman.registry.loader.version_matches`). Retman checks the installed tool's version at
@@ -912,7 +912,7 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
   `series select`, used by the previews and by the series export, are commands of
   `export_station_series`. Obserwator keeps no projects: they belong to Archiwista (Nogat ECO-054).
 
-#### 3.2.12. Hydrolog 1.0 operations
+#### 3.2.12. Hydrolog 0.8.0 operations
 
 Nine operations in three categories, on the commands that the Nogat registry routes to
 Hydrolog (`ecosystem.yaml`); the soil groups of texture rasters share `soil_data` with
@@ -1127,7 +1127,7 @@ MANIFEST = {
     "tool": "hydrolog",
     "distribution": "hydrolog",              # package name for the installed-version check
     "source": "git+https://github.com/Daldek/Hydrolog",  # for `--with` in retman doctor check hints (section 9.4)
-    "supported_versions": ">=1.0.0.dev0,<2",  # checked at startup and in CI (section 3.2.7)
+    "supported_versions": ">=0.8.0.dev0,<0.9",  # checked at startup and in CI (section 3.2.7)
     "translations": {"pl": "pl.toml", "en": "en.toml"},  # relative to this package
     "client": "retman.tools.hydrolog.client:create",    # factory(settings) -> RunClient (section 3.2.4)
     "operations": [
@@ -2118,7 +2118,7 @@ Model decyzyjny
   ✓ progi pewności: operacja 0.9, parametr 0.9
 
 Narzędzia
-  ✓ hydrolog 1.0.0, obsługiwane >=1.0.0.dev0,<2, 9 operacji
+  ✓ hydrolog 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 9 operacji
   ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 10 operacji
   ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 19 operacji
 
@@ -2131,7 +2131,7 @@ Magazyny danych narzędzi
   ✓ obserwator: dane referencyjne /home/ola/.cache/nogat/obserwator/reference (hydro_stations_locations.csv: brak)
 
 Zgodność opisów z narzędziami (retman scaffold check)
-  ✓ hydrolog 1.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
+  ✓ hydrolog 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
   ✓ kartograf 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
   ✓ obserwator 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
 
@@ -2749,7 +2749,7 @@ in which version.
 
 | Version | Components |
 | --- | --- |
-| **0.1** | core pipeline, `openai_compatible` backend (default), `basal` setting accepted but backend unavailable pending its API specification, extractors (including probability, stations, periods, points, geometry file), shared adapter with command layer (`calls`, tool clients, offline preview, availability check), adapters for Kartograf 0.8.0, all of Obserwator 3.0.0 and the basic routes of Hydrolog 1.0 (nine operations, section 3.2.12) with two-stage operation recognition, tool stores in the configuration, `retman scaffold` (`list`, `draft`, `check`), CI with tests on supported tool versions, translation files (PL, EN), CLI and Python API (including the plan as data and `known`), `retman doctor check`, workspace in the project folder (numbered results, input selection without guessing, `retman results list`), central file and `retman config init`, project journal and audit trail (`retman journal show`), `retman eval run`, response time measurements (section 9.2), CI on Windows, Linux and macOS, including an installation test on clean systems (section 9.4) |
+| **0.1** | core pipeline, `openai_compatible` backend (default), `basal` setting accepted but backend unavailable pending its API specification, extractors (including probability, stations, periods, points, geometry file), shared adapter with command layer (`calls`, tool clients, offline preview, availability check), adapters for Kartograf 0.8.0, all of Obserwator 3.0.0 and the basic routes of Hydrolog 0.8.0 (nine operations, section 3.2.12) with two-stage operation recognition, tool stores in the configuration, `retman scaffold` (`list`, `draft`, `check`), CI with tests on supported tool versions, translation files (PL, EN), CLI and Python API (including the plan as data and `known`), `retman doctor check`, workspace in the project folder (numbered results, input selection without guessing, `retman results list`), central file and `retman config init`, project journal and audit trail (`retman journal show`), `retman eval run`, response time measurements (section 9.2), CI on Windows, Linux and macOS, including an installation test on clean systems (section 9.4) |
 | 0.2 | chain resolver, sanity checks between steps, chain resumption, named results, result descriptions by the text model, native provider APIs (optional), descriptions and handlers for the rest of Hydrolog and the remaining ecosystem tools (Hydrograf, BasicHydraulics) |
 | 0.3 | MCP server (`retman[mcp]`, stdio, confirmation via elicitation, `channel` field in the audit trail; section 7.5.1) |
 | 0.4 | HTTP API |

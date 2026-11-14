@@ -19,6 +19,11 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 ### Changed
 
+- Hydrolog's development version is now `0.8.0.dev0` (its last release is v0.7.0): Retman
+  accepts Hydrolog `>=0.8.0.dev0,<0.9` (was `>=1.0.0.dev0,<2`), and the `tools` group, README
+  and USAGE pin Hydrolog's `develop` commit `e5df06d8`; install that commit, since a Hydrolog
+  reporting 1.0.0.dev0 is no longer accepted (ARCHITECTURE 3.2.7, ADR-012, REL-5.6).
+
 - The CP line of Nogat DEV §20 is „Dane ČHMÚ zostały przetworzone” without the detail of
   processing (ECO-071): `retman.attribution` orders it in the CP place and reads an old
   „Dane ČHMÚ zostały przetworzone (…)” as CP, merged into one line.

@@ -66,7 +66,7 @@ MANIFEST: ManifestSpec = {
     "tool": "hydrolog",
     "distribution": "hydrolog",
     "source": "git+https://github.com/Daldek/Hydrolog",
-    "supported_versions": ">=1.0.0.dev0,<2",
+    "supported_versions": ">=0.8.0.dev0,<0.9",
     "translations": {"pl": "pl.toml", "en": "en.toml"},
     "client": "retman.tools.hydrolog.client:create",
     "operations": [

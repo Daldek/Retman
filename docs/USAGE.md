@@ -4,7 +4,7 @@ A user guide: how to set up Retman, how to issue commands, answer questions, app
 find results — in the terminal and from Python.
 
 **Status:** before v0.1.0. Ten Kartograf 0.8.0 operations, 19 Obserwator 3.0.0 (formerly IMGWTools)
-operations and nine Hydrolog 1.0 operations, 38 in all, work (section 9) with a decision model
+operations and nine Hydrolog 0.8.0 operations, 38 in all, work (section 9) with a decision model
 compatible with the OpenAI API (e.g. LM Studio); the basal backend does not exist yet.
 
 > **About the examples.** The runs below were recorded on Retman 0.1.0.dev0 with Kartograf 0.8.0
@@ -50,7 +50,7 @@ in `pyproject.toml`; they are the members of the Nogat release set `candidate-4`
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1" \
     --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@0394af7c66b60cccb88f14b6118893b78443dc21" \
-    --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@9e2cb618b115d94d93fb7caaf871a5fa5c1770a1"
+    --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@e5df06d85f7ca7a0fde2547393748bc17ea3669c"
 ```
 
 The Obserwator `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are
@@ -868,7 +868,7 @@ Rules for Obserwator operations:
   (code 8) and a hint how to create it, and a store not yet split (reason `wrong_root`) with the
   hint to split it (section 1.3); nothing is created silently.
 
-### 9.3. Hydrolog 1.0 — catchment hydrology, computed offline
+### 9.3. Hydrolog 0.8.0 — catchment hydrology, computed offline
 
 Nine operations in three groups: rainfall and runoff, catchment and flow analyses, and the soil groups
 of texture rasters, which belong to the soil data group shared with Kartograf. Hydrolog computes on
@@ -979,7 +979,7 @@ Model decyzyjny
   ! pewność: niedostępna (confidence = "none") — wybory modelu w planie są oznaczone jako niezweryfikowane → ustaw confidence = "auto" w [retman.decision] (nogat.toml), jeśli serwer podaje logprobs
 
 Narzędzia
-  ✓ hydrolog 1.0.0, obsługiwane >=1.0.0.dev0,<2, 9 operacji
+  ✓ hydrolog 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 9 operacji
   ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 10 operacji
   ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 19 operacji
 
@@ -992,7 +992,7 @@ Magazyny danych narzędzi
   ✓ obserwator: dane referencyjne ~/.cache/nogat/obserwator/reference (hydro_stations_locations.csv: brak)
 
 Zgodność opisów z narzędziami (retman scaffold check)
-  ✓ hydrolog 1.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
+  ✓ hydrolog 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
   ✓ kartograf 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
   ✓ obserwator 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
 
