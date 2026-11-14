@@ -5,7 +5,7 @@ Retman turns a task written in Polish into a checked plan for the tools of the N
 recognises the operation, asks for what is missing, shows the plan and, once confirmed, calls
 the public Python API of the tool. It is a CLI (`retman`) and a Python library; the language model is a
 separate service (basal-serve or any OpenAI-compatible server). Profile `tool` (DEV-1.1).
-User documentation: [README.md](README.md). Nogat standard 2.1:
+User documentation: [README.md](README.md). Nogat standard 1.0 (its draft called 2.1):
 [DEVELOPMENT_STANDARDS](https://github.com/Daldek/Nogat/blob/main/standards/DEVELOPMENT_STANDARDS.md),
 [AGENT_INTERFACE](https://github.com/Daldek/Nogat/blob/main/standards/AGENT_INTERFACE.md),
 [DOCUMENTATION_STANDARDS](https://github.com/Daldek/Nogat/blob/main/standards/DOCUMENTATION_STANDARDS.md),
@@ -75,7 +75,7 @@ Process rules.
 ## Environment and commands
 
 ```bash
-uv sync --locked --all-extras     # .venv with the dev tools and the `tools` group (Kartograf, Obserwator)
+uv sync --locked --all-extras     # .venv with the dev tools and the `tools` group (Kartograf, Obserwator, Hydrolog)
 scripts/gate.sh                   # ruff format, ruff check, mypy, pytest + coverage, commit step
 uv run pytest tests/unit -q       # a part of the tests; `-m live` runs the live ones, deliberately
 uv run pytest tests --collect-only -q   # the number of tests (never copy it into documents)
@@ -113,7 +113,8 @@ Tests (DEV-10; they are offline and never touch the real `nogat.toml` or a real 
 - Mappers, builders and backends are tested on recorded real documents and raw server responses
   (`tests/fixtures/<tool or backend>/`), never on an imagined format. Handlers and conformance
   run against the real tools with small data and skip (`pytest.importorskip`) when a tool is
-  missing; CI runs them on the oldest and the newest supported version.
+  missing; CI runs them on the commits that the `tools` group pins, not yet on the oldest and the
+  newest supported version (ARCHITECTURE 3.2.7).
 - Recognition tests check stability under shuffled options (ARCHITECTURE 3.4); a test requires a
   text for every operation, parameter, option and category in each language (ARCHITECTURE 4.2).
 - No `conftest.py` in a subfolder of `tests/` (a second `conftest` module breaks mypy); shared
@@ -131,7 +132,7 @@ src/retman/
 ├── core/           # pipeline, plan, dialog, result, check, journal, workspace, collection, geometry
 ├── registry/       # operation model, manifest schema, loader of tool descriptions
 ├── adapters/       # command layer of the tools (catalog.py), generic manifest adapter
-├── tools/<tool>/   # kartograf, obserwator: manifest, calls, client, preview, check, handlers, texts
+├── tools/<tool>/   # kartograf, obserwator, hydrolog: manifest, calls, client, preview, check, handlers, texts
 ├── backends/       # DecisionBackend; openai_compatible.py
 ├── extractors/     # numbers, dates, coordinates, areas, stations... (code, no model)
 ├── i18n/           # translation loader, pl.toml and en.toml (core texts); the tools carry their own
@@ -140,6 +141,7 @@ src/retman/
 ├── environment.py config.py config_show.py initialize.py doctor.py stores.py logs.py
 ├── outcomes.py exceptions.py _errors.py   # exit codes, error documents, registry (generated)
 ├── agent_guide.py _data/agents/ schemas/  # generator and templates of AGENTS.md and llms.txt, JSON Schemas
+├── attribution.py                         # the providers' attribution lines, passed on (Nogat DEV §20, ADR-033)
 └── kinds.py testing.py                    # data kinds; fakes for offline tests
 tests/{unit,integration,contract,fixtures}; scripts/; schemas/nogat/ (copies of the standard)
 ```
@@ -180,7 +182,7 @@ Registry entry:
 [ecosystem.yaml](https://github.com/Daldek/Nogat/blob/main/ecosystem.yaml) (Retman). Retman
 consumes Kartograf, Obserwator and Hydrolog through their Python libraries; Hydrograf is
 planned (PRD roadmap). No tool imports Retman. A change that spans projects is planned in Nogat
-(DEV-3.4); PROGRESS Next 2 lists the calls to migrate when the producers adopt DEV §19.
+(DEV-3.4); PROGRESS Next 2 records the calls migrated to the producers' data output (DEV §19).
 
 ## Deviations
 

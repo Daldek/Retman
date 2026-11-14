@@ -8,8 +8,8 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 
 | Component | State | Note |
 |---|---|---|
-| Provider attribution (Nogat DEV §20) | done, waits for the pins | ADR-033: the tools' `attribution` and `terms_notice` pass into results, warnings and every CSV Retman writes; effective when the Obserwator and Hydrolog pins move to commits that emit them (next release set); then the download operations need a kind for the `ATTRIBUTION.txt` Obserwator lists in `files[]`, and 5 integration tests change their expectations (checked 2026-11-13 against the Obserwator worktree `fix/provider-attribution`) |
-| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-032) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
+| Provider attribution (Nogat DEV §20) | done, waits for the pins | ADR-033: the tools' `attribution` and `terms_notice` pass into results, warnings and every CSV Retman writes; effective when the Obserwator and Hydrolog pins move to commits that emit them (next release set); then the download operations need a kind for the `ATTRIBUTION.txt` Obserwator lists in `files[]`, and 5 integration tests change their expectations (checked 2026-11-13 against the Obserwator worktree `fix/provider-attribution`); since ECO-068 DEV §20 also has the GUGiK, ISRIC SoilGrids and ČÚZK lines (G, SG, Z), which pass on from Kartograf's documents the same way once its pin emits them (`d0990c89` emits none), except for the orthophoto sheets of `download_sheet_hierarchy`, which Kartograf's provider class fetches without a `kartograf-result/1` document (ADR-033 erratum 1) |
+| Design documents (PRD, ARCHITECTURE, USAGE, ADR-001 to ADR-033) | done, English | open questions: PRD ch. 11, ARCHITECTURE ch. 12; `docs/research/` and `docs/specs/` are still Polish, see Next 1.5 |
 | Core: pipeline, `Plan`, dialog, `Result`, journal, workspace, command collection | done | ARCHITECTURE 2, 5, 6, 7 |
 | Registry, command layer, data kinds, `retman scaffold` | done | ADR-013, ADR-019 |
 | Kartograf 0.8.0 adapter (10 operations: spatial data of GUGiK and Copernicus, SoilGrids soils, the creation and the overview of the store), Obserwator 3.0.0 adapter (formerly IMGWTools; 19 operations, two-stage recognition) | done | the `tools` group pins `d0990c89` (Kartograf) and `f9f4ee79` (Obserwator), their members of the Nogat release set `candidate-2` (Nogat `587c909`), both on GitHub, until the tags `v0.8.0` and `v3.0.0` exist (Next 3); the names of the tool in Retman follow Nogat ECO-057 (CHANGELOG, ADR-024 erratum 7); the supported ranges start at the `.dev0` of the release meanwhile (REL-5.6) and are narrowed with the tags; not yet offered by an operation: `imagery download` sheets of a rectangle or a geometry file (orthophoto, true orthophoto, LIDAR intensity, oblique orthophoto; CZ SM5 sheets), the BDOO class selection (`--layers`) and a voivodeship code as its area, and the Czech land cover (ZABAGED, Data50, Data250: an S-JTSK rectangle or the national file, which the area reader does not give) |
@@ -19,12 +19,12 @@ session log that used to live here is in git, commit `7b6e353`, `docs/PROGRESS.m
 | Backends | in progress | `openai_compatible` and `FakeDecisionBackend` done (checked with Bielik 11B in LM Studio); `basal` blocked: no basal-serve API specification |
 | CLI and command catalog: `plan run`, `config show\|init`, `doctor check`, `results list`, `journal show`, `commands list\|schema\|guide` | done | ADR-022; ARCHITECTURE 6.4, 7.1, 7.2, 9.1; exit codes of the registry since ADR-020 |
 | `retman eval run` and the 734-command set | in progress | code done; the last run was on the old 83-command set; the rows `kartograf-soil-*`, `kartograf-hsg-*`, `kartograf-inspect-store-*`, `kartograf-orto-cutout-*`, `kartograf-landcover-*` and `hydrolog-*` are unmeasured |
-| Nogat standard 2.1, structure and tooling | done | on `develop` (merged from `chore/nogat-2.1`): gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
-| Nogat standard 2.1, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
-| Nogat standard 2.1, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
-| Nogat standard 2.1, agent interfaces | done | ADR-022: catalog, `retman.operations`, the CLI generated from the catalog, `retman-result/1`, schemas in `src/retman/schemas/`, generated `AGENTS.md` and `llms.txt`; the texts inside the machine documents are English (erratum 1) |
-| Nogat standard 2.1, English texts (DEV-2.2, AGI-9.2) | done | `en.toml` for the core and both adapters, `lang = en` and `--lang en`, the answer words in `[answers]`, English texts in the `--json` documents of `doctor check` and `scaffold check` (ADR-022 erratum 1) |
-| Nogat standard 2.1, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13), the CHANGELOG, the decision log, README, USAGE, PRD and ARCHITECTURE in English (the README examples run by `tests/contract/test_readme_examples.py`, DOC-2.1, DOC-2.6); open: Next 1.5 (`docs/research/`, `docs/specs/`) |
+| Nogat standard 1.0 (its draft called 2.1), structure and tooling | done | on `develop` (merged from `chore/nogat-2.1`): gate, CI, `src/` layout, test tree, ruff and mypy rule sets, logging, discovery metadata, contribution files, editor files |
+| Nogat standard 1.0, error registry (ERR-3, ERR-4) | done | ADR-020: `schemas/nogat/`, `scripts/generate_errors.py`, `src/retman/_errors.py`, `retman.outcomes`, `retman-error/1` as the last stderr line, exit codes of the registry |
+| Nogat standard 1.0, user environment (DEV-18) | done | ADR-021: `[retman]` tables of `nogat.toml`, `RETMAN_*` and `NOGAT_*` variables, user directories, `retman config show` (`retman-config/1`), `platformdirs` |
+| Nogat standard 1.0, agent interfaces | done | ADR-022: catalog, `retman.operations`, the CLI generated from the catalog, `retman-result/1`, schemas in `src/retman/schemas/`, generated `AGENTS.md` and `llms.txt`; the texts inside the machine documents are English (erratum 1) |
+| Nogat standard 1.0, English texts (DEV-2.2, AGI-9.2) | done | `en.toml` for the core and every adapter, `lang = en` and `--lang en`, the answer words in `[answers]`, English texts in the `--json` documents of `doctor check` and `scaffold check` (ADR-022 erratum 1) |
+| Nogat standard 1.0, documentation | in progress | done: SECURITY, CONTRIBUTING, CONTRIBUTORS, PR template, this file, `CLAUDE.md` in English with its Deviations section, `docs/DEVELOPMENT_STANDARDS.md` removed (checklists are ARCHITECTURE 13), the CHANGELOG, the decision log, README, USAGE, PRD and ARCHITECTURE in English (the README examples run by `tests/contract/test_readme_examples.py`, DOC-2.1, DOC-2.6); open: Next 1.5 (`docs/research/`, `docs/specs/`) |
 | Gate | green | `scripts/gate.sh`: the offline tests, coverage 95%, ruff, mypy strict; run it with `TMPDIR` on a local disk (a network share breaks SQLite and links) |
 | CI (Linux, macOS, Windows) | green | `.github/workflows/ci.yml`: the gate on Linux, macOS and Windows with Python 3.12 (required) and 3.15 (reported); every run on `develop` from the first one (2026-11-03) failed on macOS and Windows until pull request #1 (2026-11-11): on macOS the Obserwator fixture store lay under the `/var` link, on Windows tests assumed POSIX paths and the locale's encoding, and three bugs of Retman (CHANGELOG, Fixed) and one of `scripts/generate_errors.py` came to light; `live.yml` has not run (it is on `develop` only, and schedules run from `main`) |
 | Dead code and duplicates | done 2026-11-14 | branch `refactor/dead-code`: removed what had no caller outside its own tests (`wgs84_to_pl1992`, `polish_integer`, the `TextBackend` stub of v0.2, `PRESENTATION`, Obserwator `folders.inside`, the unread `first_year` of the datasets and `tool_options` of scaffold drafts); one `in_range`, `parse_decimal` and PL-1992 envelope in `extractors/areas.py` for both area and point extractors, one `probability_percent` for the PMAXTP description; the per-tool readers, clients and previews keep their small look-alike helpers on purpose (one module per tool) |
@@ -41,10 +41,10 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
 
 ## Next
 
-1. **Resume the standard 2.1 adoption on a new branch from `develop`** (one commit per step, gate
-   green before each; the source of the rules is the Nogat branch `feature/data-output`,
-   `git -C ~/workspace/Nogat show feature/data-output:standards/<file>`; Hydrolog's and
-   Kartograf's branches `chore/nogat-2.1` are the reference implementations). Open: 1.5 (done:
+1. **Resume the adoption of the Nogat standard 1.0 (its draft called 2.1) on a new branch from
+   `develop`** (one commit per step, gate green before each; the source of the rules is Nogat's
+   `develop`, `git -C ~/workspace/Nogat show origin/develop:standards/<file>`; Hydrolog's and
+   Kartograf's `develop` are the reference implementations). Open: 1.5 (done:
    1.1, the agent interfaces, ADR-022; 1.2, `CLAUDE.md` in English and the removal of
    `docs/DEVELOPMENT_STANDARDS.md`; 1.3, the CHANGELOG in English; 1.4, the decision log in
    English with ADR-023). ADR-020 is the error registry, ADR-021 the user environment, ADR-022
@@ -96,12 +96,11 @@ Skipped adoption items, which need the author (DEV-3.3, ADOPTION_PLAN):
      `retman eval run` has not run on them (it needs a model server), and the ambiguous rows
      `obserwator-init-store-014` and `-015` now expect the Obserwator store after a question
      about the operation.
-3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0` and
-   `v3.0.0` once they exist (REL-5.3), and in the same change narrow the `supported_versions` of
-   both manifests to `>=0.8.0,<0.9` and `>=3.0.0,<4` (REL-5.6; the test of the Obserwator
-   manifest pins the string), run `uv lock` and the gate. When the author renames the repository
-   `IMGWTools`, its URL follows in the pin, the manifest `source` and the install commands.
-4. Review `src/retman/eval/commands.jsonl` (502 commands, an agent draft), run `retman-eval`
+3. Replace the commit pins of the `tools` group in `pyproject.toml` by the tags `v0.8.0`,
+   `v3.0.0` and Hydrolog's `v1.0.0` once they exist (REL-5.3), and in the same change narrow the
+   `supported_versions` of the manifests to `>=0.8.0,<0.9`, `>=3.0.0,<4` and `>=1.0.0,<2`
+   (REL-5.6; the test of the Obserwator manifest pins the string), run `uv lock` and the gate.
+4. Review `src/retman/eval/commands.jsonl` (734 commands, an agent draft), run `retman eval run`
    with Bielik 11B on it (two-stage recognition, `0_5m` against `5m`; the keys the model reads
    for Obserwator are `obserwator_*` since ECO-057, and the store descriptions name both
    „magazyn Obserwatora” and „magazyn IMGW”), then set the confidence thresholds.

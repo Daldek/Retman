@@ -1,6 +1,6 @@
 # Retman — Architecture
 
-> **Document status:** draft (2026-10-11, updated 2026-10-25) · **Licence:** MIT · **Document language:** English
+> **Document status:** draft (2026-10-11, updated 2026-11-14) · **Licence:** MIT · **Document language:** English
 > **Product requirements and scope:** [PRD.md](PRD.md)
 
 This document describes **how** to implement the requirements from the PRD. Markers in square brackets,
@@ -26,8 +26,10 @@ e.g. [W-02] or [N-03], point to the PRD requirements that a given part implement
 
 - **The model does not plan chains.** Chains (v0.2) are built by code based on dependencies between
   operations, and the model only chooses the goal and parameters (section 4.5).
-- **Tool catalogs and documentation are not read at runtime.** They serve for drafts
-  and conformance checks of descriptions (section 3.2.3); options in manifests are static.
+- **Tool catalogs and documentation do not define the operations at runtime.** They serve for
+  drafts and conformance checks of descriptions (section 3.2.3); options in manifests are static,
+  and the tool clients read the catalog only for the effects and the run arguments of a command
+  (sections 3.2.10 to 3.2.12).
 - **No execution mode without confirmation** in 0.x versions and no tool network access before
   confirmation, apart from the on-demand availability check.
 
@@ -69,7 +71,7 @@ Every command goes through six steps [W-01], [W-02], [W-04], [W-05], [W-17], [N-
         │                    optionally `s`: availability check (network, separate consent, section 6.5)
         ▼  ─────────────── up to here no network of the tools (N-12) ───────────────
  6 EXECUTION + DESCRIPTION ─ calls or a handler in Retman → public API of the tool → result
-                            → saved in the workspace → (optionally) a description in Polish by the text model
+                            → saved in the workspace → (from v0.2, optionally) a description in Polish by the text model
 ```
 
 ### Example (single operation, decision model: basal)
@@ -79,14 +81,15 @@ from the Poznań station for the years 2000–2020)
 
 | Step | Who | Result |
 | --- | --- | --- |
-| ① | basal | operation = `fetch_imgw_data` (confidence 0.96) |
-| ② | basal | `variable` = `precipitation` (0.98), `interval` = `daily` (0.94) |
-| ③ | extractors | station "Poznań" → matched against the IMGW station list; period = 2000-01-01 – 2020-12-31 |
-| ④ | validator, tool | all required parameters are present, confidences above thresholds; if several stations matched the name "Poznań", Retman would ask which one is meant; the tool checks the complete plan offline (e.g. a year before the start of the series) |
+| ① | basal | category = `obserwator_series` (confidence 0.95), then operation = `export_station_series` (0.96) |
+| ② | basal | `dataset` = `pl_meteo_precip_daily` (0.94), `data_source` = `server` (0.91) |
+| ③ | extractors | station "Poznań" → matched against the station catalog in the Obserwator store; period = the years 2000–2020; the year type (hydrological or calendar) is not in the command |
+| ④ | validator, tool | the missing year type becomes a question, because it changes the dates (section 3.2.11), as would a confidence below its threshold; if several stations matched the name "Poznań", Retman would ask which one is meant; the tool checks the complete plan offline (e.g. a year before the start of the series) |
 | ⑤ | Retman | shows the plan (with preview rows) and waits for confirmation; the user may first request an availability check (`s`) |
 | ⑥ | Obserwator call executor in Retman | executes the Obserwator catalog commands, saves the result in the workspace (chapter 5) |
 
-> The example is illustrative: operation and parameter names will be fixed together with the list of operations (PRD).
+> The example is illustrative (the confidences are made up); the operation and its parameters are
+> those of section 3.2.11.
 
 When an operation requires data that the command does not contain (e.g. flow requires catchment
 characteristics), Retman in v0.1 looks for it in a file indicated in the command or in earlier
@@ -133,9 +136,11 @@ src/retman/
 ├── tools/                   # descriptions, call builders, clients and handlers for each supported tool (section 3.2.2)
 │   ├── obserwator/
 │   ├── kartograf/
-│   └── hydrograf/, hydrolog/, basichydraulics/   # planned (v0.2)
+│   ├── hydrolog/
+│   └── hydrograf/, basichydraulics/   # planned (v0.2)
 ├── devtools/                # retman scaffold: readers of the tool catalogs, draft, drift check, the light check of doctor (section 3.2.3)
 ├── kinds.py                 # registry of data kinds and their file validators (section 3.2.6)
+├── attribution.py           # the providers' attribution and terms notice from the tools, passed on verbatim (ADR-033)
 ├── i18n/
 │   ├── loader.py            # loading translation files; Message: an English text that can be shown in Polish
 │   ├── pl.toml              # Polish texts for core messages, the answer words and the Polish catalog texts
@@ -151,6 +156,7 @@ src/retman/
 │   ├── areas.py             # areas: map sheet codes (godło), bounding boxes, TERYT codes, geometry files (ADR-001, ADR-016)
 │   ├── crs.py               # coordinate systems and their role: input rectangle vs result (ADR-009)
 │   ├── numbers.py           # Polish numerals and durations (15 min, 2 godziny)
+│   ├── quantities.py        # numbers with units: curve number, rainfall, area, time step, time of concentration (Hydrolog)
 │   ├── probability.py       # exceedance probability and return period (section 4.4)
 │   ├── dates.py             # years, periods and the kind of year (hydrological or calendar)
 │   ├── stations.py          # station names and codes → the offline station catalog of the Obserwator store
@@ -164,7 +170,9 @@ src/retman/
 │   ├── dataset.py           # loading and validating the test command set (section 8.1)
 │   ├── metrics.py           # quality measures, threshold curve (section 8.2)
 │   ├── report.py            # Markdown report (section 8.2)
-│   ├── offline.py           # offline tool clients, placeholder geometry files and a station catalog for a run
+│   ├── offline.py           # offline tool clients for a run
+│   ├── placeholders.py      # placeholder geometry files for the commands that name a file
+│   ├── stations.py          # a synthetic station catalog for the commands that name a station
 │   └── commands.jsonl       # test command set, shipped as package data (section 8.1)
 ├── agent_guide.py           # generator of AGENTS.md and llms.txt from the catalog (AGI section 8); templates in _data/agents/
 ├── schemas/                 # JSON Schemas of the domain documents (AGI-4.1)
@@ -177,6 +185,7 @@ src/retman/
 ├── stores.py                # tool stores on disk: checks for doctor, set-up for config init (section 9.1)
 ├── logs.py                  # the technical log: one handler on stderr (DEV-12, section 5.4)
 ├── outcomes.py              # exit codes, error documents, SIGTERM (ERR-4)
+├── _json.py                 # the one conversion of Python values to JSON values that every document uses
 ├── exceptions.py, _errors.py  # RetmanError hierarchy (sections 6.3, 6.5); the registry, generated (ERR-3)
 ├── testing.py               # test helpers: FakeDecisionBackend, FakeToolClient, tool_context (section 8.3)
 └── add_tool.py              # retman add-tool: installs a known tool via uv (v0.5+, section 9.4; not written yet)
@@ -189,16 +198,16 @@ src/retman/
 The tools contain no code, files or dependencies related to Retman.
 Everything Retman needs lives in the Retman repo, and it uses the tools exclusively
 through their **public Python API** — just like any other user of these libraries.
-The tools' MCP servers (`kartograf-mcp`, `obserwator mcp`) are not used (ADR-018): they are a thin layer
-over the same library calls, they would add dependencies, and the W-05 and N-12 gates would have
-to be maintained in a separate process with its own write policy.
+The tools' MCP servers (`kartograf-mcp`, `obserwator mcp`, `hydrolog mcp`) are not used (ADR-018):
+they are a thin layer over the same library calls, they would add dependencies, and the W-05 and
+N-12 gates would have to be maintained in a separate process with its own write policy.
 
 From the tools Retman expects only good practices that are beneficial regardless of it:
 - a **stable public API** and semantic versioning (a compatibility-breaking change = new major version),
 - a **machine-readable command catalog** (command names, options with allowed values, effects:
   network and writes), **offline validation** (`validate_command`), JSON result documents with a
-  `schema` field and stable error codes — Kartograf 0.8.0 and Obserwator 3.0.0 have these, and the
-  command layer builds on them (section 3.2.4),
+  `schema` field and stable error codes — Kartograf 0.8.0, Obserwator 3.0.0 and Hydrolog 1.0
+  have these, and the command layer builds on them (section 3.2.4),
 - for tools without a catalog: **type hints**, especially `Literal` (or `Enum`) for choices
   and `Path` for files, plus **NumPy-style docstrings**.
 
@@ -207,13 +216,19 @@ From the tools Retman expects only good practices that are beneficial regardless
 ```
 src/retman/tools/hydrolog/
 ├── manifest.py    # operations: params, inputs, outputs, supported versions (section 4.1)
-├── handlers.py    # thin wrappers around the hydrolog public API (section 3.2.4)
+├── calls.py       # call builders: Retman parameters → catalog calls (pure, offline; section 3.2.4)
+├── client.py      # the tool's client, the one module that imports the tool (section 3.2.4)
+├── preview.py     # what the plan shows and checks before confirmation, offline (section 3.2.4)
+├── describe.py    # the result of the calls: files, values and warnings (section 3.2.4)
 ├── pl.toml        # Polish texts and synonyms (section 4.2)
 └── en.toml        # English texts, the same keys (section 4.2)
 ```
 
-A tool with a command catalog (Kartograf, Obserwator) additionally has, in the same folder,
-call builders, a client, and preview and check functions (section 3.2.4).
+Kartograf, Obserwator and Hydrolog all have a command catalog, so their folders have this shape.
+An operation with a network step adds an availability check (Kartograf's `checks.py`, Obserwator's
+`check.py`), and an operation whose run needs more than the shared call executor a handler
+(Kartograf's `handlers.py`: the orthophoto in its colour, section 3.2.10). A tool without a
+catalog would have handlers instead of call builders and a client (section 3.2.4).
 
 | Element | Role |
 | --- | --- |
@@ -235,8 +250,9 @@ Rules:
 #### 3.2.3. Role of catalogs and tool documentation
 
 Command catalogs and tool documentation are the **source from which Retman generates drafts
-and checks the conformance of its descriptions**. They are not read at runtime, and manifests are static
-(ADR-019): options are never derived from the installed tool at load time. Reasons:
+and checks the conformance of its descriptions**. Manifests are static (ADR-019): options are never
+derived from the installed tool at load time, and at runtime the tool clients read the catalog only
+for the effects and the run arguments of a command. Reasons:
 
 1. every option needs Polish texts and synonyms, otherwise the tool will not load,
    and machine-written text would violate section 1.3 and ADR-007;
@@ -250,9 +266,10 @@ and checks the conformance of its descriptions**. They are not read at runtime, 
    build a call from the description alone.
 
 **The developer tool `retman scaffold`** (package `retman.devtools`, for the author, not for
-the end user; a command group of the `retman` executable, with no dependencies of its own) reads the machine
-catalogs of the tools (Kartograf's and Obserwator's `list_commands` and `command_schema`) through
-small readers in `src/retman/devtools/readers/` — with no network access:
+the end user; a command group of the `retman` executable, with no dependencies of its own) reads
+the machine catalogs of the tools (`list_commands` and `command_schema` of Kartograf and Hydrolog,
+`command_schema` of Obserwator) through small readers in `src/retman/devtools/readers/` — with no
+network access:
 
 ```bash
 retman scaffold list --tool <tool>        # catalog commands, which operations use them, suggested use
@@ -271,12 +288,12 @@ when errors were found in some or in all tools, and `2` for incorrect usage (ADR
 
 | Information | From the tool catalog? |
 | --- | --- |
-| parameters, their types and whether required | yes (Kartograf: command parameter description; Obserwator: command JSON schema) |
-| allowed choices | yes (`allowed`, `enum`), but as a sum across products and countries — the values valid for an operation are narrowed by a trial through `validate_command`; lists longer than 9 have to be split |
+| parameters, their types and whether required | yes (the options of `command_schema`) |
+| allowed choices | yes (`enum`), but as a sum across products and countries — the values valid for an operation are narrowed by a trial through `validate_command`; lists longer than 9 have to be split |
 | default values | yes, but Retman does not adopt them: there are no hidden default values (ADR-006) |
-| value ranges | Obserwator yes (`minimum`, `maximum`); Kartograf usually has to be added by hand |
+| value ranges | Obserwator and Hydrolog yes (`min`, `max`); Kartograf usually has to be added by hand |
 | dependencies between parameters | partially (description of constraints); they are enforced by `validate_command` |
-| description in English | Obserwator yes; Kartograf only in Polish, without diacritics |
+| description in English | yes (Kartograf, Obserwator and Hydrolog) |
 | command side effects (network, writes) | yes |
 | input and output files | only as product names; the data kind (`kind`) has to be added by hand |
 | Polish texts and synonyms | no — have to be added by hand |
@@ -291,7 +308,7 @@ true by construction: a new tool value does not appear unnoticed.
 
 | Check | What it finds | Severity |
 | --- | --- | --- |
-| X1 | a declared command that is not in the catalog or that is not a data command; a builder emits an undeclared command | error |
+| X1 | a declared command that is not in the catalog or that the command layer does not run; a builder emits an undeclared command | error |
 | X2 | a rejection that is not an answer the user can change (missing or unknown option, a rejection that does not point to a parameter); rejected pairs of the Cartesian grid (e.g. 5 m with KRON86) are only reported | error; info |
 | X3 | a manifest option that the tool does not accept at any point of the grid | error |
 | X4 | **coverage:** a value the tool accepts that the manifest neither offers nor lists in `excluded` | error |
@@ -309,14 +326,16 @@ The check runs in pytest and in Retman's CI (section 3.2.7).
 Translating "Retman's language" into a call to the tool's public API lives in Retman and takes
 two forms; an operation declares at least one of them (section 4.3):
 
-- **`calls` — the command layer.** For tools with a command catalog (Kartograf, Obserwator): a pure
-  *call builder* turns the parameters into a list of catalog command calls, and a shared executor
-  runs them through a *tool client* (`src/retman/adapters/catalog.py`). Reason: the catalog is the
-  declared source of truth for these tools — it has offline validation with the same rules as a
-  run, stable error codes and result documents — whereas the typed functions and provider classes
-  changed in Kartograf 0.8.0 in a way that broke every handler (ADR-013).
-- **`handler` — a custom function.** For operations that must post-process the result (e.g. unpack
-  an archive) or for tools without a catalog. The handler may itself call the shared executor
+- **`calls` — the command layer.** For tools with a command catalog (Kartograf, Obserwator,
+  Hydrolog): a pure *call builder* turns the parameters into a list of catalog command calls, and a
+  shared executor runs them through a *tool client* (`src/retman/adapters/catalog.py`). Reason: the
+  catalog is the declared source of truth for these tools — it has offline validation with the same
+  rules as a run, stable error codes and result documents — whereas the typed functions and
+  provider classes changed in Kartograf 0.8.0 in a way that broke every handler (ADR-013).
+- **`handler` — a custom function.** For operations whose run needs more than the shared executor
+  (Kartograf's orthophoto in a colour that only the tool's provider class offers, ADR-013) or for
+  tools without a catalog; post-processing a result (e.g. unpacking an archive) is the job of the
+  operation's `describe` function (below). The handler may itself call the shared executor
   (`run_calls`) or the client (`ctx.runner`).
 
 **Calls and the client.** The builder is pure: it touches neither the file system nor the network
@@ -365,7 +384,7 @@ carried by `ToolContext`: `tool`, `settings` (the `[retman.tools.<tool>]` table)
 inputs), `client`, `specs` (the operation's parameters from the manifest), `operation` (the
 operation being planned or executed — so that a handler can hand plain catalog calls to the
 `run_calls` executor) and the helpers `ctx.runner` (the full client; raises an error in planning),
-`ctx.store_dir`, `ctx.tool_value(parametr, klucz)` and `ctx.option_meta(parametr, klucz)`.
+`ctx.store_dir`, `ctx.tool_value(param, key)` and `ctx.option_meta(param, key)`.
 
 **Plan preview (offline) [N-12].** When the plan is complete, the adapter runs `preview_operation`:
 
@@ -402,22 +421,28 @@ even when the tool in some cases does not connect to the network.
 `output_dir/tool_<n>_<command>.json` and attaches to the result the audit block `tool` (command,
 options, command line, status, files with checksums, document name and checksum; section 5.4). The
 operation's `describe` function (or the generic mapping) converts the calls and their results into
-`HandlerOutput` = `{values, files, warnings[, tool]}`. Keys in `files` are data kinds (`kind`,
-section 3.2.6); a file must lie in `output_dir` **or in the tool's store**
+`HandlerOutput` = `{values, files, warnings[, tool, attribution, terms_notice]}`. Keys in `files`
+are data kinds (`kind`, section 3.2.6); a file must lie in `output_dir` **or in the tool's store**
 (`[retman.tools.<tool>] store_dir`) — anywhere else is an error. Files from the store are
 referenced in the result by absolute path and SHA-256 checksum, without copying anything.
 
 **Messages.** The user sees Retman's own text, selected by the tool's error code, a code of the
 shared registry (`[errors.<code>]`, section 4.2; the tool's precision is its `details.reason`, which
-stays in the `failure` of the result, ADR-025), and the tool's text only as a quotation (`{detail}`): Kartograf's
-is often Polish without diacritics and with command-line flags, Obserwator's is English. Notices about
-data quality and licensing are shown verbatim, because tool documents do not provide structured
-numbers or legal wording for them; `info` notices remain in the audit trail. Retman does not
-translate the tool's texts: a tool document carries the text, and no message key crosses the
-process boundary, so a Polish sentence can quote an English detail, and the licence notice of an
-IMGW result is the provider's attribution (Polish, in the wording the terms of use prescribe)
-followed by the tool's English notice (ADR-024). The documents saved with the result keep the
-originals; the one text that Retman compares is `not published` (section 3.2.11).
+stays in the `failure` of the result, ADR-025), and the tool's text only as a quotation (`{detail}`):
+the texts of Kartograf, Obserwator and Hydrolog are English, Kartograf's often with command-line
+flags. Notices about data quality and licensing are shown verbatim, because tool documents do not
+provide structured numbers for them and the legal wording is the provider's; the other `info`
+notices remain in the audit trail. Retman does not translate the tool's texts: a tool document
+carries the text, and no message key crosses the process boundary, so a Polish sentence can quote
+an English detail (ADR-024). The lines that the data providers' terms require (Nogat DEV §20) are
+passed on in the same way (ADR-033, `retman.attribution`): the `attribution` and `terms_notice` of
+the tools' documents, merged over the calls of an operation (each line once, in the order first
+seen), become the `attribution` and `terms_notice` of `HandlerOutput`, `Result` and `result.json`,
+the last warnings of the result (one per line) and, when there are such lines, the trailing columns
+`attribution` and `terms_notice` of every CSV table Retman writes (section 3.2.6). Retman words none
+of these lines; an Obserwator that gives none gets the licence text built from its provider
+registry instead (section 3.2.11). The documents saved with the result keep the originals; the one
+text that Retman compares is `not published` (section 3.2.11).
 
 Example handler (a tool without a catalog):
 
@@ -458,7 +483,7 @@ def delineate_catchment(
 > The Hydrograf function names in the example are illustrative.
 
 Rules for handlers and builders:
-1. **Only the tool's public API** — no references to private members (`_nazwa`).
+1. **Only the tool's public API** — no references to private members (`_name`).
 2. **Input data arrives as files**, results leave as files in `output_dir` or in the tool's store.
    Keys in `files` are data kinds (`kind`, section 3.2.6). Converting tool objects to files (and
    back) is the job of the handler or the client.
@@ -469,8 +494,10 @@ Rules for handlers and builders:
    is a tool error); a failure of one tool does not block the others.
 5. **Writing only to `output_dir`.** The handler does not modify the user's files; the tool's store
    is written by the tool itself, through the client.
-6. **Builders, preview and extractors are pure and offline** [N-12]: they do not touch the file
-   system or the network and see only `PlanClient`.
+6. **Builders, preview and extractors are offline** [N-12]: they use no network, write nothing and
+   see only `PlanClient`; builders and extractors do not touch the file system either, while a
+   preview may read the files the plan names and the folders of the tool's settings (e.g. the
+   marker of Kartograf's store, section 3.2.10).
 
 #### 3.2.5. What the common adapter does
 
@@ -525,7 +552,7 @@ beginning of the file (header and the first few rows):
 | `kind` | Format | The validator checks, among others |
 | --- | --- | --- |
 | `station_list` | station list (CSV) | columns `provider`, `kind`, `station_code`, `name`, `river`, `latitude`, `longitude` |
-| `hydro_series` | time series of a hydrological station (CSV) | header `date,year,<variable> [<unit>],<variable>_flag,…,attribution_source,attribution_processed`; variables H, Q, T (also `_min`, `_mean`, `_max`); ČHMÚ adds `_quality` and `_source_flag` columns |
+| `hydro_series` | time series of a hydrological station (CSV) | header `date,year,<variable> [<unit>],<variable>_flag,…,attribution_source,attribution_processed`, which the trailing columns `attribution` and `terms_notice` of Nogat DEV-20.5 may follow; variables H, Q, T (also `_min`, `_mean`, `_max`); ČHMÚ adds `_quality` and `_source_flag` columns |
 | `meteo_series` | time series of a meteorological station (CSV) | as `hydro_series`, without hydrological variables |
 | `pmaxtp_table` | PMAXTP maximum precipitation (CSV) | columns `duration_min`, `probability_percent`, `ks_mm`, `sg_mm`, `rb_mm`, `attribution_source`, `attribution_processed` |
 | `current_hydro` | current hydrological data (CSV) | columns `station_code`, `station_name`, `water_level_cm`, `flow_m3s` |
@@ -537,6 +564,12 @@ beginning of the file (header and the first few rows):
 | `obserwator_archive` | IMGW archive as published (`.zip`, `.json`, `.csv`, `.txt`) | ZIP signature, JSON start (`{` or `[`) or non-binary text |
 | `obserwator_plan` | Obserwator download or synchronisation plan (JSON) | document with `schema` equal to `obserwator-plan/1` |
 | `obserwator_report` | Obserwator report (JSON) | `obserwator-result/1` document — the first key is `schema` |
+
+The CSV tables that Retman writes itself from Obserwator's results (`station_list`,
+`current_hydro`, `current_meteo`, `current_synop`, `imgw_warnings`, `hydro_states`,
+`pmaxtp_table`) end with the columns `attribution` and `terms_notice` of Nogat DEV-20.5 when the
+tool's documents carry these lines (ADR-033, section 3.2.4); the validators require only the
+columns listed above.
 
 Hydrolog (section 3.2.12) reads `watershed_parameters` (`.json`, the
 `WatershedParameters.to_json()` object: an object with `area_km2`, `perimeter_km`,
@@ -558,19 +591,21 @@ and Retman adapts to them:
 
 - Each tool has a **supported version range** in its manifest: Kartograf `>=0.8.0.dev0,<0.9`
   (0.x releases may break compatibility), Obserwator `>=3.0.0.dev0,<4` (semantic versioning and
-  `/1` document contracts; ADR-012). The range corresponds to release tags in the tool's
-  repository on GitHub; until the `v0.8.0` and `v3.0.0` tags are pushed, the `tools` dependency
-  group pins commits (section 9.3) and the range starts at the development version of the pending
-  release (`.dev0`, REL-5.6), because PEP 440 puts `0.8.0.dev0` below `0.8.0`; the release change
-  that replaces the commits by tags narrows the ranges to `>=0.8.0,<0.9` and `>=3.0.0,<4`. Every
-  check of a version (the loader, `retman doctor check`, `retman scaffold check`, the conformance
-  tests) reads that one range, as a PEP 440 specifier set with development versions admitted
+  `/1` document contracts; ADR-012), Hydrolog `>=1.0.0.dev0,<2`. The range corresponds to release
+  tags in the tool's repository on GitHub; until the `v0.8.0`, `v3.0.0` and `v1.0.0` tags are
+  pushed, the `tools` dependency group pins commits (section 9.3) and the range starts at the
+  development version of the pending release (`.dev0`, REL-5.6), because PEP 440 puts `0.8.0.dev0`
+  below `0.8.0`; the release change that replaces the commits by tags narrows the ranges to
+  `>=0.8.0,<0.9`, `>=3.0.0,<4` and `>=1.0.0,<2`. Every check of a version (the loader,
+  `retman doctor check`, `retman scaffold check`, the conformance tests) reads that one range, as a
+  PEP 440 specifier set with development versions admitted
   (`retman.registry.loader.version_matches`). Retman checks the installed tool's version at
   startup (section 3.2.5); it does not install tools on its own (sections 9.3, 9.4).
-- **Retman's CI** runs the handler tests and the conformance check (`retman scaffold check`,
-  section 3.2.3) on the oldest and newest supported version of each tool, and regularly
-  (e.g. nightly) also on the tools' current main branch — an API change that would break Retman
-  surfaces immediately.
+- **Retman's CI** runs the gate on Linux, macOS and Windows (ADR-023) with the tools at the
+  commits the `tools` group pins, so the handler tests and the conformance tests (`retman scaffold
+  check`, section 3.2.3) check that one version of each tool. Runs on the oldest and newest
+  supported version of each tool, and regularly (e.g. nightly) on the tools' current main branch so
+  that an API change that would break Retman surfaces at once, are not set up yet.
 - `retman doctor check` shows the installed version of each tool against its supported range.
 
 #### 3.2.8. Tool tests
@@ -589,15 +624,15 @@ All tool-related tests live in the Retman repo:
 
 | Tool | Operation scope | Depends on | Status |
 | --- | --- | --- | --- |
-| Kartograf | downloading spatial data (DEM (NMT), DSM (NMPT), orthophoto, BDOT10k) and SoilGrids soil data (a property layer, hydrologic soil groups) | — | v0.1, version 0.8.0 |
+| Kartograf | downloading spatial data (DEM (NMT), DSM (NMPT), orthophoto, BDOT10k, CORINE Land Cover and BDOO land cover) and SoilGrids soil data (a property layer, hydrologic soil groups); creating and inspecting its store | — | v0.1, version 0.8.0 |
 | Obserwator (formerly IMGWTools) | IMGW-PIB and ČHMÚ measurement data: stations, current data, PMAXTP, time series, archives and store | — | v0.1, version 3.0.0 |
 | Hydrolog | hydrological calculations: design rainfall, SCS-CN, time of concentration, hydrographs, routing through a river network, flood frequency, morphometry, hydrologic soil groups of texture rasters | — | v0.1, version 1.0 (9 operations, section 3.2.12); the rest planned (v0.2) |
 | BasicHydraulics | simple hydraulic calculations | — | planned (v0.2) |
 | Hydrograf | catchment delineation, composite procedures | Hydrolog (and others) | planned (v0.2) |
 
-The concrete operations are set by the PRD (section 7.2); descriptions of the Kartograf and
-Obserwator operations: sections 3.2.10 and 3.2.11. Third-party tools are handled the same way:
-a description, builders or handlers, and a client in `src/retman/tools/`.
+The concrete operations are set by the PRD (section 7.2); descriptions of the Kartograf,
+Obserwator and Hydrolog operations: sections 3.2.10 to 3.2.12. Third-party tools are handled the
+same way: a description, builders or handlers, and a client in `src/retman/tools/`.
 
 #### 3.2.10. Kartograf 0.8.0 operations
 
@@ -672,10 +707,12 @@ file means is stated by the plan (`geometry_note`):
 
 | Operation | Meaning of the file | Notes |
 | --- | --- | --- |
-| DEM (NMT) for a map sheet, child map sheets | map sheets at the given scale whose bounding box touches the bounding box of any feature in the layer; the polygon shape is not taken into account | a sheet count of 0 is a preview problem |
-| cutout | one rectangle covering all features of the layer, with no clipping to the polygon | no data outside the land area of Poland |
+| DEM (NMT) for a map sheet, child map sheets | map sheets at the given scale that the features of the layer meet: those a polygon overlaps with a positive area (not every sheet of its bounding box), those a line runs through, the one a point lies in | a sheet count of 0 is a preview problem |
+| DEM or DSM cutout | one rectangle covering all features of the layer, with no clipping to the polygon | no data outside the land area of Poland |
+| orthophoto cutout | one rectangle covering all features of the layer, with no clipping to the polygon | one GeoTIFF in EPSG:2180 |
 | SoilGrids layer, hydrologic soil groups | one rectangle covering all features of the layer, with no clipping to the polygon | a 250 m grid: a small area is a few pixels |
 | BDOT10k | full packages of all counties intersecting the bounding box | an area outside Poland is rejected by the preview; the list of counties is known only to the PRG service (network, after confirmation or during the check) |
+| land cover | CORINE: one rectangle covering all features of the layer; BDOO: full packages of the voivodeships intersecting the bounding box | — |
 | orthophoto (child map sheets) | the file is not accepted — the tool's provider class takes sheet codes (godło) only | preview problem: Retman asks again for the product and the area |
 
 **Result and store.** Kartograf saves downloaded files in its store (`[retman.tools.kartograf]
@@ -712,18 +749,23 @@ again). The search for a store below a folder that is refused anyway is left to 
 services (the WFS sheet index and the PRG layer) about years, resolutions, vertical reference
 systems and completeness of the map sheets for the area from the plan (`elevation availability`);
 for the cutout this is an approximation, because the cutout is assembled by the WCS server. For the
-orthophoto it checks the freshness plan for the RGB variant (the index knows only RGB); for BDOT10k
+orthophoto it checks the freshness plan for the RGB variant (the index knows only RGB), and for
+the orthophoto cutout that of the PL-1992 sheets of its area (an approximation as well); for BDOT10k
 it asks the PRG service which counties the area intersects and how many of their packages are
-already in the store (for a TERYT code, with no network). DEM (NMT) 100 m (voivodeship files) and the
-CIR and black-and-white variants have no index — the check then checks nothing and says so plainly.
+already in the store (for a TERYT code, with no network); for land cover the freshness plan gives
+the CORINE edition the CLMS catalogue announces or the BDOO voivodeships of the area, and what the
+store holds. DEM (NMT) 100 m (voivodeship files), the CIR and black-and-white variants and the
+CORINE preview without CLMS credentials have no index — the check then checks nothing and says so
+plainly.
 
 #### 3.2.11. Obserwator 3.0.0 operations
 
 All of Obserwator in v0.1 (ADR-017): 19 operations in five categories, on IMGW-PIB and ČHMÚ data.
-Together with Kartograf's `spatial_data` category there are six of them (none with more than 9
-operations), so recognition is two-stage (section 3.4). All operations go through the command layer;
-those that connect to a server do so only after the plan is confirmed. Operations marked `check`
-offer an availability check (section 6.5).
+Together with the categories of Kartograf (`spatial_data`, `soil_data`) and Hydrolog
+(`rainfall_runoff`, `hydrology_analysis`; `soil_data` is shared) there are nine of them, the most
+the loader allows, none with more than 9 operations, so recognition is two-stage (section 3.4).
+All operations go through the command layer; those that connect to a server do so only after the
+plan is confirmed. Operations marked `check` offer an availability check (section 6.5).
 
 | Category (`id`) | Operation (`id`) — what it does | Result kind | Network and writes |
 | --- | --- | --- | --- |
@@ -804,18 +846,25 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
   meteo climatic daily and precipitation daily; ČHMÚ: hydro daily and meteo daily), and for
   downloading archives to the results folder two operations — hydrological (5 datasets, including
   hydrological phenomena) and meteorological (7 datasets, including monthly, synoptic and fixed-time) —
-  the datasets of the second operation are in the `excluded` of the first (coverage check, section 3.2.3).
-  Dataset metadata (provider, kind, variables, year numbering) is carried by `option_meta`; it is used
-  by the contextual extractors (e.g. variables available in the dataset, stations of the right provider
-  and kind).
+  each operation lists the IMGW-PIB datasets of the other in its `excluded` (coverage check, section
+  3.2.3); the ČHMÚ dataset of the other needs no entry, because no call of the operation can make
+  the tool accept it. Dataset metadata (provider, kind, variables, year numbering) is carried by
+  `option_meta`; it is used by the contextual extractors (e.g. variables available in the dataset,
+  stations of the right provider and kind).
 - **PMAXTP:** the request to the tool accepts only a point and a method, and the result is a table
   (duration × probability; columns `ks_mm`, `sg_mm`, `rb_mm`). `probability` and `duration` from the
   command are therefore **output filters** (section 4.4): a value outside the table is not lost silently
   but produces a warning, and when none occurs, the whole table is saved. Retman converts a point in
   PL-1992 itself, without geospatial libraries; a point outside the PMAXTP frame (49–55° N, 14–24.5° E)
   is rejected with a reason.
-- **License and attribution:** the provider's `license_terms` notices are shown verbatim in the result
-  warnings, and the registry attribution is in the CSV columns (`attribution_source`, `attribution_processed`).
+- **Licence and attribution** (ADR-033): the tool's `license_terms` notices are shown verbatim in
+  the result warnings; the lines of Nogat DEV §20 (`attribution`, `terms_notice`) of its documents
+  follow them, one warning per line, are kept in the result and end every CSV table Retman writes
+  (sections 3.2.4, 3.2.6); the PMAXTP table keeps its columns `attribution_source` and
+  `attribution_processed`, which take PMAXTP's own lines when the tool gives them. An Obserwator of
+  the supported range that gives no such lines gets instead the licence text the mappers build from
+  its provider registry (`datasets providers`), and the PMAXTP columns the attribution of IMGW-PIB
+  from that registry.
 - **Preview** (offline) adds to the plan, among other things, the store state and the number of stations
   matching the name, the range of data in the store (years, gaps) and the number of archive files to check,
   and rejects a plan the store cannot serve (e.g. no series for the dataset or no station in the series
@@ -827,12 +876,16 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
   and "live" operations and the artifact operation `check_obserwator_archives` have no `check`: the check
   would say nothing that the execution itself would not say, and the result of `check_obserwator_archives`
   is a plan (`obserwator_plan`) that the user confirms and executes (`sync_obserwator_store_by_plan`).
-- **Excluded catalog commands** (8 of 30, each reachable through the Obserwator CLI and API): `datasets
-  files`, `pmaxtp url`, `pmaxtp check` and `series select` are offline lookups used by previews and
-  mappers, not separate operations; `series read` yields the same records as the series export (and a
-  file with license columns is produced by `export_station_series`); `commands list`, `commands schema`
-  and `commands guide` describe the catalog itself (Retman reads schemas only in `retman scaffold`).
-  Obserwator keeps no projects: they belong to Archiwista (Nogat ECO-054).
+- **Excluded catalog commands** (6 of 30, `tools/obserwator/coverage.py`, each reachable through
+  the Obserwator CLI and API; a test holds them and the commands of the operations against
+  `obserwator.data_commands()`): `pmaxtp url` builds a URL and returns no data (the source of a
+  PMAXTP table is in the audit document of `get_pmaxtp`); `pmaxtp check` only answers
+  `unverifiable` for a cell not downloaded yet; `series read` yields the records of the series
+  export as paged JSON (the file comes from `export_station_series`); `commands list`,
+  `commands schema` and `commands guide` describe the catalog itself (Retman reads schemas only in
+  `retman scaffold`). The offline lookups `datasets files` and `series select`, used by the
+  previews and by the series export, are commands of `export_station_series`. Obserwator keeps no
+  projects: they belong to Archiwista (Nogat ECO-054).
 
 #### 3.2.12. Hydrolog 1.0 operations
 
@@ -884,22 +937,24 @@ locally (e.g. LM Studio, Ollama, basal-serve), on the organisation's network or 
 and Retman connects to it through an API. As a result the basic Retman installation is small and
 contains no machine-learning libraries.
 
-**Default configuration:** the decision model is **basal** via **basal-serve** — a separate
-program from the `basal` package that asks the model questions in a special way and returns
-calibrated option probabilities (section 3.3.3). basal-serve **is not a Retman dependency**, not
-even an optional one, because it requires PyTorch and GPU libraries; it is installed separately
-per basal's instructions.
+**Default configuration** (the one `retman config init` writes): the decision model is **basal** via
+**basal-serve** — a separate program from the `basal` package that asks the model questions in a
+special way and returns calibrated option probabilities (section 3.3.3). basal-serve **is not a
+Retman dependency**, not even an optional one, because it requires PyTorch and GPU libraries; it is
+installed separately per basal's instructions. The `basal` backend is not written yet (section
+3.3.2), so planning needs an `openai_compatible` server for now.
 
 #### 3.3.1. Two roles of the model
 
 | Role | Interface | Purpose | Required? |
 | --- | --- | --- | --- |
 | **Decision model** | `DecisionBackend` | choosing the operation and options (steps ①–②) | yes |
-| **Text model** | `TextBackend` | describing results in Polish (from v0.2) | no |
+| **Text model** | `TextBackend` (v0.2 design, not written yet) | describing results in Polish (from v0.2) | no |
 
 Both roles can be filled by the same model (e.g. a single model in LM Studio) or by two different
 ones (e.g. basal for decisions and Bielik for descriptions). Retman talks to the models solely
-through these two interfaces, so swapping a model requires no changes in the rest of the code.
+through these interfaces (in v0.1 only `DecisionBackend` exists, `retman.backends.base`), so
+swapping a model requires no changes in the rest of the code.
 
 ```python
 from typing import Protocol
@@ -923,7 +978,7 @@ class DecisionBackend(Protocol):
         ...
 
 
-class TextBackend(Protocol):
+class TextBackend(Protocol):  # v0.2 design, not written yet
     """A model that writes text — used only for describing results (optional)."""
 
     def describe(self, result_summary: dict, language: str = "pl") -> str:
@@ -934,14 +989,14 @@ class TextBackend(Protocol):
 
 | Backend | What it connects to | Role | Version |
 | --- | --- | --- | --- |
-| `basal` | basal-serve, installed separately per basal's instructions | **decisions — default**, with calibrated confidence | v0.1 |
+| `basal` | basal-serve, installed separately per basal's instructions | **decisions — default**, with calibrated confidence | v0.1; not written yet (no basal-serve API specification): with `backend = "basal"` planning stops with `backend_unavailable` |
 | `openai_compatible` | any server with an OpenAI-compatible API: LM Studio, Ollama, llama.cpp server, vLLM, as well as providers offering such an API | decisions (alternative to basal); from v0.2 also result descriptions | v0.1 |
 | native provider APIs | providers with their own API (e.g. Anthropic) | decisions and/or text | v0.2, optional add-ons |
 | `none` | — | no result description: the result shows a text template | v0.1 |
 
 Backends talk to the APIs directly over HTTP, without provider SDKs — the basic installation
-stays small. The `basal` backend is a custom HTTP request to basal-serve, without the client from
-the `basal` package, so as not to install its dependencies.
+stays small. The `basal` backend will be a custom HTTP request to basal-serve, without the client
+from the `basal` package, so as not to install its dependencies.
 
 #### 3.3.3. How the model makes a decision
 
@@ -957,9 +1012,11 @@ does not return such probabilities, so the `openai_compatible` backend works lik
 1. **Choice.** It asks the model for one of the options and enforces the answer format: a list of
    allowed keys, if the server supports structured responses; otherwise it validates the answer
    and repeats the question if needed.
-2. **Confidence** — per the `confidence` setting (section 9.1):
-   - `auto` (default): from `logprobs` (token probabilities), if the server returns them;
-     otherwise **consistency** — several requests (e.g. 3) and the share of agreeing answers,
+2. **Confidence** — per the `confidence` setting (section 9.1; with this backend it has to be set,
+   there is no default):
+   - `auto`: from `logprobs` (token probabilities), if the server returns them; otherwise
+     **consistency** — several requests (`consistency_runs`, e.g. 3) and the share of agreeing
+     answers,
    - `logprobs` or `consistency` — force one of the methods,
    - `none` — no confidence; only by the user's explicit choice (e.g. to limit the number of
      calls to a paid API).
@@ -994,9 +1051,10 @@ models, because they simplify their task.
 
 1. **Max. 10 options per question.** The operation question contains the operations and the
    `out_of_scope` option (item 6), so one question handles up to 9 operations. There are more
-   operations (from v0.1 Kartograf and all of Obserwator), so recognition is **two-stage**: the
-   model first picks a **category** (options: categories and `out_of_scope`), then an
-   **operation within the category** (options: that category's operations and `out_of_scope`).
+   operations (in v0.1 those of Kartograf, Obserwator and Hydrolog), so recognition is
+   **two-stage**: the model first picks a **category** (options: categories and `out_of_scope`),
+   then an **operation within the category** (options: that category's operations and
+   `out_of_scope`).
    The decisions are named `category` and `operation` (section 5.4); an uncertain category
    choice ends with a `category` question listing the 2–3 most likely groups (section 6.1).
    The loader enforces the limits at startup: at most 9 categories, at most 9 operations per
@@ -1039,48 +1097,53 @@ Tool keys: `tool`, `distribution` (package name used to check the version), `sou
 section 3.2.4), required when any operation declares `calls`.
 
 ```python
-# src/retman/tools/hydrolog/manifest.py — a tool without a command catalog: operations with a handler
+# src/retman/tools/hydrolog/manifest.py (fragment)
 MANIFEST = {
     "tool": "hydrolog",
     "distribution": "hydrolog",              # package name for the installed-version check
     "source": "git+https://github.com/Daldek/Hydrolog",  # for `--with` in retman doctor check hints (section 9.4)
-    "supported_versions": ">=1.1,<2",        # checked at startup and in CI (section 3.2.7)
+    "supported_versions": ">=1.0.0.dev0,<2",  # checked at startup and in CI (section 3.2.7)
     "translations": {"pl": "pl.toml", "en": "en.toml"},  # relative to this package
+    "client": "retman.tools.hydrolog.client:create",    # factory(settings) -> RunClient (section 3.2.4)
     "operations": [
         {
-            "id": "peak_flow",
-            "category": "flows",
-            "description": "Peak flow with a given exceedance probability",
-            "inputs": [
-                # Catchment characteristics: from a file, a previous result (ch. 5)
-                # or, from v0.2, an earlier chain step.
-                {"name": "catchment", "kind": "catchment_characteristics"},
-            ],
-            "outputs": ["peak_flow"],
+            "id": "estimate_flood_quantiles",
+            "category": "hydrology_analysis",          # first stage of the recognition (section 3.4)
+            "description": "Compute flood quantiles from the daily flows of an "
+            "Obserwator series export",
+            # The series: from a file, a previous result (ch. 5) or, from v0.2,
+            # an earlier chain step.
+            "inputs": [{"name": "series", "kind": "hydro_series"}],
+            "outputs": ["hydrolog_report"],
+            "commands": ["stats flood-frequency"],     # commands the builder may use (section 3.2.3)
+            "calls": "retman.tools.hydrolog.calls:estimate_flood_quantiles",        # pure builder: params → catalog calls
+            "describe": "retman.tools.hydrolog.describe:estimate_flood_quantiles",  # runs → files, values, warnings
+            "preview": "retman.tools.hydrolog.preview:estimate_flood_quantiles",    # offline: plan rows and problems
             "params": [
                 {
-                    "name": "method",
+                    "name": "distribution",
                     "type": "choice",
-                    "options": ["punzet", "bogdanowicz_stachy", "scs_cn"],
-                    "default": "punzet",       # used when the command does not specify a method
+                    "options": ["all", "log_normal", "gev", "pearson3", "weibull"],
+                    "default": "all",          # used when the command names no distribution
                 },
                 {
                     "name": "probability",
                     "type": "free",
                     "extractor": "probability",  # a number, not a list (section 4.4)
-                    "required": True,
                     "multiple": True,            # e.g. "Q1% i Q10%"
-                    "range": [0.0001, 0.5],      # allowed range, example values
                 },
             ],
-            "handler": "retman.tools.hydrolog.handlers:compute_peak_flow",
         },
+        # ... eight more operations (section 3.2.12)
     ],
 }
 ```
 
-An operation of a tool with a command catalog (Kartograf, Obserwator) has a call builder
-instead of a handler, plus a preview and a check. A fragment of the Kartograf manifest:
+Every operation of Kartograf, Obserwator and Hydrolog runs commands of the tool's catalog through
+a call builder and maps the runs with `describe`; almost all have an offline `preview` too. A tool
+without a command catalog would declare a `handler` instead (section 3.2.4). A fragment of the
+Kartograf manifest adds an availability check, option keys mapped to the tool's values and a
+dependent parameter:
 
 ```python
 # src/retman/tools/kartograf/manifest.py (fragment)
@@ -1124,7 +1187,7 @@ MANIFEST = {
                 },
             ],
         },
-        # ... download_sheet_hierarchy, download_elevation_cutout, download_bdot10k
+        # ... download_sheet_hierarchy and eight more operations (section 3.2.10)
     ],
 }
 ```
@@ -1148,32 +1211,39 @@ difference is that the English texts of the command catalog are the declarations
 `src/retman/catalog/commands.py`, so `en.toml` has no `[catalog.<operation_id>]` tables (AGI-9.1).
 The example below is the Polish file of a tool; its `en.toml` has the same keys with English texts,
 and its English `description` texts keep the Polish names and abbreviations beside the English words
-(NMT, godło, TERYT; DEV-2.4), because the commands are still typed in Polish. A machine document
-carries English texts whatever `lang` says (AGI-9.2); where the terminal shows the same report in
-Polish (`retman doctor check`), such a text is a `Message` that remembers its key and values and is
-written again from the Polish file (`retman.i18n.loader`).
+(NMT, godło, TERYT; DEV-2.4), because the commands are still typed in Polish. The texts of the
+diagnostic reports (`retman doctor check`, `retman scaffold check`) and of the error documents are
+English in a machine document whatever `lang` says (AGI-9.2); where the terminal shows the same
+report in Polish (`retman doctor check`), such a text is a `Message` that remembers its key and
+values and is written again from the Polish file (`retman.i18n.loader`). The plan document
+(`retman-plan/1`) keeps the labels, questions and shown values in the language of `lang`, as the
+user sees them.
 
 ```toml
-# src/retman/tools/hydrolog/pl.toml
+# src/retman/tools/hydrolog/pl.toml (fragment)
 
-[operations.peak_flow]
-label = "Obliczenie przepływu maksymalnego"
-description = "Obliczenie przepływu maksymalnego o zadanym prawdopodobieństwie: przepływ miarodajny, woda stuletnia"
+[operations.estimate_flood_quantiles]
+label = "Przepływy maksymalne z szeregu (Hydrolog)"
+description = "Oblicz przepływy maksymalne o danym prawdopodobieństwie przewyższenia (kwantyle wezbrań, Q1%, woda stuletnia, analiza częstości powodzi, flood frequency) z dobowego szeregu przepływów Q stacji eksportowanego z Obserwatora (wynik #N albo plik CSV): maksima roczne pełnych lat hydrologicznych, dopasowanie rozkładu log-normalnego, GEV, Pearsona III albo Weibulla."
+summary = "Gotowe. Wynik #{number}: kwantyle przepływów z {n_years} lat hydrologicznych, najlepszy rozkład {best_distribution}: {quantile_text} m³/s."
 
-[operations.peak_flow.params.method]
-label = "Metoda"
-question = "Jaką metodą policzyć przepływ?"
-model_question = "Jaką metodę wymienia polecenie?"
-options.punzet.label = "Metoda Punzeta"
-options.punzet.description = "Metoda Punzeta, Punzet"
-options.bogdanowicz_stachy.label = "Metoda Bogdanowicz-Stachy"
-options.bogdanowicz_stachy.description = "Metoda Bogdanowicz-Stachy, Bogdanowicz i Stachý"
-options.scs_cn.label = "Metoda SCS-CN"
-options.scs_cn.description = "Metoda SCS-CN, Soil Conservation Service, curve number, CN"
-options.unspecified.description = "Polecenie nie określa metody"
+[operations.estimate_flood_quantiles.params.distribution]
+label = "Rozkład prawdopodobieństwa"
+question = "Który rozkład dopasować: wszystkie cztery (najlepszy według AIC), log-normalny, GEV, Pearsona III czy Weibulla?"
+model_question = "Jaki rozkład prawdopodobieństwa wymienia polecenie?"
+help = "Bez wskazania Hydrolog dopasowuje cztery rozkłady i porządkuje je kryterium AIC; wynik podaje kwantyle najlepszego, a plik wyniku wszystkie."
+options.all.label = "Wszystkie cztery, najlepszy według AIC"
+options.all.description = "all — dopasuj wszystkie rozkłady i wybierz najlepszy (kryterium AIC), porównanie rozkładów"
+options.pearson3.label = "Pearsona typu III"
+options.pearson3.description = "pearson3 — rozkład Pearsona typu III, gamma trójparametrowy, stosowany w Polsce do przepływów maksymalnych"
+# ... log_normal, gev and weibull in the same way
+options.unspecified.description = "Nie podano rozkładu — dopasuj wszystkie i wybierz najlepszy"
 
-[operations.peak_flow.params.probability]
+[operations.estimate_flood_quantiles.params.probability]
 label = "Prawdopodobieństwo przewyższenia"
+question = "Dla jakich prawdopodobieństw przewyższenia albo okresów powtarzalności podać przepływy (np. 1% i 10%, woda stuletnia)?"
+example = "1% i 10%"
+unset = "okresy powtarzalności domyślne Hydrologa: 2, 5, 10, 20, 50, 100, 500 i 1000 lat"
 ```
 
 Rules:
@@ -1252,7 +1322,7 @@ more keys.
 | `id` | identifier (in English), unique across all of Retman |
 | `category` | category (`[a-z0-9_]+`) — the first stage of two-stage recognition (section 3.4) |
 | `description` | short description in English (for developers; the user-facing text is in the translations) |
-| `inputs` | inputs: name + data kind (`kind`); the source is a file, the workspace, (v0.2) an earlier step of a chain |
+| `inputs` | inputs: name + data kind (`kind`), optionally `where` (inputs of one kind told apart, section 5.3); the source is a file, the workspace, (v0.2) an earlier step of a chain |
 | `outputs` | data kinds returned by the operation |
 | `params` | parameters |
 | `handler` | handler in Retman (`moduł:funkcja`), called as `handler(params, inputs, output_dir, ctx)` — for operations that must process the result (section 3.2.4) |
@@ -1405,12 +1475,16 @@ Results go to the results subfolder in that folder; its name is set by the `outp
 setting (default `retman-output`, section 9.1). Results from different projects never mix.
 
 ```
-~/projekty/zlewnia-a/              ← run here: cd ~/projekty/zlewnia-a && retman plan run
-└── retman-output/                 ← created with the first result
-    ├── 001_delineate_catchment/
-    │   ├── catchment.geojson
-    │   └── result.json
-    └── 002_peak_flow/
+~/projekty/warta-poznan/           ← run here: cd ~/projekty/warta-poznan && retman plan run
+└── retman-output/                 ← created with the first command (the journal)
+    ├── journal.jsonl              ← project journal (section 5.4)
+    ├── 001_export_station_series/
+    │   ├── hydro_daily_150000306_1990-11-01_2020-10-31.csv
+    │   ├── result.json
+    │   ├── tool_1_store_sync.json    ← the tool's documents of the run (section 5.4)
+    │   ├── tool_2_series_export.json
+    │   └── tool_3_series_select.json
+    └── 002_estimate_flood_quantiles/
         └── ...
 ```
 
@@ -1422,24 +1496,27 @@ The result can be the input of the next operation in both cases (section 5.3).
 ### 5.2. Result numbers
 
 - Each result gets a **consecutive number within the project** (#1, #2, …), which Retman shows
-  after execution, e.g. "Result #1: catchment, point 52.41° N, 16.93° E — 118.4 km²".
-- The number is part of the subfolder name (`001_delineate_catchment/`) and is stored
+  after execution, e.g. "Gotowe. Wynik #1: szereg stacji 150000306 (10958 wierszy, 1990-11-01 –
+  2020-10-31) zapisany w pliku CSV." (Done. Result #1: the series of station 150000306 … saved in
+  a CSV file; the station code is illustrative).
+- The number is part of the subfolder name (`001_export_station_series/`) and is stored
   in `result.json` together with the operation, parameters, output data kinds (`kind`), date, files
   and a short description that lets results be told apart (full contents: section 5.4).
-- A result can be referenced directly: *"Policz Q1% dla zlewni #1"* (compute Q1% for catchment #1).
-  The number is extracted by the `results` extractor (code, no model).
+- A result can be referenced directly: *"Policz Q1% z szeregu #1"* (compute Q1% from series #1).
+  The number is extracted by the `result` extractor (code, no model).
 - `retman results list` displays the list of results in the current project.
 
 ### 5.3. Input selection — no guessing
 
-When an operation needs an input of a given kind (e.g. `catchment_characteristics`):
+When an operation needs an input of a given kind (e.g. `hydro_series`, the daily flows that
+`estimate_flood_quantiles` reads):
 
 | Situation | What Retman does |
 | --- | --- |
-| the command points to a file ("…z pliku warta.geojson", i.e. "…from file warta.geojson") or a result number ("#1") | takes exactly that; the file is checked by the data kind validator (section 3.2.6) |
+| the command points to a file ("…z pliku przeplywy.csv", i.e. "…from file przeplywy.csv") or a result number ("#1") | takes exactly that; the file is checked by the data kind validator (section 3.2.6) |
 | the project has **one** matching result | proposes it in the plan, clearly marked |
 | there is **more than one** matching result | **always asks** which one to use — even when one of them is the newest |
-| there is none | says what is missing and how to obtain it (e.g. "first delineate the catchment") |
+| there is none | says what is missing and how to obtain it: the operations that make such a result (e.g. „Eksport szeregu stacji do CSV”) or a file path |
 | the command names several files or results for an operation with several inputs | each input takes the one named file that is valid for its kind (and the `where` of its input, below), else asks |
 
 Inputs of one kind (the clay, sand and silt rasters of `soil hsg`, all `soil_raster`) are told
@@ -1450,30 +1527,32 @@ question (`dialog.input_named`) and the plan show beside the kind.
 
 Retman **does not try to guess** which thread the user means. With more than one
 possibility it asks, so mixing threads in one project does not lead to silent mistakes.
-Candidates are described by what lets them be told apart: number, the most important parameters and time.
+Candidates are described by what lets them be told apart: the number, the summary of the result
+and the time it was made.
 
 ```
-? Której zlewni użyć?
-  1) #1  punkt 52.41, 16.93 — 118,4 km² (dziś 14:32)
-  2) #3  punkt 52.28, 17.05 — 36,1 km² (dziś 15:10)
+? Którego pliku rodzaju hydro_series użyć?
+  1) #1 Gotowe. Wynik #1: szereg stacji 150000306 (10958 wierszy, 1990-11-01 – 2020-10-31) zapisany w pliku CSV. (2026-11-14T13:02:40+00:00)
+  2) #2 Gotowe. Wynik #2: szereg stacji 150000307 (10958 wierszy, 1990-11-01 – 2020-10-31) zapisany w pliku CSV. (2026-11-14T14:10:05+00:00)
 > 1
 ```
 
-**Step-by-step example** (the project has one catchment):
+**Step-by-step example** (the project has one series; station names and codes are illustrative):
 
 ```bash
-retman plan run --text "Wyznacz zlewnię dla punktu 52.41, 16.93"            # → Wynik #1
-retman plan run --text "Policz przepływ stuletni Punzetem dla tej zlewni"
+retman plan run --text "Wyeksportuj z serwera dobowe dane hydrologiczne stacji Poznań-Bogdanka za lata hydrologiczne 1991–2020"   # → Wynik #1
+retman plan run --text "Policz wodę stuletnią z tego szeregu"
 ```
 
 Plan of the second command:
 
 ```
 Plan:
-  Operacja:                          Obliczenie przepływu maksymalnego
-  Zlewnia:                           ← wynik #1: punkt 52.41° N, 16.93° E, 118,4 km² (2026-10-11 14:32)
-  Metoda:                            Punzet
-  Prawdopodobieństwo przewyższenia:  1% (T = 100 lat)
+Operacja: Przepływy maksymalne z szeregu (Hydrolog)
+Rozkład prawdopodobieństwa: Wszystkie cztery, najlepszy według AIC ← wartość domyślna, nie podano w poleceniu
+Prawdopodobieństwo przewyższenia: 1% (T = 100 lat)
+hydro_series: #1: hydro_daily_150000306_1990-11-01_2020-10-31.csv ← wynik z przestrzeni roboczej
+Maksima roczne: 30 pełnych lat hydrologicznych (1991–2020) ← podgląd, bez sieci
 Wykonać? [t]ak / [n]ie / [z]mień
 ```
 
@@ -1500,9 +1579,10 @@ the remaining audit data is always stored (PRD W-15).
 | `params` | every value used together with its source: `command`, `default`, `workspace`, `known`, `user` (section 7.1); for an area from a geometry file the value also carries the selected layer, and the entry has `files` — SHA-256 checksums of the geometry files by name (Shapefile: `.shp`, `.shx`, `.dbf`, `.prj`) |
 | `decisions` | model decisions: question, selected option, probabilities, confidence and its method (`basal`, `logprobs`, `consistency`, `none`) |
 | `inputs` | source of each input: result #N or a file — path and SHA-256 checksum, so it is visible whether the file changed later |
-| `outputs`, `values`, `files`, `warnings`, `error` | as in `Result` (section 7.3); every output file with a SHA-256 checksum: path relative to the project, and for a file in a tool's store an absolute path and `store` (tool name) |
+| `ok`, `outputs`, `values`, `files`, `warnings`, `error`, `summary`, `failure` | as in `Result` (section 7.3); every output file with a SHA-256 checksum: path relative to the project, and for a file in a tool's store an absolute path and `store` (tool name) |
 | `error_code` | stable tool error code when the operation failed because of the tool (only then) |
 | `tool` | block of calls to the tool catalog (only operations through the command layer, section 3.2.4): the tool and its version, and for each call the command, options, exact command line (with environment arguments), document schema, status, files (path, SHA-256, version label, status) and the name and SHA-256 checksum of the full tool document, saved in the result folder as `tool_<n>_<command>.json` |
+| `attribution`, `terms_notice` | the lines the data providers' terms require (Nogat DEV §20, ADR-033), verbatim as the tools gave them; only when there are any |
 | `unset` | optional parameters the command did not provide, with a text explaining what that means (section 6.3); only when non-empty |
 | `preview` | values determined by the offline preview (e.g. area bounding box, number of map sheets); only when non-empty |
 | `checks` | reports of availability checks run for the final state of the plan (`CheckReport.to_dict()`, section 6.5); only when there were any |
@@ -1524,15 +1604,25 @@ The journal is **append-only** — Retman never changes or deletes entries. It a
 what was **not** executed (rejected plans, cancellations, errors), because that too is part
 of the work history.
 
-`retman journal show` shows the journal in a readable form:
+`retman journal show` shows the journal one event per line: the time, the event and what it says
+(the command, the question, the answer, the decision on the plan, the result number). Two commands,
+the first one executed and the second one rejected:
 
 ```
 $ retman journal show
-2026-10-11 14:31  polecenie: „Wyznacz zlewnię dla punktu 52.41, 16.93”
-2026-10-11 14:31  plan zatwierdzony → wynik #1 (zlewnia, 118,4 km², 12 s)
-2026-10-11 15:02  polecenie: „Policz przepływ dla tej zlewni”
-2026-10-11 15:02  pytanie: Której zlewni użyć? → #1
-2026-10-11 15:03  plan odrzucony
+2026-11-14T14:34:25.617761+00:00 polecenie: Policz opad efektywny metodą SCS-CN dla CN 72 i opadu 50 mm
+2026-11-14T14:34:26.866201+00:00 plan: zatwierdzony
+2026-11-14T14:34:26.878813+00:00 wykonanie: 1
+2026-11-14T14:34:37.637580+00:00 polecenie: ściągnij dobowe opady z poznania
+2026-11-14T14:34:37.644170+00:00 pytanie: Dla jakiej stacji (nazwa albo kod) wyeksportować szereg?
+2026-11-14T14:34:37.644270+00:00 odpowiedź: 2
+2026-11-14T14:34:37.644795+00:00 pytanie: Jaki okres danych wyeksportować (lata albo daty od–do)?
+2026-11-14T14:34:37.644883+00:00 odpowiedź: 2010–2020
+2026-11-14T14:34:37.645280+00:00 pytanie: Czy podane lata to lata kalendarzowe (1 I – 31 XII) czy hydrologiczne (1 XI – 31 X)?
+2026-11-14T14:34:37.645352+00:00 odpowiedź: 2
+2026-11-14T14:34:37.645522+00:00 pytanie: Czy pobrać dane z serwera IMGW (sieć, uzupełni magazyn) czy użyć lokalnego magazynu (bez sieci)?
+2026-11-14T14:34:37.645585+00:00 odpowiedź: 1
+2026-11-14T14:34:37.676131+00:00 plan: odrzucony
 ```
 
 `retman journal show` also shows the "availability check" event with the outcome "executed"
@@ -1550,7 +1640,7 @@ and tuning the test set (`retman eval run`). Each line is a planning result: sta
 command, answers, values with sources, questions, model decisions, Retman and tool
 versions, backend and model name — **without the server address** and without local paths (of a
 geometry file only the name remains). It is enabled only by explicit consent: `retman config init` asks for it in the terminal,
-without a terminal it writes `false`; the file path is set in `[retman.privacy]` (`collect_path`,
+without a terminal it writes `false` unless the call gives `--collect-commands`; the file path is set in `[retman.privacy]` (`collect_path`,
 by default `<data_dir>/retman/collected.jsonl`: on Linux `~/.local/share/nogat/retman/collected.jsonl`,
 on macOS `~/Library/Application Support/nogat/retman/collected.jsonl`, on Windows
 `%LOCALAPPDATA%\nogat\retman\collected.jsonl`). The set is independent of `journal_commands`;
@@ -1626,16 +1716,16 @@ libraries and without a tool. The plan always shows how Retman read the coordina
 
 ### 6.3. Confirmation [W-04], [W-05]
 
-Before execution Retman always shows the plan in a readable form, e.g.:
+Before execution Retman always shows the plan in a readable form, e.g. for *"Policz opad efektywny
+metodą SCS-CN dla CN 72 i opadu 50 mm"* (compute the SCS-CN effective rainfall for CN 72 and 50 mm
+of rainfall):
 
 ```
 Plan:
-  Operacja:      Pobranie danych pomiarowych IMGW
-  Rodzaj:        opad
-  Krok czasowy:  dobowy
-  Stacja:        Poznań (kod stacji z listy IMGW)
-  Okres:         2000-01-01 – 2020-12-31
-  Format:        CSV   ← wartość domyślna, nie podano w poleceniu
+Operacja: Opad efektywny SCS-CN (Hydrolog)
+Liczba CN: CN 72
+Suma opadu: 50 mm
+Warunki wilgotnościowe (AMC): Przeciętne (AMC II) ← wartość domyślna, nie podano w poleceniu
 Wykonać? [t]ak / [n]ie / [z]mień
 ```
 
@@ -1674,33 +1764,40 @@ terminal**.
 | Command | Mode |
 | --- | --- |
 | `retman plan run --text "…"` | **single command**: questions → plan → confirmation → result, then exit |
-| `retman plan run` (no `--text`, in a terminal) | **session**: many commands in one conversation (e.g. first a catchment, then a flow "for this catchment"); exit: `koniec` ("end"; `end` with `--lang en`) or Ctrl+D |
+| `retman plan run` (no `--text`, in a terminal) | **session**: many commands in one conversation (e.g. first a station series, then the flood quantiles "z tego szeregu", "from this series"); exit: `koniec` ("end"; `end` with `--lang en`) or Ctrl+D |
 
-**Example** (station names and numbers are illustrative):
+**Example** (station names, codes and numbers are illustrative; the provider lines after the result
+are shortened to `Uwaga: …`):
 
 ```
 $ retman plan run --text "ściągnij opady z poznania"
-Rozumiem: pobranie danych pomiarowych IMGW (opad).
-
-? Za jaki okres pobrać dane?
-  np. „2000–2020”, „ostatnie 10 lat”, „od 2015”
+? Dla jakiej stacji (nazwa albo kod) wyeksportować szereg?
+  1) POZNAŃ-STRZESZYN — stacja meteorologiczna IMGW-PIB, kod 250000102
+  2) POZNAŃ-ŁAWICA — stacja meteorologiczna IMGW-PIB, kod 250000101
+  np. Poznań-Ławica
+> 2
+? Jaki okres danych wyeksportować (lata albo daty od–do)?
+  np. 2000–2020
 > od 2010 do 2020
-
-? Nazwie „Poznań” odpowiada kilka stacji. Którą wybrać?
-  1) Poznań-Ławica
-  2) Poznań-Strzeszyn
-> 1
-
+? Czy podane lata to lata kalendarzowe (1 I – 31 XII) czy hydrologiczne (1 XI – 31 X)?
+  1) Hydrologiczne (1 XI – 31 X)
+  2) Kalendarzowe (1 I – 31 XII)
+> kalendarzowe
 Plan:
-  Operacja:      Pobranie danych pomiarowych IMGW
-  Rodzaj:        opad
-  Krok czasowy:  dobowy   ← wartość domyślna, nie podano w poleceniu
-  Stacja:        Poznań-Ławica
-  Okres:         2010-01-01 – 2020-12-31
-Wykonać? [t]ak / [n]ie / [z]mień
+Operacja: Eksport szeregu stacji do CSV
+Zbiór danych: Opady dobowe ze stacji opadowych IMGW-PIB
+Źródło danych: Z serwera (sieć, uzupełni magazyn)
+Zmienne: P — opad
+Stacja: POZNAŃ-ŁAWICA (meteo, IMGW-PIB, kod 250000101)
+Okres: 2010–2020
+Rodzaj lat: Kalendarzowe (1 I – 31 XII)
+Magazyn Obserwatora: /home/ola/.local/share/nogat/obserwator (z konfiguracji) ← podgląd, bez sieci
+Dane w magazynie: brak szeregu tego zbioru; powstanie po pobraniu archiwów ← podgląd, bez sieci
+Pliki archiwów do sprawdzenia: najwyżej 132: od 2010_01_o.zip do 2020_12_o.zip; rozmiar nieznany bez sprawdzenia w sieci ← podgląd, bez sieci
+Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 > t
-
-Gotowe. Wynik #4: pobrano 4018 dni pomiarów. Pliki: retman-output/004_fetch_imgw_data/
+Gotowe. Wynik #4: szereg stacji 250000101 (4018 wierszy, 2010-01-01 – 2020-12-31) zapisany w pliku CSV.
+Uwaga: …
 ```
 
 **Rules of the conversation:**
@@ -1711,7 +1808,7 @@ Gotowe. Wynik #4: pobrano 4018 dni pomiarów. Pliki: retman-output/004_fetch_img
   values). If the answer is still unclear, Retman says how it understood it and asks again.
 - A question about a value shows an **example of the format**. A wrong answer → a short explanation
   of what is wrong, and the same question again.
-- When a parameter has a default value, it is shown in parentheses and **Enter** accepts it.
+- When a parameter has a default value, the question shows it ("Enter: …") and **Enter** accepts it.
 - **`?`** at any question shows a short explanation of the parameter (from the translation file).
 - **`anuluj`** ("cancel") or Ctrl+C aborts without executing anything.
 - At the plan: **`t`** executes, **`n`** declines, **`z`** lets the user change a selected value
@@ -1719,8 +1816,9 @@ Gotowe. Wynik #4: pobrano 4018 dni pomiarów. Pliki: retman-output/004_fetch_img
   availability check — runs a separate step with its own notice and consent (section 6.5). These are
   the Polish words; with `--lang en` they are `y`, `n`, `c`, `a` and `cancel`, from the `[answers]`
   table of the translation file.
-- After execution the CLI prints a summary of the result, then each tool warning on its own line
-  "Uwaga: …" ("Note: …") (data quality and licensing notices).
+- After execution the CLI prints a summary of the result, then each warning on its own line
+  "Uwaga: …" ("Note: …"): data quality and licensing notices, and last the lines the data providers'
+  terms require (`attribution`, `terms_notice`, section 7.3).
 - Answers go into the plan with the source `user` (section 7.1).
 
 **Without a terminal** (scripts, pipes, CI — the input is not a terminal) Retman asks no questions
@@ -1763,28 +1861,28 @@ the check is a **separate step on request**, with its own notice and its own con
 exception to this rule.
 
 The answer **`s`** to the plan question is available only when the operation declares `check`
-(section 4.3) and the plan is complete (illustrative example; the report lines come from the
+(section 4.3) and the plan is complete (example for *"Pobierz NMT 1 m EVRF2007 dla arkusza
+N-34-130-D-d-2-4"*, with a recorded answer of the GUGiK services; the report lines come from the
 tool's `pl.toml`):
 
 ```
 Plan:
-  Operacja:                 Pobranie NMT dla arkusza
-  Godło arkusza NMT:        godło arkusza N-34-130-D-d-2-4
-  Rozdzielczość NMT:        1 m
-  Układ wysokościowy NMT:   EVRF2007
+Operacja: Pobranie NMT dla arkusza lub obszaru
+Godło arkusza lub obszar NMT: godło arkusza N-34-130-D-d-2-4
+Rozdzielczość NMT: 1 m
+Układ wysokościowy NMT: EVRF2007
+Liczba arkuszy: 1 × 1:10000 (PL-1992) ← podgląd, bez sieci
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 > s
-Sprawdzenie dostępności to osobny krok i jedyny, który łączy się z internetem przed wykonaniem planu.
-Zapytam usługi GUGiK (skorowidz arkuszy WFS i warstwę PRG) o dane dla godła z planu.
+Sprawdzenie dostępności to osobny krok i jedyny, który łączy się z internetem przed wykonaniem planu. Zapytam usługi GUGiK (skorowidz arkuszy WFS i warstwę PRG) o lata, rozdzielczości i układy wysokościowe dla godła albo pliku z planu. NMT 100 m (pliki województw) nie ma takiego skorowidza i niczego nie sprawdzam.
 Nie pobiera plików, niczego nie zapisuje w wynikach i nie wysyła Twojego polecenia — tylko wartości z planu.
 Połączyć się z internetem i sprawdzić? [t]ak / [n]ie
 > t
 Sprawdzam… (Ctrl+C przerywa)
-Sprawdzenie dostępności (Kartograf 0.8.0, 2026-10-19 16:12): dane dostępne
-  Twój wybór: NMT, 1 m, EVRF2007 — dostępny, rok 2023, komplet arkuszy
+Sprawdzenie dostępności (kartograf 0.8.0, 2026-11-14 14:56): dane dostępne
+  Twój wybór: NMT 1m, EVRF2007 — komplet arkuszy, najnowszy rok 2025
   Dostępne także dla tego obszaru:
-    NMT 0,5 m, EVRF2007 — rok 2025, komplet
-    NMT 1 m, KRON86 — rok 2019, komplet
+    NMT 1m, KRON86 — rok 2013, komplet arkuszy
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
 ```
 
@@ -1942,7 +2040,7 @@ from retman import Plan
 # Values already known from another source (e.g. filled in a GUI form) are treated as fixed:
 # Retman does not ask about them and never overwrites them, it only fills in what is missing.
 plan = retman.plan(
-    "Policz przepływ dla tej zlewni, nie wiem jaką metodą",
+    "Policz przepływy maksymalne z tego szeregu",
     known={"probability": [0.01]},
 )
 
@@ -1967,45 +2065,48 @@ The source of each value in the plan: `command` (from the command), `default` (d
 
 | Area | Checks |
 | --- | --- |
-| Configuration | path and validity of the settings file `nogat.toml` (all problems at once; a missing file is not an error, default values apply) and model settings (their absence blocks planning); the current project folder and whether the results folder is writable |
+| Configuration | path and validity of the settings file `nogat.toml` (all problems at once; a missing file in the default location is not an error, default values apply, while a file named by `--config` or `NOGAT_CONFIG` that does not exist is) and model settings (their absence blocks planning); the current project folder and whether the results folder is writable |
 | Decision model | **server address**; whether it responds; which model is loaded; a **test question** with an obvious answer (whether the model answers sensibly); where the confidence comes from (`basal`, `logprobs`, agreement, unavailable) and the thresholds (`"auto"` with a backend other than `basal` is a configuration error, section 6.2) |
-| Text model | whether it is enabled; **server address**; whether it responds |
+| Text model | whether it is enabled; in v0.1 always off (`[retman.text] backend = "none"`, result descriptions by the text model come in v0.2) |
 | Tools | which are installed; whether their versions fall within the supported range; number of available operations |
-| Tool data stores | for tools in use (installed, in a supported version, not disabled): store path without symbolic links (Obserwator does not accept one: error; Kartograf: warning), the folder exists or can be created and is writable, **hard links work in both stores** (attempted in the store or in the nearest existing folder on the same disk); Kartograf: the `kartograf-store.json` marker and its schema (a missing or an empty folder is only not marked yet, the first write marks it; a folder with the layout of a store, that is files in a product tree such as `nmt/`, but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn Kartografa", which runs `store init`), a folder with other files (`foreign_folder`), a marker that is corrupted or has another schema (`marker_unreadable`, `marker_unsupported`) and a folder that lies in, is or holds the store of another tool or place (`nested_store`) are errors), metadata cache (missing is a warning — Kartograf runs slower); Obserwator: the `obserwator-store.json` marker and its schema (a missing store, or a folder that holds only the `api_keys.json` of the tool's server, is a warning with a hint; a folder with the layout of a store but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn IMGW", which runs `store init`), a foreign folder or a corrupted marker is an error), `pyarrow` (time series), reference data folder; with `--deep` also a trial write to the Obserwator store |
+| Tool data stores | for tools in use (installed, in a supported version, not disabled): store path without symbolic links (Obserwator does not accept one: error; Kartograf: warning), the folder exists or can be created and is writable, **hard links work in both stores** (attempted in the store or in the nearest existing folder on the same disk); Kartograf: the `kartograf-store.json` marker and its schema (a missing or an empty folder is only not marked yet, the first write marks it; a folder with the layout of a store, that is files in a product tree such as `nmt/`, but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn Kartografa", which runs `store init`), a folder with other files (`foreign_folder`), a marker that is corrupted or has another schema (`marker_unreadable`, `marker_unsupported`) and a folder that lies in, is or holds the store of another tool or place (`nested_store`) are errors), metadata cache (missing is a warning — Kartograf runs slower); Obserwator: the `obserwator-store.json` marker and its schema (a missing store, or a folder that holds only the `api_keys.json` of the tool's server, is a warning with a hint; a folder with the layout of a store but no marker (reason `no_marker`; the hint is the command "Utwórz magazyn Obserwatora", which runs `store init`), a foreign folder or a corrupted marker is an error), `pyarrow` (time series), reference data folder; with `--deep` also a trial write to the Obserwator store |
 | Conformance of descriptions with tools | a light version of `retman scaffold check` (section 3.2.3) for tools in use: the commands from the manifest are in the installed tool's catalog, and the tool does not offer a value that the manifest neither offers nor disables (e.g. "kartograf 0.8.1 accepts a resolution of 0.3 m"); operations without a row in the `retman eval run` set are reported as unchecked. These lines warn but do not block work (exit code unchanged) |
 | Translations | complete set of texts for the language from the `lang` setting |
 | Workspace | results folder of the current project; number of results; whether the `result.json` files can be read |
 
-**Example result:**
+**Example result** (decision model: a generative model on an OpenAI-compatible server; with
+`backend = "basal"` this version of Retman reports that the backend is not available yet):
 
 ```
 $ retman doctor check
 Retman 0.1.0
 
 Konfiguracja
-  ✓ plik ustawień: ~/.config/nogat/nogat.toml (istnieje)
-  ✓ projekt: ~/projekty/zlewnia-a → wyniki w retman-output/ (5 wyników, zapis możliwy)
+  ✓ plik ustawień: /home/ola/.config/nogat/nogat.toml (istnieje)
+  ✓ projekt: /home/ola/projekty/zlewnia-a → wyniki w retman-output/ (5 wyników, zapis możliwy)
 
 Model decyzyjny
-  ✓ adres modelu (basal): http://127.0.0.1:8000
-  ✓ model: basal-1.5-mini dostępny na serwerze
-  ✓ pytanie testowe: poprawna odpowiedź (pewność 0,99 z basala)
-  ! progi pewności: "auto" — zalecane dostrojenie na własnym zbiorze testowym (retman eval run, ARCHITECTURE 6.2)
+  ✓ adres modelu (openai_compatible): http://127.0.0.1:1234/v1
+  ✓ model: bielik-11b-v2.3-instruct dostępny na serwerze
+  ✓ pytanie testowe: poprawna odpowiedź (pewność 0,99 z logprobs)
+  ✓ progi pewności: operacja 0.9, parametr 0.9
 
 Narzędzia
-  ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
-  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 5 operacji
+  ✓ hydrolog 1.0.0, obsługiwane >=1.0.0.dev0,<2, 9 operacji
+  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 10 operacji
+  ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 19 operacji
 
 Magazyny danych narzędzi
-  ✓ kartograf: magazyn /dane/retman/stores/kartograf (zapis możliwy, dowiązania twarde działają)
-  ✓ kartograf: cache metadanych /home/ola/.local/share/retman/kartograf_cache.db
+  ✓ kartograf: magazyn /dane/retman/stores/kartograf (znacznik kartograf-store.json, schemat kartograf-store/1, dowiązania twarde działają)
+  ✓ kartograf: cache metadanych /home/ola/.cache/nogat/kartograf/metadata.db
   ✓ obserwator: magazyn /dane/retman/stores/obserwator (znacznik obserwator-store.json, schemat obserwator-store/1, dowiązania twarde działają)
-  ✓ obserwator: pyarrow 18.1.0 (szeregi czasowe)
-  ✓ obserwator: dane referencyjne /home/ola/.local/share/retman/obserwator-reference (hydro_stations_locations.csv: brak)
+  ✓ obserwator: pyarrow 26.0.0 (szeregi czasowe)
+  ✓ obserwator: dane referencyjne /home/ola/.cache/nogat/obserwator/reference (hydro_stations_locations.csv: brak)
 
 Zgodność opisów z narzędziami (retman scaffold check)
-  ✓ obserwator 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
+  ✓ hydrolog 1.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
   ✓ kartograf 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
+  ✓ obserwator 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
 
 Tłumaczenia (pl)
   ✓ komplet
@@ -2021,10 +2122,10 @@ When the model server is not running or the store is not writable, the report su
 
 ```
 Model decyzyjny
-  ✗ serwer modelu nie odpowiada (http://127.0.0.1:8000) → uruchom serwer modelu (np. LM Studio albo basal-serve, instrukcja w README) i sprawdź [retman.decision] url w ~/.config/nogat/nogat.toml albo zmienną RETMAN_DECISION_URL
+  ✗ serwer modelu nie odpowiada (http://127.0.0.1:1234/v1) → uruchom serwer modelu (np. LM Studio albo basal-serve, instrukcja w README) i sprawdź [retman.decision] url w /home/ola/.config/nogat/nogat.toml albo zmienną RETMAN_DECISION_URL
 
 Magazyny danych narzędzi
-  ✗ obserwator: system plików magazynu (/mnt/usb/obserwator) nie obsługuje dowiązań twardych (Operation not permitted) → oba magazyny narzędzi wymagają dowiązań twardych (nie ma ich FAT/exFAT ani część udziałów sieciowych); wskaż magazyn na innym dysku w [retman.tools.obserwator] store_dir (~/.config/nogat/nogat.toml)
+  ✗ obserwator: system plików magazynu (/mnt/usb/obserwator) nie obsługuje dowiązań twardych (Operation not permitted) → oba magazyny narzędzi wymagają dowiązań twardych (nie ma ich FAT/exFAT ani część udziałów sieciowych); wskaż magazyn na innym dysku w [retman.tools.obserwator] store_dir (/home/ola/.config/nogat/nogat.toml)
 ```
 
 Rules:
@@ -2053,11 +2154,13 @@ Rules:
 | `outputs` | kinds of returned data (`kind`) — the basis of the workspace |
 | `values` | numeric or short results (e.g. `{"file_count": 12}`) |
 | `files` | paths to saved files, by data kind: in the result folder or in the tool's store (section 3.2.4) |
-| `warnings` | translated warnings: partial result, tool notices about data quality and licence (verbatim; purely informational notices stay in the audit trail). The caller must show them — the CLI prints them after the summary |
+| `warnings` | translated warnings: partial result, tool notices about data quality and licence (verbatim; purely informational notices stay in the audit trail), and last the `attribution` and `terms_notice` lines, one each. The caller must show them — the CLI prints them after the summary |
 | `error` | error description when `ok = False`; for a tool error — Retman's text selected by the stable error code, with the tool's text only as a quote |
 | `error_code` | the tool's error code, a code of the registry (e.g. `no_data`), when the operation failed because of it; otherwise `None`; the tool's precision (e.g. `no_coverage`) is the `details.reason` of the `failure` document |
 | `tool` | audit block of the tool's catalog calls (section 5.4); `None` for operations without such calls |
-| `summary` | short description in the user's language (operation template, generic template or `TextBackend`) |
+| `failure` | the `retman-error/1` document of the failure (English, registry code and exit code) when `ok = False`; otherwise `None` |
+| `attribution`, `terms_notice` | the lines the data providers' terms require with the data or with what was made from them (Nogat DEV §20, ADR-033), verbatim as the tools gave them and merged without duplicates; empty when the tools give none |
+| `summary` | short description in the user's language: the operation's `summary` template (section 4.2), otherwise the core's generic text |
 
 Files go to the results folder of the current project, in a subdirectory with the result number and
 operation name, e.g. `retman-output/004_export_station_series/`, together with a `result.json` file,
@@ -2175,15 +2278,16 @@ Target values of the quality metrics are set by the PRD. Here: how to measure th
 
 The file `src/retman/eval/commands.jsonl` (package data, installed together with Retman), one line =
 one command with its expected result.
-Commands are in Polish (they are input data), identifiers in English:
+Commands are in Polish (they are input data), identifiers in English. Every line has an `id`, the
+`command`, the expected `operation` and `tags`; `params`, `expect_clarify` and `note` are optional
+(lines from the file):
 
 ```json
-{"command": "Pobierz dobowe opady ze stacji Poznań z lat 2000–2020", "operation": "fetch_imgw_data", "params": {"variable": "precipitation", "interval": "daily", "station": "Poznań", "period": ["2000-01-01", "2020-12-31"]}}
-{"command": "ściągnij opady z poznania", "operation": "fetch_imgw_data", "params": {"variable": "precipitation", "station": "Poznań"}, "expect_clarify": ["period"]}
-{"command": "Wyznacz zlewnię dla punktu 52.41, 16.93", "operation": "delineate_catchment", "params": {"point": [52.41, 16.93]}}
-{"command": "Policz Q1% i Q10% Punzetem dla tej zlewni", "operation": "peak_flow", "params": {"method": "punzet", "probability": [0.01, 0.10]}}
-{"command": "Ile wynosi Q50 dla tej zlewni?", "operation": "peak_flow", "expect_clarify": ["probability"]}
-{"command": "Jaka będzie jutro pogoda?", "operation": "out_of_scope"}
+{"id":"kartograf-dem-sheet-001","command":"Pobierz NMT 5 m dla arkusza N-34-130-D-d-2-4","operation":"download_dem_sheet","params":{"area":{"type":"sheet","code":"N-34-130-D-d-2-4"},"resolution":"5m"},"expect_clarify":["vertical_crs"],"tags":["formal","incomplete"]}
+{"id":"obserwator-series-export-021","command":"Wyeksportuj szereg stacji Poznań-Ławica za lata 2000-2020.","operation":"export_station_series","params":{"station":{"type":"station","provider":"IMGW-PIB","kind":"meteo","code":"250000101","name":"POZNAŃ-ŁAWICA","river":null,"in_catalog":true},"period":{"type":"years","first":2000,"last":2020}},"expect_clarify":["dataset","year_type","data_source"],"tags":["formal","incomplete"]}
+{"id":"obserwator-series-export-014","command":"ściągnij z internetu opad z Opola za lata kalendarzowe 1981-2010","operation":"export_station_series","params":{"dataset":"pl_meteo_precip_daily","year_type":"calendar","data_source":"server","period":{"type":"years","first":1981,"last":2010},"variables":["P"]},"expect_clarify":["station"],"tags":["colloquial","ambiguous"],"note":"„z Opola” jest odmienione: nazwa wymaga potwierdzenia."}
+{"id": "hydrolog-flood-001", "command": "Oblicz przepływy maksymalne Q1% i Q10% z szeregu z wyniku #3.", "operation": "estimate_flood_quantiles", "params": {"probability": [0.01, 0.1]}, "expect_clarify": [], "tags": ["formal", "complete"]}
+{"id":"oos-001","command":"Jaka będzie jutro pogoda w Poznaniu?","operation":"out_of_scope","tags":["out_of_scope"]}
 ```
 
 Rules for building the set:
@@ -2209,8 +2313,9 @@ question (`category_question`: whether it was asked and what was proposed), answ
 category of the expected operation and counts it as a user follow-up. There is no separate
 category accuracy metric — correctness is decided by the final operation.
 
-The command `retman eval run --backend basal` runs the set and prints a report. The same set is used
-to compare backends (basal-1.5-mini vs basal-1.5 vs a generative model).
+`retman eval run` runs the set with the decision model of the settings and prints a report; another
+settings file (`--config PATH`) compares backends on the same set (basal-1.5-mini vs basal-1.5 vs a
+generative model).
 
 `retman eval run` is part of the **base package** (section 9.3), with no additional dependencies. Every
 user and deployer can use it to tune the confidence thresholds for their own model, which is
@@ -2256,19 +2361,22 @@ by the Nogat tools** (DEV-18.1): `nogat.toml` in the user's settings folder
 package nor a `.env` file. The `[nogat]` table holds the shared keys (`lang`, `log_level`,
 `data_dir`, `cache_dir`); the `[retman]` table and its subtables hold Retman's settings.
 
-**Order of sources** for every setting: a command option (for now no setting has one; `--config`
-names the file), the `RETMAN_<KEY>` variable, the `NOGAT_<KEY>` variable (shared keys only),
+**Order of sources** for every setting: a command option (`--lang` sets `lang`, `--verbose` and
+`--quiet` set `log_level`; `--config` names the file), the `RETMAN_<KEY>` variable, the `NOGAT_<KEY>` variable (shared keys only),
 the `[retman]` table, the `[nogat]` table (shared keys only), the default value. `<KEY>` is the key
 with dots replaced by `_`, in upper case (`decision.url` — `RETMAN_DECISION_URL`); an empty
 variable means "not set". The `retman.environment` module finds the value (the `KEYS` key table,
 `Environment.setting`); the `retman.config` module checks it and builds `Settings` (without the
 model server) and `Config` (with it). An unusable value is rejected with a description, and
 `load_settings` and `load_config` report all such problems at once as a `ConfigError`
-(`validation_error`, reason `invalid_config`); a file that is unreadable, has a TOML error, or is
-named but does not exist ends every command with the same error.
+(`validation_error`, reason `invalid_config`, exit code 2). A file that cannot be read or is not
+valid TOML ends the commands that read the settings with the same error, and a file named by
+`--config` or `NOGAT_CONFIG` that does not exist with `not_found` (reason `missing_config`, exit
+code 3); `retman config show` and `retman doctor check` report such a file instead of failing, and
+`retman config init` creates the named file.
 
 - **No hidden default values** [N-11]: `retman config show` (`retman-config/1`, DEV-18.6)
-  shows every setting with its value and source (`default`, `env`, `file`), the file (even an unusable
+  shows every setting with its value and source (`default`, `env`, `file`, `option`), the file (even an unusable
   one), the variable holding the model provider key (`present` or `missing`), the tool stores with
   their size (a hard link counted once); `retman config init` writes all tables with visible values.
   It appends the `[retman]` table at the end of an existing file without touching other tables; an
@@ -2312,15 +2420,24 @@ named but does not exist ends every command with the same error.
   environment variables (chapter 10). The `[retman.mcp]` section will appear only in v0.3 (without
   unused keys).
 
-All variables are listed in the README and `.env.example`; the table template
-(`src/retman/config_template.toml`):
+All variables are listed in the README and `.env.example`. The tables that `retman config init`
+writes from the template `src/retman/config_template.toml` (Linux, without a terminal; `<user>`
+stands for the user name):
 
 ```toml
+# Retman settings: the [retman] tables of nogat.toml (ARCHITECTURE 9.1, DEV-18.1).
+# Every value Retman uses is written out here, so nothing is hidden (N-11);
+# `retman config show` lists each value with the place it comes from.
+# A variable overrides the file: RETMAN_<KEY>, the dotted key in capitals with
+# underscores (RETMAN_DECISION_URL), then NOGAT_<KEY> for the shared keys.
+
 [retman]
-# lang = "pl"            # language of questions, options and messages: "pl" | "en"
+# Shared keys: the same names work in [nogat], which every Nogat tool reads; a value
+# here overrides it for Retman only.
+# lang = "pl"            # language of the texts for people: "pl" | "en" (--json is always English)
 # log_level = "warning"  # technical log on stderr: "debug" | "info" | "warning" | "error"
-# data_dir = "..."       # parent of the data stores and of the command collection
-# cache_dir = "..."      # parent of the caches
+# data_dir = "..."       # parent of the data stores and of the command collection; default: the user data folder of nogat
+# cache_dir = "..."      # parent of the caches; default: the user cache folder of nogat
 
 [retman.decision]
 backend = "basal"                   # "basal" (default) | "openai_compatible"
@@ -2350,6 +2467,8 @@ results_dir = "retman-output"  # results folder created inside the project folde
 [retman.adapters]
 # By default Retman enables every supported tool that is installed in a supported version.
 # The optional "enabled" list only NARROWS that set.
+# Tools: "kartograf", "obserwator", "hydrolog". Hydrolog computes offline and keeps no
+# store, so it has no [retman.tools.hydrolog] table.
 # enabled = ["kartograf"]
 
 [retman.tools.kartograf]
@@ -2375,7 +2494,8 @@ journal_commands = true    # store command texts and answers in the project jour
 [retman.privacy]
 # Collect planning outcomes (command, plan, answers, model decisions) from ALL projects
 # in one file, to build and tune the test set (ARCHITECTURE 5.4, chapter 10). Separate from
-# the project journal; stays on this computer, nothing is sent anywhere. retman config init asks.
+# the project journal; stays on this computer, nothing is sent anywhere.
+# `retman config init` asks.
 collect_commands = false
 collect_path = '/home/<user>/.local/share/nogat/retman/collected.jsonl'
 ```
@@ -2408,12 +2528,13 @@ a GPU. The results go into the documentation as guidance for model selection (PR
   environment), `pyproject.toml` compliant with PEP 639, MIT licence.
 - Code, identifiers, comments and docstrings in English; user-facing texts in translation files;
   README and documentation in English (section 1.3).
-- Core dependencies: minimal — an HTTP client. The central file is read by `tomllib` from the
+- Core dependencies: minimal — the HTTP client (`httpx`), `packaging` (the version ranges of the
+  tools) and `platformdirs` (the user folders, section 9.1). The central file is read by `tomllib` from the
   standard library; `retman config init` writes it from a commented template (section 9.1), so a library
   for writing TOML is not needed. **The package contains no model and no machine learning
   libraries** (e.g. PyTorch) and no provider SDKs. The hydrology tools **are not** core
   dependencies. The MCP protocol library (`mcp`) is not a core dependency either — it is neither
-  a model provider SDK nor an ML library, but it would break the "HTTP client only" rule — and it
+  a model provider SDK nor an ML library, but it would break the rule of a minimal core — and it
   may be added only as an optional extra `retman[mcp]` for the interface from v0.3 (ADR-018).
   In v0.1 Retman has no MCP code, dependencies or configuration.
 - **basal (basal-serve) is not a dependency of Retman** — neither core nor optional. The `basal`
@@ -2430,7 +2551,7 @@ a GPU. The results go into the documentation as guidance for model selection (PR
 - The `tools` dependency group in `pyproject.toml` serves tests and manual runs; it is not
   a dependency of the user's environment. Until the tags `v0.8.0` (Kartograf) and `v3.0.0`
   (Obserwator) it pins commits, the members of the Nogat release set `candidate-2`: Kartograf
-  `d0990c89` and Obserwator with the `store` extra (`f9f4ee79`), both on GitHub
+  `d0990c89`, Obserwator with the `store` extra (`f9f4ee79`) and Hydrolog `759d7ef0`, all on GitHub
   (PROGRESS Next 3); after release it switches to tags (ADR-012, ADR-024). The Obserwator `store`
   extra installs `pyarrow` (time series are Parquet files).
 - Retman **has no extras that install tools** (`retman[hydrograf]` etc.). Dependencies pointing
@@ -2517,11 +2638,12 @@ retman doctor check
 
 #### Checking in CI
 
-- **Installation test on clean systems** (Windows, Linux, macOS): installation of Retman with all
-  tools, then `retman doctor check --deep` (with a trial write to the Obserwator store on each system).
-  Tool dependencies (e.g. geospatial libraries) were deemed unproblematic — the test confirms this
-  on each system before the problem reaches the testers.
-- From the easy version on, the same test covers the installation scripts.
+- **Installation test on clean systems** (Windows, Linux, macOS; planned for 0.1, `ci.yml` has no
+  such job yet): installation of Retman with all tools, then `retman doctor check --deep` (with a
+  trial write to the Obserwator store on each system). Tool dependencies (e.g. geospatial
+  libraries) were deemed unproblematic — the test is to confirm this on each system before the
+  problem reaches the testers.
+- From the easy version on, the same test is to cover the installation scripts.
 
 ---
 
@@ -2554,8 +2676,10 @@ retman doctor check
   the SHA-256 sums of the files (section 5.4). The tool reads the file; the data services receive
   request parameters, not the file.
 - Retman does not send the user's commands or answers anywhere beyond the configured model
-  backends. The tools connect to public data services (GUGiK, IMGW, ČHMÚ) after the plan is
-  confirmed or, on request, in the availability check; the services receive request parameters.
+  backends. The tools connect to public data services (Kartograf: GUGiK, Copernicus CLMS and, for
+  the CORINE preview, the EEA and DLR map services, ISRIC SoilGrids; Obserwator: IMGW-PIB, ČHMÚ;
+  Hydrolog computes offline) after the plan is confirmed or, on request, in the availability
+  check; the services receive request parameters.
 - The default model configuration points exclusively to `localhost`.
 - **The user decides where the model runs** in the settings. Retman does not evaluate addresses
   and does not warn; `retman doctor check` shows the address of every model (section 7.2).
@@ -2587,8 +2711,8 @@ in which version.
 
 | Version | Components |
 | --- | --- |
-| **0.1** | core pipeline, `basal` backend (default) and `openai_compatible` (alternative), extractors (including probability, stations, periods, points, geometry file), shared adapter with command layer (`calls`, tool clients, offline preview, availability check), adapters for Kartograf 0.8.0 and all of Obserwator 3.0.0 with two-stage operation recognition, tool stores in the configuration, `retman scaffold` (`list`, `draft`, `check`), CI with tests on supported tool versions, translation files (PL, EN), CLI and Python API (including the plan as data and `known`), `retman doctor check`, workspace in the project folder (numbered results, input selection without guessing, `retman results list`), central file and `retman config init`, project journal and audit trail (`retman journal show`), `retman eval run`, response time measurements (section 9.2), CI on Windows, Linux and macOS, including an installation test on clean systems (section 9.4) |
-| 0.2 | chain resolver, sanity checks between steps, chain resumption, named results, result descriptions by the text model, native provider APIs (optional), descriptions and handlers for the remaining ecosystem tools (Hydrolog, Hydrograf, BasicHydraulics) |
+| **0.1** | core pipeline, `basal` backend (default) and `openai_compatible` (alternative), extractors (including probability, stations, periods, points, geometry file), shared adapter with command layer (`calls`, tool clients, offline preview, availability check), adapters for Kartograf 0.8.0, all of Obserwator 3.0.0 and the basic routes of Hydrolog 1.0 (nine operations, section 3.2.12) with two-stage operation recognition, tool stores in the configuration, `retman scaffold` (`list`, `draft`, `check`), CI with tests on supported tool versions, translation files (PL, EN), CLI and Python API (including the plan as data and `known`), `retman doctor check`, workspace in the project folder (numbered results, input selection without guessing, `retman results list`), central file and `retman config init`, project journal and audit trail (`retman journal show`), `retman eval run`, response time measurements (section 9.2), CI on Windows, Linux and macOS, including an installation test on clean systems (section 9.4) |
+| 0.2 | chain resolver, sanity checks between steps, chain resumption, named results, result descriptions by the text model, native provider APIs (optional), descriptions and handlers for the rest of Hydrolog and the remaining ecosystem tools (Hydrograf, BasicHydraulics) |
 | 0.3 | MCP server (`retman[mcp]`, stdio, confirmation via elicitation, `channel` field in the audit trail; section 7.5.1) |
 | 0.4 | HTTP API |
 | 0.5+ | chat window for the simple path, installation scripts (`install.sh`, `install.ps1`), `retman config init` wizard, `retman add-tool`, GUI integration (section 7.4), measured recognition of commands in English |
@@ -2600,9 +2724,9 @@ in which version.
 1. **Types in the tools' public API** — settled for Kartograf and Obserwator: choices are not
    typed as `Literal` (Kartograf: `str | None`), and the machine-readable source of truth is the
    command catalog (`allowed`, `enum`, `validate_command`), so `retman scaffold` reads catalogs,
-   not docstrings (ADR-013, ADR-019). To check for Hydrolog, Hydrograf and BasicHydraulics:
-   whether they have a command catalog, and if not — whether choices are typed as
-   `Literal`/`Enum` and files as `Path`.
+   not docstrings (ADR-013, ADR-019). Hydrolog has a command catalog too, and Retman calls it
+   (section 3.2.12). To check for Hydrograf and BasicHydraulics: whether they have a command
+   catalog, and if not — whether choices are typed as `Literal`/`Enum` and files as `Path`.
 2. **Extraction of free parameters** — for IMGW stations, code resolves names offline, from the
    catalog in the store (section 4.3). What remains open is whether, in hard cases (e.g. an area
    given by river or town name instead of coordinates), code is enough, or whether Bielik or a
@@ -2714,8 +2838,8 @@ change ships with its documentation (CLAUDE.md, Process rules).
 
 ### 13.3. A new model backend
 
-1. A class in `src/retman/backends/` that implements `DecisionBackend` and/or `TextBackend`
-   (section 3.3.1): HTTP directly, no provider SDK.
+1. A class in `src/retman/backends/` that implements `DecisionBackend` (section 3.3.1): HTTP
+   directly, no provider SDK.
 2. Confidence: calibrated, or `logprobs`, `consistency` or `none` (section 3.3.3); the
    threshold `auto` with this backend is a configuration error (section 6.2).
 3. Settings in `[retman.decision]` with comments in the template of `retman config init`

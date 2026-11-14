@@ -167,3 +167,11 @@ categories `obserwator_*`, the operations whose id named the tool (`init_obserwa
 nine more), the kinds `obserwator_archive`, `obserwator_plan` and `obserwator_report`, and the
 texts („magazyn Obserwatora”). The operation `fetch_imgw_warnings`, its kind `imgw_warnings`, the
 provider option `imgw_pib` and the datasets `pl.imgw.*` name the institute and stay.
+
+**Erratum 8 (2026-11-14, Nogat release sets `candidate-1` and `candidate-2`):** the pin is now
+Obserwator `f9f4ee7927ba520d3e82d3e289872090ae24e2ec`, its member of the release set
+`candidate-2` (Nogat `587c909`, written by `ecosystem.py set apply`), after `ea158dc6` and
+`1ee5457` of `candidate-1`; the repository is `github.com/Daldek/Obserwator` (renamed from
+`Daldek/IMGWTools`). Since `1ee5457` the documents of the tool follow the Nogat standard 1.0 (the
+tool's ADR-010): Retman reads the items of a list command from `result`, the text of a notice
+from `message`, and passes the tool's `hint` with its errors (CHANGELOG, Changed).

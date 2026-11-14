@@ -99,3 +99,7 @@ change needs no migration path (ECO-020).
 **Erratum 1 (2026-10-25, English texts, ADR-022 erratum 1):** item 6 no longer holds: the
 English texts exist, so `Settings.language` is `lang` as given and `en` shows English; the
 deviation from DEV-2.2 is gone.
+
+**Erratum 2 (2026-11-14, ADR-022):** item 1 says that no setting has a command-line option yet.
+Since ADR-022 (item 6) the options `--lang` (`lang`) and `--verbose` or `--quiet` (`log_level`)
+are that layer, above the variables and the file (`retman.environment.cli_options`).

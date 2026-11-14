@@ -3,9 +3,9 @@
 A user guide: how to set up Retman, how to issue commands, answer questions, approve plans and
 find results — in the terminal and from Python.
 
-**Status:** before v0.1.0. Ten Kartograf 0.8.0 operations and 26 Obserwator 3.0.0 (formerly IMGWTools) operations work
-(section 9) with a decision model compatible with the OpenAI API (e.g. LM Studio); the basal backend
-does not exist yet.
+**Status:** before v0.1.0. Ten Kartograf 0.8.0 operations, 19 Obserwator 3.0.0 (formerly IMGWTools)
+operations and nine Hydrolog 1.0 operations, 38 in all, work (section 9) with a decision model
+compatible with the OpenAI API (e.g. LM Studio); the basal backend does not exist yet.
 
 > **About the examples.** The runs below were recorded on Retman 0.1.0.dev0 with Kartograf 0.8.0
 > and Obserwator 3.0.0. The model's decisions were substituted with a stub (`FakeDecisionBackend`), so with
@@ -49,7 +49,8 @@ in `pyproject.toml`; they are the members of the Nogat release set `candidate-2`
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@d0990c89da88e73b9081fe33a151ba9d27b4f820" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@f9f4ee7927ba520d3e82d3e289872090ae24e2ec"
+    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@f9f4ee7927ba520d3e82d3e289872090ae24e2ec" \
+    --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@759d7ef0e99b654c4aff172d69439a6d8df42db2"
 ```
 
 The Obserwator `store` extra installs `pyarrow` (time series are Parquet files). Once the tags are
@@ -71,7 +72,7 @@ by the `NOGAT_CONFIG` variable or the `--config PATH` option on the command. The
 every setting has a default value except the model server (`[retman.decision]`), and an environment
 variable overrides the file. A value comes from the first of these places:
 
-1. a command option (`--config`, `--lang`, `--verbose`, `--quiet`);
+1. a command option (`--lang`, `--verbose`, `--quiet`; `--config` only names the file);
 2. the `RETMAN_<KEY>` variable — the key with dots replaced by `_`, e.g. `decision.url` is `RETMAN_DECISION_URL`;
 3. the `NOGAT_<KEY>` variable — only for shared keys: `lang`, `log_level`, `data_dir`, `cache_dir`;
 4. the `[retman]` table of the file (subtables: `[retman.decision]`, `[retman.tools.kartograf]` …);
@@ -120,7 +121,7 @@ Magazyny narzędzi (ustawienia [retman.tools.*] w pliku):
   Kartograf: ~/.local/share/nogat/kartograf
   Obserwator: ~/.local/share/nogat/obserwator
 Czy utworzyć teraz magazyn Obserwatora w ~/.local/share/nogat/obserwator?
-Tworzenie nie używa sieci: w pustym folderze powstaje znacznik magazynu. Bez magazynu nie działają operacje na danych IMGW, które zapisują się lokalnie.
+Tworzenie nie używa sieci: znacznik magazynu powstaje w pustym folderze albo w folderze, który ma już układ magazynu, po jego sprawdzeniu przez Obserwatora. Bez magazynu nie działają operacje na danych IMGW, które zapisują się lokalnie.
 Utworzyć magazyn Obserwatora? [t]ak / [N]ie: t
 Magazyn Obserwatora gotowy: ~/.local/share/nogat/obserwator
 ```
@@ -236,8 +237,9 @@ What happened:
 
 1. The model chose the operation from the list of available ones — there are more than 9 operations, so it
    first chose a group ("Dane przestrzenne GUGiK", GUGiK spatial data) and then an operation within it (here: DEM (NMT) for a map sheet).
-2. The sheet code (godło) and the resolution were read from the command text by **code** — numbers, sheet
-   codes and coordinates are not guessed by the model.
+2. The sheet code (godło) was read from the command text by **code** — numbers, sheet codes and
+   coordinates are not guessed by the model; the resolution the model only picked from the
+   operation's list of resolutions.
 3. The command did not give the vertical datum, so Retman **asked** instead of assuming a default value
    (Kartograf operations have no default values, ADR-006).
 4. The plan shows every value. The row marked `← podgląd, bez sieci` was filled in by the **tool**:
@@ -307,6 +309,7 @@ Punkt: punkt 52.23° N, 21.01° E
 Metoda obliczeń: POT (maksima ponadprogowe)
 Zapis w magazynie: Tylko plik wyniku
 Prawdopodobieństwo: 50% (T = 2 lat)
+Czas trwania opadu: wszystkie czasy trwania z tabeli PMAXTP ← nie podano w poleceniu, parametr nieobowiązkowy
 ```
 
 An answer outside the list ends with the message `Błąd: Wybierz jedną z podanych możliwości.`
@@ -364,7 +367,7 @@ $ retman plan run --text "Pobierz NMT 5 m w układzie KRON86 dla arkusza N-34-13
   5) 5 m (tylko EVRF2007)
   6) 10 m (tylko EVRF2007)
   7) 100 m (pliki województw, bez układu wysokościowego)
-Błąd: Kartograf odrzuca ten wybór: NMT 5m (PL) jest dostepny tylko w EVRF2007 - podano --vertical-crs KRON86; dostepne w KRON86: 0.5m, 1m
+Błąd: Kartograf odrzuca ten wybór: NMT 5m (PL) is only available in EVRF2007 - got --vertical-crs KRON86; available in KRON86: 0.5m, 1m
 > 4
 Plan:
 Operacja: Pobranie NMT dla arkusza lub obszaru
@@ -446,7 +449,7 @@ Okres: 2023–2024
 Źródło danych: Z lokalnego magazynu (bez sieci)
 Zmienne: Q — przepływ
 Rodzaj lat: Hydrologiczne (1 XI – 31 X)
-Magazyn Obserwatora: ~/.local/share/nogat/obserwator (z ustawień) ← podgląd, bez sieci
+Magazyn Obserwatora: ~/.local/share/nogat/obserwator (z konfiguracji) ← podgląd, bez sieci
 Dane w magazynie: 2024-02-29 – 2024-02-29, luk: 0 ← podgląd, bez sieci
 Okres w magazynie: magazyn pokrywa tylko część wybranego okresu (2024-02-29 – 2024-02-29) ← podgląd, bez sieci
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
@@ -456,15 +459,23 @@ Uwaga: Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wod
 ```
 
 After the summary Retman prints the operation's **warnings**, each on its own line "Uwaga: …" (Notice: …):
-the tool's notices about data quality (e.g. an incomplete GUGiK flight) and licensing (IMGW) are shown
-verbatim, and a partial result is a result with a warning. A failed result also gets a number, and the run ends with the registry error of its failure (its code is
-the exit code, section 8); Retman chooses the message based on the tool's stable error code, and the tool's text is only
-a quotation (e.g. "GUGiK nie ma danych dla wskazanego obszaru i wybranych parametrów produktu. Szczegóły: …"
-— GUGiK has no data for the given area and selected product parameters. Details: …).
-Obserwator writes its texts in English and Retman shows them as they come, so a Polish message can quote
-an English detail, and the licence notice of an IMGW result is the provider's attribution (Polish, in
-the wording IMGW-PIB requires) followed by the English notice of the tool (as in the example above;
-ADR-024).
+the tool's notices about data quality (e.g. an incomplete GUGiK flight), in Retman's words when it has
+a text for the notice and verbatim otherwise, and a partial result is a result with a warning; the
+licence lines of the data provider come last. A failed result also gets a number, and the run ends with
+the registry error of its failure (its code is the exit code, section 8); Retman chooses the message
+based on the tool's stable error code, and the tool's text is only a quotation (e.g. "Źródło danych
+(GUGiK, SoilGrids, CORINE) nie ma danych dla wskazanego obszaru i wybranych parametrów produktu.
+Szczegóły: …" — the data source has no data for the given area and selected product parameters.
+Details: …).
+The tools write their texts in English and Retman shows them as they come, so a Polish message can
+quote an English detail (section 4.2; ADR-024). The licence lines are the tool's too: when its
+document carries the lines the provider's terms require (Nogat DEV §20: `attribution` and
+`terms_notice`), Retman shows each of them verbatim as a warning, keeps them in `result.json`
+(section 6.2) and adds them as the trailing columns `attribution` and `terms_notice` to the CSV
+tables it writes itself (stations, current data, warnings, water states, PMAXTP; ADR-033). For an
+Obserwator that gives no such lines, like the one pinned now (section 1.1), the licence notice is the
+text built from the tool's provider registry: the provider's attribution (Polish, in the wording
+IMGW-PIB requires) followed by the English notice of the tool, as in the example above.
 A download from GUGiK via Kartograf looks the same: the files go to Kartograf's store (`store_dir`;
 Retman always calls Kartograf with the store, which all projects share, never with a plain
 folder for its files), and the summary says where they are ("Pliki w magazynie
@@ -478,9 +489,10 @@ The rows with `← podgląd, bez sieci` are what the tool determined about your 
 network** and without writing anything: the state of the store, the number of map sheets, the bounding box
 of the geometry file, the range of data in the store, the number of archive files to check. They are there
 so that you can see what the plan actually means before you confirm it.
-When the preview detects that the plan will fail (e.g. no Obserwator store, no series of the dataset in the
-store with source "magazyn" (store), orthophoto for a geometry file), Retman asks again about the relevant
-parameters with an explanation.
+When the preview detects that the plan will fail (e.g. no series of the dataset in the store with source
+"magazyn" (store), orthophoto for a geometry file), Retman asks again about the relevant parameters with
+an explanation. A problem that no answer can fix (e.g. no Obserwator store) ends the plan with its
+registry error (here `store_unavailable`, code 8) and a hint how to fix it.
 
 An optional parameter that the command did not provide also has its own row — with what its absence
 means:
@@ -534,8 +546,9 @@ Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
   it (section 6.3).
 - Without a terminal and with `--check` Retman never checks (section 7).
 
-The check is offered by, among others, four Kartograf operations (years, resolutions and completeness of
-coverage; for BDOT10k — the counties of the area and packages already in the store) as well as building
+The check is offered by the eight Kartograf download operations (years, resolutions and completeness of
+coverage or the newest flights; for BDOT10k and BDOO — the counties or voivodeships of the area and the
+packages already in the store; for CORINE and SoilGrids — the published edition) as well as building
 the station catalog, exporting a series from source "serwer" (server) and synchronising archives (how
 many files are newer or missing).
 
@@ -590,8 +603,9 @@ Additional sections: `tool` — the exact tool command line with environment arg
 and the checksum of the full tool document (saved alongside as `tool_<n>_<command>.json`); `preview` —
 values established by the preview (e.g. the bounding box of the area, the number of map sheets);
 `checks` — availability check reports for the final state of the plan; `error_code` — a stable tool error
-code when the result failed; for an area from a geometry file, the parameter entry has `files` — SHA-256
-checksums of the geometry files.
+code when the result failed; `attribution` and `terms_notice` — the lines the data providers' terms
+require, verbatim as the tools gave them, when they gave any (section 5.2); for an area from a geometry
+file, the parameter entry has `files` — SHA-256 checksums of the geometry files.
 
 A file that the tool keeps in its own store (Kartograf) is referenced by the result with an absolute path,
 the tool name and a checksum, not with a copy:
@@ -653,7 +667,7 @@ stays on your computer; it serves to build a test set for `retman eval run` from
 | `--explain` | prints the decision-model decisions below the plan: choice, confidence, method and option probabilities |
 | `--config PATH` | a `nogat.toml` file other than the default (section 1.3) |
 | `--json` | in every command: a single `retman-result/1` envelope on stdout and nothing else; never asks |
-| `--lang pl\|en` | language of the texts for people: `pl` (default) or `en`; the texts inside `--json` documents (for example those of `doctor check` and `scaffold check`) are English whatever `--lang` says |
+| `--lang pl\|en` | language of the texts for people: `pl` (default) or `en`; inside `--json` documents the reports of `doctor check` and `scaffold check` and the error messages are English whatever `--lang` says, while the labels, questions and summaries of plans and results are in the language they were made in |
 | `--verbose`, `--quiet` | technical log level on stderr: `debug` or errors only; without the option `RETMAN_LOG_LEVEL` decides, then `NOGAT_LOG_LEVEL`, then `log_level` in `[retman]` and `[nogat]` (default `warning`); the log contains neither commands nor answers |
 | `--deep` | with `doctor check`: also slower checks (a trial write to the Obserwator store) |
 
@@ -689,7 +703,7 @@ execution requires confirmation, from Python — see section 10.
 
 ```
 $ retman plan run --text "Jaka będzie jutro pogoda?"
-Błąd: Polecenie nie dotyczy dostępnych operacji: Stacje i rejestr danych IMGW, Dane bieżące i ostrzeżenia IMGW, Opady maksymalne PMAXTP, Szeregi czasowe stacji IMGW i ČHMÚ, Archiwa danych IMGW i magazyn Obserwatora, Dane przestrzenne GUGiK
+Błąd: Polecenie nie dotyczy dostępnych operacji: Opad i odpływ (Hydrolog), Analizy zlewni i przepływów (Hydrolog), Dane glebowe SoilGrids, Dane przestrzenne GUGiK, Stacje i rejestr danych IMGW, Dane bieżące i ostrzeżenia IMGW, Opady maksymalne PMAXTP, Szeregi czasowe stacji IMGW i ČHMÚ, Archiwa danych IMGW i magazyn Obserwatora
 ```
 
 With two-stage recognition Retman lists the **groups** of operations instead of forcing a match to the
@@ -719,6 +733,7 @@ Interruption by the user is not an error and prints no document.
 | 9 | `io_error` | writing or reading a file failed |
 | 10 | `partial` | result printed, but some of the `items` units did not pass: `doctor check` (something blocks work, some checks passed), `eval run` (some commands to be rejected were planned), `scaffold check` (errors in some tools) |
 | 11 | `failed` | the same, when no check or tool passed |
+| 12 | `forbidden` | the tool refuses to write in that place (Obserwator, Hydrolog) |
 | 13 | `calculation_error` | tool cannot compute a result from valid data |
 | 14 | `no_data` | source has no data for the area or period (e.g. GUGiK has none for the area; the `result.json` of a failed result keeps the tool's precision, e.g. `no_coverage`, as the `reason` of its failure) |
 | 15 | `unsupported` | command out of scope (`out_of_scope`) or no availability check (`no_check`) |
@@ -732,8 +747,9 @@ Codes 10 and 11 do not mean an error: the result was printed, and the code says 
 
 ## 9. What Retman Can Do Now
 
-Operations fall into seven groups (two of them for Kartograf); Retman first picks the group, then the
-operation.
+Operations fall into nine groups: two for Kartograf (spatial data and SoilGrids soil data, the latter
+shared with Hydrolog), five for Obserwator and two more for Hydrolog; Retman first picks the group, then
+the operation.
 
 ### 9.1. Kartograf 0.8.0 — spatial data and SoilGrids soils (ADR-001, ADR-012, ADR-016)
 
@@ -754,15 +770,6 @@ reads its segments:
 | Overview of the Kartograf store | the folder `store_dir` of the settings | none; it lists the segments (product folders) with the product, the country, the dataset and whether the installed Kartograf knows them; a read, offline (a folder that does not exist is refused in the plan) | `Pokaż, co jest w magazynie Kartografa` |
 | Download a SoilGrids soil layer | sheet code (godło), rectangle or geometry file (the rectangle around it) | property: clay / sand / silt / organic carbon / pH / bulk density / coarse fragments / CEC / nitrogen; for organic carbon its measure: content SOC / density OCD / stock OCS; depth 0–5 / 5–15 / 15–30 / 30–60 / 60–100 / 100–200 cm (the stock: 0–30 cm); statistic mean / median / 5% / 95% quantile / uncertainty. The result gives the unit of the integer values of the file and the divisor to the usual unit (clay in g/kg: percent = value / 10) | `Pobierz zawartość iłu 0-5 cm, średnia, dla arkusza N-34-130-D-d-2-4` |
 | Hydrologic soil groups HSG (A–D, SCS-CN) | sheet code (godło), rectangle or geometry file (the rectangle around it) | depth of the texture 0–5 … 100–200 cm; Kartograf downloads the clay, sand and silt of that depth and computes the groups; the result gives the share and the area of each group | `Wyznacz grupy HSG z głębokości 0-5 cm dla arkusza N-34-130-D-d-2-4` |
-| Design hyetograph (Hydrolog) | — | shape: block / triangular / Beta / Euler II; rainfall total in mm; duration; time step (default 5 min, after „krok” or „co”) | `Oblicz hietogram Eulera typu II dla opadu 38,4 mm trwającego 2 godziny` |
-| Effective rainfall by SCS-CN (Hydrolog) | — | curve number after „CN”; rainfall total in mm; antecedent moisture dry / average (default) / wet | `Oblicz opad efektywny metodą SCS-CN dla CN 72 i opadu 50 mm` |
-| Design hydrograph of a catchment (Hydrolog) | — | area in km² or ha; CN; time of concentration (after „czas koncentracji” or „tc”); the rain of the hyetograph; moisture; SCS unit hydrograph | `Policz hydrogram dla zlewni 45,3 km², CN 72, tc 90 min, opad Euler II 62 mm w 120 min` |
-| Time of concentration (Hydrolog) | a watershed file (`WatershedParameters` JSON) or result #N | method: Kirpich / NRCS / Giandotti / FAA / Kerby / Kerby–Kirpich (always asked); a method the watershed lacks fields for is asked again | `Oblicz czas koncentracji metodą Kirpicha dla zlewni z pliku zlewnia.json` |
-| Flood quantiles (Hydrolog) | a daily flow series of Obserwator (result #N or CSV) | probabilities or return periods (default: 2–1000 years); distribution: all (default) / log-normal / GEV / Pearson III / Weibull; the plan shows the complete hydrological years | `Oblicz przepływy maksymalne Q1% i Q10% z szeregu #3` |
-| Watershed morphometry (Hydrolog) | a watershed file (`WatershedParameters` JSON) or result #N | — | `Oblicz parametry morfometryczne zlewni z pliku zlewnia.json` |
-| Hydrographs through a river network (Hydrolog) | a network file (`hydrolog-network/1` JSON) or result #N whose subcatchments hold their hydrographs or compute them from rain | — ; the plan shows the network, its nodes and its outlet (Hydrolog routes it in memory first); the result gives the peak, the time to peak and the volume of every node, the table `<id>.csv` of every node in `hydrographs/` and the schematic `network.svg` | `Przeprowadź hydrogramy przez sieć rzeczną z pliku siec.json` |
-| Hydrographs through a river network with an inflow table (Hydrolog) | a network file and an inflow table (CSV with `time_min` and a discharge column per subcatchment, or the table of a node of an earlier result) | — ; as above; a network whose subcatchments read the table, planned without one, ends the plan with the advice to name it | `Przeprowadź hydrogramy przez sieć z pliku siec.json z dopływami z pliku doplywy.csv` |
-| Hydrologic soil groups HSG of texture rasters (Hydrolog) | clay, sand and silt rasters on one grid: earlier SoilGrids results #N (each taken by its property) or GeoTIFF files | — ; nothing is downloaded; the same file for two textures ends the plan; the result gives the cells and the share of each group | `Wyznacz grupy HSG z rastrów iłu, piasku i pyłu z wyników #1, #2 i #3` |
 
 Ways of writing the area:
 
@@ -777,7 +784,10 @@ Ways of writing the area:
 
 ### 9.2. Obserwator 3.0.0 — IMGW-PIB and ČHMÚ data (ADR-017)
 
-19 operations in five groups. All of them require an initialised Obserwator store (section 1.3); recognising
+19 operations in five groups. The operations that read or write the store (station search in the store,
+the station catalog, series, PMAXTP kept in the store, the archives of the store, the store description)
+require an initialised Obserwator store (section 1.3); current data, warnings, the list of datasets, a
+PMAXTP table not kept in the store and archive downloads to the result folder need none. Recognising
 stations by name works offline from the station catalog in the store. The "Network" column says whether
 execution connects to the server (only after `t`):
 
@@ -808,12 +818,35 @@ Rules for Obserwator operations:
   "Zbuduj katalog stacji IMGW": a station named in words ("ze stacji Racibórz-Miedonia") is then a question
   for its code, never a request for every station;
 - **period**: archives take years in the tool's archive numbering (for IMGW-PIB hydrological data —
-  hydrological years), time series take years or dates plus the year kind (always a question);
+  hydrological years), time series take years or dates plus the year kind (no default: a question unless
+  the command states it);
 - **PMAXTP**: the probability and duration from the command narrow the result table; a value outside the
   table gives a warning and is not silently skipped;
-- **licence**: the data provider's notices are shown after execution (section 5.2);
+- **licence**: the data provider's licence lines are shown after execution as the last warnings, and the
+  lines of Nogat DEV §20 that the tool gives also go into `result.json` and the CSV tables Retman writes
+  (section 5.2);
 - the store is created only deliberately (`retman config init` or the "Utwórz magazyn Obserwatora" operation) — a missing
-  store is a reason to ask again with a hint, not to create it silently.
+  store ends the plan with the error `store_unavailable` (code 8) and a hint how to create it; it is
+  never created silently.
+
+### 9.3. Hydrolog 1.0 — catchment hydrology, computed offline
+
+Nine operations in three groups: rainfall and runoff, catchment and flow analyses, and the soil groups
+of texture rasters, which belong to the soil data group shared with Kartograf. Hydrolog computes on
+your computer: it downloads nothing and keeps no store (there is no `[retman.tools.hydrolog]` table);
+its inputs are your files or earlier results (`#N`):
+
+| Operation | Input | Parameters (Retman asks about missing ones) | Example command |
+| --- | --- | --- | --- |
+| Design hyetograph (Hydrolog) | — | shape: block / triangular / Beta / Euler II; rainfall total in mm; duration; time step (default 5 min, after „krok” or „co”) | `Oblicz hietogram Eulera typu II dla opadu 38,4 mm trwającego 2 godziny` |
+| Effective rainfall by SCS-CN (Hydrolog) | — | curve number after „CN”; rainfall total in mm; antecedent moisture dry / average (default) / wet | `Oblicz opad efektywny metodą SCS-CN dla CN 72 i opadu 50 mm` |
+| Design hydrograph of a catchment (Hydrolog) | — | area in km² or ha; CN; time of concentration (after „czas koncentracji” or „tc”); the rain of the hyetograph; moisture; SCS unit hydrograph | `Policz hydrogram dla zlewni 45,3 km², CN 72, tc 90 min, opad Euler II 62 mm w 120 min` |
+| Time of concentration (Hydrolog) | a watershed file (`WatershedParameters` JSON) or result #N | method: Kirpich / NRCS / Giandotti / FAA / Kerby / Kerby–Kirpich (no default: asked when the command names none); a method the watershed lacks fields for is asked again | `Oblicz czas koncentracji metodą Kirpicha dla zlewni z pliku zlewnia.json` |
+| Flood quantiles (Hydrolog) | a daily flow series of Obserwator (result #N or CSV) | probabilities or return periods (default: 2–1000 years); distribution: all (default) / log-normal / GEV / Pearson III / Weibull; the plan shows the complete hydrological years | `Oblicz przepływy maksymalne Q1% i Q10% z szeregu #3` |
+| Watershed morphometry (Hydrolog) | a watershed file (`WatershedParameters` JSON) or result #N | — | `Oblicz parametry morfometryczne zlewni z pliku zlewnia.json` |
+| Hydrographs through a river network (Hydrolog) | a network file (`hydrolog-network/1` JSON) or result #N whose subcatchments hold their hydrographs or compute them from rain | — ; the plan shows the network, its nodes and its outlet (Hydrolog routes it in memory first); the result gives the peak, the time to peak and the volume of every node, the table `<id>.csv` of every node in `hydrographs/` and the schematic `network.svg` | `Przeprowadź hydrogramy przez sieć rzeczną z pliku siec.json` |
+| Hydrographs through a river network with an inflow table (Hydrolog) | a network file and an inflow table (CSV with `time_min` and a discharge column per subcatchment, or the table of a node of an earlier result) | — ; as above; a network whose subcatchments read the table, planned without one, ends the plan with the advice to name it | `Przeprowadź hydrogramy przez sieć z pliku siec.json z dopływami z pliku doplywy.csv` |
+| Hydrologic soil groups HSG of texture rasters (Hydrolog) | clay, sand and silt rasters on one grid: earlier SoilGrids results #N (each taken by its property) or GeoTIFF files | — ; nothing is downloaded; the same file for two textures ends the plan; the result gives the cells and the share of each group | `Wyznacz grupy HSG z rastrów iłu, piasku i pyłu z wyników #1, #2 i #3` |
 
 ---
 
@@ -907,8 +940,9 @@ Model decyzyjny
   ! pewność: niedostępna (confidence = "none") — wybory modelu w planie są oznaczone jako niezweryfikowane → ustaw confidence = "auto" w [retman.decision] (nogat.toml), jeśli serwer podaje logprobs
 
 Narzędzia
-  ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 26 operacji
-  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 5 operacji
+  ✓ hydrolog 1.0.0, obsługiwane >=1.0.0.dev0,<2, 9 operacji
+  ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 10 operacji
+  ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 19 operacji
 
 Magazyny danych narzędzi
   ✓ kartograf: magazyn ~/.local/share/nogat/kartograf (zapis możliwy, dowiązania twarde działają)
@@ -918,8 +952,9 @@ Magazyny danych narzędzi
   ✓ obserwator: dane referencyjne ~/.cache/nogat/obserwator/reference (hydro_stations_locations.csv: brak)
 
 Zgodność opisów z narzędziami (retman scaffold check)
-  ✓ obserwator 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
+  ✓ hydrolog 1.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
   ✓ kartograf 0.8.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
+  ✓ obserwator 3.0.0: komendy z manifestu są w katalogu narzędzia, a jego wartości są oferowane albo wyłączone (X1, X4)
 
 Tłumaczenia (pl)
   ✓ komplet
@@ -932,14 +967,16 @@ Model tekstowy
 section checks paths (without symbolic links), write permission, **hard links in both stores**, the
 store marker of each tool (`kartograf-store.json`, `obserwator-store.json`), the Kartograf cache,
 `pyarrow` and the reference data folder. A missing Obserwator store (also a folder that holds only the
-`api_keys.json` of the Obserwator server) is a warning with the hint "create it: retman config
-init"; a missing or empty Kartograf store is fine, because Kartograf marks it by itself at the
-first download. A disk without hard links, a foreign folder in the store's place, a marker that
-the tool cannot read, a store inside another store and a folder with the layout of a store but no
-marker are blocking problems: for Obserwator the hint is the command "Utwórz magazyn Obserwatora", for
-Kartograf the command "Utwórz magazyn Kartografa" (or `kartograf store init --root <folder>`),
-and either makes the tool check the layout and write the marker. The plan of a Kartograf
-operation names the same folder problems before you confirm anything.
+`api_keys.json` of the Obserwator server) is a warning with the hint "create it: retman config init
+(in a terminal) or the command 'Utwórz magazyn Obserwatora'"; a missing Kartograf store is only a
+warning and an empty one is fine, because Kartograf marks it by itself at the first download. A disk
+without hard links, a foreign folder in the store's place, a marker that the tool cannot read, a store
+inside another store and a folder with the layout of a store but no marker are blocking problems,
+each with a hint which folder to choose instead; for the layout without a marker the hint is the
+command "Utwórz magazyn Obserwatora" for Obserwator and "Utwórz magazyn Kartografa" (or
+`kartograf store init --root <folder>`) for Kartograf, and either makes the tool check the layout
+and write the marker. The plan of a Kartograf operation names the same folder problems before you
+confirm anything.
 The "Conformance" section is a lightweight version of `retman scaffold check`: it warns when an
 installed tool accepts a value that the descriptions neither offer nor exclude; it does not block
 work.
@@ -981,7 +1018,8 @@ access) and reports operation and parameter accuracy, errors accepted without as
 guessing, W-03 violations, timings and **recommended thresholds** for a given error rate. With two-stage
 recognition, the question about the operation group counts as asking the user. It does not save the
 recommended thresholds itself — you enter them in `[retman.decision.thresholds]`. Exit codes: 0 — run
-completed, 10 — a W-03 violation occurred (run completed), 2 — invalid arguments,
+completed, 10 — a W-03 violation occurred (run completed; 11 when every command to be refused was
+planned), 2 — invalid arguments,
 3 — the specified settings file does not exist, 5 — the model does not respond, 130 — interrupted; full
 list in section 8. Options and metrics: `docs/specs/2026-10-11-retman-eval.md`.
 
@@ -1007,7 +1045,8 @@ list in section 8. Options and metrics: `docs/specs/2026-10-11-retman-eval.md`.
   (`2108`).
 - **Geometry file**: SHP and GPKG only; the file is not clipped to the shape — sheet operations take
   the map sheets whose bounding box touches the bounding box of any feature, and the cutout is a single
-  rectangle covering all features. Orthophotos are not downloaded for a file (only for a sheet code).
+  rectangle covering all features. Orthophoto sheets are not downloaded for a file (only for a sheet
+  code); the orthophoto cutout takes the rectangle around the file.
 - **BDOT10k** for a sheet code, rectangle or file downloads the full packages of every intersected county,
   without clipping — the files can be large (Kartograf rejects an area with more than 100 packages or
   more than 10 GB).
@@ -1015,10 +1054,12 @@ list in section 8. Options and metrics: `docs/specs/2026-10-11-retman-eval.md`.
   folder; they require a disk with hard links (not FAT/exFAT), and the Kartograf cache — a local disk.
   A project folder on a network share (e.g. CIFS) is no longer a problem for the cache (the cache is
   outside the project).
-- **Texts of Obserwator are English**: the part of a message that quotes the tool (the detail of an
-  error, the data-quality and licence notices) is not translated, whatever `lang` says; the documents
-  saved with the result (`tool_<n>_<command>.json`) keep the tool's own words.
-- The latest available GUGiK material is downloaded; selecting a year and campaign is not yet available.
+- **The tools' texts are English**: the part of a message that quotes a tool (the detail of an error, a
+  notice Retman has no text of its own for) is not translated, whatever `lang` says, and the providers'
+  licence lines are passed on as the tool words them; the documents saved with the result
+  (`tool_<n>_<command>.json`) keep the tool's own words.
+- The latest available GUGiK material is downloaded, except BDOO, whose release you choose; selecting a
+  year and campaign of a flight is not yet available.
   Kartograf in `update = "local"` mode uses saved versions and does not ask the sources for newer ones.
 - Retman does not send commands anywhere other than the configured model; tools connect to data services
   only after `t` or, on request, in the availability check, which sends only values from the plan.
