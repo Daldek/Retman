@@ -132,7 +132,7 @@ def test_a_variable_wins_over_the_file(tmp_path: Path) -> None:
     config = load_config(file, environ={"RETMAN_DECISION_URL": "http://other:1/v1"})
 
     assert config.decision.url == "http://other:1/v1"
-    assert config.decision.model == "basal-1.5-mini"
+    assert config.decision.model == "<model-name>"
 
 
 def test_openai_compatible_needs_the_confidence_method_and_the_runs() -> None:
@@ -295,8 +295,11 @@ def test_init_appends_to_a_file_of_other_tools_and_leaves_it_as_it_was(
     parsed = tomllib.loads(text)
     assert parsed["nogat"] == {"lang": "en"}
     assert parsed["kartograf"] == {"root": "/k"}
-    assert parsed["retman"]["decision"]["backend"] == "basal"
-    assert load_config(file).decision.model == "basal-1.5-mini"
+    assert parsed["retman"]["decision"]["backend"] == "openai_compatible"
+    assert parsed["retman"]["decision"]["url"] == "http://127.0.0.1:1234/v1"
+    assert parsed["retman"]["decision"]["model"] == "<model-name>"
+    assert load_config(file).decision.confidence == "auto"
+    assert load_config(file).decision.thresholds.operation == 0.90
 
 
 @pytest.mark.parametrize("existing", ["[retman]\n", '[retman.decision]\nurl = "x"\n'])

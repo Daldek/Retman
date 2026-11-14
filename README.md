@@ -40,7 +40,7 @@ retman config init     # writes the [retman] tables into nogat.toml, with every 
 retman doctor check    # checks the settings, the model server, the tools and the stores
 ```
 
-Replace the two decision tables of the written file by the settings of your server; the key of an external provider is never written there, only the name of the variable that holds it (`api_key_env`):
+The written decision settings already select `openai_compatible` at LM Studio's local address (`http://127.0.0.1:1234/v1`). Set `model` to the name served there, and change `url` if your server is elsewhere; tune the numeric thresholds for your model. The key of an external provider is never written there, only the name of the variable that holds it (`api_key_env`):
 
 ```toml
 [retman.decision]
@@ -220,7 +220,7 @@ Retman holds no data. The tools download it: Kartograf and Obserwator write the 
 
 The stores are versioned on hard links: copy them with the links preserved (`rsync -aH`), not by copying files one by one, and note that data that the source has removed cannot be downloaded again (details in the README of each tool). An Obserwator store written before the release set `candidate-4` is one folder; Retman refuses it as the data root (`store_unavailable`, reason `wrong_root`) until it is split once into the two folders ([USAGE.md](https://github.com/Daldek/Retman/blob/main/docs/USAGE.md) section 1.3).
 
-The settings are the `[retman]` tables of `nogat.toml`, which the Nogat tools share (on Linux `~/.config/nogat/nogat.toml`; another file is named by `NOGAT_CONFIG` or `--config PATH`). The file is optional except for the model server, which has no default, and a variable overrides the file. A value comes from the first of: the command-line option, `RETMAN_<KEY>` (the dotted key in capitals with underscores: `decision.url` is `RETMAN_DECISION_URL`), `NOGAT_<KEY>` (shared keys only), the `[retman]` table, the `[nogat]` table (shared keys only), the default. `retman config show` lists every setting with its value and source. Credentials are never in the file: Retman reads the key of an external model provider from the variable that `decision.api_key_env` names.
+The settings are the `[retman]` tables of `nogat.toml`, which the Nogat tools share (on Linux `~/.config/nogat/nogat.toml`; another file is named by `NOGAT_CONFIG` or `--config PATH`). Without `config init`, the model server has no built-in default; the init template explicitly selects `openai_compatible` and LM Studio's local URL, but requires you to name an available model. A variable overrides the file. A value comes from the first of: the command-line option, `RETMAN_<KEY>` (the dotted key in capitals with underscores: `decision.url` is `RETMAN_DECISION_URL`), `NOGAT_<KEY>` (shared keys only), the `[retman]` table, the `[nogat]` table (shared keys only), a built-in default. Every value and its source is visible in `retman config show` (N-11, ADR-021).
 
 | Variable | Meaning |
 |---|---|

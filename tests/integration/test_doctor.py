@@ -47,13 +47,11 @@ def _openai_config(tmp_path: Path, *, confidence: str = "logprobs") -> Path:
     path = init_config(tmp_path / "nogat.toml", stores_dir=tmp_path / "stores")
     text = (
         path.read_text(encoding="utf-8")
-        .replace('backend = "basal"', 'backend = "openai_compatible"', 1)
-        .replace('url = "http://127.0.0.1:8000"', f'url = "{MODEL_URL}"')
-        .replace('model = "basal-1.5-mini"', 'model = "bielik-11b"')
-        .replace('# confidence = "auto"', f'confidence = "{confidence}"')
-        .replace("# consistency_runs = 3", "consistency_runs = 3")
-        .replace('operation = "auto"', "operation = 0.9")
-        .replace('parameter = "auto"', "parameter = 0.85")
+        .replace('url = "http://127.0.0.1:1234/v1"', f'url = "{MODEL_URL}"')
+        .replace('model = "<model-name>"', 'model = "bielik-11b"')
+        .replace('confidence = "auto"', f'confidence = "{confidence}"')
+        .replace("operation = 0.90", "operation = 0.9")
+        .replace("parameter = 0.90", "parameter = 0.85")
     )
     path.write_text(text, encoding="utf-8")
     return path

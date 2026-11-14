@@ -10,6 +10,13 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 ## [Unreleased]
 
+### Fixed
+
+- `retman config init` now selects the implemented `openai_compatible` decision backend
+  with LM Studio's local URL (`http://127.0.0.1:1234/v1`), a model name to fill in
+  and numeric confidence thresholds to tune. `basal` remains accepted and still reports
+  `backend_unavailable` when used for planning (PRD N-02, ARCHITECTURE 3.3.2, 9.1).
+
 ### Added
 
 - The lines the data providers' terms require (Nogat DEV §20, ECO-060, ADR-033): the

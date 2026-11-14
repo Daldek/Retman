@@ -40,9 +40,11 @@ or a provider's model is used through an API. Retman connects to it through an A
 basic installation is as small as possible. Polish and European models are recommended
 (e.g. Bielik), but the user may also plug in a frontier model if they have access to one.
 
-**Default configuration:** decisions are made by **basal** through a separately started
-**basal-serve** server, and result descriptions in Polish (from 0.2) are written by **Bielik**, run e.g. in LM Studio.
-Other models, including frontier ones, are plugged in by changing the configuration.
+**Default configuration:** `retman config init` selects the **OpenAI-compatible** decision
+backend at LM Studio's local URL; the user names the served model (e.g. Bielik) and tunes
+the confidence thresholds. The `basal` setting remains accepted, but planning with it reports
+`backend_unavailable` until the basal-serve backend is implemented (ARCHITECTURE section 3.3.2).
+Result descriptions in Polish by a text model are planned from 0.2, not available in 0.1.
 
 **Retman compared to general-purpose assistants.** An AI assistant can already control the tools' MCP servers
 directly today. Retman provides what they do not: a plan shown with the source of every value
@@ -142,11 +144,11 @@ Varied — Retman must support **two paths**:
 | ID | Requirement | Target value |
 | --- | --- | --- |
 | N-01 | **Own resources as the default path.** Retman works with a model run locally or on the organisation's network and does not require paid APIs. | — |
-| N-02 | **Interchangeable models without code changes.** By default Polish models: basal (decisions) and Bielik (result descriptions); other models are also possible, including frontier models via API, if the user has access to them. | — |
+| N-02 | **Interchangeable models without code changes.** `config init` selects the OpenAI-compatible backend with a local LM Studio URL and a model name for the user to fill (e.g. Bielik for decisions); other models, including frontier models via API, are possible. The `basal` backend remains an accepted but unavailable setting until implemented (ARCHITECTURE section 3.3.2). A separate model for result descriptions is planned from 0.2. | — |
 | N-03 | **Tool independence.** Tools contain nothing related to Retman; Retman maintains conformance. | — |
 | N-04 | **Privacy.** Data does not leave the configured services; by default everything runs locally; commands are not passed on or collected outside the project without explicit consent (the project journal is part of the user's work and stays in their folder, W-15). The user decides in the configuration where the model runs; `retman doctor check` shows the address of each model. Tools connect to public data services (e.g. GUGiK, IMGW) only after the plan is confirmed or with consent in the availability check (N-12), and the services receive the request parameters, not the user's command. An AI assistant connected via MCP (from 0.3) is a service outside the configuration file: command text and paths are hidden from it by default (ARCHITECTURE section 7.5.1). | — |
 | N-05 | **Reliability over convenience.** Retman prefers to ask rather than be wrong — in every configuration, including with a model without calibrated confidence (ARCHITECTURE section 3.3.3). | see W-02 |
-| N-06 | **Minimum hardware.** | locally recommended: an NVIDIA card with about 6–8 GB of memory or Apple Silicon with about 16 GB of memory. The default model itself (basal-1.5-mini) needs about 3 GB; result descriptions via Bielik (from 0.2) — more, depending on model size (ARCHITECTURE section 9.2). With an organisation server the user's computer does not need a GPU (section 3.3) |
+| N-06 | **Minimum hardware.** | Locally recommended: an NVIDIA card with about 6–8 GB of memory or Apple Silicon with about 16 GB of memory, depending on the model chosen (ARCHITECTURE section 9.2). With an organisation server the user's computer does not need a GPU (section 3.3). |
 | N-07 | **Response time** (from typing the command to showing the plan). | **[TO BE COMPLETED]** |
 | N-08 | **Openness.** MIT licence; code, documentation and machine output in English; the texts that users read are Polish by default and English on request (DEV-2.1, DEV-2.2). | — |
 | N-09 | **Installation.** | The basis is `uv` (Windows, Linux, macOS). Retman and the tools come from GitHub release tags (REL-5.1) in one environment until phase 6 of the Nogat adoption plan publishes them on PyPI (Retman as `nogat-retman`, REL-3.1, subject to the author's approval); then they are installed from PyPI ranges (REL-5.2). The model is installed separately (N-10). **Hard version (0.x):** `uv` commands + a separately started model server. **Easy version (0.5+):** install script, `retman config init` wizard, `retman add-tool` (W-14). No compilation on the user's side; the installation test in CI checks this (ARCHITECTURE section 9.4) |
@@ -264,7 +266,7 @@ testers). The first version recommended for production deployments: **1.0.0**.
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| basal (the default model) is a young one-person project | no further development or support of the model | replaceable model (N-02); backend for generative models ready from v0.1 as an alternative |
+| basal is a young one-person project and its Retman backend awaits a basal-serve API specification | no further development or support of the model | the implemented OpenAI-compatible backend is the default (N-02); `basal` remains selectable but reports `backend_unavailable` until implemented |
 | generative models (e.g. via LM Studio or a provider's API) often do not provide calibrated confidence | harder to recognise when to ask | by default confidence from token probabilities (`logprobs`), and when the server does not return them — from the agreement of several answers (ARCHITECTURE section 3.3.3); mandatory plan confirmation (W-05); quality tests separately for each kind of model |
 | model of an external provider | the content of commands leaves the computer or the organisation's network | the configuration belongs to the user, and `retman doctor check` shows the address of each model (N-04); the default route is the user's own resources |
 | unknown accuracy of a small model on hydrological vocabulary | a lot of follow-up questions or errors | test set from day one, synonyms in descriptions, option of a larger model |
