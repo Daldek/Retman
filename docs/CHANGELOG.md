@@ -446,6 +446,8 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 ### Fixed
 
+- `retman._errors.STANDARD_VERSION` and the copy `schemas/nogat/error_registry.json` name the
+  Nogat standard 1.0 (Nogat `55a191a`), no longer its draft 2.1.
 - Planning an Obserwator operation when its store has not been created yet ends with
   `store_unavailable` (reason `not_initialised`, `details.path` the store folder) and the text
   "Magazyn Obserwatora (…) nie jest jeszcze utworzony…", no longer with `validation_error`
