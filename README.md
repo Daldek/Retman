@@ -1,6 +1,6 @@
 # Retman: Polish natural-language commands for the Nogat hydrology tools
 
-Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial data of GUGiK) and Obserwator (formerly IMGWTools; measurements of IMGW-PIB and ČHMÚ). You write a data task in Polish; Retman recognises the operation, asks for what is missing, shows a plan to confirm and then runs the tool. CLI and Python library; the language model is a separate server.
+Retman is a command layer for the Nogat hydrology tools: Kartograf (spatial data of GUGiK), Obserwator (formerly IMGWTools; measurements of IMGW-PIB and ČHMÚ) and Hydrolog (hydrological computation). You write a task in Polish; Retman recognises the operation, asks for what is missing, shows a plan to confirm and then runs the tool. CLI and Python library; the language model is a separate server.
 
 ## When to use
 
@@ -11,7 +11,7 @@ Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial
 
 ## When not to use
 
-- The exact call and its options are known: use the tool itself (`kartograf`, `obserwator`), or its MCP server.
+- The exact call and its options are known: use the tool itself (`kartograf`, `obserwator`, `hydrolog`), or its MCP server.
 - The command is not in Polish: other languages are not recognised.
 - Hydrological computation beyond the Hydrolog operations below (unit hydrographs other than SCS, routing through a single reach or reservoir, areal rainfall, low flows): use [Hydrolog](https://github.com/Daldek/Hydrolog) directly.
 - GIS processing of the downloaded files: use QGIS or GDAL.
@@ -20,13 +20,14 @@ Retman is a command layer for the Nogat hydrology data tools: Kartograf (spatial
 
 ## Install
 
-Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf) and `v3.0.0` (Obserwator) exist, the commits that Retman is tested with are named (their members of the Nogat release set `candidate-2`, all on GitHub; [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) names them):
+Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf), `v3.0.0` (Obserwator) and `v1.0.0` (Hydrolog) exist, the commits that Retman is tested with are named (their members of the Nogat release set `candidate-2`, all on GitHub; [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) names them):
 
 ```sh
 # CLI
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@d0990c89da88e73b9081fe33a151ba9d27b4f820" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@f9f4ee7927ba520d3e82d3e289872090ae24e2ec"
+    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@f9f4ee7927ba520d3e82d3e289872090ae24e2ec" \
+    --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@759d7ef0e99b654c4aff172d69439a6d8df42db2"
 
 # Python library (name the same tools in the project's own dependencies)
 uv add "retman @ git+https://github.com/Daldek/Retman@develop"
@@ -157,7 +158,7 @@ The commands of the catalog; each exists as a CLI command and as a Python functi
 | `retman plan run` | `retman.operations.plan_run` | Plan a Polish command, show the plan, and run it once confirmed | yes |
 | `retman config show` | `retman.operations.config_show` | Show every setting with its value and source | no |
 | `retman config init` | `retman.operations.config_init` | Write the `[retman]` tables into `nogat.toml` | no |
-| `retman doctor check` | `retman.operations.doctor_check` | Check the settings, the model server, the tools and the stores | answers `failed` without it |
+| `retman doctor check` | `retman.operations.doctor_check` | Check the settings, the model server, the tools and the stores | no; without it the model check fails and the outcome is `partial` |
 | `retman results list` | `retman.operations.results_list` | List the numbered results of the project folder | no |
 | `retman journal show` | `retman.operations.journal_show` | Show the event journal of the project folder | no |
 | `retman commands list` | `retman.operations.commands_list` | List the commands of the catalog | no |
@@ -189,7 +190,7 @@ Retman is built to be driven by agents as well as by people. [llms.txt](https://
 - `retman commands guide --format agents` prints `AGENTS.md`, `--format llms` prints `llms.txt`, and `--format agents-md-block --inject AGENTS.md` puts a compact block into the `AGENTS.md` of another repository.
 - `retman commands list` lists the commands and `retman commands schema --command "plan run"` describes one: options, effects, errors and examples.
 - Every command prints the envelope `retman-result/1` with `--json`: one line on stdout, never a prompt. `partial` (exit 10) and `failed` (exit 11) are outcomes that print the envelope; an error ends stderr with a `retman-error/1` document.
-- `plan run --check` plans without effects and writes nothing; `--yes` runs a complete plan and belongs after the user has seen it. `config init`, `eval run` and `commands guide` accept `--check` too and report each file they would write as `write`, `replace` or `conflict`.
+- `plan run --check` plans without effects and writes nothing; `--yes` runs a complete plan and belongs after the user has seen it. `config init`, `eval run`, `commands guide` and `scaffold draft` accept `--check` too and report each file they would write as `write`, `replace` or `conflict`.
 - The command text is the user's Polish sentence: pass it unchanged.
 
 ## Related tools
@@ -199,7 +200,7 @@ Retman is built to be driven by agents as well as by people. [llms.txt](https://
 - [Hydrolog](https://github.com/Daldek/Hydrolog) computes watershed hydrology offline (design rainfall, SCS-CN, time of concentration, hydrographs, routing through a river network, flood frequency, morphometry, hydrologic soil groups of texture rasters); Retman calls its Python library. [Hydrograf](https://github.com/Daldek/Hydrograf) (watershed delineation and design hydrographs) is a planned Retman tool.
 - [Archiwista](https://github.com/Daldek/Archiwista) browses and manages the stores of Kartograf and Obserwator.
 - [Nogat](https://github.com/Daldek/Nogat) is the hub of the ecosystem: the standards, the registry of the tools and the shared settings file `nogat.toml`.
-- When the exact call is known, the CLI of the tool is shorter; when an assistant has to call the tools in any language through MCP, use the MCP servers of Kartograf and Obserwator. Retman is for Polish sentences and a plan that a person confirms.
+- When the exact call is known, the CLI of the tool is shorter; when an assistant has to call the tools in any language through MCP, use the MCP servers of Kartograf, Obserwator and Hydrolog. Retman is for Polish sentences and a plan that a person confirms.
 
 ## Errors and exit codes
 
@@ -215,7 +216,7 @@ Exit codes are the codes of the [shared Nogat error registry](https://github.com
 
 ## Data and licensing
 
-Retman holds no data. The tools download it: Kartograf and Obserwator write the files into their own versioned stores, `<data_dir>/kartograf` and `<data_dir>/obserwator` by default, and Retman records their paths and SHA-256 sums in its results. What Retman itself writes goes to the project folder where it runs: the numbered results in `retman-output/`, the project journal and, only with your consent, the collection of commands. The terms of every source (IMGW-PIB regulations, ČHMÚ licence CC BY 4.0, GUGiK open data) are those of the source; the tools put the licence into the sidecar of each file, and Retman shows their licence and data-quality notes as warnings after the result and keeps them in `notices`. The duty to attribute the source when publishing results is the user's.
+Retman holds no data. The tools download it: Kartograf and Obserwator write the files into their own versioned stores, `<data_dir>/kartograf` and `<data_dir>/obserwator` by default, and Retman records their paths and SHA-256 sums in its results. What Retman itself writes goes to the project folder where it runs: the numbered results in `retman-output/` and the project journal. Only with your consent does it also collect the commands of all projects, in one file in the user data folder (`<data_dir>/retman/collected.jsonl` by default). The terms of every source (IMGW-PIB regulations, ČHMÚ licence CC BY 4.0, GUGiK open data) are those of the source; the tools put the licence into the sidecar of each file, and Retman shows their licence and data-quality notes as warnings after the result and keeps them in `notices`. The duty to attribute the source when publishing results is the user's.
 
 The stores are versioned on hard links: copy them with the links preserved (`rsync -aH`), not by copying files one by one, and note that data that the source has removed cannot be downloaded again (details in the README of each tool).
 
@@ -261,6 +262,6 @@ Rules, commands and the documentation map for people and agents who work on the 
 
 ## Status, licence, author
 
-Under construction (before v0.1.0). Working: ten Kartograf 0.8.0 operations (DEM for a map sheet or an area from a file, child sheets with the orthophoto in three colour variants, a DEM or DSM cutout, an orthophoto cutout of an area, BDOT10k, CORINE or BDOO land cover, a SoilGrids soil layer, the hydrologic soil groups HSG, and the creation and the overview of the store) and 26 Obserwator 3.0.0 operations (two-stage recognition: category, then operation), from the CLI and from Python, with a decision model on any OpenAI-compatible server (for example Bielik 11B in LM Studio); the offline plan preview, the availability check on request, `retman doctor check`, `retman eval run` and `retman scaffold`. The `basal` backend does not exist yet. Versions 0.x are public but not recommended for production before 1.0.0.
+Under construction (before v0.1.0). Working: ten Kartograf 0.8.0 operations (DEM for a map sheet or an area from a file, child sheets with the orthophoto in three colour variants, a DEM or DSM cutout, an orthophoto cutout of an area, BDOT10k, CORINE or BDOO land cover, a SoilGrids soil layer, the hydrologic soil groups HSG, and the creation and the overview of the store), 19 Obserwator 3.0.0 operations and nine Hydrolog 1.0 operations (two-stage recognition: category, then operation), from the CLI and from Python, with a decision model on any OpenAI-compatible server (for example Bielik 11B in LM Studio); the offline plan preview, the availability check on request, `retman doctor check`, `retman eval run` and `retman scaffold`. The `basal` backend does not exist yet. Versions 0.x are public but not recommended for production before 1.0.0.
 
 MIT licence, see [LICENSE](https://github.com/Daldek/Retman/blob/main/LICENSE). Author: [Piotr de Bever](https://www.linkedin.com/in/piotr-de-bever/).

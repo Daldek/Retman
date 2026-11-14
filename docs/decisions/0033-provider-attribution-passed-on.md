@@ -47,3 +47,14 @@ Option A (`retman.attribution`, `retman.adapters.catalog.attribute`):
 - When Obserwator writes `ATTRIBUTION.txt` into a download folder and lists it in
   `files[]`, the download operations must give that file a kind of its own (follow-up of
   the pin update).
+
+## Errata
+
+**Erratum 1 (2026-11-14, Nogat ECO-065 and ECO-068):** DEV §20 changed after this decision. The
+`terms_notice` lines are the links to the terms, RD, RH and RK („Regulamin …: <address>”), and no
+product restates the terms (ECO-065); the `attribution` lines also cover GUGiK (G), ISRIC
+SoilGrids (SG) and ČÚZK (Z), whose data, like those of ČHMÚ, take no terms line (ECO-068). The
+decision stands, since Retman words no line: the generic runner passes on the lines of any
+tool's documents, so Kartograf's reach the results once its pin emits them (`d0990c89` emits
+none). The orthophoto sheets of `download_sheet_hierarchy`, which Kartograf's provider class
+fetches without a `kartograf-result/1` document, would get no lines.

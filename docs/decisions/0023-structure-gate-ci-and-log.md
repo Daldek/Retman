@@ -84,3 +84,10 @@ but no code wrote. Release 0.1.0 is not tagged, so no step needs a migration pat
 **Erratum 1 (2026-10-25, IMGWTools data output, ADR-024):** the second consequence needs a
 caveat: the IMGWTools commit of the `tools` group (`08f1a7b`) is not pushed, so the gate fetches
 it only on a machine whose uv git cache holds it, until the author pushes IMGWTools.
+
+**Erratum 2 (2026-11-14, Nogat release set `candidate-2`):** the caveat of erratum 1 no longer
+holds: the `tools` group pins Kartograf, Obserwator (formerly IMGWTools) and Hydrolog at their
+members of the release set `candidate-2`, all on GitHub. The workflows of item 3 run since
+`develop` was pushed (2026-11-03); every run failed on macOS and Windows until pull request #1
+(2026-11-11), and `live.yml` has not run: it is on `develop` only, and schedules run from `main`
+(PROGRESS).

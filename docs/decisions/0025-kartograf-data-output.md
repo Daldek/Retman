@@ -192,3 +192,9 @@ selected by the features of `--geometry`, not their envelopes), the paths of a p
 `io_error` document written as POSIX paths, and the Windows fixes of `write_atomic` and of the
 size of a hard-linked store file; Retman's operations and the version (0.8.0.dev0) are
 unchanged.
+
+**Erratum 7 (2026-11-14, Nogat release set `candidate-2`):** the pin is now Kartograf
+`d0990c89da88e73b9081fe33a151ba9d27b4f820`, its member of the release set `candidate-2` (Nogat
+`587c909`; `candidate-1` kept `9deaa314`), which is on GitHub. The head refuses a sheet whose
+grid has another cell size than its index record declares (`data_error`, reason
+`resolution_mismatch`); Retman's operations are unchanged (CHANGELOG, Changed).
