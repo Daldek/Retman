@@ -304,7 +304,7 @@ check_declined = "Sprawdzenie pominięte."
 checking = "Sprawdzam… (Ctrl+C przerywa)"
 warning = "Uwaga: {text}"
 more = "Są dalsze pozycje: następna strona to --cursor {cursor}"
-description = "Retman zamienia polecenie po polsku w plan dla narzędzi hydrologicznych (Kartograf, Obserwator), dopytuje o braki, pokazuje plan do potwierdzenia i wykonuje go. Polecenie to grupa i czasownik: retman <grupa> <czasownik> [opcje]."
+description = "Retman zamienia polecenie po polsku w plan dla narzędzi hydrologicznych (Kartograf, Obserwator, Hydrolog), dopytuje o braki, pokazuje plan do potwierdzenia i wykonuje go. Polecenie to grupa i czasownik: retman <grupa> <czasownik> [opcje]."
 epilog = "Opis polecenia i jego opcji: retman <grupa> <czasownik> --help. Wszystkie polecenia: retman commands list."
 group_plan = "polecenie po polsku: plan i wykonanie"
 group_config = "ustawienia: pokaż i zapisz"
@@ -715,7 +715,7 @@ action_conflict = "konflikt (plik istnieje; --force go zastąpi)"
 # Polskie tłumaczenia angielskich tekstów katalogu (AGI-9.1); nazwy poleceń, opcji i wartości zostają angielskie (AGI-1.6).
 [catalog.retman_plan_run]
 summary = "Zaplanuj operację z polecenia po polsku i, po potwierdzeniu, wykonaj ją."
-description = "Rozpoznaje operację w poleceniu po polsku, uzupełnia wartości, które polecenie podaje, i wymienia pytania bez odpowiedzi; z `yes` wykonuje kompletny plan. Służy do pobierania i przygotowania danych z Kartografa i Obserwatora słowami po polsku. Nie służy do innych języków ani do dokładnych wywołań narzędzia (użyj samego narzędzia)."
+description = "Rozpoznaje operację w poleceniu po polsku, uzupełnia wartości, które polecenie podaje, i wymienia pytania bez odpowiedzi; z `yes` wykonuje kompletny plan. Służy do pobierania, przygotowania i obliczania danych Kartografem, Obserwatorem i Hydrologiem słowami po polsku. Nie służy do innych języków ani do dokładnych wywołań narzędzia (użyj samego narzędzia)."
 rules = [
   "Najpierw `check`: otwarte `questions` znaczą, że plan jest niekompletny.",
   "Brakujące wartości dopisz do `text` i powtórz; bez terminala nic nie jest pytane.",

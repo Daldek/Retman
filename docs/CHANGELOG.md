@@ -448,6 +448,8 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 - `retman._errors.STANDARD_VERSION` and the copy `schemas/nogat/error_registry.json` name the
   Nogat standard 1.0 (Nogat `55a191a`), no longer its draft 2.1.
+- The description of `retman --help`, of `plan run`, of the package and the install line of
+  `AGENTS.md` name Hydrolog beside Kartograf and Obserwator.
 - Planning an Obserwator operation when its store has not been created yet ends with
   `store_unavailable` (reason `not_initialised`, `details.path` the store folder) and the text
   "Magazyn Obserwatora (…) nie jest jeszcze utworzony…", no longer with `validation_error`

@@ -13,7 +13,7 @@ Use it when a person states a download or export in Polish and wants to see a ch
 
 ## Install
 
-Python 3.12 or newer: `pip install "retman @ git+https://github.com/Daldek/Retman.git"`. The tools are installed separately (Kartograf, Obserwator); the model server is configured in `[retman.decision]` of `nogat.toml` (`retman config init`, `retman doctor check`). No MCP server and no REST API.
+Python 3.12 or newer: `pip install "retman @ git+https://github.com/Daldek/Retman.git"`. The tools are installed separately (Kartograf, Obserwator, Hydrolog); the model server is configured in `[retman.decision]` of `nogat.toml` (`retman config init`, `retman doctor check`). No MCP server and no REST API.
 
 ## Interfaces
 
