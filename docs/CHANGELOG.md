@@ -450,6 +450,9 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   Nogat standard 1.0 (Nogat `55a191a`), no longer its draft 2.1.
 - The description of `retman --help`, of `plan run`, of the package and the install line of
   `AGENTS.md` name Hydrolog beside Kartograf and Obserwator.
+- The providers' lines of a result, its warnings and its CSV columns follow the order of Nogat
+  DEV-20.4 and DEV-20.7 (S, P, PS, PP, M, C, CP, G, SG, Z, then RD, RH, RK), each once, when
+  several runs or tools give them, no longer the order first seen (ADR-033 erratum 2).
 - Planning an Obserwator operation when its store has not been created yet ends with
   `store_unavailable` (reason `not_initialised`, `details.path` the store folder) and the text
   "Magazyn Obserwatora (…) nie jest jeszcze utworzony…", no longer with `validation_error`

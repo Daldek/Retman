@@ -6,8 +6,10 @@ derived from them, carries the lines the providers' terms require: ``attribution
 IMGW-PIB data and the terms that apply). The tools put them in their documents, at the
 top level of the ``<tool>-result/1`` envelope; Retman words none of them itself
 (ADR-024: the texts of the tool are passed on as they are). It merges the lines of the
-runs of an operation, without duplicates and in the order first seen, and carries them
-into what it writes and shows (ADR-033):
+runs of an operation, each once, in the order of DEV-20.4 (``attribution`` S, P, PS, PP,
+M, C, CP, G, SG, Z; ``terms_notice`` RD, RH, RK of DEV-20.7), a line it does not know
+after those, in the order first seen, and carries them into what it writes and shows
+(ADR-033):
 
 * the result (``Result.attribution`` and ``Result.terms_notice``, also in
   ``result.json``) and its warnings, one line each, so the CLI shows them;
@@ -29,6 +31,62 @@ __all__ = ["CSV_COLUMNS", "Attribution"]
 CSV_COLUMNS: Final = ("attribution", "terms_notice")
 """The trailing columns of a CSV table that carry the two lists (DEV-20.5)."""
 
+_IMGW: Final = "Instytut Meteorologii i Gospodarki Wodnej – Państwowy Instytut Badawczy"
+_IMGW_OF: Final = (
+    "Instytutu Meteorologii i Gospodarki Wodnej – Państwowego Instytutu Badawczego"
+)
+_PMAXTP: Final = "https://klimat.imgw.pl/opady-maksymalne"
+_CC_BY: Final = "licencja CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)"
+_PROCESSED: Final = "; dane przetworzone"
+
+# The lines of DEV §20 in the order of DEV-20.4 (S, P, PS, PP, M, C, CP, G, SG, Z) and
+# DEV-20.7 (RD, RH, RK): a line with placeholders by its fixed start and end, any other
+# whole (the end empty). They only order the lines the tools give; Retman writes none.
+_ORDER: Final[tuple[tuple[str, str], ...]] = (
+    (f"Źródłem pochodzenia danych jest {_IMGW}", ""),
+    (f"Dane {_IMGW_OF} zostały przetworzone", ""),
+    (f"Źródłem pochodzenia danych jest {_IMGW}, dane pochodzą ze strony {_PMAXTP}", ""),
+    (f"Dane {_IMGW_OF} pochodzące ze strony {_PMAXTP} zostały przetworzone", ""),
+    (
+        "„Modele probabilistyczne opadów maksymalnych o określonym czasie trwania i "
+        "prawdopodobieństwie przewyższenia – Projekt PMAXTP”, red. Bogdan "
+        f"Ozga-Zieliński, {_IMGW}, Warszawa 2022",
+        "",
+    ),
+    (
+        "Źródło danych: Český hydrometeorologický ústav (ČHMÚ), "
+        f"https://opendata.chmi.cz, {_CC_BY}",
+        "",
+    ),
+    ("Dane ČHMÚ zostały przetworzone (", ")"),
+    ("Źródło: Główny Urząd Geodezji i Kartografii – GUGiK, ", _PROCESSED),
+    (f"Źródło: ISRIC – World Soil Information, SoilGrids, {_CC_BY}{_PROCESSED}", ""),
+    ("Źródło: Český úřad zeměměřický a katastrální (ČÚZK), ", _PROCESSED),
+    ("Regulamin danych IMGW-PIB: https://danepubliczne.imgw.pl/regulations", ""),
+    (
+        "Regulamin serwisu hydrologicznego IMGW-PIB: https://hydro.imgw.pl/#/regulamin",
+        "",
+    ),
+    (f"Regulamin danych PMAXTP: {_PMAXTP}", ""),
+)
+
+
+def _rank(line: str) -> int:
+    """Return the place of a line in :data:`_ORDER`; an unknown line comes last."""
+    for place, (start, end) in enumerate(_ORDER):
+        if line == start if not end else _fills(line, start, end):
+            return place
+    return len(_ORDER)
+
+
+def _fills(line: str, start: str, end: str) -> bool:
+    """Return whether a line fills the placeholders between ``start`` and ``end``."""
+    return (
+        len(line) > len(start) + len(end)
+        and line.startswith(start)
+        and line.endswith(end)
+    )
+
 
 def _merge(groups: Iterable[Iterable[str]]) -> tuple[str, ...]:
     found: dict[str, None] = {}
@@ -37,7 +95,7 @@ def _merge(groups: Iterable[Iterable[str]]) -> tuple[str, ...]:
             text = line.strip()
             if text:
                 found.setdefault(text)
-    return tuple(found)
+    return tuple(sorted(found, key=_rank))
 
 
 def _strings(value: object) -> list[str]:
@@ -79,7 +137,7 @@ class Attribution:
 
     @classmethod
     def of(cls, *parts: Attribution) -> Attribution:
-        """Merge attributions in the order first seen, without duplicates.
+        """Merge attributions, each line once, in the order of DEV-20.4 and DEV-20.7.
 
         Parameters
         ----------
@@ -140,7 +198,7 @@ class Attribution:
         Returns
         -------
         Attribution
-            Their union, in the order first seen.
+            Their union, in the order of DEV-20.4 and DEV-20.7.
         """
         return cls.of(*(cls.from_document(document) for document in documents))
 

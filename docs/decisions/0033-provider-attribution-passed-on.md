@@ -58,3 +58,9 @@ decision stands, since Retman words no line: the generic runner passes on the li
 tool's documents, so Kartograf's reach the results once its pin emits them (`d0990c89` emits
 none). The orthophoto sheets of `download_sheet_hierarchy`, which Kartograf's provider class
 fetches without a `kartograf-result/1` document, would get no lines.
+
+**Erratum 2 (2026-11-14, Nogat DEV-20.4 and DEV-20.7):** the lines are no longer merged in the
+order first seen: `retman.attribution` puts `attribution` in the order S, P, PS, PP, M, C, CP,
+G, SG, Z and `terms_notice` in the order RD, RH, RK, each once, a line the standard does not
+name after them in the order first seen. To place a line it compares it with the table of
+DEV §20 (G, CP and Z by their fixed parts); it still words none.
