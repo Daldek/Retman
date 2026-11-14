@@ -16,9 +16,9 @@ notice = "I will query the GUGiK services (the WFS map sheet index and the PRG l
 [operations.download_dem_sheet.params.area]
 label = "Sheet code or DEM (NMT) area"
 question = "For which sheet code or geometry file should I download the DEM (NMT, numeryczny model terenu)?"
-help = "Give a PL-1992 or PL-2000 sheet code (godło), or an SHP/GPKG file. Kartograf expands a PL-1992 sheet code coarser than 1:10000 into 1:10000 map sheets; a PL-2000 sheet code (godło) at 1:10000 scale (e.g. 7.171.21) has no DEM (NMT) at that scale — use the child sheets operation. For a file, the 1:10000 map sheets (PL-1992) whose envelope touches the envelope of any feature are downloaded; the shape of the features is not taken into account. For each map sheet the latest available flight is downloaded; you do not choose the year or campaign."
+help = "Give a PL-1992 or PL-2000 sheet code (godło), or an SHP/GPKG file. Kartograf expands a PL-1992 sheet code coarser than 1:10000 into 1:10000 map sheets; a PL-2000 sheet code (godło) at 1:10000 scale (e.g. 7.171.21) has no DEM (NMT) at that scale — use the child sheets operation. For a file, the 1:10000 map sheets (PL-1992) that its features meet are downloaded: those a polygon overlaps (not every sheet of its bounding box), those a line runs through, the one a point lies in; for the 100 m DEM (NMT), the voivodeship files intersecting the bounding box of the file. For each map sheet the latest available flight is downloaded; you do not choose the year or campaign."
 example = "N-34-130-D-d-2-4"
-geometry_note = "1:10000 map sheets (PL-1992) intersecting the envelope of any feature in the layer; the shape of the polygon is not taken into account"
+geometry_note = "1:10000 map sheets (PL-1992) that the features of the layer meet by their shape, not by their bounding box; DEM (NMT) 100 m: the voivodeship files intersecting the bounding box"
 
 [operations.download_dem_sheet.params.resolution]
 label = "DEM (NMT) resolution"
@@ -75,9 +75,9 @@ options.unspecified.description = "No product given — ask about NMT (DEM), NMP
 [operations.download_sheet_hierarchy.params.area]
 label = "Parent sheet code or area"
 question = "What is the sheet code of the parent sheet to expand, or the geometry file?"
-help = "Give the sheet code of a coarser PL-1992 or PL-2000 sheet, or an SHP/GPKG file; the target scale must be more detailed. For a file, the sheets in the chosen scale whose bounding box touches the bounding box of any feature are downloaded; the shape of the features is not taken into account. I download an orthophoto only for a sheet code, not for a file."
+help = "Give the sheet code of a coarser PL-1992 or PL-2000 sheet, or an SHP/GPKG file; the target scale must be more detailed. For a file, the sheets in the chosen scale that its features meet are downloaded: those a polygon overlaps (not every sheet of its bounding box), those a line runs through, the one a point lies in. I download an orthophoto only for a sheet code, not for a file."
 example = "N-34-130-D-d-2"
-geometry_note = "sheets in the chosen scale intersecting the bounding box of any feature in the layer; the polygon shape is not taken into account"
+geometry_note = "sheets in the chosen scale that the features of the layer meet by their shape, not by their bounding box"
 
 [operations.download_sheet_hierarchy.params.target_scale]
 label = "Child sheet scale"

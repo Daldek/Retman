@@ -16,9 +16,9 @@ notice = "Zapytam usługi GUGiK (skorowidz arkuszy WFS i warstwę PRG) o lata, r
 [operations.download_dem_sheet.params.area]
 label = "Godło arkusza lub obszar NMT"
 question = "Dla jakiego godła arkusza albo pliku geometrii mam pobrać NMT (numeryczny model terenu)?"
-help = "Podaj godło PL-1992 albo PL-2000 albo plik SHP/GPKG. Godło PL-1992 grubsze niż 1:10000 Kartograf rozwinie na arkusze 1:10000; godło PL-2000 w skali 1:10000 (np. 7.171.21) nie ma NMT w tej skali — użyj operacji arkuszy potomnych. Dla pliku pobierane są arkusze 1:10000 (PL-1992), których obwiednia styka się z obwiednią któregokolwiek obiektu; kształt obiektów nie jest uwzględniany. Dla każdego arkusza pobierany jest najnowszy dostępny lot; roku i kampanii nie wybierasz."
+help = "Podaj godło PL-1992 albo PL-2000 albo plik SHP/GPKG. Godło PL-1992 grubsze niż 1:10000 Kartograf rozwinie na arkusze 1:10000; godło PL-2000 w skali 1:10000 (np. 7.171.21) nie ma NMT w tej skali — użyj operacji arkuszy potomnych. Dla pliku pobierane są arkusze 1:10000 (PL-1992), które przecinają jego obiekty: te, na które zachodzi wielobok (nie każdy arkusz jego obwiedni), przez które biegnie linia, i ten, w którym leży punkt; dla NMT 100 m — pliki województw przecinających obwiednię pliku. Dla każdego arkusza pobierany jest najnowszy dostępny lot; roku i kampanii nie wybierasz."
 example = "N-34-130-D-d-2-4"
-geometry_note = "arkusze 1:10000 (PL-1992) przecinające obwiednię któregokolwiek obiektu warstwy; kształt wieloboku nie jest uwzględniany"
+geometry_note = "arkusze 1:10000 (PL-1992), które obiekty warstwy przecinają swoim kształtem, nie obwiednią; NMT 100 m: pliki województw przecinających obwiednię"
 
 [operations.download_dem_sheet.params.resolution]
 label = "Rozdzielczość NMT"
@@ -75,9 +75,9 @@ options.unspecified.description = "Nie podano produktu — dopytaj o NMT, NMPT l
 [operations.download_sheet_hierarchy.params.area]
 label = "Godło arkusza nadrzędnego lub obszar"
 question = "Jakie jest godło arkusza nadrzędnego do rozwinięcia albo plik geometrii?"
-help = "Podaj godło grubszego arkusza PL-1992 lub PL-2000 albo plik SHP/GPKG; docelowa skala musi być bardziej szczegółowa. Dla pliku pobierane są arkusze w wybranej skali, których obwiednia styka się z obwiednią któregokolwiek obiektu; kształt obiektów nie jest uwzględniany. Ortofotomapę pobieram tylko dla godła arkusza, nie dla pliku."
+help = "Podaj godło grubszego arkusza PL-1992 lub PL-2000 albo plik SHP/GPKG; docelowa skala musi być bardziej szczegółowa. Dla pliku pobierane są arkusze w wybranej skali, które przecinają jego obiekty: te, na które zachodzi wielobok (nie każdy arkusz jego obwiedni), przez które biegnie linia, i ten, w którym leży punkt. Ortofotomapę pobieram tylko dla godła arkusza, nie dla pliku."
 example = "N-34-130-D-d-2"
-geometry_note = "arkusze w wybranej skali przecinające obwiednię któregokolwiek obiektu warstwy; kształt wieloboku nie jest uwzględniany"
+geometry_note = "arkusze w wybranej skali, które obiekty warstwy przecinają swoim kształtem, nie obwiednią"
 
 [operations.download_sheet_hierarchy.params.target_scale]
 label = "Skala arkuszy potomnych"

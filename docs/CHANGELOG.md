@@ -453,6 +453,10 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 - The providers' lines of a result, its warnings and its CSV columns follow the order of Nogat
   DEV-20.4 and DEV-20.7 (S, P, PS, PP, M, C, CP, G, SG, Z, then RD, RH, RK), each once, when
   several runs or tools give them, no longer the order first seen (ADR-033 erratum 2).
+- The plan's note and the help of a geometry file for the DEM sheets and the child sheets say
+  what Kartograf 0.8.0 downloads (its ADR-058): the sheets the features meet by their shape, not
+  every sheet of their bounding box, and for the 100 m DEM the voivodeship files of the
+  bounding box (ARCHITECTURE 3.2.10).
 - Planning an Obserwator operation when its store has not been created yet ends with
   `store_unavailable` (reason `not_initialised`, `details.path` the store folder) and the text
   "Magazyn Obserwatora (…) nie jest jeszcze utworzony…", no longer with `validation_error`
