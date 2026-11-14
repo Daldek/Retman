@@ -72,7 +72,6 @@ class _Param:
     depends_on: dict[str, list[str]] = field(default_factory=dict)
     accepts: list[str] = field(default_factory=list)
     bounds: tuple[float, float] | None = None
-    tool_options: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     hint: str = ""
 
@@ -314,11 +313,6 @@ def build_draft(
             "area",
             "free",
             accepts=[AREA_ACCEPTS[option.name] for option in area_options],
-            tool_options=[
-                option.name
-                for option in selected
-                if option.name in AREA_ACCEPTS or option.name in AREA_COMPANIONS
-            ],
             hint="; ".join(option.description for option in area_options),
         )
         params.append(area)
@@ -353,7 +347,6 @@ def build_draft(
             tool_values=tool_values,
             required=option.required
             or (narrowed and not any(c.get(option.name) is None for c in accepted)),
-            tool_options=[option.name],
             hint=option.description,
         )
         if len(keys) > MAX_OPTIONS:
@@ -373,7 +366,6 @@ def build_draft(
             option.name,
             "bool" if option.kind in _SWITCHES else "free",
             required=option.required,
-            tool_options=[option.name],
             hint=option.description,
         )
         if option.minimum is not None and option.maximum is not None:

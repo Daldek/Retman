@@ -12,7 +12,7 @@ from error_documents import last_line_document
 import retman
 from retman import cli
 from retman.catalog import Command, data_commands
-from retman.cli.parser import PRESENTATION, build_parser
+from retman.cli.parser import build_parser
 from retman.i18n.loader import load_core_texts
 
 COMMANDS = data_commands()
@@ -85,7 +85,6 @@ class TestParser:
                 assert "_" not in option.flag
 
     def test_the_presentation_options_are_the_same_on_every_verb(self) -> None:
-        assert set(PRESENTATION) == {"as_json", "lang", "verbose", "quiet"}
         for parser in VERBS.values():
             assert {"--json", "--lang", "--verbose", "--quiet"} <= _flags(parser)
 

@@ -16,13 +16,13 @@ from retman.extractors.numbers import (
     describe_duration,
     extract_duration,
     fuzzy_value,
-    polish_integer,
     read_duration_answer,
     read_number,
     read_spoken_number,
     tokenize,
     validate_duration,
 )
+from retman.extractors.text import fold
 
 
 class _Texts:
@@ -91,15 +91,8 @@ def _minutes(command: str) -> list[int]:
         ("pieciuset", 500),
     ],
 )
-def test_polish_integer_reads_cardinal_words(word: str, value: int) -> None:
-    assert polish_integer(word) == value
-
-
-@pytest.mark.parametrize(
-    "word", ["", "dwadziescia piec", "minut", "tysiace", "sto1", "piecc", "5"]
-)
-def test_polish_integer_knows_only_single_cardinal_words(word: str) -> None:
-    assert polish_integer(word) is None
+def test_read_spoken_number_reads_every_cardinal_word(word: str, value: int) -> None:
+    assert read_spoken_number(tokenize(fold(word)), 0) == (value, 1)
 
 
 @pytest.mark.parametrize(

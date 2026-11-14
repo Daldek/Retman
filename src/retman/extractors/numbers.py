@@ -288,34 +288,6 @@ _CARDINAL_FORMS: dict[int, tuple[str, ...]] = {
 _CARDINALS = {form: value for value, forms in _CARDINAL_FORMS.items() for form in forms}
 
 
-def polish_integer(word: str) -> int | None:
-    """
-    Value of a single Polish cardinal word, ``None`` for anything else.
-
-    Words are folded first, so ``Pięć`` and ``piec`` are the same. Both the
-    nominative and the genitive forms are known (``pięć``, ``pięciu``), but only
-    whole numbers written as one word: ``dwadzieścia pięć`` is two words.
-
-    Parameters
-    ----------
-    word : str
-        One word, with or without Polish letters.
-
-    Returns
-    -------
-    int or None
-        0–1000 for ``zero`` … ``tysiąc``.
-
-    Examples
-    --------
-    >>> polish_integer("piec"), polish_integer("dwadziescia"), polish_integer("sto")
-    (5, 20, 100)
-    >>> polish_integer("dwadziescia piec") is None
-    True
-    """
-    return _CARDINALS.get(fold(word))
-
-
 def _cardinal_class(value: int) -> tuple[int, bool]:
     """Place of a cardinal in a spoken number and whether nothing may follow it.
 

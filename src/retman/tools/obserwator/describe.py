@@ -30,6 +30,7 @@ from retman.adapters.catalog import (
 from retman.attribution import Attribution
 from retman.exceptions import RetmanError
 from retman.extractors.dates import period_dates
+from retman.extractors.probability import probability_percent
 from retman.registry.manifest import HandlerOutput, HandlerWarning
 from retman.registry.operation import Operation
 
@@ -543,10 +544,6 @@ def pmaxtp_rows(data: Mapping[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
-def _percent(probability: float) -> float:
-    return round(probability * 100, 9)
-
-
 def _selection(
     rows: list[dict[str, Any]], params: dict[str, Any]
 ) -> tuple[list[dict[str, Any]], list[float], list[int]]:
@@ -554,7 +551,7 @@ def _selection(
 
     Probabilities are fractions in the plan (0.01 = 1 %) and percent in the table.
     """
-    percents = [_percent(value) for value in params.get("probability", [])]
+    percents = [probability_percent(value) for value in params.get("probability", [])]
     minutes = [int(value) for value in params.get("duration", [])]
     selected = [
         row

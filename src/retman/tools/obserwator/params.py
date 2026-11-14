@@ -24,7 +24,6 @@ class DatasetInfo(TypedDict):
     numbering: str
     variables: list[str]
     slug: str
-    first_year: int | None
     series: bool
 
 
@@ -46,7 +45,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "hydrological",
         "variables": ["H", "Q", "T"],
         "slug": "hydro_daily",
-        "first_year": 1951,
         "series": True,
     },
     "pl_hydro_monthly": {
@@ -56,7 +54,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "hydrological",
         "variables": _HYDRO_STATISTICS,
         "slug": "hydro_monthly",
-        "first_year": 1951,
         "series": True,
     },
     "pl_hydro_semiannual": {
@@ -66,7 +63,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "hydrological",
         "variables": _HYDRO_STATISTICS,
         "slug": "hydro_semiannual",
-        "first_year": 1951,
         "series": True,
     },
     "pl_meteo_climate_daily": {
@@ -76,7 +72,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "calendar",
         "variables": ["Tmax", "Tmin", "Tmean", "Tground", "P", "snow_cover"],
         "slug": "meteo_climate_daily",
-        "first_year": 1951,
         "series": True,
     },
     "pl_meteo_precip_daily": {
@@ -86,7 +81,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "calendar",
         "variables": ["P", "snow_cover", "fresh_snow"],
         "slug": "meteo_precip_daily",
-        "first_year": 1950,
         "series": True,
     },
     "cz_hydro_daily": {
@@ -96,7 +90,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "calendar",
         "variables": ["H", "Q", "T"],
         "slug": "chmi_hydro_daily",
-        "first_year": 1887,
         "series": True,
     },
     "cz_meteo_daily": {
@@ -106,7 +99,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "calendar",
         "variables": ["P", "Tmean", "Tmax", "Tmin"],
         "slug": "chmi_meteo_daily",
-        "first_year": None,
         "series": True,
     },
     "pl_hydro_phenomena": {
@@ -116,7 +108,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "hydrological",
         "variables": [],
         "slug": "hydro_phenomena",
-        "first_year": 1951,
         "series": False,
     },
     "pl_meteo_climate_monthly": {
@@ -126,7 +117,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "calendar",
         "variables": [],
         "slug": "meteo_climate_monthly",
-        "first_year": 1951,
         "series": False,
     },
     "pl_meteo_precip_monthly": {
@@ -136,7 +126,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "calendar",
         "variables": [],
         "slug": "meteo_precip_monthly",
-        "first_year": 1950,
         "series": False,
     },
     "pl_meteo_synop_monthly": {
@@ -146,7 +135,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "calendar",
         "variables": [],
         "slug": "meteo_synop_monthly",
-        "first_year": 1960,
         "series": False,
     },
     "pl_meteo_climate_terms": {
@@ -156,7 +144,6 @@ DATASETS: Final[dict[str, DatasetInfo]] = {
         "numbering": "calendar",
         "variables": [],
         "slug": "meteo_climate_terms",
-        "first_year": 1951,
         "series": False,
     },
 }
