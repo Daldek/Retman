@@ -962,12 +962,12 @@ locally (e.g. LM Studio, Ollama, basal-serve), on the organisation's network or 
 and Retman connects to it through an API. As a result the basic Retman installation is small and
 contains no machine-learning libraries.
 
-**Default configuration** (the one `retman config init` writes): the decision model is **basal** via
-**basal-serve** — a separate program from the `basal` package that asks the model questions in a
-special way and returns calibrated option probabilities (section 3.3.3). basal-serve **is not a
-Retman dependency**, not even an optional one, because it requires PyTorch and GPU libraries; it is
-installed separately per basal's instructions. The `basal` backend is not written yet (section
-3.3.2), so planning needs an `openai_compatible` server for now.
+**Default configuration** (written by `retman config init`) selects the implemented
+`openai_compatible` backend and LM Studio's local address `http://127.0.0.1:1234/v1`.
+The user must supply a model name and tune the numeric confidence thresholds (section 6.2).
+The `basal` backend remains an accepted setting, but it is not written yet: with
+`backend = "basal"` planning reports `backend_unavailable` (section 3.3.2).
+basal-serve is a separate program, not a Retman dependency (N-10).
 
 #### 3.3.1. Two roles of the model
 
@@ -1014,8 +1014,8 @@ class TextBackend(Protocol):  # v0.2 design, not written yet
 
 | Backend | What it connects to | Role | Version |
 | --- | --- | --- | --- |
-| `basal` | basal-serve, installed separately per basal's instructions | **decisions — default**, with calibrated confidence | v0.1; not written yet (no basal-serve API specification): with `backend = "basal"` planning stops with `backend_unavailable` |
-| `openai_compatible` | any server with an OpenAI-compatible API: LM Studio, Ollama, llama.cpp server, vLLM, as well as providers offering such an API | decisions (alternative to basal); from v0.2 also result descriptions | v0.1 |
+| `basal` | basal-serve, installed separately per basal's instructions | decisions with calibrated confidence, once implemented | accepted setting, not written yet (no basal-serve API specification): with `backend = "basal"` planning stops with `backend_unavailable` |
+| `openai_compatible` | any server with an OpenAI-compatible API: LM Studio, Ollama, llama.cpp server, vLLM, as well as providers offering such an API | decisions — default; from v0.2 also result descriptions | v0.1 |
 | native provider APIs | providers with their own API (e.g. Anthropic) | decisions and/or text | v0.2, optional add-ons |
 | `none` | — | no result description: the result shows a text template | v0.1 |
 
@@ -1057,11 +1057,11 @@ does not return such probabilities, so the `openai_compatible` backend works lik
 
 | Configuration | Decisions | Result description | Notes |
 | --- | --- | --- | --- |
-| **Default** | basal (basal-serve) | Bielik in LM Studio (from 0.2; template in 0.1) | calibrated decision confidence, Polish model for text; two services next to Retman |
-| **Simplest** | one model in LM Studio (`openai_compatible`) | the same model (from 0.2) | one service; confidence from `logprobs` or from agreement of several answers (section 3.3.3); confidence thresholds entered as a number (section 6.2) |
+| **Default** | OpenAI-compatible server (LM Studio local URL in the template; model to fill in) | `none` in v0.1 | one service; confidence from `logprobs` or answer agreement (section 3.3.3); numeric thresholds to tune for the model (section 6.2) |
+| **One model for both roles (from 0.2)** | one model in LM Studio (`openai_compatible`) | the same model | one service for decisions and descriptions |
 | **With a frontier model** | provider model via API | provider model (from 0.2) | requires an API key; commands go to the provider (chapter 10); confidence thresholds entered as a number (section 6.2) |
 | **Minimal** | any model | `none` | results described by a template |
-| **Unit server** | basal-serve on a server in the internal network | as in the default | user's computer without a GPU; from v0.1 — just change `url` in the configuration |
+| **Institutional server** | OpenAI-compatible server on the internal network | `none` in v0.1 | user's computer without a GPU; change `url` in the configuration |
 
 Result description by the text model works from v0.2; in v0.1 results are described by a text
 template.
@@ -1723,9 +1723,10 @@ libraries and without a tool. The plan always shows how Retman read the coordina
 
 ### 6.2. Confidence thresholds [N-05]
 
-- **By default** (`"auto"`) Retman takes the thresholds from basal's calibration (`CALIBRATION.json`,
-  1% error level). The value `"auto"` is allowed only with `backend = "basal"`.
-- They can be **overridden** with a number in the configuration (section 9.1).
+- **The init template writes numeric thresholds** (`0.90` for operation and parameter); tune
+  them for the model you select using your own test set (chapter 8).
+- `"auto"` thresholds come from basal's calibration (`CALIBRATION.json`, 1% error level)
+  and are allowed only with `backend = "basal"`.
 - The basal thresholds were chosen on simple question formats (option descriptions, yes/no
   questions). For Retman's questions they should be **tuned on your own test set** (chapter 8) and
   entered into the configuration.
@@ -2408,11 +2409,14 @@ code 3); `retman config show` and `retman doctor check` report such a file inste
   their size (a hard link counted once); `retman config init` writes all tables with visible values.
   It appends the `[retman]` table at the end of an existing file without touching other tables; an
   existing `[retman]` table is a `conflict` (reason `output_exists`).
-- **The model server has no default values**: `[retman.decision]` (address, model, thresholds) has no
-  sensible default value, so `load_config` reports missing keys (`missing_key`), and commands without
-  a model (`retman results list`, `retman journal show`, `retman config show`, `retman config init`, `retman doctor check`) run
-  from default values alone (`load_settings`). The API key is not a setting: it is read from the
-  variable named by `decision.api_key_env` (chapter 10, DEV-18.4).
+- **No built-in model server default**: without `config init`, `[retman.decision]` (address,
+  model, thresholds) has no implicit value, so `load_config` reports missing keys (`missing_key`).
+  `config init` writes the OpenAI-compatible backend and LM Studio's local URL explicitly; its
+  placeholder model name must be replaced, and its numeric thresholds tuned for that model.
+  Commands without a model (`retman results list`, `retman journal show`, `retman config show`,
+  `retman config init`, `retman doctor check`) run from default values alone (`load_settings`).
+  The API key is not a setting: it is read from the variable named by
+  `decision.api_key_env` (chapter 10, DEV-18.4).
 - **Project-dependent things are not in the settings.** Results and the journal go to the project folder
   (chapter 5, a deviation from DEV-18.2: the settings hold only the name of the results subfolder
   `output.results_dir`).
@@ -2474,23 +2478,19 @@ stands for the user name):
 # cache_dir = "..."      # parent of the caches; default: the user cache folder of nogat
 
 [retman.decision]
-backend = "basal"                   # "basal" (default) | "openai_compatible"
-url = "http://127.0.0.1:8000"       # basal-serve running locally (started separately)
-model = "basal-1.5-mini"
+backend = "openai_compatible"       # OpenAI-compatible server (e.g. LM Studio); "basal" is not implemented yet
+url = "http://127.0.0.1:1234/v1"   # LM Studio's local address; replace for another server
+model = "<model-name>"              # replace with a model available on your server
 timeout_s = 30                      # how long to wait for the model server
-# Generative model instead of basal, e.g. LM Studio:
-# backend = "openai_compatible"
-# url = "http://127.0.0.1:1234/v1"
-# model = "<model-name>"
 # api_key_env = "PROVIDER_API_KEY"  # external providers: NAME of the environment variable holding the key
-# confidence = "auto"               # "auto" | "logprobs" | "consistency" | "none" (ARCHITECTURE 3.3.3)
-# consistency_runs = 3              # queries per decision for the consistency check
-# With this backend [retman.decision.thresholds] must be numbers tuned for the model
-# (ARCHITECTURE 6.2); with confidence = "none" the thresholds are ignored.
+confidence = "auto"                 # "auto" | "logprobs" | "consistency" | "none" (ARCHITECTURE 3.3.3)
+consistency_runs = 3                # queries per decision for the consistency check
+# Numeric thresholds must be tuned for your model (ARCHITECTURE 6.2);
+# with confidence = "none" they are ignored. "auto" thresholds require basal.
 
 [retman.decision.thresholds]
-operation = "auto"      # "auto" = basal calibration, allowed only with backend = "basal"; after tuning set a number, e.g. 0.90
-parameter = "auto"
+operation = 0.90
+parameter = 0.90
 
 [retman.text]
 backend = "none"        # from v0.2: "openai_compatible" (e.g. Bielik in LM Studio)
@@ -2612,7 +2612,7 @@ them, so a single installation mechanism is maintained.
 | --- | --- | --- | --- |
 | 1 | Python + Retman | GitHub (releases marked with tags) | `uv` |
 | 2 | tools | GitHub (one also PyPI) | `uv`, in **the same environment** as Retman |
-| 3 | model server: basal-serve (default) or a server with an OpenAI-compatible API, e.g. LM Studio (section 3.3.2); from 0.2 also a text model server, e.g. Bielik in LM Studio | per their own instructions | separately (PRD N-10); with an institutional server — the deployer |
+| 3 | OpenAI-compatible model server, e.g. LM Studio at the template's local URL (section 3.3.2); from 0.2 also a text model server | per its own instructions | separately (PRD N-10); with an institutional server — the deployer |
 
 **Tools must be in Retman's environment**, because the handlers import them. A tool installed
 in another environment is invisible to Retman — `retman doctor check` reports it as not installed
@@ -2633,8 +2633,8 @@ uv tool install "git+https://github.com/Daldek/Retman@v0.1.0" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@v0.8.0" \
     --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@v3.0.0"
 
-# 3. Model server: installed separately, following basal's instructions, then started
-basal-serve --model Remek/basal-1.5-mini --mode <depends on hardware>
+# 3. Start an OpenAI-compatible model server, e.g. LM Studio on localhost:1234;
+#    load a model and put its name into [retman.decision] after config init.
 
 # 4. Central config (asks where to keep the tool stores) and environment check
 retman config init
@@ -2749,7 +2749,7 @@ in which version.
 
 | Version | Components |
 | --- | --- |
-| **0.1** | core pipeline, `basal` backend (default) and `openai_compatible` (alternative), extractors (including probability, stations, periods, points, geometry file), shared adapter with command layer (`calls`, tool clients, offline preview, availability check), adapters for Kartograf 0.8.0, all of Obserwator 3.0.0 and the basic routes of Hydrolog 1.0 (nine operations, section 3.2.12) with two-stage operation recognition, tool stores in the configuration, `retman scaffold` (`list`, `draft`, `check`), CI with tests on supported tool versions, translation files (PL, EN), CLI and Python API (including the plan as data and `known`), `retman doctor check`, workspace in the project folder (numbered results, input selection without guessing, `retman results list`), central file and `retman config init`, project journal and audit trail (`retman journal show`), `retman eval run`, response time measurements (section 9.2), CI on Windows, Linux and macOS, including an installation test on clean systems (section 9.4) |
+| **0.1** | core pipeline, `openai_compatible` backend (default), `basal` setting accepted but backend unavailable pending its API specification, extractors (including probability, stations, periods, points, geometry file), shared adapter with command layer (`calls`, tool clients, offline preview, availability check), adapters for Kartograf 0.8.0, all of Obserwator 3.0.0 and the basic routes of Hydrolog 1.0 (nine operations, section 3.2.12) with two-stage operation recognition, tool stores in the configuration, `retman scaffold` (`list`, `draft`, `check`), CI with tests on supported tool versions, translation files (PL, EN), CLI and Python API (including the plan as data and `known`), `retman doctor check`, workspace in the project folder (numbered results, input selection without guessing, `retman results list`), central file and `retman config init`, project journal and audit trail (`retman journal show`), `retman eval run`, response time measurements (section 9.2), CI on Windows, Linux and macOS, including an installation test on clean systems (section 9.4) |
 | 0.2 | chain resolver, sanity checks between steps, chain resumption, named results, result descriptions by the text model, native provider APIs (optional), descriptions and handlers for the rest of Hydrolog and the remaining ecosystem tools (Hydrograf, BasicHydraulics) |
 | 0.3 | MCP server (`retman[mcp]`, stdio, confirmation via elicitation, `channel` field in the audit trail; section 7.5.1) |
 | 0.4 | HTTP API |
@@ -2789,7 +2789,7 @@ in which version.
    (section 3.3.3). Checked 2026-10-11 for Bielik 11B and 4.5B (MLX): `logprobs`
    and enumeration in `json_schema` work; Qwen not tested
    (`docs/research/2026-10-11-lm-studio-openai-compatible.md`).
-10. **basal in LM Studio** (low priority — by default basal runs via basal-serve) — basal has GGUF files, but its decisions require a special readout
+10. **basal in LM Studio** (low priority — basal-serve support is not implemented yet) — basal has GGUF files, but its decisions require a special readout
     (option letter probabilities, both orderings, calibration), which basal-serve provides today.
     To check: whether this readout can be reproduced in Retman via the API with `logprobs`, so
     that basal runs in LM Studio without a separate basal-serve.

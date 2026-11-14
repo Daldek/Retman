@@ -188,9 +188,10 @@ are hard links, and it must stay on the disk of the old folder; once both folder
 old folder can be removed. The `api_keys.json` of the Obserwator server, if the old folder had one,
 goes into the data root. Folders elsewhere are named by `store_dir` (data) and `raw_store_dir` (raw).
 
-**The model server has no default values.** The template is set up for basal, so for LM Studio you have to
-change the `[retman.decision]` table (the address and model values — your own); you can also pass them as
-`RETMAN_DECISION_*` variables and do without the file:
+**There is no built-in model server default without `config init`.** The generated file selects
+`openai_compatible` at LM Studio's local URL (`http://127.0.0.1:1234/v1`) and leaves the
+model name as `<model-name>` for you to replace; change the URL for another server and tune the numeric
+thresholds for your model. You can instead pass the settings as `RETMAN_DECISION_*` variables without a file:
 
 ```toml
 [retman.decision]

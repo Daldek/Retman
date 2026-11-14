@@ -21,7 +21,8 @@ def test_cli_validates_packaged_dataset_filters_and_writes_private_results(
     secret_url = "https://private.example.invalid/v1"
     config = tmp_path / "config.toml"
     config.write_text(
-        config_template().replace("http://127.0.0.1:8000", secret_url), encoding="utf-8"
+        config_template().replace("http://127.0.0.1:1234/v1", secret_url),
+        encoding="utf-8",
     )
     raw = tmp_path / "raw.jsonl"
     report = tmp_path / "report.md"
