@@ -392,8 +392,14 @@ def describe_find_obserwator_stations(
 def describe_build_obserwator_station_catalog(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """Operation 2: what the catalog build wrote (nothing is returned as a file)."""
+    """Operation 2: the station sources synchronised and what the catalog build wrote.
+
+    Nothing is returned as a file: the sources are in the raw root, the catalog in
+    the data root.
+    """
     result = result_of(run_of(runs, "store catalog"))
+    sync = result_of(run_of(runs, "store sync"))
+    sources = Counter(str(item.get("status")) for item in sync.get("items") or ())
     output = base_output(operation, params, runs, ctx)
     output["values"].update(
         status=result["status"],
@@ -402,6 +408,7 @@ def describe_build_obserwator_station_catalog(
         from_series=result["from_series"],
         provider=result["provider"],
         catalog_version=result["version"],
+        sources=dict(sources),
     )
     if result["without_location"]:
         add_warnings(

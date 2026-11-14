@@ -91,3 +91,7 @@ members of the release set `candidate-2`, all on GitHub. The workflows of item 3
 `develop` was pushed (2026-11-03); every run failed on macOS and Windows until pull request #1
 (2026-11-11), and `live.yml` has not run: it is on `develop` only, and schedules run from `main`
 (PROGRESS).
+
+**Erratum 3 (2026-11-14, Nogat release set `candidate-4`):** the `tools` group pins the members
+of the release set `candidate-4`, all on GitHub: Kartograf `c9afdd3f`, Obserwator `0394af7c` and
+Hydrolog `9e2cb618` (ADR-024 erratum 9, ADR-025 erratum 8, ADR-034).

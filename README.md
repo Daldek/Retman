@@ -20,14 +20,14 @@ Retman is a command layer for the Nogat hydrology tools: Kartograf (spatial data
 
 ## Install
 
-Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf), `v3.0.0` (Obserwator) and `v1.0.0` (Hydrolog) exist, the commits that Retman is tested with are named (their members of the Nogat release set `candidate-2`, all on GitHub; [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) names them):
+Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras: the tools it drives are installed next to it, in one environment, and Retman enables every supported tool that it finds. Until the tags `v0.8.0` (Kartograf), `v3.0.0` (Obserwator) and `v1.0.0` (Hydrolog) exist, the commits that Retman is tested with are named (their members of the Nogat release set `candidate-4`, all on GitHub; [PROGRESS.md](https://github.com/Daldek/Retman/blob/main/docs/PROGRESS.md) names them):
 
 ```sh
 # CLI
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
-    --with "kartograf @ git+https://github.com/Daldek/Kartograf@d0990c89da88e73b9081fe33a151ba9d27b4f820" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@f9f4ee7927ba520d3e82d3e289872090ae24e2ec" \
-    --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@759d7ef0e99b654c4aff172d69439a6d8df42db2"
+    --with "kartograf @ git+https://github.com/Daldek/Kartograf@c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1" \
+    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@0394af7c66b60cccb88f14b6118893b78443dc21" \
+    --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@9e2cb618b115d94d93fb7caaf871a5fa5c1770a1"
 
 # Python library (name the same tools in the project's own dependencies)
 uv add "retman @ git+https://github.com/Daldek/Retman@develop"
@@ -216,9 +216,9 @@ Exit codes are the codes of the [shared Nogat error registry](https://github.com
 
 ## Data and licensing
 
-Retman holds no data. The tools download it: Kartograf and Obserwator write the files into their own versioned stores, `<data_dir>/kartograf` and `<data_dir>/obserwator` by default, and Retman records their paths and SHA-256 sums in its results. What Retman itself writes goes to the project folder where it runs: the numbered results in `retman-output/` and the project journal. Only with your consent does it also collect the commands of all projects, in one file in the user data folder (`<data_dir>/retman/collected.jsonl` by default). The terms of every source (IMGW-PIB regulations, ČHMÚ licence CC BY 4.0, GUGiK open data) are those of the source; the tools put the licence into the sidecar of each file, and Retman shows their licence and data-quality notes as warnings after the result and keeps them in `notices`. The duty to attribute the source when publishing results is the user's.
+Retman holds no data. The tools download it: Kartograf and Obserwator write the files into their own versioned stores, `<data_dir>/kartograf` for Kartograf and two folders for Obserwator, its raw root `<data_dir>/obserwator-raw` (downloaded archives, station sources, PMAXTP) and its data root `<data_dir>/obserwator` (series, station catalogs) by default, and Retman records their paths and SHA-256 sums in its results. What Retman itself writes goes to the project folder where it runs: the numbered results in `retman-output/` and the project journal. Only with your consent does it also collect the commands of all projects, in one file in the user data folder (`<data_dir>/retman/collected.jsonl` by default). The terms of every source (IMGW-PIB regulations, ČHMÚ licence CC BY 4.0, GUGiK open data) are those of the source; the tools put the licence into the sidecar of each file, and Retman shows their licence and data-quality notes as warnings after the result and keeps them in `notices`. The duty to attribute the source when publishing results is the user's.
 
-The stores are versioned on hard links: copy them with the links preserved (`rsync -aH`), not by copying files one by one, and note that data that the source has removed cannot be downloaded again (details in the README of each tool).
+The stores are versioned on hard links: copy them with the links preserved (`rsync -aH`), not by copying files one by one, and note that data that the source has removed cannot be downloaded again (details in the README of each tool). An Obserwator store written before the release set `candidate-4` is one folder; Retman refuses it as the data root (`store_unavailable`, reason `wrong_root`) until it is split once into the two folders ([USAGE.md](https://github.com/Daldek/Retman/blob/main/docs/USAGE.md) section 1.3).
 
 The settings are the `[retman]` tables of `nogat.toml`, which the Nogat tools share (on Linux `~/.config/nogat/nogat.toml`; another file is named by `NOGAT_CONFIG` or `--config PATH`). The file is optional except for the model server, which has no default, and a variable overrides the file. A value comes from the first of: the command-line option, `RETMAN_<KEY>` (the dotted key in capitals with underscores: `decision.url` is `RETMAN_DECISION_URL`), `NOGAT_<KEY>` (shared keys only), the `[retman]` table, the `[nogat]` table (shared keys only), the default. `retman config show` lists every setting with its value and source. Credentials are never in the file: Retman reads the key of an external model provider from the variable that `decision.api_key_env` names.
 
@@ -241,7 +241,8 @@ The settings are the `[retman]` tables of `nogat.toml`, which the Nogat tools sh
 | `RETMAN_TOOLS_KARTOGRAF_STORE_DIR` | the Kartograf store (default `<data_dir>/kartograf`) |
 | `RETMAN_TOOLS_KARTOGRAF_CACHE_FILE` | the metadata cache of Kartograf (default `<cache_dir>/kartograf/metadata.db`) |
 | `RETMAN_TOOLS_KARTOGRAF_WORKERS`, `RETMAN_TOOLS_KARTOGRAF_UPDATE` | parallel transfers; update mode `local`, `upgrade` or `force` |
-| `RETMAN_TOOLS_OBSERWATOR_STORE_DIR` | the Obserwator store (default `<data_dir>/obserwator`) |
+| `RETMAN_TOOLS_OBSERWATOR_STORE_DIR` | the data root of Obserwator: series, station catalogs, analyses (default `<data_dir>/obserwator`) |
+| `RETMAN_TOOLS_OBSERWATOR_RAW_STORE_DIR` | the raw root of Obserwator: downloaded archives, station sources, PMAXTP cells (default `<data_dir>/obserwator-raw`) |
 | `RETMAN_TOOLS_OBSERWATOR_REFERENCE_DATA_DIR` | the reference data of Obserwator (default `<cache_dir>/obserwator/reference`) |
 | `RETMAN_LOG_JOURNAL_COMMANDS` | whether the project journal records the text of commands and answers (default `true`) |
 | `RETMAN_PRIVACY_COLLECT_COMMANDS`, `RETMAN_PRIVACY_COLLECT_PATH` | collection of commands from all projects, with consent only (default off), and its file |

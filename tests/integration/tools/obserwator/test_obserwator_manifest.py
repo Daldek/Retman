@@ -28,6 +28,7 @@ from retman.registry.loader import load_operations
 from retman.registry.operation import Operation
 from retman.tools.obserwator import describe
 from retman.tools.obserwator import manifest as obserwator_manifest
+from retman.tools.obserwator.calls import STATION_SOURCES
 from retman.tools.obserwator.params import DATASETS, PROVIDER_VALUES, SERIES_DATASETS
 
 MANIFEST = obserwator_manifest.MANIFEST
@@ -101,8 +102,11 @@ def test_the_series_datasets_are_exactly_those_the_catalog_builds_series_of():
     for command in ("series build", "series export", "series summary"):
         option = next(o for o in CATALOG[command].options if o.name == "dataset")
         assert set(option.choices) == series, command
+    # The sync takes every series dataset and every station source of a catalog
     store = next(o for o in CATALOG["store sync"].options if o.name == "datasets")
-    assert set(store.choices) == series
+    assert series <= set(store.choices)
+    for provider, sources in STATION_SOURCES.items():
+        assert set(sources) <= set(store.choices), provider
 
 
 def option_choices(command: str, option: str) -> set[str]:

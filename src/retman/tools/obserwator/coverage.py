@@ -32,4 +32,18 @@ EXCLUDED_COMMANDS: Final[dict[str, str]] = {
         "not an operation on data"
     ),
     "commands guide": "a guide for AI agents generated from the catalog, not data",
+    "stations export": (
+        "the current station catalogs of the data root as one GeoJSON or CSV file; "
+        "find_obserwator_stations writes the stations a command asks for, and a "
+        "whole-catalog export is outside the release scope (PRD 7)"
+    ),
+    "analyses build": (
+        "computes the stored analyses of every station with the hydrolog program "
+        "into the data root, a long batch job for Obserwator's GUI; Retman computes "
+        "with Hydrolog's own operations, and stored analyses are outside the release "
+        "scope (PRD 7)"
+    ),
+    "analyses list": "lists the stored analyses of analyses build, not offered",
+    "analyses read": "reads a stored analysis of analyses build, not offered",
+    "analyses export": "exports the stored analyses of analyses build, not offered",
 }

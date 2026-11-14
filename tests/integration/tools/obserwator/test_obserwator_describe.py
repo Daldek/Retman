@@ -44,7 +44,7 @@ TEXTS = load_core_texts("pl")
 FROZEN = datetime(2026, 10, 19, 12, 30, 5, tzinfo=UTC)
 STAMP = "20261019T123005Z"
 IMGW_LICENSE_START = "Źródłem pochodzenia danych jest Instytut Meteorologii"
-IMGW_LICENSE_END = "including the exceptions for high-value data."
+IMGW_TERMS = "https://danepubliczne.imgw.pl/regulations"
 PRECIP = "pl.imgw.meteo_precip_daily"
 MISSING_PROBABILITY = (
     "W tabeli PMAXTP nie ma prawdopodobieństwa 30 %; dostępne: 1, 2, 5, 10, 20, 50 %."
@@ -115,6 +115,23 @@ def audit_commands(result: Result) -> list[str]:
     return [call["command"] for call in result.tool["calls"]]
 
 
+def licence_texts(result: Result) -> list[str]:
+    """The provider's lines (DEV §20) and the tool's own licence notices."""
+    return [
+        *result.attribution,
+        *result.terms_notice,
+        *result.values.get("license", []),
+    ]
+
+
+def assert_imgw_lines(result: Result) -> None:
+    """The result passes on the attribution and the terms of IMGW-PIB only."""
+    assert result.attribution
+    assert result.attribution[0].startswith(IMGW_LICENSE_START)
+    assert not any("ČHMÚ" in line for line in result.attribution)
+    assert len(result.terms_notice) == 1 and IMGW_TERMS in result.terms_notice[0]
+
+
 # --- 1–3: catalog -------------------------------------------------------------------
 
 
@@ -132,22 +149,25 @@ def test_stations_become_a_station_list_with_the_licence_of_each_provider(
     (path,) = result.files["station_list"]
     assert path.name == "stations_hydro.csv"
     rows = table(path)
-    assert list(rows[0]) == list(describe.STATION_COLUMNS)
+    # The provider lines are the trailing columns of the file (Nogat DEV-20.5)
+    assert list(rows[0]) == [*describe.STATION_COLUMNS, "attribution", "terms_notice"]
     assert {(row["provider"], row["kind"]) for row in rows} == {
         ("IMGW-PIB", "hydro"),
         ("CHMI", "hydro"),
     }
-    assert len(rows) == 6
-    assert result.values["count"] == 6
+    assert len(rows) == 8
+    assert result.values["count"] == 8
     assert result.values["providers"] == ["CHMI", "IMGW-PIB"]
     assert result.values["data_source"] == "store"
     assert result.values["fetched_at"] == "2026-10-19T12:30:05Z"
-    assert result.summary == "Gotowe. Wynik #1: lista stacji (6) zapisana w pliku CSV."
-    # Each provider's terms, verbatim, once; nothing else is a warning
-    assert len(result.warnings) == 2
-    imgw = next(text for text in result.warnings if "IMGW-PIB" in text)
-    assert imgw.startswith(IMGW_LICENSE_START) and imgw.endswith(IMGW_LICENSE_END)
-    assert any("CC BY 4.0" in text and "ČHMÚ" in text for text in result.warnings)
+    assert result.summary == "Gotowe. Wynik #1: lista stacji (8) zapisana w pliku CSV."
+    # Each provider's lines (and those of the location sources), verbatim, once;
+    # nothing else is a warning
+    assert result.warnings == [*result.attribution, *result.terms_notice]
+    assert any(line.startswith(IMGW_LICENSE_START) for line in result.attribution)
+    assert any("CC BY 4.0" in line and "ČHMÚ" in line for line in result.attribution)
+    assert len(set(result.attribution)) == len(result.attribution)
+    assert any(IMGW_TERMS in line for line in result.terms_notice)
     assert audit_commands(result) == ["stations find", "datasets providers"]
 
 
@@ -196,13 +216,17 @@ def test_the_registry_and_the_providers_are_kept_as_the_tools_documents(
     datasets = json.loads(result.files["obserwator_report"][0].read_text("utf-8"))
     assert datasets["schema"] == "obserwator-result/1"
     assert {item["provider"] for item in datasets["result"]} == {"CHMI"}
+    keys = {item["key"] for item in datasets["result"]}
+    assert {"cz.chmi.hydro_daily", "cz.chmi.hydro_stations"} <= keys
     assert result.values == {
         "calls": 2,
         "file_count": 2,
-        "datasets": 4,
+        "datasets": len(keys),
         "providers": 2,
     }
-    assert result.summary == "Gotowe. Wynik #1: zbiorów danych: 4, dostawców: 2."
+    assert result.summary == (
+        f"Gotowe. Wynik #1: zbiorów danych: {len(keys)}, dostawców: 2."
+    )
 
 
 def catalog_report(**changes: Any) -> Any:
@@ -222,6 +246,29 @@ def catalog_report(**changes: Any) -> Any:
     return CatalogReport(**{**fields, **changes})
 
 
+def station_sources_sync() -> Any:
+    from obserwator import OperationResult, SyncReport
+
+    slot = "archive:pl.imgw.{}_stations:dane_{}/{}"
+    return SyncReport(
+        items=(
+            OperationResult(
+                slot.format("hydro", "hydrologiczne", "lista_stacji_hydro.csv"),
+                "unchanged",
+                None,
+                None,
+            ),
+            OperationResult(
+                slot.format("meteo", "meteorologiczne", "wykaz_stacji.csv"),
+                "new",
+                None,
+                None,
+            ),
+        ),
+        cancelled=False,
+    )
+
+
 def test_a_built_catalog_reports_what_it_holds_and_what_is_missing(
     operations, tmp_path
 ):
@@ -231,9 +278,10 @@ def test_a_built_catalog_reports_what_it_holds_and_what_is_missing(
     client = HybridClient(
         real_client(tmp_path),
         {
+            "store sync": synthetic_run("store sync", station_sources_sync()),
             "store catalog": synthetic_run(
                 "store catalog", catalog_report(), notices=(problem, notice)
-            )
+            ),
         },
     )
 
@@ -249,6 +297,9 @@ def test_a_built_catalog_reports_what_it_holds_and_what_is_missing(
     assert result.files == {}
     assert result.values["station_count"] == 812
     assert result.values["catalog_version"].endswith("stations.geojson")
+    # The station sources synchronised into the raw root first, by their status
+    assert result.values["sources"] == {"unchanged": 1, "new": 1}
+    assert audit_commands(result) == ["store sync", "store catalog"]
     assert result.summary == (
         "Gotowe. Wynik #1: katalog stacji IMGW-PIB w magazynie "
         "(812 stacji, bez położenia: 7, stan: new)."
@@ -302,9 +353,9 @@ def test_current_data_are_a_csv_of_the_kind_of_the_source(operations, tmp_path):
         "182.0",
         "3.41",
     )
-    # The data of IMGW-PIB carry its terms, taken from the provider registry
-    assert len(hydro.warnings) == 1
-    assert hydro.warnings[0].startswith(IMGW_LICENSE_START)
+    # The data of IMGW-PIB carry its attribution and terms, and nothing else warns
+    assert_imgw_lines(hydro)
+    assert hydro.warnings == licence_texts(hydro)
     assert audit_commands(hydro) == ["current hydro", "datasets providers"]
 
 
@@ -450,8 +501,11 @@ def test_a_stored_pmaxtp_cell_is_named_and_can_be_read_back_offline(
     assert stored.values["version"].startswith("pmaxtp/versions/POT/751_317/") or (
         "/pmaxtp/versions/POT/751_317/" in stored.values["version"]
     )
-    # The tool's own licence notice (a new version) is passed on verbatim
-    assert any(text.startswith(IMGW_LICENSE_START) for text in stored.warnings)
+    # The tool's own licence lines (a new version) are passed on verbatim
+    # (PMAXTP has terms of its own, not those of the measurement data)
+    assert stored.attribution[0].startswith(IMGW_LICENSE_START)
+    assert len(stored.terms_notice) == 1 and IMGW_TERMS not in stored.terms_notice[0]
+    assert set(stored.terms_notice) <= set(stored.warnings)
     assert read.ok, read.error
     (path,) = read.files["pmaxtp_table"]
     assert path.name == "pmaxtp_pot_751_317.csv"
@@ -505,9 +559,9 @@ def test_a_series_from_the_store_is_the_tools_csv_with_its_extent(operations, tm
         "Gotowe. Wynik #1: szereg stacji 123750000 "
         "(31 wierszy, 2001-01-01 – 2001-01-31) zapisany w pliku CSV."
     )
-    # The tool's licence notice, verbatim, and nothing else
-    assert len(result.warnings) == 1
-    assert result.warnings[0].startswith(IMGW_LICENSE_START)
+    # The tool's licence lines, verbatim, and nothing else
+    assert_imgw_lines(result)
+    assert set(result.warnings) == set(licence_texts(result))
     assert audit_commands(result) == ["series export", "series select"]
     assert result.tool is not None
     assert result.tool["calls"][0]["files"][0]["path"] == str(path)
@@ -568,12 +622,16 @@ def test_a_series_from_the_server_counts_the_archives_and_reports_the_failed_one
                 error_code="source_unavailable",
             ),
         ),
-        series=(SeriesReport("new", None, 2, (), ()),),
         cancelled=False,
     )
+    # The shared fixture store is read-only: the series build is a prepared run too
+    build = SeriesReport("unchanged", None, 2, (), ())
     client = HybridClient(
         real_client(tmp_path, store),
-        {"store sync": synthetic_run("store sync", report, status="partial")},
+        {
+            "store sync": synthetic_run("store sync", report, status="partial"),
+            "series build": synthetic_run("series build", build),
+        },
     )
 
     result = execute(
@@ -593,14 +651,19 @@ def test_a_series_from_the_server_counts_the_archives_and_reports_the_failed_one
         "failed": 1,
     }
     assert result.warnings[0] == (
-        "Nie udało się przetworzyć 1 z 4 pozycji; szczegóły są w dokumencie "
+        "Nie udało się przetworzyć 1 z 3 pozycji; szczegóły są w dokumencie "
         "narzędzia w folderze wyniku (tool_*.json)."
     )
     assert result.warnings[1] == (
         "Nie wszystko się udało "
         "(archive:pl.imgw.meteo_precip_daily:2001/2001_03_o.zip): HTTP error 503"
     )
-    assert audit_commands(result) == ["store sync", "series export", "series select"]
+    assert audit_commands(result) == [
+        "store sync",
+        "series build",
+        "series export",
+        "series select",
+    ]
 
 
 def test_the_coverage_of_a_station_is_kept_as_the_tools_document(operations, tmp_path):
@@ -654,17 +717,19 @@ def test_building_a_series_names_the_version_and_says_when_it_was_unchanged(
     assert unchanged.values["status"] == "unchanged"
     assert unchanged.values["dataset"] == "pl.imgw.hydro_daily"
     assert unchanged.values["stations"] == 2
-    assert unchanged.warnings == []
+    # An unchanged series passes on the provider's lines and warns of nothing else
+    assert_imgw_lines(unchanged)
+    assert unchanged.warnings == licence_texts(unchanged)
     assert unchanged.summary == (
         "Gotowe. Wynik #1: szereg zbioru pl.imgw.hydro_daily w magazynie: unchanged, "
         "stacji: 2."
     )
-    # A new series version brings the provider's terms
+    # A new series version brings the same provider's lines
     assert new.ok, new.error
     assert new.values["status"] == "new"
     assert new.values["series_version"].endswith("series.json")
-    assert len(new.warnings) == 1
-    assert new.warnings[0].startswith(IMGW_LICENSE_START)
+    assert_imgw_lines(new)
+    assert set(new.warnings) == set(licence_texts(new))
 
 
 def test_a_disk_without_hard_links_is_explained_not_quoted(

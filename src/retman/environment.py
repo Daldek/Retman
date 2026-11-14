@@ -71,9 +71,13 @@ TEXT_BACKENDS: Final[tuple[str, ...]] = ("none",)
 # update modes of a download ("check" never downloads, so it is not a setting)
 KARTOGRAF_UPDATE_MODES: Final[tuple[str, ...]] = ("local", "upgrade", "force")
 
-# Folder names of the two tool stores inside the folder chosen in ``config init``
+# Folder names of the tool stores inside the folder chosen in ``config init``: the
+# Kartograf store and the two roots of Obserwator, its data root (series, station
+# catalogs) and its raw root (downloaded archives, station sources, PMAXTP cells),
+# named as Obserwator names its default roots (Obserwator ADR-017)
 KARTOGRAF_STORE_NAME: Final = "kartograf"
 OBSERWATOR_STORE_NAME: Final = "obserwator"
+OBSERWATOR_RAW_STORE_NAME: Final = "obserwator-raw"
 
 _TRUE_WORDS: Final = frozenset({"1", "true", "yes", "on"})
 _FALSE_WORDS: Final = frozenset({"0", "false", "no", "off"})
@@ -123,6 +127,7 @@ def _in_cache(*parts: str) -> Callable[["Environment"], Path]:
 KARTOGRAF_STORE = _in_data(KARTOGRAF_STORE_NAME)
 KARTOGRAF_CACHE = _in_cache(KARTOGRAF_STORE_NAME, "metadata.db")
 OBSERWATOR_STORE = _in_data(OBSERWATOR_STORE_NAME)
+OBSERWATOR_RAW_STORE = _in_data(OBSERWATOR_RAW_STORE_NAME)
 OBSERWATOR_REFERENCE = _in_cache(OBSERWATOR_STORE_NAME, "reference")
 COLLECT_PATH = _in_data(TOOL, "collected.jsonl")
 
@@ -153,6 +158,7 @@ KEYS: Final[tuple[Key, ...]] = (
         default=lambda _: "local",
     ),
     Key("tools.obserwator.store_dir", "path", default=OBSERWATOR_STORE),
+    Key("tools.obserwator.raw_store_dir", "path", default=OBSERWATOR_RAW_STORE),
     Key("tools.obserwator.reference_data_dir", "path", default=OBSERWATOR_REFERENCE),
     Key("log.journal_commands", "flag", default=lambda _: True),
     Key("privacy.collect_commands", "flag", default=lambda _: False),

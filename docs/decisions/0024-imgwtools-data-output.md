@@ -2,7 +2,8 @@
 
 **Date:** 2026-10-25
 **Status:** accepted; amends ADR-012 (2026-10-25, the IMGWTools pin is a commit that is not
-pushed); amended by ADR-025 (2026-10-25, the Kartograf pin)
+pushed); amended by ADR-025 (2026-10-25, the Kartograf pin) and ADR-034 (2026-11-14, the raw and
+data roots: `root` by the kind of the command, `raw_root`)
 
 ## Context
 
@@ -175,3 +176,13 @@ Obserwator `f9f4ee7927ba520d3e82d3e289872090ae24e2ec`, its member of the release
 `Daldek/IMGWTools`). Since `1ee5457` the documents of the tool follow the Nogat standard 1.0 (the
 tool's ADR-010): Retman reads the items of a list command from `result`, the text of a notice
 from `message`, and passes the tool's `hint` with its errors (CHANGELOG, Changed).
+
+**Erratum 9 (2026-11-14, Nogat release set `candidate-4`, Nogat ECO-059):** the pin is now
+Obserwator `0394af7c66b60cccb88f14b6118893b78443dc21`, its member of the release set
+`candidate-4`, which is on GitHub. The tool keeps two roots (its ADR-017): the store of this ADR
+is the raw root (marker `obserwator-store.json`, `archives/`, `pmaxtp/`), and the series, the
+station catalogs and the analyses live in a data root (marker `obserwator-data.json`). Item 2 no
+longer passes `store_dir` to every command: ADR-034 routes `root` by the kind of the command and
+adds `raw_root`; the rule about plain files stands. Item 5 holds for each root with its own
+layout trees, plus the state `wrong_root`. `store sync` no longer builds series (Retman runs
+`series build` after it), and the documents carry the providers' attribution of ADR-033.

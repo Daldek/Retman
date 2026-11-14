@@ -19,7 +19,15 @@ from obserwator.store.types import (
     StorePlan,
     SyncReport,
 )
-from obserwator_ops_support import TEXTS, YEARS, context, execute, operations, station
+from obserwator_ops_support import (
+    RAW_STORE,
+    TEXTS,
+    YEARS,
+    context,
+    execute,
+    operations,
+    station,
+)
 from obserwator_store_files import (
     write_damaged_marker,
     write_layout,
@@ -27,7 +35,9 @@ from obserwator_store_files import (
 )
 from obserwator_support import (
     PlanStatus,
+    data_root,
     fixture_store,
+    raw_root,
     real_client,
     settings_for,
     synthetic_run,
@@ -40,9 +50,15 @@ from retman.config import init_config, load_config
 from retman.core.pipeline import Retman
 from retman.testing import FakeDecisionBackend, FakeToolClient
 
-NO_STORE = {"result": {"exists": False, "supported": False, "schema": None}}
-READY = {"result": {"exists": True, "supported": True, "schema": "obserwator-store/1"}}
+NO_STORE = {"result": {"exists": False, "supported": False, "store_schema": None}}
 SELECTION = {"dataset": "pl_meteo_precip_daily", "years": YEARS}
+
+
+def ready(call: CatalogCall) -> dict[str, Any]:
+    """``store info`` of a ready root: the raw or the data root, by the folder asked."""
+    raw = call.options.get("root") == str(RAW_STORE)
+    schema = "obserwator-store/1" if raw else "obserwator-data/1"
+    return {"result": {"exists": True, "supported": True, "store_schema": schema}}
 
 
 def preview(operation: str, params: dict[str, Any], client: Any, **kw: Any) -> Any:
@@ -112,17 +128,21 @@ def test_download_preview_lists_the_files_and_the_years_they_cover(
 
 
 @pytest.mark.parametrize(
-    ("operation", "params"),
+    ("operation", "params", "settings"),
     [
-        ("check_obserwator_archives", SELECTION),
-        ("sync_obserwator_store", SELECTION),
-        ("sync_obserwator_store_by_plan", {}),
-        ("export_obserwator_archive", {**SELECTION, "format": "csv"}),
-        ("inspect_obserwator_store", {}),
+        ("check_obserwator_archives", SELECTION, ["raw_store_dir"]),
+        ("sync_obserwator_store", SELECTION, ["raw_store_dir", "store_dir"]),
+        ("sync_obserwator_store_by_plan", {}, ["raw_store_dir"]),
+        (
+            "export_obserwator_archive",
+            {**SELECTION, "format": "csv"},
+            ["raw_store_dir"],
+        ),
+        ("inspect_obserwator_store", {}, ["store_dir", "raw_store_dir"]),
     ],
 )
 def test_a_store_that_is_not_there_blocks_the_plan_and_is_never_initialised(
-    tmp_path: Path, operation: str, params: dict[str, Any]
+    tmp_path: Path, operation: str, params: dict[str, Any], settings: list[str]
 ) -> None:
     client = FakeToolClient(
         documents={"store info": NO_STORE, "store scan": {"result": []}}
@@ -130,9 +150,12 @@ def test_a_store_that_is_not_there_blocks_the_plan_and_is_never_initialised(
 
     result = preview(operation, params, client, inputs={"plan": tmp_path / "plan.json"})
 
-    # Nothing to answer again: the store is the user's decision (init_obserwator_store)
-    (problem,) = result.problems
-    assert problem.params == () and "Utwórz magazyn Obserwatora" in problem.text
+    # Nothing to answer again: the store is the user's decision (init_obserwator_store);
+    # each root the operation needs is named by its own setting
+    assert len(result.problems) == len(settings)
+    for problem, setting in zip(result.problems, settings, strict=True):
+        assert problem.params == () and "Utwórz magazyn Obserwatora" in problem.text
+        assert f"(ustawienie {setting})" in problem.text
     assert {method for method, _ in client.calls} <= {"validate", "lookup"}
     assert client.network_calls == []
 
@@ -147,13 +170,13 @@ def test_series_need_pyarrow_so_sync_is_blocked_without_it(
     result = preview(
         "sync_obserwator_store",
         SELECTION,
-        FakeToolClient(documents={"store info": READY}),
+        FakeToolClient(documents={"store info": ready}),
     )
     listing: dict[str, Any] = {"result": []}
     check = preview(
         "check_obserwator_archives",
         SELECTION,
-        FakeToolClient(documents={"store info": READY, "datasets files": listing}),
+        FakeToolClient(documents={"store info": ready, "datasets files": listing}),
     )
 
     assert "pyarrow" in result.problems[0].text
@@ -173,8 +196,9 @@ def test_export_preview_counts_what_the_store_holds(tmp_path: Path) -> None:
         "years": {"type": "years", "first": 2000, "last": 2001},
     }
 
-    found = preview("export_obserwator_archive", held, client)
-    missing = preview("export_obserwator_archive", absent, client)
+    settings = settings_for(tmp_path)
+    found = preview("export_obserwator_archive", held, client, settings=settings)
+    missing = preview("export_obserwator_archive", absent, client, settings=settings)
 
     assert "w magazynie: 1 z 1 plików archiwów zbioru (format csv)" in found.rows[1][1]
     # The user chose a dataset and years the store lacks: both are asked again
@@ -188,7 +212,7 @@ def test_sync_by_plan_shows_the_plan_and_refuses_one_of_another_store(
     store = fixture_store()
     client = real_client(tmp_path, store)
     mine, other = tmp_path / "mine.json", tmp_path / "other.json"
-    make_plan(store, STATUSES).to_json(mine)
+    make_plan(raw_root(store), STATUSES).to_json(mine)
     make_plan(tmp_path / "elsewhere", STATUSES).to_json(other)
 
     where = {"settings": settings_for(tmp_path, store), "inputs": {"plan": mine}}
@@ -207,40 +231,65 @@ def test_sync_by_plan_shows_the_plan_and_refuses_one_of_another_store(
 def test_init_preview_says_what_will_happen_and_refuses_foreign_data(
     tmp_path: Path,
 ) -> None:
-    def state(folder: Path) -> Any:
-        settings = {"store_dir": str(folder)}
+    def state(folder: Path, kind: str = "data") -> Any:
+        # The root under test in its setting, the other one a folder not yet created
+        other = str(tmp_path / "other-new")
+        settings = (
+            {"store_dir": str(folder), "raw_store_dir": other}
+            if kind == "data"
+            else {"store_dir": other, "raw_store_dir": str(folder)}
+        )
         return preview("init_obserwator_store", {}, FakeToolClient(), settings=settings)
 
-    empty, foreign, marked, unmarked, keys, damaged = (
-        tmp_path / "empty",
-        tmp_path / "foreign",
-        tmp_path / "marked",
-        tmp_path / "unmarked",
-        tmp_path / "keys",
-        tmp_path / "damaged",
+    def row(folder: Path, kind: str = "data") -> str:
+        # The raw root is shown first, then the data root: a root row, then its state
+        text: str = state(folder, kind).rows[3 if kind == "data" else 1][1]
+        return text
+
+    folders = (
+        "empty",
+        "foreign",
+        "marked",
+        "marked_raw",
+        "unmarked",
+        "unmarked_raw",
+        "keys",
+        "damaged",
     )
-    for folder in (empty, foreign, marked, unmarked, keys, damaged):
-        folder.mkdir()
+    for name in folders:
+        (tmp_path / name).mkdir()
+    empty, foreign, marked, marked_raw, unmarked, unmarked_raw, keys, damaged = (
+        tmp_path / name for name in folders
+    )
     (foreign / "data.txt").write_text("x")
-    # A store the tool built, not a marker written by hand (DEV-10.6)
-    shutil.copytree(fixture_store(), marked, dirs_exist_ok=True)
+    # Roots the tool built, not markers written by hand (DEV-10.6)
+    shutil.copytree(data_root(fixture_store()), marked, dirs_exist_ok=True)
+    shutil.copytree(raw_root(fixture_store()), marked_raw, dirs_exist_ok=True)
     write_layout(unmarked, "series")
+    write_layout(unmarked_raw, "archives")
     write_server_state(keys)
     write_damaged_marker(damaged)
 
-    assert state(tmp_path / "new").rows[1][1].startswith("folder nie istnieje")
-    assert state(empty).rows[1][1].startswith("pusty folder")
-    assert state(marked).rows[1][1].startswith("magazyn już istnieje")
-    assert state(unmarked).rows[1][1].startswith("folder ma układ magazynu")
+    assert row(tmp_path / "new").startswith("folder nie istnieje")
+    assert row(empty).startswith("pusty folder")
+    assert row(marked).startswith("magazyn już istnieje")
+    assert row(marked_raw, "raw").startswith("magazyn już istnieje")
+    assert row(unmarked).startswith("folder ma układ magazynu")
+    assert row(unmarked_raw, "raw").startswith("folder ma układ magazynu")
     # The key file of the REST server is not store content: the tool takes the folder
-    assert state(keys).rows[1][1].startswith("pusty folder")
-    assert "nie jest magazynem Obserwatora" in state(foreign).problems[0].text
-    # A marker the tool cannot read is a damaged store, not "other files"
-    (problem,) = state(damaged).problems
+    assert row(keys).startswith("pusty folder")
+    (problem,) = state(foreign).problems
+    assert "zawiera inne pliki" in problem.text and "store_dir" in problem.text
+    # A marker the tool cannot read is a damaged root, not "other files"
+    (problem,) = state(damaged, "raw").problems
     assert (
         "obserwator-store.json" in problem.text and "jest nieczytelny" in problem.text
     )
-    assert "nie jest magazynem Obserwatora" not in problem.text
+    assert "zawiera inne pliki" not in problem.text
+    # The raw root named as the data root: never initialised as a second kind
+    (problem,) = state(marked_raw).problems
+    assert "oczekiwany obserwator-data.json" in problem.text
+    assert "ustawienie store_dir" in problem.text
 
 
 # --- offline runs on the real tool ----------------------------------------------------
@@ -292,12 +341,20 @@ def test_init_runs_on_the_real_tool_and_is_idempotent(tmp_path: Path) -> None:
     first = execute("init_obserwator_store", {}, ctx)
     second = execute("init_obserwator_store", {}, ctx)
 
-    assert first.ok and second.ok and first.values["store"] == str(folder)
-    assert (
-        json.loads((folder / "obserwator-store.json").read_text(encoding="utf-8"))[
-            "schema"
-        ]
-        == "obserwator-store/1"
+    assert first.ok and second.ok
+    assert (first.values["store"], first.values["raw_store"]) == (
+        str(data_root(folder)),
+        str(raw_root(folder)),
+    )
+    for root, marker, schema in (
+        (raw_root(folder), "obserwator-store.json", "obserwator-store/1"),
+        (data_root(folder), "obserwator-data.json", "obserwator-data/1"),
+    ):
+        written = json.loads((root / marker).read_text(encoding="utf-8"))
+        assert written["schema"] == schema
+    assert (first.values["raw_schema"], first.values["schema"]) == (
+        "obserwator-store/1",
+        "obserwator-data/1",
     )
 
 
@@ -435,17 +492,13 @@ def test_sync_reports_new_versions_and_series_and_by_plan_uses_the_saved_plan(
     tmp_path: Path,
 ) -> None:
     store = tmp_path / "store"
-    version = store / "archives" / "v" / "codz.zip"
+    version = raw_root(store) / "archives" / "v" / "codz.zip"
     version.parent.mkdir(parents=True)
     version.write_bytes(b"PK\x03\x04" + b"0" * 100)
-    relative = version.relative_to(store)
     report = SyncReport(
         (
             OperationResult(
-                "archive:pl.imgw.hydro_daily:2020/a.zip",
-                "new",
-                store / relative,
-                None,
+                "archive:pl.imgw.hydro_daily:2020/a.zip", "new", version, None
             ),
             OperationResult(
                 "archive:pl.imgw.hydro_daily:2020/b.zip", "unchanged", None, None
@@ -457,17 +510,20 @@ def test_sync_reports_new_versions_and_series_and_by_plan_uses_the_saved_plan(
                 "changed",
             ),
         ),
-        (SeriesReport("new", store / "series" / "s.json", 3, (), ()),),
         False,
     )
     run = synthetic_run("store sync", report, status="partial")
     run = replace(run, status="partial", failed=())
-    client = FakeToolClient(runs={"store sync": run})
+    series = data_root(store) / "series" / "s.json"
+    built = synthetic_run(
+        "series build", SeriesReport("new", series, 3, (version,), ())
+    )
+    client = FakeToolClient(runs={"store sync": run, "series build": built})
     plan_file = tmp_path / "plan.json"
     plan_file.write_text("{}")
-    settings = {"store_dir": str(store)}
+    settings = settings_for(tmp_path, store)
 
-    result = execute(
+    by_plan = execute(
         "sync_obserwator_store_by_plan",
         {},
         context(
@@ -479,20 +535,27 @@ def test_sync_reports_new_versions_and_series_and_by_plan_uses_the_saved_plan(
         ),
         inputs={"plan": plan_file},
     )
-
-    assert result.ok, result.error
-    assert client.calls[-1] == (
-        "run",
-        CatalogCall("store sync", {"plan": str(plan_file)}),
+    plan_calls = [call for method, call in client.calls if method == "run"]
+    synced = execute(
+        "sync_obserwator_store",
+        {"dataset": "pl_hydro_daily", "years": YEARS},
+        context(
+            "sync_obserwator_store", client, settings=settings, output_dir=tmp_path
+        ),
     )
-    assert (result.values["new_versions"], result.values["new_series"]) == (1, 1)
-    assert result.values["items"] == {"new": 1, "unchanged": 1, "stale_plan": 1}
-    assert result.values["series"] == {"new": 1, "unchanged": 0, "failed": 0}
-    assert result.values["bytes"] == 104
-    assert [item["status"] for item in result.values["store_versions"]] == [
-        "new",
-        "new",
-    ]
+
+    assert by_plan.ok and synced.ok, (by_plan.error, synced.error)
+    assert plan_calls == [CatalogCall("store sync", {"plan": str(plan_file)})]
+    # A sync by plan writes archives only; the series is built after a selection
+    assert by_plan.values["items"] == {"new": 1, "unchanged": 1, "stale_plan": 1}
+    assert (by_plan.values["new_versions"], by_plan.values["new_series"]) == (1, 0)
+    assert by_plan.values["series"] == {"new": 0, "unchanged": 0, "failed": 0}
+    assert by_plan.values["bytes"] == 104
+    assert (synced.values["new_versions"], synced.values["new_series"]) == (1, 1)
+    assert synced.values["series"] == {"new": 1, "unchanged": 0, "failed": 0}
+    assert [
+        (item["slot"], item["status"]) for item in synced.values["store_versions"]
+    ] == [("archive:pl.imgw.hydro_daily:2020/a.zip", "new"), ("series", "new")]
 
 
 def test_a_failed_run_is_a_failed_result_not_a_success(tmp_path: Path) -> None:

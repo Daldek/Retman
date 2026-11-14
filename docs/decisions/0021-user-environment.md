@@ -3,7 +3,8 @@
 **Date:** 2026-10-24
 **Status:** accepted; amends ADR-010 (2026-10-24: the `[privacy]` table is now
 `[retman.privacy]`, its default file is below `data_dir`) and ADR-015 (2026-10-24: the settings
-file, the default store and cache paths)
+file, the default store and cache paths); amended by ADR-034 (2026-11-14: the raw root of
+Obserwator, `tools.obserwator.raw_store_dir`, default `<data_dir>/obserwator-raw`)
 
 ## Context
 

@@ -41,8 +41,9 @@ from retman.registry.loader import discover_manifests, version_matches
 from retman.registry.manifest import ManifestSpec, validate_manifest
 from retman.stores import (
     KARTOGRAF_MARKER,
-    OBSERWATOR_MARKER,
+    OBSERWATOR_MARKERS,
     OBSERWATOR_REFERENCE_FILE,
+    ObserwatorRoot,
     ToolOutcome,
     hardlink_error,
     kartograf_store_state,
@@ -515,12 +516,20 @@ def _tool_checks(
 
 
 def _store_folder(
-    tool: str, store: Path, texts: Texts, config_path: Path, *, symlinks_refused: bool
+    label: str,
+    setting: str,
+    store: Path,
+    texts: Texts,
+    config_path: Path,
+    *,
+    symlinks_refused: bool,
 ) -> tuple[list[Check], Literal["ok", "missing", "broken"]]:
     """Check a store folder: no symbolic links, it exists or can be created, writable.
 
-    Returns the problems found and the state of the folder: ``missing`` is a folder
-    that does not exist yet but can be created, ``broken`` one that cannot be used.
+    ``label`` names the folder in the report (the tool, or which folder of the
+    tool) and ``setting`` the key of the settings file that points to it. Returns
+    the problems found and the state of the folder: ``missing`` is a folder that
+    does not exist yet but can be created, ``broken`` one that cannot be used.
     """
     checks: list[Check] = []
     link = symlink_component(store)
@@ -530,10 +539,10 @@ def _store_folder(
         checks.append(
             Check(
                 "error" if symlinks_refused else "warning",
-                texts.get(f"doctor.stores.{key}", tool=tool, link=link),
+                texts.get(f"doctor.stores.{key}", tool=label, link=link),
                 texts.get(
                     "doctor.stores.hint_symlink",
-                    tool=tool,
+                    setting=setting,
                     resolved=resolved,
                     config=config_path,
                 ),
@@ -542,12 +551,14 @@ def _store_folder(
                 reason="symlink_refused" if symlinks_refused else None,
             )
         )
-    hint = texts.get("doctor.stores.hint_store_dir", tool=tool, config=config_path)
+    hint = texts.get(
+        "doctor.stores.hint_store_dir", setting=setting, config=config_path
+    )
     if not store.exists():
         parent = nearest_existing(store)
         if parent.is_dir() and os.access(parent, os.W_OK | os.X_OK):
             return checks, "missing"
-        text = texts.get("doctor.stores.cannot_create", tool=tool, path=store)
+        text = texts.get("doctor.stores.cannot_create", tool=label, path=store)
         checks.append(
             Check(
                 "error",
@@ -560,7 +571,7 @@ def _store_folder(
         )
         return checks, "broken"
     if not store.is_dir():
-        text = texts.get("doctor.stores.not_a_directory", tool=tool, path=store)
+        text = texts.get("doctor.stores.not_a_directory", tool=label, path=store)
         checks.append(
             Check(
                 "error",
@@ -573,7 +584,7 @@ def _store_folder(
         )
         return checks, "broken"
     if not os.access(store, os.W_OK | os.X_OK):
-        text = texts.get("doctor.stores.not_writable", tool=tool, path=store)
+        text = texts.get("doctor.stores.not_writable", tool=label, path=store)
         checks.append(
             Check(
                 "error",
@@ -606,19 +617,21 @@ def _cache_checks(cache_file: Path, texts: Texts, config_path: Path) -> list[Che
 
 
 def _hardlink_checks(
-    tool: str, folder: Path, texts: Texts, config_path: Path
+    label: str, setting: str, folder: Path, texts: Texts, config_path: Path
 ) -> list[Check]:
     """Check that the store folder takes hard links.
 
-    Both tool stores publish every version with hard links; FAT/exFAT and some
-    network shares have none. Tried in the store, or in the closest existing folder
-    when the store is not created yet (the same file system).
+    Both tools publish every version with hard links, in each of their folders;
+    FAT/exFAT and some network shares have none. Tried in the folder, or in the
+    closest existing folder when it is not created yet (the same file system).
     """
     try:
         failure = hardlink_error(folder)
     except OSError:
-        text = texts.get("doctor.stores.not_writable", tool=tool, path=folder)
-        hint = texts.get("doctor.stores.hint_store_dir", tool=tool, config=config_path)
+        text = texts.get("doctor.stores.not_writable", tool=label, path=folder)
+        hint = texts.get(
+            "doctor.stores.hint_store_dir", setting=setting, config=config_path
+        )
         return [
             Check(
                 "error",
@@ -633,9 +646,11 @@ def _hardlink_checks(
         return []
     reason = failure.strerror or str(failure)
     text = texts.get(
-        "doctor.stores.no_hardlinks", tool=tool, path=folder, reason=reason
+        "doctor.stores.no_hardlinks", tool=label, path=folder, reason=reason
     )
-    hint = texts.get("doctor.stores.hint_no_hardlinks", tool=tool, config=config_path)
+    hint = texts.get(
+        "doctor.stores.hint_no_hardlinks", setting=setting, config=config_path
+    )
     return [
         Check(
             "error",
@@ -648,6 +663,8 @@ def _hardlink_checks(
     ]
 
 
+# The setting that points to the Kartograf store, as the hints name it
+_KARTOGRAF_SETTING = "[retman.tools.kartograf] store_dir"
 # How the report names a store folder that Kartograf refuses: the keys of the text and
 # of the hint under ``doctor.stores`` and the ``details.reason`` of the failed unit
 _KARTOGRAF_REFUSALS: Mapping[str, tuple[str, str, str]] = {
@@ -679,7 +696,12 @@ def _kartograf_checks(
     """
     store = Path(settings["store_dir"])
     checks, state = _store_folder(
-        "kartograf", store, texts, config_path, symlinks_refused=False
+        "kartograf",
+        _KARTOGRAF_SETTING,
+        store,
+        texts,
+        config_path,
+        symlinks_refused=False,
     )
     found = kartograf_store_state(store) if state != "broken" else None
     where: Path | None = None
@@ -717,7 +739,9 @@ def _kartograf_checks(
         else:
             where = store
     if where is not None:
-        checks.extend(_hardlink_checks("kartograf", where, texts, config_path))
+        checks.extend(
+            _hardlink_checks("kartograf", _KARTOGRAF_SETTING, where, texts, config_path)
+        )
     if found is not None and found.state in ("empty", "ready") and not checks:
         key = "kartograf_ready" if found.state == "ready" else "kartograf_ok"
         ok = texts.get(
@@ -731,73 +755,89 @@ def _kartograf_checks(
     return checks
 
 
-def _obserwator_store_checks(
-    store: Path, texts: Texts, config_path: Path
-) -> list[Check]:
-    """Obserwator marks a store folder with a file, which ``store init`` writes.
+# The folders of Obserwator in the order of the report, by the key of their setting
+# in ``[retman.tools.obserwator]``: the data root, which most operations read, and
+# the raw root of the downloaded files (Obserwator ADR-017)
+_OBSERWATOR_ROOTS: tuple[tuple[str, ObserwatorRoot], ...] = (
+    ("store_dir", "data"),
+    ("raw_store_dir", "raw"),
+)
+# How the report names an Obserwator folder that the tool refuses (as above)
+_OBSERWATOR_REFUSALS: Mapping[str, tuple[str, str, str]] = {
+    "foreign": ("obserwator_foreign", "hint_obserwator_foreign", "foreign_folder"),
+    "no_marker": ("obserwator_no_marker", "hint_obserwator_no_marker", "no_marker"),
+    "unreadable": (
+        "obserwator_unreadable",
+        "hint_obserwator_marker",
+        "marker_unreadable",
+    ),
+    "unsupported": (
+        "obserwator_unsupported",
+        "hint_obserwator_marker",
+        "marker_unsupported",
+    ),
+    "wrong_root": (
+        "obserwator_wrong_root",
+        "hint_obserwator_wrong_root",
+        "wrong_root",
+    ),
+}
 
-    An empty folder is only not created yet; a folder with the layout of a store and
-    no marker, and a folder with other files, are errors, because the tool refuses
-    to use them.
+
+def _obserwator_store_checks(
+    store: Path, kind: ObserwatorRoot, key: str, texts: Texts, config_path: Path
+) -> list[Check]:
+    """Obserwator marks each of its folders with a file, which ``store init`` writes.
+
+    ``store`` is the folder of ``kind`` that the setting ``key`` names. An empty
+    folder is only not created yet; a folder with the layout of its kind and no
+    marker, a folder with other files, a marker that cannot be used and a folder
+    of the other kind (or a store not yet split in two) are errors, because the
+    tool refuses to use them.
     """
+    label = texts.get(f"doctor.stores.label_obserwator_{kind}")
+    setting = f"[retman.tools.obserwator] {key}"
     checks, state = _store_folder(
-        "obserwator", store, texts, config_path, symlinks_refused=True
+        label, setting, store, texts, config_path, symlinks_refused=True
     )
     if state == "broken":
         return checks
-    found = obserwator_store_state(store)
-    args = {"path": store, "marker": OBSERWATOR_MARKER, "schema": found.detail}
-    config = {"config": config_path}
-    if found.state in ("missing", "empty"):
+    found = obserwator_store_state(store, kind=kind)
+    other: ObserwatorRoot = "raw" if kind == "data" else "data"
+    args = {
+        "tool": label,
+        "path": store,
+        "kind": kind,
+        "marker": OBSERWATOR_MARKERS[kind],
+        "other": OBSERWATOR_MARKERS[other],
+        "schema": found.detail,
+        "setting": setting,
+        "config": config_path,
+    }
+    refusal = _OBSERWATOR_REFUSALS.get(found.state)
+    if refusal is not None:
+        text_key, hint_key, reason = refusal
+        checks.append(
+            Check(
+                "error",
+                texts.get(f"doctor.stores.{text_key}", **args),
+                texts.get(f"doctor.stores.{hint_key}", **args),
+                blocking=True,
+                code="store_unavailable",
+                reason=reason,
+            )
+        )
+    elif found.state in ("missing", "empty"):
         checks.append(
             Check(
                 "warning",
                 texts.get("doctor.stores.obserwator_not_initialised", **args),
-                texts.get("doctor.stores.hint_obserwator_init"),
-            )
-        )
-    elif found.state == "foreign":
-        text = texts.get("doctor.stores.obserwator_foreign", **args)
-        hint = texts.get("doctor.stores.hint_obserwator_foreign", **config)
-        checks.append(
-            Check(
-                "error",
-                text,
-                hint,
-                blocking=True,
-                code="store_unavailable",
-                reason="foreign_folder",
-            )
-        )
-    elif found.state == "no_marker":
-        text = texts.get("doctor.stores.obserwator_no_marker", **args)
-        hint = texts.get("doctor.stores.hint_obserwator_no_marker")
-        checks.append(
-            Check(
-                "error",
-                text,
-                hint,
-                blocking=True,
-                code="store_unavailable",
-                reason="no_marker",
-            )
-        )
-    elif found.state in ("unreadable", "unsupported"):
-        text = texts.get(f"doctor.stores.obserwator_{found.state}", **args)
-        hint = texts.get("doctor.stores.hint_obserwator_marker", **config)
-        checks.append(
-            Check(
-                "error",
-                text,
-                hint,
-                blocking=True,
-                code="store_unavailable",
-                reason=f"marker_{found.state}",
+                texts.get("doctor.stores.hint_obserwator_init", **args),
             )
         )
     if found.state in ("missing", "empty", "ready"):
         where = store if state == "ok" else nearest_existing(store)
-        checks.extend(_hardlink_checks("obserwator", where, texts, config_path))
+        checks.extend(_hardlink_checks(label, setting, where, texts, config_path))
     if found.state == "ready" and not checks:
         checks.append(Check("ok", texts.get("doctor.stores.obserwator_ready", **args)))
     return checks
@@ -871,9 +911,12 @@ def _store_checks(
     if "obserwator" in active and "obserwator" in config.tools:
         manifest, version = active["obserwator"]
         settings = config.tools["obserwator"]
-        checks.extend(
-            _obserwator_store_checks(Path(settings["store_dir"]), texts, config.path)
-        )
+        for key, kind in _OBSERWATOR_ROOTS:
+            checks.extend(
+                _obserwator_store_checks(
+                    Path(settings[key]), kind, key, texts, config.path
+                )
+            )
         arrow = _pyarrow_check(texts, manifest["source"])
         checks.append(arrow)
         checks.append(

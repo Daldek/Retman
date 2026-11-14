@@ -1,7 +1,8 @@
 """The offline review of an Obserwator plan: rows, questions asked again, blockers.
 
-The real client reads the tool's fixture store; ``FakeToolClient`` stands in
-where a store state is hard to build (no folder, wrong schema). Everything runs
+The real client reads the tool's fixture store, a folder holding the raw and the
+data root; ``FakeToolClient`` stands in where a root state is hard to build (no
+folder, wrong schema). Everything runs
 through ``preview_operation`` as the pipeline does, so every problem and row key
 is also resolved to its Polish text. Nothing may reach the network: planning gets
 only ``PlanView``, and the suite's socket guard is on.
@@ -18,8 +19,10 @@ from obserwator_store_files import (
 )
 from obserwator_support import (
     build_store,
+    data_root,
     fixture_store,
     isolate_environment,
+    raw_root,
     real_client,
     settings_for,
 )
@@ -35,7 +38,8 @@ from retman.tools.obserwator import preview as preview_module
 
 TEXTS = load_core_texts("pl")
 PRECIP = "pl_meteo_precip_daily"
-READY = {"result": {"exists": True, "supported": True, "schema": "obserwator-store/1"}}
+# The schema of each root (the tool's own names, not Retman's constants)
+SCHEMAS = {"raw": "obserwator-store/1", "data": "obserwator-data/1"}
 
 
 @pytest.fixture(scope="module")
@@ -104,30 +108,60 @@ def series(**changes: Any) -> dict[str, Any]:
 # --- the store itself -----------------------------------------------------------------
 
 
-def fake_store(info: dict[str, Any]) -> FakeToolClient:
-    return FakeToolClient(documents={"store info": {"result": info}})
+def root_kind(call: CatalogCall) -> str:
+    """The kind of the root a ``store info`` call asks about (a test store's folder)."""
+    return "data" if Path(str(call.options["root"])).name == "data" else "raw"
+
+
+def fake_store(info: dict[str, Any] | None = None, kind: str = "data") -> Any:
+    """``store info``: ``info`` for the root of ``kind``, a ready root for the other."""
+
+    def answer(call: CatalogCall) -> dict[str, Any]:
+        found = root_kind(call)
+        if info is not None and found == kind:
+            return {"result": info}
+        return {
+            "result": {
+                "exists": True,
+                "supported": True,
+                "store_schema": SCHEMAS[found],
+            }
+        }
+
+    return answer
+
+
+READY = fake_store()
+MISSING = {"exists": False, "supported": False, "store_schema": None}
+NOT_SUPPORTED = {"exists": True, "supported": False, "store_schema": None}
 
 
 def test_a_store_that_does_not_exist_blocks_every_operation_that_needs_it(
     operations, tmp_path
 ):
-    client = fake_store({"exists": False, "supported": False, "schema": None})
+    def missing(call: CatalogCall) -> dict[str, Any]:
+        return {"result": MISSING}
 
     result = review(
         operations,
         "build_obserwator_series",
         {"dataset": PRECIP},
         tmp_path,
-        client=client,
+        client=FakeToolClient(documents={"store info": missing}),
     )
 
-    (problem,) = result.problems
-    assert problem.params == ()
-    assert problem.text.startswith("Magazyn Obserwatora (")
-    assert (
-        "nie jest jeszcze utworzony" in problem.text
-        and "retman config init" in problem.text
-    )
+    # Each root the operation needs is named, the raw one it reads first
+    assert [problem.details["path"] for problem in result.problems] == [
+        str(raw_root(fixture_store())),
+        str(data_root(fixture_store())),
+    ]
+    for problem, setting in zip(
+        result.problems, ("raw_store_dir", "store_dir"), strict=True
+    ):
+        assert problem.params == ()
+        assert problem.code == "store_unavailable"
+        assert problem.details["reason"] == "not_initialised"
+        assert setting in problem.text and "retman config init" in problem.text
     assert result.rows == []
 
 
@@ -135,8 +169,8 @@ def test_an_empty_folder_is_not_initialised_but_a_foreign_one_is_refused(
     operations, tmp_path
 ):
     folder = tmp_path / "folder"
-    folder.mkdir()
-    client = fake_store({"exists": True, "supported": False, "schema": None})
+    data_root(folder).mkdir(parents=True)
+    client = FakeToolClient(documents={"store info": fake_store(NOT_SUPPORTED)})
 
     empty = review(
         operations,
@@ -146,7 +180,7 @@ def test_an_empty_folder_is_not_initialised_but_a_foreign_one_is_refused(
         client=client,
         store=folder,
     )
-    (folder / "notatki.txt").write_text("nie magazyn", encoding="utf-8")
+    (data_root(folder) / "notatki.txt").write_text("nie magazyn", encoding="utf-8")
     foreign = review(
         operations,
         "build_obserwator_series",
@@ -156,22 +190,21 @@ def test_an_empty_folder_is_not_initialised_but_a_foreign_one_is_refused(
         store=folder,
     )
 
-    assert "nie jest jeszcze utworzony" in empty.problems[0].text
-    assert (
-        "zawiera inne pliki i nie jest magazynem Obserwatora"
-        in foreign.problems[0].text
-    )
+    assert [p.details["reason"] for p in empty.problems] == ["not_initialised"]
+    assert [p.details["reason"] for p in foreign.problems] == ["foreign_folder"]
+    assert "zawiera inne pliki" in foreign.problems[0].text
+    assert "store_dir" in foreign.problems[0].text
 
 
 def test_a_layout_without_a_marker_is_named_and_a_key_file_is_not_content(
     operations, tmp_path
 ):
-    client = fake_store({"exists": True, "supported": False, "schema": None})
+    client = FakeToolClient(documents={"store info": fake_store(NOT_SUPPORTED, "raw")})
     unmarked, keys = tmp_path / "unmarked", tmp_path / "keys"
-    unmarked.mkdir()
-    keys.mkdir()
-    write_layout(unmarked, "archives")
-    write_server_state(keys)
+    raw_root(unmarked).mkdir(parents=True)
+    raw_root(keys).mkdir(parents=True)
+    write_layout(raw_root(unmarked), "archives")
+    write_server_state(raw_root(keys))
 
     def problem(folder: Path) -> str:
         result = review(
@@ -184,19 +217,19 @@ def test_a_layout_without_a_marker_is_named_and_a_key_file_is_not_content(
         )
         (found,) = result.problems
         assert found.params == ()
-        return found.text
+        return found.details["reason"]
 
-    assert "ma układ magazynu Obserwatora, ale nie ma znacznika" in problem(unmarked)
-    assert "nie jest jeszcze utworzony" in problem(keys)
+    assert problem(unmarked) == "no_marker"
+    assert problem(keys) == "not_initialised"
 
 
 def test_a_marker_the_tool_cannot_read_is_named_and_not_taken_for_other_files(
     operations, tmp_path
 ):
     damaged = tmp_path / "damaged"
-    damaged.mkdir()
-    write_damaged_marker(damaged)
-    client = fake_store({"exists": True, "supported": False, "schema": None})
+    raw_root(damaged).mkdir(parents=True)
+    write_damaged_marker(raw_root(damaged))
+    client = FakeToolClient(documents={"store info": fake_store(NOT_SUPPORTED, "raw")})
 
     result = review(
         operations,
@@ -210,15 +243,24 @@ def test_a_marker_the_tool_cannot_read_is_named_and_not_taken_for_other_files(
     # The tool raises data_error (invalid_marker) for it in a plan and in a run
     (problem,) = result.problems
     assert problem.params == ()
-    assert (
-        "obserwator-store.json" in problem.text and "jest nieczytelny" in problem.text
-    )
+    assert problem.details["reason"] == "marker_unreadable"
+    assert "obserwator-store.json" in problem.text
     assert "inne pliki" not in problem.text
 
 
-def test_a_store_of_another_schema_is_named(operations, tmp_path):
-    client = fake_store(
-        {"exists": True, "supported": False, "schema": "obserwator-store/9"}
+def test_a_root_with_the_marker_of_the_other_root_is_named_wrong(operations, tmp_path):
+    # A store from before the split: the raw marker where the data root should be
+    store = tmp_path / "unsplit"
+    data_root(store).mkdir(parents=True)
+    (data_root(store) / "obserwator-store.json").write_text(
+        '{"schema": "obserwator-store/1"}', encoding="utf-8"
+    )
+    client = FakeToolClient(
+        documents={
+            "store info": fake_store(
+                {"exists": True, "supported": True, "store_schema": SCHEMAS["raw"]}
+            )
+        }
     )
 
     result = review(
@@ -227,9 +269,48 @@ def test_a_store_of_another_schema_is_named(operations, tmp_path):
         {"dataset": PRECIP},
         tmp_path,
         client=client,
+        store=store,
     )
 
-    assert "obserwator-store/9" in result.problems[0].text
+    (problem,) = result.problems
+    assert problem.params == ()
+    assert problem.details == {
+        "reason": "wrong_root",
+        "path": str(data_root(store)),
+    }
+    assert "obserwator-data.json" in problem.text and "store_dir" in problem.text
+
+
+def test_a_store_of_another_schema_is_named(operations, tmp_path):
+    store = tmp_path / "newer"
+    data_root(store).mkdir(parents=True)
+    (data_root(store) / "obserwator-data.json").write_text(
+        '{"schema": "obserwator-data/9"}', encoding="utf-8"
+    )
+    client = FakeToolClient(
+        documents={
+            "store info": fake_store(
+                {
+                    "exists": True,
+                    "supported": False,
+                    "store_schema": "obserwator-data/9",
+                }
+            )
+        }
+    )
+
+    result = review(
+        operations,
+        "build_obserwator_series",
+        {"dataset": PRECIP},
+        tmp_path,
+        client=client,
+        store=store,
+    )
+
+    (problem,) = result.problems
+    assert problem.details["reason"] == "marker_unsupported"
+    assert "obserwator-data/9" in problem.text
 
 
 def test_a_store_that_is_there_but_cannot_write_series_needs_pyarrow(
@@ -255,10 +336,10 @@ def test_a_store_that_is_there_but_cannot_write_series_needs_pyarrow(
         client=client,
     )
 
-    assert writing.problems[0].text.startswith(
-        "Do szeregów w magazynie Obserwatora potrzebny"
-    )
-    assert writing.problems[0].params == ()
+    assert [(p.params, p.code) for p in writing.problems] == [
+        ((), "missing_dependency")
+    ]
+    assert "pyarrow" in writing.problems[0].text
     # Reading a series (Parquet index) is not what pyarrow is needed for here
     assert all("pyarrow" not in problem.text for problem in reading.problems)
 
@@ -266,12 +347,24 @@ def test_a_store_that_is_there_but_cannot_write_series_needs_pyarrow(
 # --- station series ------------------------------------------------------------------
 
 
+def store_row(store: Path) -> tuple[str, str]:
+    return ("Magazyn Obserwatora, dane", f"{data_root(store)} (z konfiguracji)")
+
+
+def raw_store_row(store: Path) -> tuple[str, str]:
+    return (
+        "Magazyn Obserwatora, dane surowe",
+        f"{raw_root(store)} (z konfiguracji)",
+    )
+
+
 def test_a_series_in_the_store_shows_what_the_store_covers(operations, tmp_path):
     result = review(operations, "export_station_series", series(), tmp_path)
 
     assert result.problems == []
+    # From the store the series is only read: the raw root plays no part
     assert result.rows == [
-        ("Magazyn Obserwatora", f"{fixture_store()} (z konfiguracji)"),
+        store_row(fixture_store()),
         ("Dane w magazynie", "2001-01-01 – 2001-01-31, luk: 0"),
     ]
     assert result.values["store_coverage"] == {
@@ -348,7 +441,11 @@ def test_from_the_server_the_missing_series_is_fine_and_the_archives_are_counted
         "najwyżej 252: od codz_2000_01.zip do codz_2020_12.zip; "
         "rozmiar nieznany bez sprawdzenia w sieci",
     ) in result.rows
-    assert result.rows[0][0] == "Magazyn Obserwatora"
+    # The archives come into the raw root and the series is built into the data root
+    assert result.rows[:2] == [
+        raw_store_row(fixture_store()),
+        store_row(fixture_store()),
+    ]
 
 
 def test_a_station_the_series_does_not_have_yet_is_not_an_error_from_the_server(
@@ -425,8 +522,11 @@ def test_a_search_in_the_store_counts_the_matching_stations(operations, tmp_path
     )
 
     assert result.problems == []
-    assert ("Pasujące stacje", "3 w katalogu magazynu") in result.rows
-    assert result.values == {"matches": 3}
+    assert result.rows == [
+        store_row(fixture_store()),
+        ("Pasujące stacje", "4 w katalogu magazynu"),
+    ]
+    assert result.values == {"matches": 4}
     # The server needs no store: nothing to review before the user confirms
     assert (server.rows, server.problems) == ([], [])
 
@@ -437,7 +537,9 @@ def test_a_store_without_a_station_catalog_sends_the_user_to_the_server(
     import obserwator
 
     store = tmp_path / "empty-store"
-    obserwator.run_command("store init", options={"root": str(store)})
+    obserwator.run_command(
+        "store init", options={"root": str(data_root(store)), "kind": "data"}
+    )
 
     result = review(
         operations,
@@ -491,16 +593,24 @@ def test_the_catalog_build_names_the_reference_file_and_checks_the_users_locatio
         operations, "build_obserwator_station_catalog", {"provider": "chmi"}, tmp_path
     )
 
-    assert plain.rows[1][0] == "Położenia stacji (plik statyczny)"
-    assert plain.rows[1][1].startswith("brak pliku hydro_stations_locations.csv")
-    assert with_file.rows[1][1].startswith("hydro_stations_locations.csv w folderze")
+    # The catalog is built offline from the station sources of the raw root
+    assert plain.rows[:2] == [
+        raw_store_row(fixture_store()),
+        store_row(fixture_store()),
+    ]
+    assert plain.rows[2][0] == "Położenia stacji (plik statyczny)"
+    assert plain.rows[2][1].startswith("brak pliku hydro_stations_locations.csv")
+    assert with_file.rows[2][1].startswith("hydro_stations_locations.csv w folderze")
     assert ("Plik z położeniami stacji", "polozenia.csv (1 stacji)") in with_file.rows
     assert [p.params for p in invalid.problems] == [("user_locations",)]
     assert "kolumnami station_code, latitude i longitude" in invalid.problems[0].text
     assert [p.params for p in missing.problems] == [("user_locations",)]
     assert "Nie można odczytać pliku" in missing.problems[0].text
     # The static file is IMGW-PIB's only
-    assert [label for label, _ in czech.rows] == ["Magazyn Obserwatora"]
+    assert [label for label, _ in czech.rows] == [
+        "Magazyn Obserwatora, dane surowe",
+        "Magazyn Obserwatora, dane",
+    ]
 
 
 def test_current_data_say_when_the_answer_is_the_whole_list(operations, tmp_path):
@@ -552,9 +662,8 @@ def test_pmaxtp_in_the_store_needs_the_store_and_the_point_must_lie_in_poland(
     )
 
     assert (plain.rows, plain.problems) == ([], [])
-    assert stored.rows == [
-        ("Magazyn Obserwatora", f"{fixture_store()} (z konfiguracji)")
-    ]
+    # A stored cell goes to the raw root
+    assert stored.rows == [raw_store_row(fixture_store())]
     assert [p.params for p in outside.problems] == [("point",)]
 
 
@@ -602,7 +711,7 @@ def test_building_a_series_names_the_store_and_needs_it_ready(operations, tmp_pa
     )
 
     assert result.problems == []
-    assert result.rows == [("Magazyn Obserwatora", f"{store} (z konfiguracji)")]
+    assert result.rows == [raw_store_row(store), store_row(store)]
 
 
 def test_a_review_asks_the_tool_only_offline_questions(operations, tmp_path):

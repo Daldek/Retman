@@ -152,8 +152,30 @@ def test_retman_has_no_store_of_its_own_and_reports_the_stores_of_the_tools(
         "exists": True,
         "size_bytes": 100,
     }
-    assert document["stores"]["obserwator"]["exists"] is False
-    assert document["stores"]["obserwator"]["size_bytes"] is None
+    # Both roots of Obserwator are listed, each with the setting it follows
+    for name, folder in (
+        ("obserwator", "obserwator"),
+        ("obserwator_raw", "obserwator-raw"),
+    ):
+        assert document["stores"][name] == {
+            "root": str(user_environment / "data" / folder),
+            "source": "default",
+            "name": None,
+            "exists": False,
+            "size_bytes": None,
+        }
+
+
+def test_the_text_report_lists_each_store_root_with_its_path(
+    user_environment: Path,
+) -> None:
+    report = get_config(environ={})
+
+    lines = render_config(report, load_core_texts("pl")).splitlines()
+
+    data = user_environment / "data"
+    for folder in ("kartograf", "obserwator", "obserwator-raw"):
+        assert len([line for line in lines if f"{data / folder} (" in line]) == 1
 
 
 def test_the_text_report_shows_each_key_with_its_source() -> None:

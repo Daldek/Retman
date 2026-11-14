@@ -13,6 +13,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib import resources
+from itertools import combinations
 from pathlib import Path
 from typing import Any, Final, Literal, cast
 
@@ -21,6 +22,7 @@ from retman.environment import (
     KARTOGRAF_CACHE,
     KARTOGRAF_STORE_NAME,
     KEYS,
+    OBSERWATOR_RAW_STORE_NAME,
     OBSERWATOR_REFERENCE,
     OBSERWATOR_STORE_NAME,
     TOOL,
@@ -52,6 +54,7 @@ _OPENAI_REQUIRED: Final[tuple[str, ...]] = (
 _STORE_KEYS: Final[tuple[str, ...]] = (
     "tools.kartograf.store_dir",
     "tools.obserwator.store_dir",
+    "tools.obserwator.raw_store_dir",
 )
 _SIDE_KEYS: Final[tuple[str, ...]] = (
     "tools.kartograf.cache_file",
@@ -155,13 +158,13 @@ def _check_values(env: Environment, problems: _Problems, *, model: bool) -> None
 def _check_paths(env: Environment, problems: _Problems) -> None:
     """Check that the stores are siblings and the side files lie outside them.
 
-    Obserwator refuses a store inside or around a Kartograf store, and a store scan
-    reports foreign files.
+    Obserwator refuses a root inside or around another store (a Kartograf store or
+    its own root of the other kind), and a store scan reports foreign files.
     """
     stores = {name: Path(env.setting(name).value) for name in _STORE_KEYS}
-    left, right = stores.values()
-    if _inside(left, right) or _inside(right, left):
-        problems.add("paths_overlap", " / ".join(stores))
+    for left, right in combinations(stores, 2):
+        if _inside(stores[left], stores[right]) or _inside(stores[right], stores[left]):
+            problems.add("paths_overlap", f"{left} / {right}")
     for key in _SIDE_KEYS:
         for store_key, folder in stores.items():
             if _inside(Path(env.setting(key).value), folder):
@@ -236,6 +239,7 @@ def _settings(env: Environment) -> Settings:
             },
             "obserwator": {
                 "store_dir": text("tools.obserwator.store_dir"),
+                "raw_store_dir": text("tools.obserwator.raw_store_dir"),
                 "reference_data_dir": text("tools.obserwator.reference_data_dir"),
             },
         },
@@ -338,6 +342,7 @@ class ToolPaths:
     kartograf_store: Path
     kartograf_cache: Path
     obserwator_store: Path
+    obserwator_raw_store: Path
     obserwator_reference: Path
 
 
@@ -358,9 +363,10 @@ def default_collect_path(env: Environment) -> Path:
 def tool_paths(env: Environment, stores_dir: Path | None = None) -> ToolPaths:
     """Paths of the tool stores for the folder chosen in ``retman config init``.
 
-    Both stores are folders inside ``stores_dir`` (one disk, two folders); the
-    cache and the reference files stay in the cache folder, a local disk. Paths
-    are resolved: Obserwator refuses a symbolic link in a store path.
+    The stores are folders inside ``stores_dir`` (one disk, three folders: the
+    Kartograf store and the data and raw roots of Obserwator); the cache and the
+    reference files stay in the cache folder, a local disk. Paths are resolved:
+    Obserwator refuses a symbolic link in a store path.
 
     Parameters
     ----------
@@ -375,6 +381,7 @@ def tool_paths(env: Environment, stores_dir: Path | None = None) -> ToolPaths:
         kartograf_store=stores / KARTOGRAF_STORE_NAME,
         kartograf_cache=KARTOGRAF_CACHE(env).expanduser().resolve(),
         obserwator_store=stores / OBSERWATOR_STORE_NAME,
+        obserwator_raw_store=stores / OBSERWATOR_RAW_STORE_NAME,
         obserwator_reference=OBSERWATOR_REFERENCE(env).expanduser().resolve(),
     )
 
@@ -408,7 +415,8 @@ def config_template(
     collect_commands : bool, optional
         The user's answer about collecting commands (ADR-010).
     stores_dir : Path, optional
-        Folder holding both tool stores as ``kartograf`` and ``obserwator``;
+        Folder holding the tool stores as ``kartograf``, ``obserwator`` and
+        ``obserwator-raw``;
         :func:`default_stores_dir` by default.
     env : Environment, optional
         The sources of ``data_dir`` and ``cache_dir``; the process environment by
@@ -422,6 +430,7 @@ def config_template(
         "@KARTOGRAF_STORE_DIR@": _toml_string(str(paths.kartograf_store)),
         "@KARTOGRAF_CACHE_FILE@": _toml_string(str(paths.kartograf_cache)),
         "@OBSERWATOR_STORE_DIR@": _toml_string(str(paths.obserwator_store)),
+        "@OBSERWATOR_RAW_STORE_DIR@": _toml_string(str(paths.obserwator_raw_store)),
         "@OBSERWATOR_REFERENCE_DIR@": _toml_string(str(paths.obserwator_reference)),
     }
     text = (

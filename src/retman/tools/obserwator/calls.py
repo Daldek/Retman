@@ -3,7 +3,8 @@
 Pure functions: they read the plan's parameters and the manifest (``tool_value``,
 ``option_meta``) and return the catalog calls the generic runner validates while
 planning and runs after the user's confirmation. They never touch the file system
-or the network and never name the store: the client adds ``root``. A call gets
+or the network and never name a root: the client adds ``root`` (the raw or the data
+root, by the command) and ``raw_root``. A call gets
 an output path only when ``ctx.output_dir`` exists, i.e. when it really runs
 (while planning the tool validates the stream form, which is valid offline).
 Every ``CatalogCall.params`` maps a tool option to the Retman parameter it came
@@ -19,6 +20,24 @@ from retman.extractors.dates import archive_years, period_dates
 # Attribution of the data the mappers write as CSV comes from the provider
 # registry; it is an offline call, so it is also validated and audited
 PROVIDERS = CatalogCall("datasets providers", {})
+# The station sources of each provider's catalog, which ``store sync`` keeps in the
+# raw root and ``store catalog`` reads offline (Obserwator ADR-015). IMGW-PIB's
+# station details (``pl.imgw.hydro_details``, one request per station) are not
+# synchronised: the catalog is built without them (ADR-034)
+STATION_SOURCES: dict[str, list[str]] = {
+    "IMGW-PIB": [
+        "pl.imgw.hydro_stations",
+        "pl.imgw.meteo_stations",
+        "pl.imgw.hydro_now",
+        "pl.imgw.meteo_now",
+    ],
+    "CHMI": [
+        "cz.chmi.hydro_stations",
+        "cz.chmi.meteo_stations",
+        "cz.chmi.hydro_now",
+        "cz.chmi.meteo_now",
+    ],
+}
 
 
 def _codes(stations: list[dict[str, Any]]) -> list[str]:
@@ -57,18 +76,22 @@ def find_obserwator_stations(
 def build_obserwator_station_catalog(
     params: dict[str, Any], ctx: ToolContext
 ) -> list[CatalogCall]:
-    """Operation 2: ``store catalog`` of one provider (writes the store)."""
-    options: dict[str, object] = {
-        "provider": ctx.tool_value("provider", params["provider"])
-    }
+    """Operation 2: ``store sync`` of the station sources, then ``store catalog``.
+
+    The sync downloads the provider's station lists and metadata into the raw root;
+    the catalog is built from them offline into the data root.
+    """
+    provider = ctx.tool_value("provider", params["provider"])
+    options: dict[str, object] = {"provider": provider}
     if "user_locations" in params:
         options["user_locations"] = str(ctx.project_dir / params["user_locations"])
     return [
+        CatalogCall("store sync", {"datasets": list(STATION_SOURCES[provider])}),
         CatalogCall(
             "store catalog",
             options,
             params={"provider": "provider", "user_locations": "user_locations"},
-        )
+        ),
     ]
 
 
@@ -187,11 +210,12 @@ def read_stored_pmaxtp(params: dict[str, Any], ctx: ToolContext) -> list[Catalog
 def export_station_series(
     params: dict[str, Any], ctx: ToolContext
 ) -> list[CatalogCall]:
-    """Operation 9: [``store sync``] → ``series export`` → ``series select``.
+    """Operation 9: [``store sync`` → ``series build``] → ``series export`` → select.
 
-    From the server the archives of the period are first synchronised into the
-    store (and the series rebuilt); from the store the series is exported as it
-    is. ``series select`` only names the series version the export read.
+    From the server the archives of the period are first synchronised into the raw
+    root and the series is rebuilt into the data root; from the store the series is
+    exported as it is. ``series select`` only names the series version the export
+    read.
     """
     dataset = ctx.tool_value("dataset", params["dataset"])
     meta = ctx.option_meta("dataset", params["dataset"])
@@ -199,7 +223,7 @@ def export_station_series(
     start, end = period_dates(params["period"], params["year_type"])
     calls: list[CatalogCall] = []
     if params["data_source"] == "server":
-        sync: dict[str, object] = {"datasets": [dataset], "series": True}
+        sync: dict[str, object] = {"datasets": [dataset]}
         if meta["provider"] == "CHMI":
             sync["stations"] = [code]
         # ČHMÚ meteorological files hold a station's whole history: no years
@@ -214,6 +238,11 @@ def export_station_series(
                     "years": "period",
                     "stations": "station",
                 },
+            )
+        )
+        calls.append(
+            CatalogCall(
+                "series build", {"dataset": dataset}, params={"dataset": "dataset"}
             )
         )
     export: dict[str, object] = {

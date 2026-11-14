@@ -64,6 +64,7 @@ def init_lines(
             "init.stores_summary",
             kartograf=paths.kartograf_store,
             obserwator=paths.obserwator_store,
+            obserwator_raw=paths.obserwator_raw_store,
         ),
     ]
     if not created:
@@ -130,6 +131,7 @@ def config_init(
         "stores": {
             "kartograf": str(paths.kartograf_store),
             "obserwator": str(paths.obserwator_store),
+            "obserwator_raw": str(paths.obserwator_raw_store),
         },
     }
     return Output(

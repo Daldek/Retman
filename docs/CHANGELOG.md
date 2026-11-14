@@ -183,6 +183,40 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 ### Changed
 
+- The `tools` group pins the release set `candidate-4` (approved by the author 2026-11-14):
+  Kartograf `d0990c8` -> `c9afdd3`, Obserwator `f9f4ee7` -> `0394af7`, Hydrolog `759d7ef` ->
+  `9e2cb61`; README and USAGE install the same commits. Obserwator and Hydrolog now give the
+  providers' lines of Nogat DEV §20 (`attribution`, `terms_notice`), so the results and the CSV
+  tables carry them and Obserwator's registry-built licence text is no longer shown (ADR-033
+  erratum 3); Kartograf still gives none. Obserwator's catalog adds `stations export` and
+  `analyses build|list|read|export`, which no operation offers (ARCHITECTURE 3.2.11). Retman's
+  Kartograf and Hydrolog operations are unchanged (ADR-023 erratum 3, ADR-025 erratum 8).
+
+- **Breaking: the raw and data roots of Obserwator** (Obserwator ADR-017, Nogat ECO-059,
+  ADR-034). Obserwator keeps two folders: the raw root (marker `obserwator-store.json`:
+  archives, the station sources of the catalogs, PMAXTP cells) and the data root (marker
+  `obserwator-data.json`: series, station catalogs, analyses). `[retman.tools.obserwator]
+  store_dir` is now the data root (default still `<data_dir>/obserwator`); the new setting
+  `raw_store_dir` (`RETMAN_TOOLS_OBSERWATOR_RAW_STORE_DIR`, default `<data_dir>/obserwator-raw`)
+  is the raw root, and `paths_overlap` names any two of the three store folders that nest. The
+  client passes each command the root of its kind and `raw_root` to `series build` and
+  `store catalog`. "Utwórz magazyn Obserwatora", `retman config init` and `retman doctor check`
+  create and check both roots, and `--deep` writes both fixture roots. The synchronisation of
+  archives builds the dataset's series afterwards (`store sync` no longer does), the series
+  export from the server does the same, and building the station catalog first downloads the
+  provider's station lists (`*_stations`, `*_now`; not `pl.imgw.hydro_details`, about 910
+  requests) into the raw root, then builds the catalog offline; its availability check is the
+  check of that download. The store description reads the data root, or the raw root for
+  archives, PMAXTP and observations, and offers the analyses. A store written before the split
+  is refused as the data root (`store_unavailable`, reason `wrong_root`, in the plan and in
+  `doctor check`). Migration: split it once with hard links (USAGE 1.3; Obserwator USAGE
+  "Splitting a store"): move `<data_dir>/obserwator` aside, `cp -al` its `archives/` and
+  `pmaxtp/` into `<data_dir>/obserwator-raw` and its `series/`, `stations/` and `analyses/` into
+  `<data_dir>/obserwator`, then run "Utwórz magazyn Obserwatora" (or `obserwator store init
+  --root RAW` and `obserwator store init --kind data --root DATA`) and `retman doctor check`;
+  with other folders, set `store_dir` and `raw_store_dir`. A settings file without
+  `raw_store_dir` takes its default.
+
 - The `tools` group pins the release set `candidate-2` (Nogat `587c909`), written by
   `ecosystem.py set apply`: Kartograf `9deaa31` -> `d0990c8`, Obserwator `1ee5457` ->
   `f9f4ee7`, Hydrolog `1ffcd6b` -> `759d7ef`; README and USAGE install the same Kartograf and

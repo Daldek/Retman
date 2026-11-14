@@ -1,9 +1,11 @@
 """Call builders of the ``obserwator_archives`` operations (nos. 12-19).
 
 A builder is ``calls(params, ctx) -> list[CatalogCall]``: pure, with the options
-taken from the parameters and the manifest's ``tool_values``. ``root`` is never
-given here, the client adds it from ``[retman.tools.obserwator] store_dir`` (to every
-call but a download of plain files). Files the tool writes (downloads, plans,
+taken from the parameters and the manifest's ``tool_values``. ``root`` is given here
+only where a command reads either root (``store info``, ``store scan``); otherwise
+the client adds the raw root ``raw_store_dir`` or the data root ``store_dir`` of
+``[retman.tools.obserwator]`` by the command (to every call but a download of plain
+files). Files the tool writes (downloads, plans,
 exports) get a target in the result folder only once it exists, i.e. when the
 operation runs; while planning the commands are validated without it, and a
 download with the project folder in its place. The offline lookups feed the
@@ -19,6 +21,8 @@ from pathlib import PurePosixPath
 from typing import Any
 
 from retman.adapters.catalog import CatalogCall, ToolContext
+from retman.stores import ObserwatorRoot
+from retman.tools.obserwator.folders import root_dir
 
 PLAN_FILE = "plan.json"
 
@@ -139,13 +143,18 @@ def check_obserwator_archives(
 def sync_obserwator_store(
     params: dict[str, Any], ctx: ToolContext
 ) -> list[CatalogCall]:
-    """``store sync`` of the selection, building the series of the datasets after it."""
+    """``store sync`` of the selection into the raw root, then ``series build``.
+
+    The tool's sync writes raw archives only; the series of the dataset is built
+    from them into the data root (Obserwator ADR-015).
+    """
     return [
+        CatalogCall("store sync", _store_selection(params, ctx), params=_STORE_ROUTES),
         CatalogCall(
-            "store sync",
-            {**_store_selection(params, ctx), "series": True},
-            params=_STORE_ROUTES,
-        )
+            "series build",
+            {"dataset": ctx.tool_value("dataset", params["dataset"])},
+            params={"dataset": "dataset"},
+        ),
     ]
 
 
@@ -233,9 +242,8 @@ def stored_archives(params: Mapping[str, Any], ctx: ToolContext) -> list[StoredA
     """Return the archives of the selection that the store holds (``store scan``)."""
     provider = ctx.option_meta("dataset", params["dataset"])["provider"]
     years = set(selected_years(params["years"])) if "years" in params else None
-    document = ctx.client.lookup(
-        CatalogCall("store scan", {"kind": "archive", "provider": provider})
-    )
+    scan = {"root": str(root_dir(ctx, "raw")), "kind": "archive", "provider": provider}
+    document = ctx.client.lookup(CatalogCall("store scan", scan))
     result = document.get("result")
     items = result if isinstance(result, list) else None
     return current_archive_versions(
@@ -302,19 +310,41 @@ def export_obserwator_archive(
 def init_obserwator_store(
     params: dict[str, Any], ctx: ToolContext
 ) -> list[CatalogCall]:
-    """``store init`` of the configured store folder (idempotent, refuses others)."""
-    return [CatalogCall("store init", {})]
+    """``store init`` of the raw and the data root (idempotent, refuses others)."""
+    return [
+        CatalogCall("store init", {"kind": "raw"}),
+        CatalogCall("store init", {"kind": "data"}),
+    ]
+
+
+# The kinds of entries of ``store scan`` that the raw root holds; the others (series,
+# catalogs, analyses) are in the data root, and problems are listed for both roots
+RAW_ENTRIES = frozenset({"archive", "pmaxtp", "observation"})
+
+
+def inspected_roots(
+    params: Mapping[str, Any], ctx: ToolContext
+) -> list[ObserwatorRoot]:
+    """Return the roots an inspection reads: by the kind of entries, both without."""
+    kind = ctx.tool_value("kind", params["kind"]) if "kind" in params else None
+    if kind is None or kind == "problem":
+        return ["data", "raw"]
+    return ["raw"] if kind in RAW_ENTRIES else ["data"]
 
 
 def inspect_obserwator_store(
     params: dict[str, Any], ctx: ToolContext
 ) -> list[CatalogCall]:
-    """``store info`` and ``store scan``; both documents are kept as reports."""
+    """``store info`` and ``store scan`` of each root inspected; kept as reports."""
     scan: dict[str, object] = {}
     for name in ("kind", "provider"):
         if name in params:
             scan[name] = ctx.tool_value(name, params[name])
-    return [
-        CatalogCall("store info", {}, kind="obserwator_report"),
-        CatalogCall("store scan", scan, kind="obserwator_report"),
-    ]
+    calls = []
+    for kind in inspected_roots(params, ctx):
+        root = {"root": str(root_dir(ctx, kind))}
+        calls.append(CatalogCall("store info", root, kind="obserwator_report"))
+        calls.append(
+            CatalogCall("store scan", {**root, **scan}, kind="obserwator_report")
+        )
+    return calls

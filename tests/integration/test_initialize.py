@@ -9,7 +9,7 @@ from error_documents import last_line_document
 
 from retman import cli
 from retman.config import load_config
-from retman.stores import OBSERWATOR_MARKER, ToolOutcome
+from retman.stores import ToolOutcome
 
 
 class Terminal(io.StringIO):
@@ -26,17 +26,31 @@ def data(user_environment: Path) -> Path:
 
 
 @pytest.fixture
-def obserwator_calls(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
-    """Obserwator is installed and its store set-up is recorded, not run."""
-    calls: list[Path] = []
+def obserwator_calls(monkeypatch: pytest.MonkeyPatch) -> list[tuple[Path, str]]:
+    """Obserwator is installed and its roots' set-up is recorded, not run."""
+    calls: list[tuple[Path, str]] = []
 
-    def init(folder: Path) -> ToolOutcome:
-        calls.append(folder)
+    def init(folder: Path, *, kind: str) -> ToolOutcome:
+        calls.append((folder, kind))
         return ToolOutcome("ok", version="3.0.0")
 
     monkeypatch.setattr("retman.initialize.tool_installed", lambda package: True)
     monkeypatch.setattr("retman.initialize.init_obserwator_store", init)
     return calls
+
+
+def _refuse_raw_root(
+    monkeypatch: pytest.MonkeyPatch, refusal: ToolOutcome
+) -> list[str]:
+    """Obserwator refuses the raw root; return the kinds it was asked to set up."""
+    kinds: list[str] = []
+
+    def init(folder: Path, *, kind: str) -> ToolOutcome:
+        kinds.append(kind)
+        return refusal if kind == "raw" else ToolOutcome("ok", version="3.0.0")
+
+    monkeypatch.setattr("retman.initialize.init_obserwator_store", init)
+    return kinds
 
 
 def _init(
@@ -63,21 +77,23 @@ def test_init_without_a_terminal_writes_the_config_and_creates_nothing_else(
     assert status == 0
     assert tools["kartograf"]["store_dir"] == str(data / "kartograf")
     assert tools["obserwator"]["store_dir"] == str(data / "obserwator")
+    assert tools["obserwator"]["raw_store_dir"] == str(data / "obserwator-raw")
     # The default paths are shown and written; no question was possible
     assert str(data / "kartograf") in output
     assert "nie zostały utworzone" in output
     assert not data.exists()
 
 
-def test_init_in_a_terminal_creates_the_folders_and_the_store_after_consent(
+def test_init_in_a_terminal_creates_the_folders_and_both_roots_after_consent(
     tmp_path: Path,
     data: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
-    obserwator_calls: list[Path],
+    obserwator_calls: list[tuple[Path, str]],
 ):
     stores = tmp_path / "disk" / "retman"
 
+    # One answer covers both Obserwator roots
     status, config = _init(tmp_path, monkeypatch, f"n\n{stores}\nt\n")
     output = capsys.readouterr().out
     tools = load_config(config).tools
@@ -85,17 +101,24 @@ def test_init_in_a_terminal_creates_the_folders_and_the_store_after_consent(
     assert status == 0
     assert tools["kartograf"]["store_dir"] == str(stores / "kartograf")
     assert tools["obserwator"]["store_dir"] == str(stores / "obserwator")
-    # Both stores sit side by side on the chosen disk; cache and reference files
+    assert tools["obserwator"]["raw_store_dir"] == str(stores / "obserwator-raw")
+    # The stores sit side by side on the chosen disk; cache and reference files
     # stay on the local per-user disk
     assert (stores / "kartograf").is_dir()
     assert Path(tools["kartograf"]["cache_file"]).parent == (
         data.parent / "cache" / "kartograf"
     )
     assert Path(tools["obserwator"]["reference_data_dir"]).is_dir()
-    # The Obserwator folder is left to the tool, which wants an empty one
+    # The Obserwator folders are left to the tool, which wants empty ones: the raw
+    # root first, then the data root, as the operation that creates the store
     assert not (stores / "obserwator").exists()
-    assert obserwator_calls == [stores / "obserwator"]
-    assert f"Magazyn Obserwatora gotowy: {stores / 'obserwator'}" in output
+    assert not (stores / "obserwator-raw").exists()
+    assert obserwator_calls == [
+        (stores / "obserwator-raw", "raw"),
+        (stores / "obserwator", "data"),
+    ]
+    assert str(stores / "obserwator-raw") in output
+    assert str(stores / "obserwator") in output
 
 
 def test_enter_keeps_the_default_folder_and_no_consent_means_no_store(
@@ -139,21 +162,24 @@ def test_a_refusal_of_the_tool_fails_the_command_but_keeps_the_config(
     data: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
-    obserwator_calls: list[Path],
+    obserwator_calls: list[tuple[Path, str]],
 ):
     refusal = ToolOutcome(
         "refused", "Katalog nie jest pustym magazynem Obserwatora: /x"
     )
-    monkeypatch.setattr(
-        "retman.initialize.init_obserwator_store", lambda folder: refusal
-    )
+    kinds = _refuse_raw_root(monkeypatch, refusal)
+    stores = tmp_path / "disk"
 
-    status, config = _init(tmp_path, monkeypatch, f"n\n{tmp_path / 'disk'}\nt\n")
+    status, config = _init(tmp_path, monkeypatch, f"n\n{stores}\nt\n")
     error = capsys.readouterr().err
 
     assert status == 8
     assert config.exists()
     assert "Katalog nie jest pustym magazynem Obserwatora: /x" in error
+    # The refusal of the raw root stops before the data root
+    assert kinds == ["raw"]
+    document = last_line_document(error)
+    assert document["details"]["path"] == str(stores / "obserwator-raw")
 
 
 def test_a_folder_that_cannot_be_created_leaves_no_config_behind(
@@ -233,7 +259,7 @@ def test_without_obserwator_the_consent_question_is_not_asked(
     assert "Obserwator nie jest zainstalowany" in output
 
 
-def test_init_creates_a_real_obserwator_store(
+def test_init_creates_both_real_obserwator_roots(
     tmp_path: Path,
     data: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -245,10 +271,13 @@ def test_init_creates_a_real_obserwator_store(
     status, config = _init(tmp_path, monkeypatch, f"n\n{stores}\nt\n")
 
     assert status == 0
-    assert (stores / "obserwator" / OBSERWATOR_MARKER).is_file()
-    assert load_config(config).tools["obserwator"]["store_dir"] == str(
-        stores / "obserwator"
-    )
+    # The markers as Obserwator names them (spelled out, not taken from Retman)
+    assert (stores / "obserwator" / "obserwator-data.json").is_file()
+    assert (stores / "obserwator-raw" / "obserwator-store.json").is_file()
+    assert not (stores / "obserwator" / "obserwator-store.json").exists()
+    tools = load_config(config).tools
+    assert tools["obserwator"]["store_dir"] == str(stores / "obserwator")
+    assert tools["obserwator"]["raw_store_dir"] == str(stores / "obserwator-raw")
 
 
 def test_a_disk_without_hard_links_is_refused_before_the_config_is_written(
@@ -276,14 +305,12 @@ def test_the_tools_no_hard_link_refusal_gets_its_own_advice(
     data: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
-    obserwator_calls: list[Path],
+    obserwator_calls: list[tuple[Path, str]],
 ):
     refusal = ToolOutcome(
         "refused", "System plików nie obsługuje dowiązań", reason="not_atomic"
     )
-    monkeypatch.setattr(
-        "retman.initialize.init_obserwator_store", lambda folder: refusal
-    )
+    _refuse_raw_root(monkeypatch, refusal)
 
     status, config = _init(tmp_path, monkeypatch, f"n\n{tmp_path / 'disk'}\nt\n")
     error = capsys.readouterr().err
@@ -291,4 +318,10 @@ def test_the_tools_no_hard_link_refusal_gets_its_own_advice(
     assert status == 8
     assert config.exists()
     assert "System plików nie obsługuje dowiązań" in error
-    assert "[retman.tools.kartograf] store_dir" in error
+    # The advice names every setting that follows the chosen folder
+    for setting in (
+        "[retman.tools.kartograf] store_dir",
+        "[retman.tools.obserwator] store_dir",
+        "raw_store_dir",
+    ):
+        assert setting in error

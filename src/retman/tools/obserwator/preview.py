@@ -20,7 +20,10 @@ from retman.exceptions import ErrorCode
 from retman.extractors.dates import period_dates
 from retman.registry.manifest import PreviewOutput, PreviewProblem, PreviewRow
 from retman.stores import (
+    OBSERWATOR_MARKERS,
     OBSERWATOR_REFERENCE_FILE,
+    OBSERWATOR_SCHEMAS,
+    ObserwatorRoot,
     obserwator_store_state,
     tool_installed,
 )
@@ -30,6 +33,7 @@ from retman.tools.obserwator.calls import (
     find_obserwator_stations,
 )
 from retman.tools.obserwator.describe import document_items
+from retman.tools.obserwator.folders import root_dir
 
 _LOCATION_COLUMNS = ("station_code", "latitude", "longitude")
 
@@ -54,23 +58,37 @@ def blocking_problem(
 
 
 # The problem of the plan and the reason of its ``store_unavailable`` (the reasons of
-# ``retman doctor check``) for each state of a store folder Obserwator cannot use
+# ``retman doctor check``) for each state of a root folder Obserwator cannot use
 STORE_PROBLEMS: dict[str, tuple[str, str]] = {
     "missing": ("store_missing", "not_initialised"),
     "empty": ("store_missing", "not_initialised"),
     "no_marker": ("store_no_marker", "no_marker"),
     "unreadable": ("store_marker_unreadable", "marker_unreadable"),
     "unsupported": ("store_unsupported", "marker_unsupported"),
+    "wrong_root": ("store_wrong_root", "wrong_root"),
     "foreign": ("store_not_obserwator", "foreign_folder"),
     "not_a_directory": ("store_not_obserwator", "not_a_directory"),
 }
+# The setting that names each root (ADR-034)
+ROOT_SETTINGS: dict[ObserwatorRoot, str] = {
+    "data": "store_dir",
+    "raw": "raw_store_dir",
+}
 
 
-def store_problem(state: str, ctx: ToolContext, **args: object) -> PreviewProblem:
-    """Build the blocking problem of a store folder in ``state`` (STORE_PROBLEMS)."""
+def store_problem(
+    state: str, ctx: ToolContext, kind: ObserwatorRoot = "data", **args: object
+) -> PreviewProblem:
+    """Build the blocking problem of the root of ``kind`` in ``state``."""
     key, reason = STORE_PROBLEMS[state]
     return blocking_problem(
-        key, "store_unavailable", reason, path=ctx.store_dir, **args
+        key,
+        "store_unavailable",
+        reason,
+        path=root_dir(ctx, kind),
+        setting=ROOT_SETTINGS[kind],
+        marker=OBSERWATOR_MARKERS[kind],
+        **args,
     )
 
 
@@ -82,39 +100,58 @@ def _output(
     return {"values": values or {}, "rows": rows or [], "problems": problems or []}
 
 
-def store_rows(ctx: ToolContext) -> list[PreviewRow]:
-    """Return the plan row naming the store folder the operation reads or writes."""
-    return [_row("store", path=ctx.store_dir)]
+_ROW_KEYS: dict[ObserwatorRoot, str] = {"data": "store", "raw": "raw_store"}
+# The roots of an operation that reads the raw root and writes the data root
+BOTH_ROOTS: tuple[ObserwatorRoot, ...] = ("raw", "data")
 
 
-def store_problems(ctx: ToolContext, *, write: bool) -> list[PreviewProblem]:
-    """Why the configured store cannot serve the operation; empty when it can.
+def store_rows(
+    ctx: ToolContext, kinds: tuple[ObserwatorRoot, ...] = ("data",)
+) -> list[PreviewRow]:
+    """Return the plan rows naming the root folders the operation reads or writes."""
+    return [_row(_ROW_KEYS[kind], path=root_dir(ctx, kind)) for kind in kinds]
 
-    The state comes from the tool's own ``store info`` (an offline lookup that
-    never fails on a missing folder). Every problem is blocking and has no
-    parameter the user could answer again: it is a matter of the configuration
-    (``retman config init``, ``[retman.tools.obserwator] store_dir``). ``write``
+
+def _root_problem(ctx: ToolContext, kind: ObserwatorRoot) -> PreviewProblem | None:
+    """Why the root of ``kind`` cannot serve an operation, or ``None``.
+
+    The state comes from the tool's own ``store info`` of the folder (an offline
+    lookup that never fails on a missing folder and reads a root of either kind);
+    what it cannot tell, such as an empty folder, a layout without its marker or a
+    root of the other kind, Retman reads from the folder by the tool's rules.
+    """
+    folder = root_dir(ctx, kind)
+    document = ctx.client.lookup(CatalogCall("store info", {"root": str(folder)}))
+    result: Any = document.get("result")
+    info: dict[str, Any] = result if isinstance(result, dict) else {}
+    if not info.get("exists"):
+        return store_problem("missing", ctx, kind)
+    if info.get("supported") and info.get("store_schema") == OBSERWATOR_SCHEMAS[kind]:
+        return None
+    found = obserwator_store_state(folder, kind=kind)
+    if found.state == "unsupported":
+        return store_problem("unsupported", ctx, kind, schema=found.detail)
+    state = found.state
+    if state not in ("empty", "no_marker", "unreadable", "wrong_root"):
+        # Any other file means a folder the tool refuses to turn into a root
+        state = "foreign"
+    return store_problem(state, ctx, kind)
+
+
+def store_problems(
+    ctx: ToolContext, *, write: bool, kinds: tuple[ObserwatorRoot, ...] = ("data",)
+) -> list[PreviewProblem]:
+    """Why the configured roots of ``kinds`` cannot serve the operation; empty if fine.
+
+    Every problem is blocking and has no parameter the user could answer again: it
+    is a matter of the configuration (``retman config init``,
+    ``[retman.tools.obserwator] store_dir`` and ``raw_store_dir``). ``write``
     operations also need ``pyarrow`` (Parquet series), which the tool imports on
     demand.
     """
-    document = ctx.client.lookup(CatalogCall("store info", {}))
-    result: Any = document.get("result")
-    info: dict[str, Any] = result if isinstance(result, dict) else {}
-    problems: list[PreviewProblem] = []
-    if not info.get("exists"):
-        problems.append(store_problem("missing", ctx))
-    elif not info.get("supported"):
-        schema = info.get("schema")
-        if schema:
-            problems.append(store_problem("unsupported", ctx, schema=schema))
-        else:
-            # An empty folder is only not initialised and a layout without its marker
-            # waits for ``store init``; a marker that cannot be read is named as such;
-            # any other file means a folder the tool refuses to turn into a store
-            state = obserwator_store_state(ctx.store_dir).state
-            if state not in ("empty", "no_marker", "unreadable"):
-                state = "foreign"
-            problems.append(store_problem(state, ctx))
+    problems = [
+        problem for kind in kinds if (problem := _root_problem(ctx, kind)) is not None
+    ]
     if write and not problems and not tool_installed("pyarrow"):
         problems.append(
             blocking_problem("pyarrow_missing", "missing_dependency", "pyarrow_missing")
@@ -172,12 +209,12 @@ def _location_rows(path: Path) -> tuple[int, str | None]:
 def preview_build_obserwator_station_catalog(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """Operation 2: the store, the reference file and the user's locations file."""
-    problems = store_problems(ctx, write=True)
+    """Operation 2: both roots, the reference file and the user's locations file."""
+    problems = store_problems(ctx, write=True, kinds=BOTH_ROOTS)
     if problems:
         return _output(problems=problems)
-    (call,) = build_obserwator_station_catalog(params, ctx)
-    rows = store_rows(ctx)
+    _, call = build_obserwator_station_catalog(params, ctx)
+    rows = store_rows(ctx, BOTH_ROOTS)
     if call.options["provider"] == "IMGW-PIB":
         reference = Path(ctx.settings["reference_data_dir"]) / OBSERWATOR_REFERENCE_FILE
         rows.append(
@@ -223,18 +260,19 @@ def preview_fetch_imgw_warnings(
 
 
 def preview_get_pmaxtp(params: dict[str, Any], ctx: ToolContext) -> PreviewOutput:
-    """Operation 7: a stored cell needs a store that can be written."""
+    """Operation 7: a stored cell needs a raw root that can be written."""
     if params["storage"] != "store":
         return _output()
-    problems = store_problems(ctx, write=True)
-    return _output(rows=store_rows(ctx) if not problems else [], problems=problems)
+    problems = store_problems(ctx, write=True, kinds=("raw",))
+    rows = store_rows(ctx, ("raw",)) if not problems else []
+    return _output(rows=rows, problems=problems)
 
 
 def preview_read_stored_pmaxtp(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """Operation 8: the cell must be in the store (read offline)."""
-    problems = store_problems(ctx, write=False)
+    """Operation 8: the cell must be in the raw root (read offline)."""
+    problems = store_problems(ctx, write=False, kinds=("raw",))
     if problems:
         return _output(problems=problems)
     cell = params["cell"]
@@ -265,7 +303,7 @@ def preview_read_stored_pmaxtp(
     data: dict[str, Any] = result if isinstance(result, dict) else {}
     return _output(
         rows=[
-            *store_rows(ctx),
+            *store_rows(ctx, ("raw",)),
             _row(
                 "pmaxtp_cell",
                 cell=label,
@@ -349,15 +387,16 @@ def _archives_row(
 def preview_export_station_series(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """Operation 9: what the store holds, or which archives would be fetched."""
+    """Operation 9: what the data root holds, or which archives would be fetched."""
     server = params["data_source"] == "server"
-    problems = store_problems(ctx, write=server)
+    kinds: tuple[ObserwatorRoot, ...] = BOTH_ROOTS if server else ("data",)
+    problems = store_problems(ctx, write=server, kinds=kinds)
     if problems:
         return _output(problems=problems)
     dataset = ctx.tool_value("dataset", params["dataset"])
     code = params["station"]["code"]
     start, end = period_dates(params["period"], params["year_type"])
-    rows = store_rows(ctx)
+    rows = store_rows(ctx, kinds)
     coverage = _coverage(ctx, dataset, [code], params.get("variables"))
     values: dict[str, Any] = {"period": [start.isoformat(), end.isoformat()]}
     if isinstance(coverage, ToolError):
@@ -463,6 +502,7 @@ def preview_show_station_coverage(
 def preview_build_obserwator_series(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """Operation 11: the series is built into the store, which must be writable."""
-    problems = store_problems(ctx, write=True)
-    return _output(rows=store_rows(ctx) if not problems else [], problems=problems)
+    """Operation 11: the series is built from the raw root into the data root."""
+    problems = store_problems(ctx, write=True, kinds=BOTH_ROOTS)
+    rows = store_rows(ctx, BOTH_ROOTS) if not problems else []
+    return _output(rows=rows, problems=problems)

@@ -18,6 +18,7 @@ from retman.exceptions import UsageError
 # Absolute on every system: on Windows a rooted path needs its drive too
 SHARED_DATA = Path("/shared/data").absolute()
 KARTOGRAF_STORE = Path("/data/k").absolute()
+OBSERWATOR_RAW_STORE = Path("/data/o-raw").absolute()
 
 
 def write(folder: Path, text: str, name: str = "nogat.toml") -> Path:
@@ -36,12 +37,21 @@ def test_every_variable_name_is_distinct_and_in_the_namespace_of_retman() -> Non
     assert BY_NAME["log_level"].variable == "RETMAN_LOG_LEVEL"
 
 
+@pytest.mark.parametrize(
+    ("key", "folder"),
+    [
+        ("tools.kartograf.store_dir", "kartograf"),
+        # The two roots of Obserwator are two folders side by side in the data folder
+        ("tools.obserwator.store_dir", "obserwator"),
+        ("tools.obserwator.raw_store_dir", "obserwator-raw"),
+    ],
+)
 def test_a_setting_without_any_source_has_its_default_and_says_so(
-    user_environment: Path,
+    user_environment: Path, key: str, folder: str
 ) -> None:
-    setting = environment(environ={}).setting("tools.kartograf.store_dir")
+    setting = environment(environ={}).setting(key)
 
-    assert setting.value == user_environment / "data" / "kartograf"
+    assert setting.value == user_environment / "data" / folder
     assert (setting.source, setting.name, setting.error) == ("default", None, None)
 
 
@@ -200,6 +210,11 @@ def test_a_bad_variable_is_reported_with_the_variable_name(key: str, raw: str) -
         ("privacy.collect_commands", "1", True),
         ("adapters.enabled", "kartograf, obserwator", ("kartograf", "obserwator")),
         ("tools.kartograf.store_dir", str(KARTOGRAF_STORE), KARTOGRAF_STORE),
+        (
+            "tools.obserwator.raw_store_dir",
+            str(OBSERWATOR_RAW_STORE),
+            OBSERWATOR_RAW_STORE,
+        ),
     ],
 )
 def test_a_variable_is_parsed_to_the_kind_of_its_key(

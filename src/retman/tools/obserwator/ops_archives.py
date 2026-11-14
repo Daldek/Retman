@@ -161,7 +161,7 @@ OPERATIONS: list[OperationSpec] = [
         "outputs": [],
         "params": [*_STORE_SELECTION],
         "calls": f"{_CALLS}:sync_obserwator_store",
-        "commands": ["store sync"],
+        "commands": ["store sync", "series build"],
         "describe": f"{_DESCRIBE}:describe_sync_store",
         "preview": f"{_PREVIEW}:preview_sync_obserwator_store",
         "check": f"{_PREVIEW}:check_sync_obserwator_store",
@@ -208,7 +208,8 @@ OPERATIONS: list[OperationSpec] = [
     {
         "id": "init_obserwator_store",
         "category": CATEGORY,
-        "description": "Create the empty Obserwator store in the configured folder",
+        "description": "Create the empty Obserwator store in the configured folders "
+        "(the raw data folder and the data folder)",
         "inputs": [],
         "outputs": [],
         "params": [],
@@ -221,7 +222,7 @@ OPERATIONS: list[OperationSpec] = [
         "id": "inspect_obserwator_store",
         "category": CATEGORY,
         "description": "Describe the Obserwator store: its state and the versions "
-        "it holds (archives, series, catalogs, PMAXTP cells)",
+        "it holds (archives, series, catalogs, PMAXTP cells, analyses)",
         "inputs": [],
         "outputs": ["obserwator_report"],
         "params": [
@@ -233,6 +234,7 @@ OPERATIONS: list[OperationSpec] = [
                     "series",
                     "catalog",
                     "pmaxtp",
+                    "analyses",
                     "observation",
                     "problem",
                 ],

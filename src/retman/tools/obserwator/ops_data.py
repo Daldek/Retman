@@ -83,7 +83,7 @@ OPERATIONS: Final[list[OperationSpec]] = [
             {"name": "user_locations", "type": "free", "extractor": "path"},
         ],
         "calls": f"{_CALLS}:build_obserwator_station_catalog",
-        "commands": ["store catalog", "store info"],
+        "commands": ["store sync", "store catalog", "store info"],
         "describe": f"{_DESCRIBE}:describe_build_obserwator_station_catalog",
         "preview": f"{_PREVIEW}:preview_build_obserwator_station_catalog",
         "check": f"{_CHECK}:check_build_obserwator_station_catalog",
@@ -257,6 +257,7 @@ OPERATIONS: Final[list[OperationSpec]] = [
         "calls": f"{_CALLS}:export_station_series",
         "commands": [
             "store sync",
+            "series build",
             "series export",
             "series select",
             "series summary",

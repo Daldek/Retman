@@ -69,7 +69,7 @@ description = "Zbuduj albo odśwież katalog stacji IMGW-PIB lub ČHMÚ w lokaln
 summary = "Gotowe. Wynik #{number}: katalog stacji {provider} w magazynie ({station_count} stacji, bez położenia: {without_location}, stan: {status})."
 
 [operations.build_obserwator_station_catalog.check]
-notice = "Zapytam serwery IMGW-PIB albo ČHMÚ (listy stacji), czy katalog w magazynie jest aktualny."
+notice = "Zapytam serwery IMGW-PIB albo ČHMÚ (listy stacji i metadane stacji), które źródła stacji są nowe albo zmienione od kopii w magazynie."
 
 [operations.build_obserwator_station_catalog.params.provider]
 label = "Dostawca danych"
@@ -585,8 +585,8 @@ options.unspecified.description = "Polecenie nie wskazuje formatu eksportu"
 
 [operations.init_obserwator_store]
 label = "Utworzenie magazynu Obserwatora"
-description = "Utwórz (zainicjuj) pusty lokalny magazyn Obserwatora w folderze z konfiguracji: pierwszy krok przed pobieraniem danych do magazynu, założenie magazynu danych IMGW; nie pobiera danych, nie zmienia istniejącego magazynu."
-summary = "Gotowe. Wynik #{number}: magazyn Obserwatora jest gotowy: {store}."
+description = "Utwórz (zainicjuj) pusty lokalny magazyn Obserwatora w folderach z konfiguracji, jego folderze danych surowych i folderze danych: pierwszy krok przed pobieraniem danych do magazynu, założenie magazynu danych IMGW; nie pobiera danych, nie zmienia istniejącego magazynu."
+summary = "Gotowe. Wynik #{number}: magazyn Obserwatora jest gotowy: dane {store}, dane surowe {raw_store}."
 
 [operations.inspect_obserwator_store]
 label = "Opis magazynu Obserwatora"
@@ -596,8 +596,8 @@ summary = "Gotowe. Wynik #{number}: opis magazynu Obserwatora zapisano w wyniku 
 [operations.inspect_obserwator_store.params.kind]
 unset = "wszystkie rodzaje wpisów"
 label = "Rodzaj wpisów"
-question = "Jakich wpisów magazynu dotyczy opis: archiwów, szeregów, katalogów stacji, komórek PMAXTP, obserwacji czy problemów?"
-model_question = "Czy polecenie ogranicza opis magazynu do jednego rodzaju wpisów: archiwów, szeregów, katalogów stacji, komórek PMAXTP, obserwacji albo problemów?"
+question = "Jakich wpisów magazynu dotyczy opis: archiwów, szeregów, katalogów stacji, komórek PMAXTP, analiz, obserwacji czy problemów?"
+model_question = "Czy polecenie ogranicza opis magazynu do jednego rodzaju wpisów: archiwów, szeregów, katalogów stacji, komórek PMAXTP, analiz, obserwacji albo problemów?"
 help = "Bez wskazania rodzaju opisuję wszystkie wpisy magazynu."
 options.archive.label = "Archiwa"
 options.archive.description = "archiwa, pliki archiwalne, ZIP, pobrane archiwa danych"
@@ -607,6 +607,8 @@ options.catalog.label = "Katalogi stacji"
 options.catalog.description = "katalogi stacji, katalog stacji, stations.geojson, lista stacji z położeniem"
 options.pmaxtp.label = "Komórki PMAXTP"
 options.pmaxtp.description = "PMAXTP, komórki PMAXTP, opady maksymalne, zapisane komórki siatki"
+options.analyses.label = "Zapisane analizy"
+options.analyses.description = "analizy, zapisane analizy stacji policzone przez Hydrologa, stany i przepływy charakterystyczne, trendy"
 options.observation.label = "Obserwacje"
 options.observation.description = "obserwacje, zapisane sygnały serwera, ETag, daty modyfikacji"
 options.problem.label = "Problemy"
@@ -657,11 +659,12 @@ arch_export_partial = "Magazyn ma tylko {found} z {total} plików archiwów wybr
 
 # Problemy planu wykryte offline: z parametrami — pytanie zadane ponownie, bez — plan się nie uda.
 [problems]
-store_missing = "Magazyn Obserwatora ({path}) nie jest jeszcze utworzony. Utwórz go poleceniem „Utwórz magazyn Obserwatora” albo przez „retman config init”."
-store_not_obserwator = "Folder {path} zawiera inne pliki i nie jest magazynem Obserwatora. Wskaż pusty folder w ustawieniu store_dir tabeli [retman.tools.obserwator] pliku nogat.toml."
-store_no_marker = "Folder {path} ma układ magazynu Obserwatora, ale nie ma znacznika. Zapisz znacznik poleceniem „Utwórz magazyn Obserwatora”; narzędzie najpierw sprawdzi układ."
-store_marker_unreadable = "Znacznik obserwator-store.json w {path} jest nieczytelny. Magazyn jest uszkodzony albo pochodzi z innej wersji Obserwatora; wskaż inny folder w ustawieniu store_dir tabeli [retman.tools.obserwator] pliku nogat.toml."
-store_unsupported = "Magazyn Obserwatora w {path} ma nieobsługiwany schemat ({schema}). Zaktualizuj Obserwatora."
+store_missing = "Folder Obserwatora {path} (ustawienie {setting}) nie jest jeszcze utworzony. Utwórz go poleceniem „Utwórz magazyn Obserwatora” albo przez „retman config init”."
+store_not_obserwator = "Folder {path} zawiera inne pliki i nie jest folderem Obserwatora. Wskaż pusty folder w ustawieniu {setting} tabeli [retman.tools.obserwator] pliku nogat.toml."
+store_no_marker = "Folder {path} (ustawienie {setting}) ma układ folderu Obserwatora, ale nie ma znacznika. Zapisz znacznik poleceniem „Utwórz magazyn Obserwatora”; narzędzie najpierw sprawdzi układ."
+store_marker_unreadable = "Znacznik {marker} w {path} jest nieczytelny. Folder jest uszkodzony albo pochodzi z innej wersji Obserwatora; wskaż inny folder w ustawieniu {setting} tabeli [retman.tools.obserwator] pliku nogat.toml."
+store_unsupported = "Folder Obserwatora {path} (ustawienie {setting}) ma nieobsługiwany schemat ({schema}). Zaktualizuj Obserwatora."
+store_wrong_root = "Folder {path} nie jest folderem Obserwatora, który wskazuje ustawienie {setting}: ma znacznik drugiego folderu Obserwatora (oczekiwany {marker}) albo jest magazynem sprzed podziału danych Obserwatora na folder danych surowych (raw_store_dir) i folder danych (store_dir). Podziel taki magazyn, jak opisuje dokumentacja Obserwatora („Splitting a store”), albo wskaż właściwy folder w ustawieniu {setting} tabeli [retman.tools.obserwator] pliku nogat.toml."
 pyarrow_missing = "Do szeregów w magazynie Obserwatora potrzebny jest pakiet pyarrow. Zainstaluj Obserwatora z dodatkiem store (obserwator[store])."
 station_catalog_missing = "Magazyn Obserwatora nie ma katalogu stacji. Wybierz źródło „serwer” albo najpierw zbuduj katalog („Zbuduj katalog stacji IMGW”)."
 user_locations_missing = "Nie można odczytać pliku z położeniami stacji ({path})."
@@ -678,7 +681,11 @@ arch_nothing_to_export_all = "W magazynie nie ma archiwów zbioru {dataset}. Wyb
 
 # Wiersze podglądu planu (offline).
 [preview.store]
-label = "Magazyn Obserwatora"
+label = "Magazyn Obserwatora, dane"
+value = "{path} (z konfiguracji)"
+
+[preview.raw_store]
+label = "Magazyn Obserwatora, dane surowe"
 value = "{path} (z konfiguracji)"
 
 [preview.station_matches]
@@ -787,12 +794,8 @@ value = "magazyn już istnieje — operacja niczego nie zmieni"
 
 # Wiersze sprawdzenia dostępności (z siecią, osobna zgoda).
 [check]
-catalog_current = "Katalog stacji w magazynie jest aktualny."
-catalog_newer = "Listy stacji u źródła są nowsze niż katalog; zostanie zbudowany od nowa."
-catalog_missing = "Katalogu stacji nie ma jeszcze w magazynie; zostanie zbudowany."
-catalog_unverifiable = "Nie da się porównać katalogu z listami stacji u źródła."
-catalog_check_failed = "Nie udało się sprawdzić list stacji u źródła."
-sources = "Listy stacji u źródła: {reachable} z {total} dostępne."
+sources = "Źródła danych stacji na serwerze: {reachable} z {total} dostępne."
+sources_to_download = "Źródła stacji do pobrania: {to_download} z {total} (nowe albo zmienione); katalog powstanie z nich potem bez sieci."
 from_store = "Dane pochodzą z magazynu; sieć nie jest potrzebna."
 store_refused = "Narzędzie odmówi zapisu w tym magazynie, więc nic nie zostanie pobrane: {detail}"
 archives = "Do pobrania {to_download} z {total} plików ({size} MB); {current} już aktualnych w magazynie."

@@ -20,22 +20,25 @@ from retman.registry.manifest import (
     PreviewProblem,
     PreviewRow,
 )
-from retman.stores import obserwator_store_state
+from retman.stores import OBSERWATOR_MARKERS, ObserwatorRoot, obserwator_store_state
 from retman.tools.obserwator.calls_archives import (
     archive_files_call,
     expected_archives,
+    inspected_roots,
     selected_years,
     stored_archives,
     sync_obserwator_store,
     years_text,
 )
-from retman.tools.obserwator.folders import same_folder
+from retman.tools.obserwator.folders import root_dir, same_folder
 from retman.tools.obserwator.plans import (
     format_bytes,
     plan_check_output,
     plan_summary,
 )
 from retman.tools.obserwator.preview import (
+    BOTH_ROOTS,
+    ROOT_SETTINGS,
     blocking_problem,
     store_problem,
     store_problems,
@@ -104,13 +107,19 @@ def preview_download_archives(
 def _store_listing(
     params: dict[str, Any], ctx: ToolContext, *, write: bool
 ) -> PreviewOutput:
-    problems = store_problems(ctx, write=write)
+    """Preview the roots and the files of a selection.
+
+    The raw root is compared or written; the data root too where the series are
+    built (``write``).
+    """
+    kinds: tuple[ObserwatorRoot, ...] = BOTH_ROOTS if write else ("raw",)
+    problems = store_problems(ctx, write=write, kinds=kinds)
     if problems:
         return _blocked(problems)
     rows, values = _listing(params, ctx)
     return {
-        "values": {**values, "store": str(ctx.store_dir)},
-        "rows": [*store_rows(ctx), *rows],
+        "values": {**values, "store": str(root_dir(ctx, "raw"))},
+        "rows": [*store_rows(ctx, kinds), *rows],
         "problems": [],
     }
 
@@ -137,8 +146,8 @@ def check_sync_obserwator_store(
     The check twin of ``store sync`` lists the directories and sends ``HEAD``
     requests; nothing is downloaded or written.
     """
-    (call,) = sync_obserwator_store(params, ctx)
-    plan = ctx.runner.check(call).get("result")
+    sync, _ = sync_obserwator_store(params, ctx)
+    plan = ctx.runner.check(sync).get("result")
     if not isinstance(plan, Mapping):
         raise ToolError(ctx.tool, "internal_error", "the tool returned no plan")
     return plan_check_output(plan)
@@ -147,16 +156,17 @@ def check_sync_obserwator_store(
 def preview_sync_obserwator_store_by_plan(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """Preview the plan file: its store, what it lists and its age (read only).
+    """Preview the plan file: its raw root, what it lists and its age (read only).
 
-    A plan of another store is refused here: the tool would refuse it after the
+    A plan of another raw root is refused here: the tool would refuse it after the
     confirmation.
     """
-    problems = store_problems(ctx, write=True)
+    problems = store_problems(ctx, write=True, kinds=("raw",))
     if problems:
         return _blocked(problems)
+    raw = root_dir(ctx, "raw")
     plan = json.loads(ctx.inputs["plan"].read_text(encoding="utf-8"))
-    if not same_folder(plan.get("root"), ctx.store_dir):
+    if not same_folder(plan.get("root"), raw):
         return _blocked(
             [
                 blocking_problem(
@@ -164,16 +174,16 @@ def preview_sync_obserwator_store_by_plan(
                     "validation_error",
                     "plan_other_store",
                     plan_store=plan.get("root"),
-                    store=ctx.store_dir,
+                    store=raw,
                 )
             ]
         )
     summary = plan_summary(plan)
     by_status = summary["by_status"]
     return {
-        "values": {"store": str(ctx.store_dir), **summary},
+        "values": {"store": str(raw), **summary},
         "rows": [
-            *store_rows(ctx),
+            *store_rows(ctx, ("raw",)),
             {
                 "key": "arch_plan",
                 "args": {
@@ -194,8 +204,8 @@ def preview_sync_obserwator_store_by_plan(
 def preview_export_obserwator_archive(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """Preview the archives of the selection the store holds; none is a problem."""
-    problems = store_problems(ctx, write=False)
+    """Preview the archives of the selection the raw root holds; none is a problem."""
+    problems = store_problems(ctx, write=False, kinds=("raw",))
     if problems:
         return _blocked(problems)
     archives = stored_archives(params, ctx)
@@ -231,12 +241,12 @@ def preview_export_obserwator_archive(
         }
     return {
         "values": {
-            "store": str(ctx.store_dir),
+            "store": str(root_dir(ctx, "raw")),
             "found": len(archives),
             "expected": expected,
             "years": selected_years(params["years"]) if "years" in params else None,
         },
-        "rows": [*store_rows(ctx), row],
+        "rows": [*store_rows(ctx, ("raw",)), row],
         "problems": [],
     }
 
@@ -244,45 +254,55 @@ def preview_export_obserwator_archive(
 def preview_init_obserwator_store(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """Preview what initialising would do to the folder; a foreign one is refused.
+    """Preview what initialising would do to each root; a foreign folder is refused.
 
-    The tool writes the marker into a missing or empty folder and into one that has
-    the layout of a store (after verifying it; a layout that is not a store's is
-    refused when it runs), or finds its own marker. It never takes over a folder
-    with other files, nor one whose marker it cannot read (``data_error``).
+    The tool writes the marker of the kind into a missing or empty folder and into
+    one that has the layout of a root of the kind (after verifying it; a layout
+    that is not a root's is refused when it runs), or finds its own marker. It
+    never takes over a folder with other files or a root of the other kind, nor
+    one whose marker it cannot read (``data_error``).
     """
-    folder = str(ctx.store_dir)
-    state = obserwator_store_state(ctx.store_dir)
-    if state.state in ("foreign", "not_a_directory", "unsupported"):
-        return _blocked([store_problem(state.state, ctx, schema=state.detail)])
-    if state.state == "unreadable":
-        # ``store init`` reads the marker itself and ends with this error
-        return _blocked(
-            [
+    problems: list[PreviewProblem] = []
+    rows: list[PreviewRow] = []
+    values: dict[str, Any] = {}
+    for kind in BOTH_ROOTS:
+        folder = root_dir(ctx, kind)
+        state = obserwator_store_state(folder, kind=kind)
+        prefix = "raw_" if kind == "raw" else ""
+        values[f"{prefix}store"] = str(folder)
+        values[f"{prefix}store_state"] = state.state
+        if state.state in ("foreign", "not_a_directory", "unsupported", "wrong_root"):
+            problems.append(store_problem(state.state, ctx, kind, schema=state.detail))
+        elif state.state == "unreadable":
+            # ``store init`` reads the marker itself and ends with this error
+            problems.append(
                 blocking_problem(
                     "store_marker_unreadable",
                     "data_error",
                     "invalid_marker",
                     path=folder,
+                    setting=ROOT_SETTINGS[kind],
+                    marker=OBSERWATOR_MARKERS[kind],
                 )
-            ]
-        )
-    return {
-        "values": {"store": folder, "store_state": state.state},
-        "rows": [*store_rows(ctx), {"key": f"arch_store_{state.state}", "args": {}}],
-        "problems": [],
-    }
+            )
+        else:
+            rows.extend(store_rows(ctx, (kind,)))
+            rows.append({"key": f"arch_store_{state.state}", "args": {}})
+    if problems:
+        return _blocked(problems)
+    return {"values": values, "rows": rows, "problems": []}
 
 
 def preview_inspect_obserwator_store(
     params: dict[str, Any], ctx: ToolContext
 ) -> PreviewOutput:
-    """Preview the store that is read (an omitted filter is shown by the plan)."""
-    problems = store_problems(ctx, write=False)
+    """Preview the roots that are read (an omitted filter is shown by the plan)."""
+    kinds = tuple(inspected_roots(params, ctx))
+    problems = store_problems(ctx, write=False, kinds=kinds)
     if problems:
         return _blocked(problems)
     return {
-        "values": {"store": str(ctx.store_dir)},
-        "rows": store_rows(ctx),
+        "values": {"store": str(ctx.store_dir), "raw_store": str(root_dir(ctx, "raw"))},
+        "rows": store_rows(ctx, kinds),
         "problems": [],
     }

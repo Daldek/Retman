@@ -64,3 +64,8 @@ order first seen: `retman.attribution` puts `attribution` in the order S, P, PS,
 G, SG, Z and `terms_notice` in the order RD, RH, RK, each once, a line the standard does not
 name after them in the order first seen. To place a line it compares it with the table of
 DEV §20 (G, CP and Z by their fixed parts); it still words none.
+
+**Erratum 3 (2026-11-14, Nogat release set `candidate-4`):** the first consequence is met: the
+pins Obserwator `0394af7c` and Hydrolog `9e2cb618` emit the lines, so Retman shows and writes them
+and the registry text is no longer shown for these pins. Kartograf `c9afdd3f` still emits none
+(a deviation the tool records).

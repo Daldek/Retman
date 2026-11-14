@@ -23,6 +23,7 @@ from retman.tools.obserwator.describe import (
     run_of,
     write_report,
 )
+from retman.tools.obserwator.folders import root_dir
 from retman.tools.obserwator.plans import format_bytes, plan_summary
 
 Runs = Sequence[tuple[CatalogCall, ToolRun]]
@@ -86,16 +87,17 @@ def describe_check_archives(
 def describe_sync_store(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """Describe what the synchronisation did in the store: items, series, new versions.
+    """Describe what the synchronisation did: items, new versions, the series built.
 
-    The store is not a result file (the audit keeps the paths); ``store_versions``
-    lists the versions the run made (``new`` and ``relabeled``), relative to the store.
+    The roots are not result files (the audit keeps the paths); ``store_versions``
+    lists the versions the run made: archives (``new`` and ``relabeled``, relative
+    to the raw root) and a new series (its path in the data root). A sync by plan
+    builds no series.
     """
     output = base_output(operation, params, runs, ctx)
-    (_, run) = runs[0]
-    result = _result(run)
+    result = _result(run_of(runs, "store sync"))
     items = [item for item in result.get("items", ()) if isinstance(item, Mapping)]
-    series = [item for item in result.get("series", ()) if isinstance(item, Mapping)]
+    built = [_result(run) for call, run in runs if call.command == "series build"]
     by_status = Counter(str(item.get("status")) for item in items)
     made = [item for item in items if item.get("status") in ("new", "relabeled")]
     versions = [
@@ -104,11 +106,12 @@ def describe_sync_store(
         if item.get("version")
     ] + [
         {"slot": "series", "status": "new", "path": item["version"]}
-        for item in series
+        for item in built
         if item.get("status") == "new" and item.get("version")
     ]
     new = [item for item in made if item["status"] == "new"]
-    series_by_status = Counter(str(item.get("status")) for item in series)
+    series_by_status = Counter(str(item.get("status")) for item in built)
+    raw = root_dir(ctx, "raw")
     output["values"].update(
         items=dict(by_status),
         series={
@@ -117,9 +120,7 @@ def describe_sync_store(
         new_versions=len(new),
         new_series=series_by_status["new"],
         bytes=sum(
-            _size(ctx.store_dir / str(item["version"]))
-            for item in new
-            if item.get("version")
+            _size(raw / str(item["version"])) for item in new if item.get("version")
         ),
         store_versions=versions,
     )
@@ -168,11 +169,19 @@ def describe_export_archive(
 def describe_init_store(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """Describe the store folder the tool initialised (it is idempotent)."""
+    """Describe the two roots the tool initialised (it is idempotent)."""
     output = base_output(operation, params, runs, ctx)
-    result = _result(runs[0][1])
+    roots = {
+        str(call.options["kind"]): _result(run)
+        for call, run in runs
+        if call.command == "store init"
+    }
+    raw, data = roots.get("raw", {}), roots.get("data", {})
     output["values"].update(
-        store=str(result.get("root") or ctx.store_dir), schema=result.get("schema")
+        store=str(data.get("root") or ctx.store_dir),
+        raw_store=str(raw.get("root") or root_dir(ctx, "raw")),
+        schema=data.get("schema"),
+        raw_schema=raw.get("schema"),
     )
     return output
 
@@ -180,27 +189,44 @@ def describe_init_store(
 def describe_inspect_store(
     operation: Operation, params: dict[str, Any], runs: Runs, ctx: ToolContext
 ) -> HandlerOutput:
-    """Describe the two documents as reports: the state and the entries by kind."""
+    """Describe the documents of each root as reports: its state and its entries.
+
+    The data root's reports are ``store_info.json`` and ``store_entries.json``,
+    the raw root's ``raw_store_info.json`` and ``raw_store_entries.json``.
+    """
     output = base_output(operation, params, runs, ctx)
-    info, scan = run_of(runs, "store info"), run_of(runs, "store scan")
     folder = output_dir(ctx)
-    output["files"] = {
-        "obserwator_report": [
-            write_report(folder / "store_info.json", info.document),
-            write_report(folder / "store_entries.json", scan.document),
-        ]
-    }
-    state = _result(info)
-    entries = items_of(scan)
-    problems = [str(problem) for problem in state.get("problems") or ()]
-    problems.extend(
-        str(entry.get("problem") or entry.get("problem_code"))
-        for entry in entries
-        if entry.get("kind") == "problem"
-    )
+    raw = str(root_dir(ctx, "raw"))
+    reports: list[Path] = []
+    entries: list[dict[str, Any]] = []
+    problems: list[str] = []
+    contracts: object = None
+    supported = True
+    for call, run in runs:
+        prefix = "raw_" if call.options.get("root") == raw else ""
+        if call.command == "store info":
+            state = _result(run)
+            reports.append(
+                write_report(folder / f"{prefix}store_info.json", run.document)
+            )
+            problems.extend(str(problem) for problem in state.get("problems") or ())
+            supported = supported and bool(state.get("supported"))
+            contracts = contracts or state.get("contracts")
+        elif call.command == "store scan":
+            found = items_of(run)
+            reports.append(
+                write_report(folder / f"{prefix}store_entries.json", run.document)
+            )
+            entries.extend(found)
+            problems.extend(
+                str(entry.get("problem") or entry.get("problem_code"))
+                for entry in found
+                if entry.get("kind") == "problem"
+            )
+    output["files"] = {"obserwator_report": reports}
     output["values"].update(
-        supported=state.get("supported"),
-        contracts=state.get("contracts"),
+        supported=supported,
+        contracts=contracts,
         entries_by_kind=dict(Counter(str(entry.get("kind")) for entry in entries)),
         problems=problems,
         entries=len(entries),

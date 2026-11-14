@@ -65,11 +65,13 @@ def pmaxtp_payload(ind_x: int = 751, ind_y: int = 317) -> dict[str, Any]:
 def fixture_store() -> Path:
     """A read-only Obserwator store with PL and CZ data (built once per process).
 
-    Tests that write a store build their own with ``build_store``. The session removes
-    it at the end (``discard_fixture_store``). The folder is resolved, as Retman's own
-    probe store is: Obserwator refuses a store path through a symbolic link (macOS
-    keeps the temporary folders under ``/var``, a link to ``/private/var``), and
-    Windows may name the temporary folder in its short form (``RUNNER~1``).
+    The store is a folder holding the two roots, ``raw`` and ``data``
+    (``build_store``, ``settings_for``). Tests that write a store build their own
+    with ``build_store``. The session removes it at the end
+    (``discard_fixture_store``). The folder is resolved, as Retman's own probe store
+    is: Obserwator refuses a root path through a symbolic link (macOS keeps the
+    temporary folders under ``/var``, a link to ``/private/var``), and Windows may
+    name the temporary folder in its short form (``RUNNER~1``).
     """
     folder = Path(tempfile.mkdtemp(prefix="retman-obserwator-test-")).resolve()
     try:
@@ -87,11 +89,23 @@ def discard_fixture_store() -> None:
         fixture_store.cache_clear()
 
 
+def raw_root(store: Path) -> Path:
+    """The raw root of a test store (archives, station sources, PMAXTP cells)."""
+    return store / "raw"
+
+
+def data_root(store: Path) -> Path:
+    """The data root of a test store (series, station catalogs, analyses)."""
+    return store / "data"
+
+
 def build_store(root: Path) -> Path:
-    """The tool's offline fixture store (``complete_pl_cz``) in the empty ``root``."""
+    """The tool's offline fixture roots (``complete_pl_cz``) in the folder ``root``."""
     from obserwator.testing import build_fixture_store
 
-    build_fixture_store(root, variant="complete_pl_cz")
+    build_fixture_store(
+        raw_root(root), data_root=data_root(root), variant="complete_pl_cz"
+    )
     return root
 
 
@@ -151,11 +165,17 @@ def isolate_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def settings_for(tmp_path: Path, store: Path | None = None) -> dict[str, Any]:
-    """The ``[retman.tools.obserwator]`` table of a test: store and reference dir."""
+    """The ``[retman.tools.obserwator]`` table of a test: both roots, reference dir.
+
+    ``store`` is a folder holding the two roots (the shared fixture store by
+    default).
+    """
     reference = tmp_path / "reference"
     reference.mkdir(exist_ok=True)
+    folder = store if store is not None else fixture_store()
     return {
-        "store_dir": str(store if store is not None else fixture_store()),
+        "store_dir": str(data_root(folder)),
+        "raw_store_dir": str(raw_root(folder)),
         "reference_data_dir": str(reference),
     }
 

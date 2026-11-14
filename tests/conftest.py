@@ -225,17 +225,21 @@ def _remove_obserwator_fixture_store() -> Iterator[None]:
 
 
 @pytest.fixture(scope="session")
-def obserwator_store_template(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """An Obserwator store as the tool itself builds it (DEV-10.6), built once.
+def obserwator_store_template(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> dict[str, Path]:
+    """The two Obserwator roots as the tool itself builds them (DEV-10.6), built once.
 
-    Tests copy it; the states the tool never writes (no marker, an unknown schema, a
-    foreign folder) are made from a copy or by hand (``obserwator_store_files``).
+    Maps the kind of root (``raw``, ``data``) to its folder. Tests copy them; the
+    states the tool never writes (no marker, an unknown schema, a foreign folder)
+    are made from a copy or by hand (``obserwator_store_files``).
     """
     pytest.importorskip("pyarrow")
     testing = pytest.importorskip("obserwator.testing")
-    root = tmp_path_factory.mktemp("obserwator-store") / "store"
-    testing.build_fixture_store(root)
-    return root
+    folder = tmp_path_factory.mktemp("obserwator-store")
+    roots = {"raw": folder / "raw", "data": folder / "data"}
+    testing.build_fixture_store(roots["raw"], data_root=roots["data"])
+    return roots
 
 
 @pytest.fixture(scope="session")

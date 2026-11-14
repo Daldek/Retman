@@ -1,6 +1,7 @@
 """Folders of the tool stores: ``retman doctor check`` and Obserwator set-up."""
 
 import errno
+import json
 import os
 import shutil
 import sys
@@ -21,10 +22,13 @@ from retman.stores import (
     KARTOGRAF_SCHEMA,
     KARTOGRAF_STAGING,
     KARTOGRAF_TREES,
-    OBSERWATOR_MARKER,
+    OBSERWATOR_MARKERS,
+    OBSERWATOR_SCHEMAS,
     STORE_MARKERS,
     KartografStore,
+    ObserwatorRoot,
     ObserwatorStore,
+    ObserwatorStoreState,
     hardlink_error,
     init_obserwator_store,
     kartograf_store_state,
@@ -49,27 +53,52 @@ def test_symlink_component_finds_a_link_in_any_part_of_the_path(tmp_path: Path):
     assert symlink_component(link / "new" / "store") == link
 
 
+# The names of the two roots of Obserwator, spelled out: not taken from
+# ``retman.stores``. The trees of each kind, for layouts.
+MARKERS = {"raw": "obserwator-store.json", "data": "obserwator-data.json"}
+SCHEMAS = {"raw": "obserwator-store/1", "data": "obserwator-data/1"}
+LAYOUT_TREES = {
+    "raw": ["archives", "pmaxtp"],
+    "data": ["series", "stations", "analyses"],
+}
+OTHER = {"raw": "data", "data": "raw"}
+KINDS: list[ObserwatorRoot] = ["raw", "data"]
+
+# (setup, state of the folder for a root of each kind); a ready root's detail is
+# the schema of its kind, an unsupported one's the schema its marker names
 OBSERWATOR_STATES = [
-    ("missing", ObserwatorStore("missing")),
-    ("file", ObserwatorStore("not_a_directory")),
-    ("empty", ObserwatorStore("empty")),
-    ("ready", ObserwatorStore("ready", "obserwator-store/1")),
-    ("foreign", ObserwatorStore("foreign")),
-    ("unreadable", ObserwatorStore("unreadable")),
-    ("no_schema", ObserwatorStore("unreadable")),
-    ("newer", ObserwatorStore("unsupported", "obserwator-store/2")),
-    # A layout is a store that lost its marker (or never had one): `store init`
-    ("layout", ObserwatorStore("no_marker")),
-    ("layout_and_notes", ObserwatorStore("no_marker")),
-    ("tree_is_a_file", ObserwatorStore("foreign")),
-    # The key file of the REST server lives in the default store folder
-    ("server_state", ObserwatorStore("empty")),
-    ("server_state_and_notes", ObserwatorStore("foreign")),
+    ("missing", {"raw": "missing", "data": "missing"}),
+    ("file", {"raw": "not_a_directory", "data": "not_a_directory"}),
+    ("empty", {"raw": "empty", "data": "empty"}),
+    ("ready", {"raw": "ready", "data": "ready"}),
+    ("foreign", {"raw": "foreign", "data": "foreign"}),
+    ("unreadable", {"raw": "unreadable", "data": "unreadable"}),
+    ("no_schema", {"raw": "unreadable", "data": "unreadable"}),
+    ("newer", {"raw": "unsupported", "data": "unsupported"}),
+    # A layout is a root that lost its marker (or never had one): `store init`
+    ("layout", {"raw": "no_marker", "data": "no_marker"}),
+    ("layout_and_notes", {"raw": "no_marker", "data": "no_marker"}),
+    # The trees of the other kind without a marker are foreign to this kind
+    ("other_layout", {"raw": "foreign", "data": "foreign"}),
+    ("tree_is_a_file", {"raw": "foreign", "data": "foreign"}),
+    # The key file of the REST server lives in the default root folder
+    ("server_state", {"raw": "empty", "data": "empty"}),
+    ("server_state_and_notes", {"raw": "foreign", "data": "foreign"}),
+    # A root of the other kind, as the tool builds it
+    ("other_root", {"raw": "wrong_root", "data": "wrong_root"}),
+    # A store from before the split: the raw marker beside the data trees
+    ("unsplit", {"raw": "ready", "data": "wrong_root"}),
+]
+OBSERWATOR_CASES = [
+    pytest.param(setup, kind, states[kind], id=f"{kind}-{setup}")
+    for setup, states in OBSERWATOR_STATES
+    for kind in KINDS
 ]
 
-# What the check of a write into a store says of a folder in each state, by the tool:
-# the ``code/reason`` of the error it raises or of the one conflict it plans (DEV-19.10)
-OBSERWATOR_VERDICTS = {
+# What the check of a write into a data root says of a folder in each state, by the
+# tool: the ``code/reason`` of the error it raises or of the one conflict it plans
+# (DEV-19.10)
+OBSERWATOR_WRITE_VERDICTS = {
     "missing": "ok",
     "empty": "ok",
     "ready": "ok",
@@ -78,67 +107,88 @@ OBSERWATOR_VERDICTS = {
     "not_a_directory": "conflict/not_empty",
     "unreadable": "data_error/invalid_marker",
     "unsupported": "store_unavailable/unsupported",
+    "wrong_root": "store_unavailable/wrong_root",
+}
+# What ``store init --kind`` does with a folder in each state: it verifies a layout
+# without its marker before marking it, so that state has two outcomes
+OBSERWATOR_INIT_VERDICTS: dict[str, str | set[str]] = {
+    **OBSERWATOR_WRITE_VERDICTS,
+    "no_marker": {"ok", "data_error/invalid_layout"},
 }
 
 
 def make_obserwator_folder(
-    setup: str, root: Path, request: pytest.FixtureRequest
+    setup: str, kind: str, root: Path, request: pytest.FixtureRequest
 ) -> Path:
-    """Build the scenario ``setup`` as the folder ``root/store``; return it."""
+    """Build the scenario ``setup`` for a root of ``kind`` as ``root/store``."""
     folder = root / "store"
     raw_markers = {
         "unreadable": "{",
         "no_schema": '{"created_by": "obserwator 3.0.0"}',
-        "newer": '{"schema": "obserwator-store/2"}',
+        "newer": json.dumps({"schema": SCHEMAS[kind].replace("/1", "/2")}),
     }
-    if setup == "ready":
-        # The store as the tool builds it, not a marker written by hand
-        template = request.getfixturevalue("obserwator_store_template")
-        shutil.copytree(template, folder)
+    if setup in ("ready", "other_root", "unsplit"):
+        # The roots as the tool builds them, not a marker written by hand
+        roots = request.getfixturevalue("obserwator_store_template")
+        built = {"ready": kind, "other_root": OTHER[kind], "unsplit": "raw"}[setup]
+        shutil.copytree(roots[built], folder)
+        if setup == "unsplit":
+            for tree in ("series", "stations"):
+                shutil.copytree(roots["data"] / tree, folder / tree)
     elif setup == "file":
         folder.write_text("x", encoding="utf-8")
     elif setup != "missing":
         folder.mkdir()
     if setup in raw_markers:
-        (folder / OBSERWATOR_MARKER).write_text(raw_markers[setup], encoding="utf-8")
+        (folder / MARKERS[kind]).write_text(raw_markers[setup], encoding="utf-8")
     if setup in ("layout", "layout_and_notes"):
-        write_layout(folder, "series")
+        write_layout(folder, LAYOUT_TREES[kind][0])
+    if setup == "other_layout":
+        write_layout(folder, LAYOUT_TREES[OTHER[kind]][0])
     if setup in ("server_state", "server_state_and_notes"):
         write_server_state(folder)
     if setup in ("foreign", "layout_and_notes", "server_state_and_notes"):
         (folder / "notes.txt").write_text("x", encoding="utf-8")
     if setup == "tree_is_a_file":
-        (folder / "archives").write_text("x", encoding="utf-8")
+        (folder / LAYOUT_TREES[kind][0]).write_text("x", encoding="utf-8")
     return folder
 
 
-@pytest.mark.parametrize(
-    ("setup", "expected"),
-    OBSERWATOR_STATES,
-    ids=[setup for setup, _ in OBSERWATOR_STATES],
-)
+@pytest.mark.parametrize(("setup", "kind", "state"), OBSERWATOR_CASES)
 def test_obserwator_store_state_tells_what_the_folder_holds(
     tmp_path: Path,
     setup: str,
-    expected: ObserwatorStore,
+    kind: ObserwatorRoot,
+    state: ObserwatorStoreState,
     request: pytest.FixtureRequest,
 ):
-    folder = make_obserwator_folder(setup, tmp_path, request)
+    folder = make_obserwator_folder(setup, kind, tmp_path, request)
+    detail = {
+        "ready": SCHEMAS[kind],
+        "unsupported": SCHEMAS[kind].replace("/1", "/2"),
+    }.get(state, "")
 
-    assert obserwator_store_state(folder) == expected
+    assert obserwator_store_state(folder, kind=kind) == ObserwatorStore(state, detail)
 
 
 @pytest.mark.parametrize("setup", [setup for setup, _ in OBSERWATOR_STATES])
-def test_obserwator_store_state_agrees_with_the_check_of_a_write_by_the_tool(
+def test_obserwator_store_state_agrees_with_the_check_of_a_write_into_a_data_root(
     tmp_path: Path, request: pytest.FixtureRequest, setup: str
 ):
     obserwator = pytest.importorskip("obserwator")
-    folder = make_obserwator_folder(setup, tmp_path, request)
+    folder = make_obserwator_folder(setup, "data", tmp_path, request)
+    raw = tmp_path / "raw"
+    shutil.copytree(request.getfixturevalue("obserwator_store_template")["raw"], raw)
     options = obserwator.validate_command(
-        "series build", options={"root": str(folder), "dataset": "pl.imgw.hydro_daily"}
+        "series build",
+        options={
+            "root": str(folder),
+            "raw_root": str(raw),
+            "dataset": "pl.imgw.hydro_daily",
+        },
     )
 
-    # The plan of a series build reads the store only: no request, whatever the folder
+    # The plan of a series build reads the roots only: no request, whatever the folder
     try:
         plan = obserwator.check_command("series build", options=options)
         actions = plan.to_json(root=folder)["result"].get("actions", [])
@@ -147,16 +197,75 @@ def test_obserwator_store_state_agrees_with_the_check_of_a_write_by_the_tool(
     except obserwator.ObserwatorError as error:
         verdict = f"{error.code}/{error.details.get('reason')}"
 
-    assert verdict == OBSERWATOR_VERDICTS[obserwator_store_state(folder).state]
+    state = obserwator_store_state(folder, kind="data").state
+    assert verdict == OBSERWATOR_WRITE_VERDICTS[state]
 
 
-@pytest.mark.parametrize("tree", ["archives", "series", "stations", "pmaxtp"])
-def test_obserwator_store_state_sees_the_layout_in_every_tree_of_a_store(
-    tmp_path: Path, tree: str
+@pytest.mark.parametrize(("setup", "kind", "state"), OBSERWATOR_CASES)
+def test_obserwator_store_state_agrees_with_store_init_of_the_kind(
+    tmp_path: Path,
+    request: pytest.FixtureRequest,
+    setup: str,
+    kind: ObserwatorRoot,
+    state: str,
+):
+    obserwator = pytest.importorskip("obserwator")
+    folder = make_obserwator_folder(setup, kind, tmp_path, request)
+    found = obserwator_store_state(folder, kind=kind)
+
+    try:
+        obserwator.run_command(
+            "store init", options={"root": str(folder), "kind": kind}
+        )
+        verdict = "ok"
+    except obserwator.ObserwatorError as error:
+        verdict = f"{error.code}/{error.details.get('reason')}"
+
+    expected = OBSERWATOR_INIT_VERDICTS[found.state]
+    assert verdict in expected if isinstance(expected, set) else verdict == expected
+
+
+@pytest.mark.parametrize(
+    ("kind", "tree"),
+    [(kind, tree) for kind in KINDS for tree in LAYOUT_TREES[kind]],
+)
+def test_obserwator_store_state_sees_the_layout_in_every_tree_of_a_root(
+    tmp_path: Path, kind: ObserwatorRoot, tree: str
 ):
     write_layout(tmp_path, tree)
 
-    assert obserwator_store_state(tmp_path) == ObserwatorStore("no_marker")
+    assert obserwator_store_state(tmp_path, kind=kind) == ObserwatorStore("no_marker")
+
+
+@pytest.mark.parametrize(
+    ("kind", "tree"),
+    [(kind, tree) for kind in KINDS for tree in LAYOUT_TREES[kind]],
+)
+def test_obserwator_layout_trees_are_the_ones_the_tool_marks(
+    tmp_path: Path, kind: ObserwatorRoot, tree: str
+):
+    obserwator = pytest.importorskip("obserwator")
+    write_layout(tmp_path, tree)
+
+    # A tree of the kind is a layout the tool marks; a foreign folder it refuses
+    obserwator.run_command("store init", options={"root": str(tmp_path), "kind": kind})
+
+    assert obserwator_store_state(tmp_path, kind=kind).state == "ready"
+
+
+def test_obserwator_root_names_are_the_ones_of_the_tool(
+    obserwator_store_template: dict[str, Path],
+):
+    output = pytest.importorskip("obserwator.output")
+
+    markers = (OBSERWATOR_MARKERS["raw"], OBSERWATOR_MARKERS["data"])
+    assert markers == (output.STORE_MARKER, output.DATA_MARKER)
+    for kind in KINDS:
+        folder = obserwator_store_template[kind]
+        marker = json.loads(
+            (folder / OBSERWATOR_MARKERS[kind]).read_text(encoding="utf-8")
+        )
+        assert marker["schema"] == OBSERWATOR_SCHEMAS[kind]
 
 
 # The product trees of Kartograf, spelled out: not taken from ``retman.stores``
@@ -382,7 +491,9 @@ def test_missing_obserwator_is_reported_not_raised(
 ):
     monkeypatch.setitem(sys.modules, "obserwator", None)
 
-    assert init_obserwator_store(tmp_path / "store").status == "tool_missing"
+    assert init_obserwator_store(tmp_path / "store", kind="raw").status == (
+        "tool_missing"
+    )
     assert probe_obserwator_write().status == "tool_missing"
     assert not (tmp_path / "store").exists()
 
@@ -396,15 +507,21 @@ def obserwator():
     return pytest.importorskip("obserwator")
 
 
-def test_init_obserwator_store_creates_the_marker_once(tmp_path: Path, obserwator):
+@pytest.mark.parametrize("kind", KINDS)
+def test_init_obserwator_store_creates_the_marker_of_the_kind_once(
+    tmp_path: Path, obserwator, kind: ObserwatorRoot
+):
     store = tmp_path / "data" / "obserwator"
 
-    first = init_obserwator_store(store)
-    second = init_obserwator_store(store)
+    first = init_obserwator_store(store, kind=kind)
+    second = init_obserwator_store(store, kind=kind)
 
     assert (first.status, second.status) == ("ok", "existing")
     assert first.version == str(obserwator.__version__)
-    assert obserwator_store_state(store).state == "ready"
+    assert obserwator_store_state(store, kind=kind) == ObserwatorStore(
+        "ready", SCHEMAS[kind]
+    )
+    assert not (store / MARKERS[OTHER[kind]]).exists()
 
 
 def test_init_obserwator_store_returns_the_refusal_of_the_tool(
@@ -414,61 +531,71 @@ def test_init_obserwator_store_returns_the_refusal_of_the_tool(
     store.mkdir()
     (store / "notes.txt").write_text("not a store", encoding="utf-8")
 
-    outcome = init_obserwator_store(store)
+    outcome = init_obserwator_store(store, kind="data")
 
     assert outcome.status == "refused"
     assert str(store) in outcome.detail
-    assert not (store / OBSERWATOR_MARKER).exists()
+    assert list(store.iterdir()) == [store / "notes.txt"]
 
 
-def test_init_obserwator_store_marks_a_layout_whose_marker_is_gone_and_keeps_its_files(
-    tmp_path: Path, obserwator
+@pytest.mark.parametrize("kind", KINDS)
+def test_init_obserwator_store_refuses_a_root_of_the_other_kind(
+    tmp_path: Path, obserwator_store_template: dict[str, Path], kind: ObserwatorRoot
 ):
-    from obserwator.testing import build_fixture_store
-
     store = tmp_path / "store"
-    build_fixture_store(store)
-    (store / OBSERWATOR_MARKER).unlink()
-    files = {path.relative_to(store) for path in store.rglob("*")}
-    assert obserwator_store_state(store).state == "no_marker"
+    shutil.copytree(obserwator_store_template[OTHER[kind]], store)
 
-    outcome = init_obserwator_store(store)
+    outcome = init_obserwator_store(store, kind=kind)
+
+    assert (outcome.status, outcome.reason) == ("refused", "wrong_root")
+    assert not (store / MARKERS[kind]).exists()
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_init_obserwator_store_marks_a_layout_whose_marker_is_gone_and_keeps_its_files(
+    tmp_path: Path, obserwator_store_template: dict[str, Path], kind: ObserwatorRoot
+):
+    store = tmp_path / "store"
+    shutil.copytree(obserwator_store_template[kind], store)
+    (store / MARKERS[kind]).unlink()
+    files = {path.relative_to(store) for path in store.rglob("*")}
+    assert obserwator_store_state(store, kind=kind).state == "no_marker"
+
+    outcome = init_obserwator_store(store, kind=kind)
 
     assert outcome.status == "ok"
-    assert obserwator_store_state(store) == ObserwatorStore(
-        "ready", "obserwator-store/1"
+    assert obserwator_store_state(store, kind=kind) == ObserwatorStore(
+        "ready", SCHEMAS[kind]
     )
     marked = {path.relative_to(store) for path in store.rglob("*")}
-    assert marked == files | {Path(OBSERWATOR_MARKER)}
+    assert marked == files | {Path(MARKERS[kind])}
 
 
 def test_init_obserwator_store_refuses_a_layout_with_a_foreign_file_beside_its_trees(
-    tmp_path: Path, obserwator
+    tmp_path: Path, obserwator_store_template: dict[str, Path]
 ):
-    from obserwator.testing import build_fixture_store
-
     store = tmp_path / "store"
-    build_fixture_store(store)
-    (store / OBSERWATOR_MARKER).unlink()
+    shutil.copytree(obserwator_store_template["data"], store)
+    (store / MARKERS["data"]).unlink()
     (store / "notes.txt").write_text("not a store", encoding="utf-8")
-    assert obserwator_store_state(store).state == "no_marker"
+    assert obserwator_store_state(store, kind="data").state == "no_marker"
 
-    outcome = init_obserwator_store(store)
+    outcome = init_obserwator_store(store, kind="data")
 
     assert (outcome.status, outcome.reason) == ("refused", "invalid_layout")
-    assert not (store / OBSERWATOR_MARKER).exists()
+    assert not (store / MARKERS["data"]).exists()
 
 
 def test_init_obserwator_store_takes_a_folder_holding_only_the_key_file_of_the_server(
     tmp_path: Path, obserwator
 ):
     write_server_state(tmp_path)
-    assert obserwator_store_state(tmp_path).state == "empty"
+    assert obserwator_store_state(tmp_path, kind="raw").state == "empty"
 
-    outcome = init_obserwator_store(tmp_path)
+    outcome = init_obserwator_store(tmp_path, kind="raw")
 
     assert outcome.status == "ok"
-    assert obserwator_store_state(tmp_path).state == "ready"
+    assert obserwator_store_state(tmp_path, kind="raw").state == "ready"
     assert (tmp_path / "api_keys.json").read_text(encoding="utf-8") == "{}"
 
 
@@ -483,7 +610,7 @@ def test_init_obserwator_store_refuses_a_path_through_a_symlink(
     except OSError:
         pytest.skip("symbolic links are not available")
 
-    outcome = init_obserwator_store(link / "store")
+    outcome = init_obserwator_store(link / "store", kind="data")
 
     assert outcome.status == "refused"
     assert not (real / "store").exists()
@@ -531,7 +658,7 @@ def test_init_obserwator_store_names_the_reason_when_the_disk_has_no_hard_links(
 
     monkeypatch.setattr(os, "link", refuse)
 
-    outcome = init_obserwator_store(tmp_path / "store")
+    outcome = init_obserwator_store(tmp_path / "store", kind="data")
 
     assert (outcome.status, outcome.reason) == ("refused", "not_atomic")
     assert "Operation not supported" in outcome.detail
