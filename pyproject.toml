@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "retman"
 dynamic = ["version"]
-description = "Polish natural-language commands for the Nogat hydrology tools (Kartograf, Obserwator): recognises the operation, asks for what is missing, shows a plan to confirm, then runs it."
+description = "Polish natural-language commands for the Nogat hydrology tools (Kartograf, Obserwator, Hydrolog): recognises the operation, asks for what is missing, shows a plan to confirm, then runs it."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]

@@ -339,7 +339,7 @@ Plan:
 Operacja: Pobranie NMT dla arkusza lub obszaru
 Rozdzielczość NMT: 1 m
 Układ wysokościowy NMT: EVRF2007
-Godło arkusza lub obszar NMT: obszar z pliku ~/zlewnia-a/zlewnie.gpkg, warstwa „dzialki” (arkusze 1:10000 (PL-1992) przecinające obwiednię któregokolwiek obiektu warstwy; kształt wieloboku nie jest uwzględniany)
+Godło arkusza lub obszar NMT: obszar z pliku ~/zlewnia-a/zlewnie.gpkg, warstwa „dzialki” (arkusze 1:10000 (PL-1992), które obiekty warstwy przecinają swoim kształtem, nie obwiednią; NMT 100 m: pliki województw przecinających obwiednię)
 Obwiednia obszaru: 0.2 × 0.2 km (EPSG:2180: E 530200–530400, N 382100–382300) ← podgląd, bez sieci
 Liczba arkuszy: 1 × 1:10000 (PL-1992) ← podgląd, bez sieci
 Wykonać? [t]ak / [n]ie / [z]mień / [s]prawdź dostępność (sieć)
@@ -1043,9 +1043,9 @@ list in section 8. Options and metrics: `docs/specs/2026-10-11-retman-eval.md`.
   typo). A coordinate system given right after the coordinates (`… 382100 PL-1992`) Retman treats as
   the system of the rectangle and asks about the result system; likewise with a typo in the code itself
   (`2108`).
-- **Geometry file**: SHP and GPKG only; the file is not clipped to the shape — sheet operations take
-  the map sheets whose bounding box touches the bounding box of any feature, and the cutout is a single
-  rectangle covering all features. Orthophoto sheets are not downloaded for a file (only for a sheet
+- **Geometry file**: SHP and GPKG only; sheet operations take the map sheets that the features meet
+  (a polygon by its shape, not every sheet of its bounding box), while the cutout is a single rectangle
+  covering all features, not clipped to the shape. Orthophoto sheets are not downloaded for a file (only for a sheet
   code); the orthophoto cutout takes the rectangle around the file.
 - **BDOT10k** for a sheet code, rectangle or file downloads the full packages of every intersected county,
   without clipping — the files can be large (Kartograf rejects an area with more than 100 packages or

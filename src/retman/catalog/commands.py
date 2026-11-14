@@ -74,9 +74,10 @@ _PLAN_RUN: Final = Command(
     summary="Plan an operation from a Polish command and, once confirmed, run it.",
     description=(
         "Recognises the operation in a Polish command, fills in the values it states "
-        "and lists open questions; with `yes` runs the complete plan. Use it to get "
-        "or prepare data from Kartograf and Obserwator in Polish words. Not for other "
-        "languages or for exact calls of a tool (use the tool itself)."
+        "and lists open questions; with `yes` runs the complete plan. Use it to get, "
+        "prepare or compute data with Kartograf, Obserwator and Hydrolog in Polish "
+        "words. Not for other languages or for exact calls of a tool (use the tool "
+        "itself)."
     ),
     function="retman.operations.plan_run",
     options=(

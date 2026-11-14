@@ -707,7 +707,7 @@ file means is stated by the plan (`geometry_note`):
 
 | Operation | Meaning of the file | Notes |
 | --- | --- | --- |
-| DEM (NMT) for a map sheet, child map sheets | map sheets at the given scale that the features of the layer meet: those a polygon overlaps with a positive area (not every sheet of its bounding box), those a line runs through, the one a point lies in | a sheet count of 0 is a preview problem |
+| DEM (NMT) for a map sheet, child map sheets | map sheets at the given scale that the features of the layer meet: those a polygon overlaps with a positive area (not every sheet of its bounding box), those a line runs through, the one a point lies in | a sheet count of 0 is a preview problem; DEM (NMT) 100 m takes the voivodeship files intersecting the bounding box |
 | DEM or DSM cutout | one rectangle covering all features of the layer, with no clipping to the polygon | no data outside the land area of Poland |
 | orthophoto cutout | one rectangle covering all features of the layer, with no clipping to the polygon | one GeoTIFF in EPSG:2180 |
 | SoilGrids layer, hydrologic soil groups | one rectangle covering all features of the layer, with no clipping to the polygon | a 250 m grid: a small area is a few pixels |
