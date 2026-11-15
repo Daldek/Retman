@@ -164,7 +164,7 @@ Varied — Retman must support **two paths**:
 
 - Single operations (no chains) of three tools: Kartograf 0.8.0 (ten operations: six on spatial data of GUGiK and Copernicus, two on SoilGrids soils, the creation and the overview of its store),
   the whole of Obserwator 3.0.0 (all user-facing capabilities, including ČHMÚ data;
-  19 operations in 5 categories; projects belong to Archiwista, Nogat ECO-054) and the basic
+  20 operations in 5 categories; projects belong to Archiwista, Nogat ECO-054) and the basic
   routes of Hydrolog 0.8.0 in the Nogat registry (nine operations) — section 7.2, ADR-012, ADR-017.
 - Scenarios S-01 to S-04.
 - Requirements W-01 to W-11, W-15 and W-17, plus N-12.
@@ -190,7 +190,7 @@ is two-stage: category, then operation (ARCHITECTURE section 3.4).
 | hydrologic soil groups HSG (A–D, SCS-CN) from the SoilGrids texture of one depth | Kartograf | sheet code, rectangle in PL-1992 or WGS84, geometry file |
 | overview of the store: its segments (product, country, dataset), read-only | Kartograf | — |
 
-**Obserwator 3.0.0** (ADR-017): 19 operations in five categories, on IMGW-PIB and ČHMÚ data
+**Obserwator 3.0.0** (ADR-017): 20 operations in five categories, on IMGW-PIB and ČHMÚ data
 (ARCHITECTURE section 3.2.11):
 
 | Category | Operations |
@@ -199,7 +199,7 @@ is two-stage: category, then operation (ARCHITECTURE section 3.4).
 | current data and warnings | current measurements of a hydrological, meteorological or synoptic station; hydrological and meteorological warnings; water levels at stations (alarm and warning levels) |
 | PMAXTP maximum precipitation | maximum precipitation table for a point (POT or AMP method; optionally for selected probabilities and durations); read a stored grid cell |
 | station time series | export a station series to CSV (dataset, period, hydrological or calendar year, variables); data coverage of a station in the store; build series |
-| archives and store | download hydrological or meteorological archives to the results folder; check archives against the store (plan); download archives to the store, also per plan; export stored archives; create and describe the store |
+| archives and store | download hydrological, meteorological or synoptic archives (also warning archives and actinometric data) to the results folder; check archives against the store (plan); download archives to the store, also per plan; export stored archives; create and describe the store |
 
 The first scenario S-01 ("Pobierz dobowe opady ze stacji Poznań z lat 2000–2020" — download daily
 precipitation from the Poznań station for 2000–2020) is a station series export. Six catalog

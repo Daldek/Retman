@@ -175,7 +175,7 @@ def test_validator_trusts_the_dataset_list_over_the_known_codes() -> None:
 
 
 def test_codes_of_a_new_dataset_are_read_case_insensitively() -> None:
-    assert _read("chcę WILGOTNOSC", ["wilgotnosc"]) == [["wilgotnosc"]]
+    assert _read("chcę WIDZIALNOSC", ["widzialnosc"]) == [["widzialnosc"]]
 
 
 def test_extracted_values_survive_a_json_round_trip() -> None:

@@ -49,7 +49,7 @@ in `pyproject.toml`; they are the members of the Nogat release set `candidate-4`
 ```bash
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@0394af7c66b60cccb88f14b6118893b78443dc21" \
+    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@3816b3c6a4d769a62335c63f2c6d02ae5af60b8b" \
     --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@e5df06d85f7ca7a0fde2547393748bc17ea3669c"
 ```
 
@@ -819,7 +819,7 @@ Ways of writing the area:
 
 ### 9.2. Obserwator 3.0.0 — IMGW-PIB and ČHMÚ data (ADR-017)
 
-19 operations in five groups. Obserwator keeps two folders (section 1.3, ADR-034): the raw folder
+20 operations in five groups. Obserwator keeps two folders (section 1.3, ADR-034): the raw folder
 (`raw_store_dir`) with what it downloads into the store (archives, the station sources of the
 catalogs, PMAXTP cells) and the data folder (`store_dir`) with what it builds from them (series,
 station catalogs). The operations that read or write them (station search in the store, the station
@@ -835,7 +835,7 @@ execution connects to the server (only after `t`):
 | Current data and warnings | current measurements of a hydrological, meteorological or synoptic station; hydrological and meteorological warnings; water levels (alarm and warning) | yes |
 | PMAXTP maximum precipitation | table for a point (POT or AMP method; saving the cell in the store or not; narrowing to selected probabilities and durations); reading a saved cell | download yes, read no |
 | Station time series | export of a station's time series to CSV (dataset, period, year kind, variables; source "store" or "server", `s`; "server" downloads the archives and builds the series first); data coverage of a station in the store; building time series | "server" source |
-| IMGW data archives and the Obserwator store | download of hydrological or meteorological archives to the result folder; check of archives against the store (plan); download of archives into the store, followed by building the dataset's series (`s`), also per a plan from an earlier result (e.g. "#5", archives only); export of stored archives to CSV or JSON Lines; creation of both folders; store description (the data folder; the raw folder for archives, PMAXTP and observations) | downloads and check yes |
+| IMGW data archives and the Obserwator store | download of hydrological, meteorological or synoptic archives to the result folder (also the archives of hydrological and meteorological warnings, the actinometric data and the daily and fixed-time synoptic data of chosen stations); check of archives against the store (plan); download of archives into the store, followed by building the dataset's series (`s`), also per a plan from an earlier result (e.g. "#5", archives only); export of stored archives to CSV or JSON Lines; creation of both folders; store description (the data folder; the raw folder for archives, PMAXTP and observations) | downloads and check yes |
 
 Example commands (illustrative; not all are in the `retman eval run` set yet): "Znajdź stacje hydrologiczne
 na Wiśle" (find hydrological stations on the Vistula), "Zbuduj katalog stacji IMGW" (build the IMGW station
@@ -847,14 +847,17 @@ precipitation for point 52.23, 21.01 using the POT method), "Pobierz dobowe opad
 stacji Poznań-Ławica?" (which years of data do I have for the Poznań-Ławica station?), "Sprawdź, ile trzeba
 pobrać dla opadów dobowych 2000–2020" (check how much needs downloading for daily precipitation 2000–2020),
 "Utwórz magazyn Obserwatora" (create the Obserwator store), "Co mam w magazynie IMGW?" (what is in my
-Obserwator store?; a command may still name the store after the IMGW data).
+Obserwator store?; a command may still name the store after the IMGW data), "Pobierz dane synoptyczne
+dla Świnoujścia za 2024" (download the synoptic data of Świnoujście for 2024: the daily synoptic series
+of the station; Retman confirms the inflected name and asks for the year kind and the source).
 
 Rules for Obserwator operations:
 
 - **stations**: a code (9 digits for IMGW-PIB, WIGOS identifier for ČHMÚ) or a name from the catalog in the
   data folder; an inflected name requires confirmation; without a catalog Retman reads only codes and suggests
   "Zbuduj katalog stacji IMGW": a station named in words ("ze stacji Racibórz-Miedonia") is then a question
-  for its code, never a request for every station;
+  for its code, never a request for every station; the ČHMÚ datasets and the daily and fixed-time
+  synoptic data of IMGW-PIB are kept per station, so they always need stations;
 - **period**: archives take years in the tool's archive numbering (for IMGW-PIB hydrological data —
   hydrological years), time series take years or dates plus the year kind (no default: a question unless
   the command states it);
@@ -981,7 +984,7 @@ Model decyzyjny
 Narzędzia
   ✓ hydrolog 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 9 operacji
   ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 10 operacji
-  ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 19 operacji
+  ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 20 operacji
 
 Magazyny danych narzędzi
   ✓ kartograf: magazyn ~/.local/share/nogat/kartograf (zapis możliwy, dowiązania twarde działają)

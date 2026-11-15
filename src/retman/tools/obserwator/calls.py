@@ -224,7 +224,8 @@ def export_station_series(
     calls: list[CatalogCall] = []
     if params["data_source"] == "server":
         sync: dict[str, object] = {"datasets": [dataset]}
-        if meta["provider"] == "CHMI":
+        # Station archives (ČHMÚ, IMGW-PIB synop) are fetched for the station only
+        if meta["archive_scope"] != "country":
             sync["stations"] = [code]
         # ČHMÚ meteorological files hold a station's whole history: no years
         if dataset != "cz.chmi.meteo_daily":

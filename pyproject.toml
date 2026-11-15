@@ -64,7 +64,7 @@ dev = [
 # are pinned (REL-5.6).
 tools = [
     "kartograf @ git+https://github.com/Daldek/Kartograf@c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1",
-    "obserwator[store] @ git+https://github.com/Daldek/Obserwator@0394af7c66b60cccb88f14b6118893b78443dc21",
+    "obserwator[store] @ git+https://github.com/Daldek/Obserwator@3816b3c6a4d769a62335c63f2c6d02ae5af60b8b",
     "hydrolog @ git+https://github.com/Daldek/Hydrolog@e5df06d85f7ca7a0fde2547393748bc17ea3669c",
 ]
 

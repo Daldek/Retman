@@ -12,11 +12,11 @@ description = "Opady maksymalne prawdopodobne PMAXTP (kwantyle opadu dla czasu t
 
 [categories.obserwator_series]
 label = "Szeregi czasowe stacji IMGW i ČHMÚ"
-description = "Szeregi dobowe i miesięczne stacji IMGW-PIB i ČHMÚ: opady, przepływy, stany wody, temperatury; eksport do CSV, pokrycie danych stacji, budowa szeregów w magazynie"
+description = "Szeregi dobowe i miesięczne stacji IMGW-PIB i ČHMÚ: opady, przepływy, stany wody, temperatury, dobowe dane synoptyczne; eksport do CSV, pokrycie danych stacji, budowa szeregów w magazynie"
 
 [categories.obserwator_archives]
 label = "Archiwa danych IMGW i magazyn Obserwatora"
-description = "Archiwa danych IMGW-PIB i ČHMÚ: pobieranie plików archiwalnych, sprawdzanie i synchronizacja lokalnego magazynu Obserwatora (magazynu danych IMGW), eksport zapisanych archiwów, inicjalizacja i podgląd magazynu"
+description = "Archiwa danych IMGW-PIB i ČHMÚ: pobieranie plików archiwalnych (także dane synoptyczne dobowe i terminowe, archiwa ostrzeżeń hydrologicznych i meteorologicznych, dane aktynometryczne), sprawdzanie i synchronizacja lokalnego magazynu Obserwatora (magazynu danych IMGW), eksport zapisanych archiwów, inicjalizacja i podgląd magazynu"
 
 [operations.find_obserwator_stations]
 label = "Wyszukanie stacji IMGW i ČHMÚ"
@@ -150,7 +150,7 @@ help = "Podaj fragment nazwy stacji synoptycznej albo jej 5-cyfrowy kod (np. kod
 
 [operations.fetch_imgw_warnings]
 label = "Ostrzeżenia hydrologiczne i meteorologiczne"
-description = "Pobierz aktualne ostrzeżenia IMGW-PIB: hydrologiczne (wezbranie, przekroczenie stanów ostrzegawczych i alarmowych, susza hydrologiczna) i meteorologiczne (silny wiatr, burze, intensywne opady, mróz) wraz ze stopniem zagrożenia, obszarem i czasem obowiązywania."
+description = "Pobierz aktualne (obowiązujące teraz) ostrzeżenia IMGW-PIB: hydrologiczne (wezbranie, przekroczenie stanów ostrzegawczych i alarmowych, susza hydrologiczna) i meteorologiczne (silny wiatr, burze, intensywne opady, mróz) wraz ze stopniem zagrożenia, obszarem i czasem obowiązywania; dawne ostrzeżenia z minionych lat są w archiwach ostrzeżeń."
 summary = "Gotowe. Wynik #{number}: ostrzeżeń w mocy: {rows}."
 
 [operations.fetch_imgw_warnings.params.kind]
@@ -246,7 +246,7 @@ options.unspecified.description = "Polecenie nie podaje metody POT ani AMP"
 
 [operations.export_station_series]
 label = "Eksport szeregu stacji do CSV"
-description = "Pobierz albo wyeksportuj szereg czasowy jednej stacji do CSV: dobowe opady, przepływy, stany wody, temperatura; IMGW-PIB, IMGW, ČHMÚ, Czechy; z serwera przez magazyn albo z lokalnego magazynu."
+description = "Pobierz albo wyeksportuj szereg czasowy jednej stacji do CSV: dobowe opady, przepływy, stany wody, temperatura, dobowe dane synoptyczne stacji synoptycznych (np. dane synoptyczne dla Świnoujścia za rok); IMGW-PIB, IMGW, ČHMÚ, Czechy; z serwera przez magazyn albo z lokalnego magazynu."
 summary = "Gotowe. Wynik #{number}: szereg stacji {station_code} ({rows} wierszy, {first_date} – {last_date}) zapisany w pliku CSV."
 
 [operations.export_station_series.check]
@@ -267,6 +267,8 @@ options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
 options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
 options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
 options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.pl_meteo_synop_daily.label = "Dane synoptyczne dobowe IMGW-PIB"
+options.pl_meteo_synop_daily.description = "dobowe dane synoptyczne ze stacji synoptycznych IMGW-PIB: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna, usłonecznienie, zachmurzenie, wiatr, wilgotność, ciśnienie, czas trwania zjawisk; dane synoptyczne; synop; stacje synoptyczne"
 options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
 options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
 options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
@@ -330,6 +332,8 @@ options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
 options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
 options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
 options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.pl_meteo_synop_daily.label = "Dane synoptyczne dobowe IMGW-PIB"
+options.pl_meteo_synop_daily.description = "dobowe dane synoptyczne ze stacji synoptycznych IMGW-PIB: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna, usłonecznienie, zachmurzenie, wiatr, wilgotność, ciśnienie, czas trwania zjawisk; dane synoptyczne; synop; stacje synoptyczne"
 options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
 options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
 options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
@@ -363,6 +367,8 @@ options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
 options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
 options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
 options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.pl_meteo_synop_daily.label = "Dane synoptyczne dobowe IMGW-PIB"
+options.pl_meteo_synop_daily.description = "dobowe dane synoptyczne ze stacji synoptycznych IMGW-PIB: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna, usłonecznienie, zachmurzenie, wiatr, wilgotność, ciśnienie, czas trwania zjawisk; dane synoptyczne; synop; stacje synoptyczne"
 options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
 options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
 options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
@@ -371,14 +377,14 @@ options.unspecified.description = "Polecenie nie wskazuje zbioru danych, z któr
 
 [operations.download_hydro_archives]
 label = "Pobranie archiwów hydrologicznych do folderu wyniku"
-description = "Pobierz pliki archiwalne danych hydrologicznych IMGW-PIB albo ČHMÚ do folderu wyniku, bez przetwarzania i bez zapisu w magazynie: dobowe, miesięczne i półroczne dane hydrologiczne (stan wody, przepływ, temperatura wody), zjawiska lodowe i zarastanie rzek; archiwa ZIP z serwera, surowe dane źródłowe, paczki z lat."
+description = "Pobierz pliki archiwalne danych hydrologicznych IMGW-PIB albo ČHMÚ do folderu wyniku, bez przetwarzania i bez zapisu w magazynie: dobowe, miesięczne i półroczne dane hydrologiczne (stan wody, przepływ, temperatura wody), zjawiska lodowe i zarastanie rzek, archiwum ostrzeżeń hydrologicznych; archiwa ZIP z serwera, surowe dane źródłowe, paczki z lat."
 summary = "Gotowe. Wynik #{number}: pobrano archiwa — plików: {files} ({size}); pliki są w folderze wyniku."
 
 [operations.download_hydro_archives.params.dataset]
 label = "Zbiór danych"
 question = "Archiwa którego zbioru danych hydrologicznych pobrać?"
-model_question = "Jakiego rodzaju dane hydrologiczne (dobowe, miesięczne, półroczne, zjawiska lodowe, Czechy) wymienia polecenie?"
-help = "Dane hydrologiczne IMGW-PIB są dobowe, miesięczne albo półroczne i roczne; osobny zbiór to zjawiska lodowe i zarastanie rzek. Dane czeskie to zbiór ČHMÚ."
+model_question = "Jakiego rodzaju dane hydrologiczne (dobowe, miesięczne, półroczne, zjawiska lodowe, archiwum ostrzeżeń, Czechy) wymienia polecenie?"
+help = "Dane hydrologiczne IMGW-PIB są dobowe, miesięczne albo półroczne i roczne; osobne zbiory to zjawiska lodowe i zarastanie rzek oraz archiwum ostrzeżeń hydrologicznych (miesięczne pliki od 2017 roku). Dane czeskie to zbiór ČHMÚ."
 options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
 options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne; hydro dobowe"
 options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
@@ -387,6 +393,8 @@ options.pl_hydro_semiannual.label = "Dane hydrologiczne półroczne i roczne IMG
 options.pl_hydro_semiannual.description = "półroczne i roczne dane hydrologiczne: ekstrema stanu wody, przepływu i temperatury wody w półroczu zimowym, letnim i w roku; stacje hydrologiczne IMGW-PIB"
 options.pl_hydro_phenomena.label = "Zjawiska lodowe i zarastanie rzek IMGW-PIB"
 options.pl_hydro_phenomena.description = "zjawiska lodowe i zarastanie rzek: lód, śryż, pokrywa lodowa, zator, zarastanie koryta; zjawiska hydrologiczne IMGW-PIB"
+options.pl_warnings_hydro_archive.label = "Archiwum ostrzeżeń hydrologicznych IMGW-PIB"
+options.pl_warnings_hydro_archive.description = "archiwum ostrzeżeń hydrologicznych IMGW-PIB: dawne ostrzeżenia o wezbraniach, przekroczeniu stanów ostrzegawczych i alarmowych, suszy hydrologicznej; miesięczne pliki od 2017 roku; archiwalne, historyczne ostrzeżenia"
 options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
 options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
 options.unspecified.description = "Polecenie nie wskazuje, jakich danych hydrologicznych dotyczą archiwa"
@@ -420,14 +428,14 @@ help = "Pliki ČHMÚ są osobne dla każdej stacji, więc stacje są wymagane. K
 
 [operations.download_meteo_archives]
 label = "Pobranie archiwów meteorologicznych do folderu wyniku"
-description = "Pobierz pliki archiwalne danych meteorologicznych IMGW-PIB albo ČHMÚ do folderu wyniku, bez przetwarzania i bez zapisu w magazynie: dobowe dane klimatyczne i opadowe, miesięczne dane klimatyczne, opadowe i synoptyczne, dane terminowe; stacje klimatyczne, opadowe i synoptyczne; archiwa ZIP z serwera, surowe dane źródłowe."
+description = "Pobierz pliki archiwalne danych meteorologicznych IMGW-PIB albo ČHMÚ do folderu wyniku, bez przetwarzania i bez zapisu w magazynie: dobowe dane klimatyczne i opadowe, miesięczne dane klimatyczne i opadowe, dane terminowe stacji klimatycznych, archiwum ostrzeżeń meteorologicznych, dane aktynometryczne (promieniowanie słoneczne); stacje klimatyczne i opadowe; archiwa ZIP z serwera, surowe dane źródłowe. Dane synoptyczne pobiera osobna operacja."
 summary = "Gotowe. Wynik #{number}: pobrano archiwa — plików: {files} ({size}); pliki są w folderze wyniku."
 
 [operations.download_meteo_archives.params.dataset]
 label = "Zbiór danych"
 question = "Archiwa którego zbioru danych meteorologicznych pobrać?"
-model_question = "Jakiego rodzaju dane meteorologiczne (klimatyczne, opadowe, synoptyczne; dobowe, miesięczne, terminowe; Czechy) wymienia polecenie?"
-help = "Stacje klimatyczne mierzą temperaturę i opad, stacje opadowe tylko opad i pokrywę śnieżną, synoptyczne dają dane miesięczne. Dane czeskie to zbiór ČHMÚ."
+model_question = "Jakiego rodzaju dane meteorologiczne (klimatyczne, opadowe; dobowe, miesięczne, terminowe; archiwum ostrzeżeń; aktynometryczne; Czechy) wymienia polecenie?"
+help = "Stacje klimatyczne mierzą temperaturę i opad, stacje opadowe tylko opad i pokrywę śnieżną. Osobne zbiory to archiwum ostrzeżeń meteorologicznych (od 2017 roku) i dane aktynometryczne (promieniowanie słoneczne, 1990–2017). Dane czeskie to zbiór ČHMÚ."
 options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
 options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
 options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
@@ -436,10 +444,12 @@ options.pl_meteo_climate_monthly.label = "Dane klimatyczne miesięczne IMGW-PIB"
 options.pl_meteo_climate_monthly.description = "miesięczne dane klimatyczne: średnie, ekstrema i sumy miesięczne temperatury i opadu ze stacji klimatycznych IMGW-PIB"
 options.pl_meteo_precip_monthly.label = "Opady miesięczne ze stacji opadowych IMGW-PIB"
 options.pl_meteo_precip_monthly.description = "miesięczne sumy opadów ze stacji opadowych IMGW-PIB; opad miesięczny"
-options.pl_meteo_synop_monthly.label = "Dane synoptyczne miesięczne IMGW-PIB"
-options.pl_meteo_synop_monthly.description = "miesięczne dane ze stacji synoptycznych IMGW-PIB: temperatura, wilgotność, ciśnienie, wiatr, zachmurzenie, opad; synop"
 options.pl_meteo_climate_terms.label = "Dane terminowe stacji klimatycznych IMGW-PIB"
 options.pl_meteo_climate_terms.description = "dane terminowe: obserwacje stacji klimatycznych IMGW-PIB w terminach pomiarowych (7, 14, 21), po jednym pliku na miesiąc"
+options.pl_warnings_meteo_archive.label = "Archiwum ostrzeżeń meteorologicznych IMGW-PIB"
+options.pl_warnings_meteo_archive.description = "archiwum ostrzeżeń meteorologicznych IMGW-PIB: dawne ostrzeżenia o silnym wietrze, burzach, intensywnych opadach, mrozie, upale; miesięczne pliki od 2017 roku; archiwalne, historyczne ostrzeżenia"
+options.pl_actinometric.label = "Dane aktynometryczne IMGW-PIB (promieniowanie słoneczne)"
+options.pl_actinometric.description = "dane aktynometryczne: promieniowanie słoneczne mierzone na stacjach aktynometrycznych IMGW-PIB, lata 1990–2017; aktynometria; radiacja; pliki wszystkich stacji"
 options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
 options.cz_meteo_daily.description = "czeskie dane meteorologiczne ČHMÚ: opad, temperatura średnia, maksymalna i minimalna; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
 options.unspecified.description = "Polecenie nie wskazuje, jakich danych meteorologicznych dotyczą archiwa"
@@ -448,13 +458,43 @@ options.unspecified.description = "Polecenie nie wskazuje, jakich danych meteoro
 label = "Lata archiwów"
 question = "Z jakich lat pobrać archiwa (np. „2000–2020”)?"
 example = "2000-2020"
-help = "Archiwa danych meteorologicznych IMGW-PIB mają lata kalendarzowe. Podaj zakres („2000–2020”) albo listę („2010, 2012 i 2015”). Dla dobowych danych ČHMÚ lat się nie podaje: plik stacji obejmuje całą jej historię."
+help = "Archiwa danych meteorologicznych IMGW-PIB mają lata kalendarzowe. Podaj zakres („2000–2020”) albo listę („2010, 2012 i 2015”). Archiwum ostrzeżeń zaczyna się w 2017 roku, dane aktynometryczne obejmują lata 1990–2017. Dla dobowych danych ČHMÚ lat się nie podaje: plik stacji obejmuje całą jej historię."
 
 [operations.download_meteo_archives.params.stations]
 label = "Stacje ČHMÚ"
 question = "Dla których stacji ČHMÚ pobrać pliki? Podaj kody (identyfikatory WIGOS) albo nazwy stacji."
 example = "0-203-0-11514"
 help = "Pliki ČHMÚ są osobne dla każdej stacji, więc stacje są wymagane. Kod WIGOS ma postać „0-203-0-11514”."
+
+[operations.download_synop_archives]
+label = "Pobranie archiwów danych synoptycznych do folderu wyniku"
+description = "Pobierz pliki archiwalne danych synoptycznych IMGW-PIB do folderu wyniku, bez przetwarzania i bez zapisu w magazynie: dane synoptyczne dobowe, miesięczne i terminowe ze stacji synoptycznych (pliki dobowe i terminowe osobno dla każdej stacji); synop; archiwa ZIP z serwera, surowe dane źródłowe, paczki z lat."
+summary = "Gotowe. Wynik #{number}: pobrano archiwa — plików: {files} ({size}); pliki są w folderze wyniku."
+
+[operations.download_synop_archives.params.dataset]
+label = "Zbiór danych"
+question = "Archiwa których danych synoptycznych pobrać: dobowych, miesięcznych czy terminowych?"
+model_question = "Jakie dane synoptyczne (dobowe, miesięczne, terminowe) wymienia polecenie?"
+help = "Stacje synoptyczne IMGW-PIB dają dane dobowe, miesięczne i terminowe (z terminów obserwacji). Dobowe i terminowe są w osobnym pliku dla każdej stacji, miesięczne w plikach całego kraju."
+options.pl_meteo_synop_daily.label = "Dane synoptyczne dobowe IMGW-PIB"
+options.pl_meteo_synop_daily.description = "dobowe dane synoptyczne ze stacji synoptycznych IMGW-PIB: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna, usłonecznienie, zachmurzenie, wiatr, wilgotność, ciśnienie, czas trwania zjawisk; codzienne; plik osobny dla każdej stacji"
+options.pl_meteo_synop_monthly.label = "Dane synoptyczne miesięczne IMGW-PIB"
+options.pl_meteo_synop_monthly.description = "miesięczne dane ze stacji synoptycznych IMGW-PIB: temperatura, wilgotność, ciśnienie, wiatr, zachmurzenie, opad; synopy miesięczne; pliki całego kraju"
+options.pl_meteo_synop_terms.label = "Dane synoptyczne terminowe IMGW-PIB"
+options.pl_meteo_synop_terms.description = "dane terminowe ze stacji synoptycznych IMGW-PIB: obserwacje synoptyczne w terminach pomiarowych; synop terminowy; plik osobny dla każdej stacji"
+options.unspecified.description = "Polecenie nie wskazuje, czy chodzi o dane synoptyczne dobowe, miesięczne czy terminowe"
+
+[operations.download_synop_archives.params.years]
+label = "Lata archiwów"
+question = "Z jakich lat pobrać archiwa (np. „2000–2020”)?"
+example = "2020-2024"
+help = "Archiwa danych synoptycznych IMGW-PIB mają lata kalendarzowe; dane dobowe i terminowe zaczynają się w 1966 roku. Podaj zakres („2000–2020”) albo listę („2010, 2012 i 2015”). Za bieżący rok serwer publikuje tylko miesięczne pliki całego kraju, nie pliki stacji."
+
+[operations.download_synop_archives.params.stations]
+label = "Stacje synoptyczne"
+question = "Dla których stacji synoptycznych pobrać pliki? Podaj nazwy stacji albo 9-cyfrowe kody IMGW-PIB."
+example = "Świnoujście"
+help = "Dane synoptyczne dobowe i terminowe są w osobnym pliku dla każdej stacji, więc stacje są wymagane. Kod IMGW-PIB ma 9 cyfr („353140200”)."
 
 [operations.check_obserwator_archives]
 label = "Sprawdzenie archiwów względem magazynu"
@@ -465,7 +505,7 @@ summary = "Gotowe. Wynik #{number}: sprawdzono archiwa — plików: {items}, do 
 label = "Zbiór danych"
 question = "Archiwa którego zbioru danych sprawdzić?"
 model_question = "Jakiego rodzaju dane i z jakiej sieci stacji dotyczy polecenie?"
-help = "Magazyn przechowuje zbiory, z których Obserwator buduje szeregi czasowe: hydrologiczne dobowe, miesięczne i półroczne, klimatyczne i opadowe dobowe oraz dane czeskie ČHMÚ."
+help = "Magazyn przechowuje zbiory, z których Obserwator buduje szeregi czasowe: hydrologiczne dobowe, miesięczne i półroczne, klimatyczne, opadowe i synoptyczne dobowe oraz dane czeskie ČHMÚ."
 options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
 options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne; hydro dobowe"
 options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
@@ -476,6 +516,8 @@ options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
 options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
 options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
 options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.pl_meteo_synop_daily.label = "Dane synoptyczne dobowe IMGW-PIB"
+options.pl_meteo_synop_daily.description = "dobowe dane synoptyczne ze stacji synoptycznych IMGW-PIB: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna, usłonecznienie, zachmurzenie, wiatr, wilgotność, ciśnienie, czas trwania zjawisk; dane synoptyczne; synop; stacje synoptyczne"
 options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
 options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
 options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
@@ -489,10 +531,10 @@ example = "2000-2020"
 help = "Lata numeruje IMGW: archiwum danych hydrologicznych IMGW-PIB ma rok hydrologiczny (od 1 listopada poprzedniego roku do 31 października), meteorologicznych i ČHMÚ rok kalendarzowy. Dla dobowych danych meteorologicznych ČHMÚ lat się nie podaje."
 
 [operations.check_obserwator_archives.params.stations]
-label = "Stacje ČHMÚ"
-question = "Dla których stacji ČHMÚ sprawdzić pliki? Podaj kody (identyfikatory WIGOS) albo nazwy stacji."
-example = "0-203-1-001000"
-help = "Pliki ČHMÚ są osobne dla każdej stacji, więc stacje są wymagane."
+label = "Stacje"
+question = "Dla których stacji sprawdzić pliki? Podaj nazwy stacji albo kody (9 cyfr IMGW-PIB albo identyfikatory WIGOS ČHMÚ)."
+example = "Świnoujście"
+help = "Pliki ČHMÚ i archiwa danych synoptycznych dobowych IMGW-PIB są osobne dla każdej stacji, więc stacje są wymagane."
 
 [operations.sync_obserwator_store]
 label = "Pobranie archiwów do magazynu"
@@ -506,7 +548,7 @@ notice = "Zapytam serwery IMGW-PIB albo ČHMÚ (listy plików i nagłówki HEAD)
 label = "Zbiór danych"
 question = "Archiwa którego zbioru danych pobrać do magazynu?"
 model_question = "Jakiego rodzaju dane i z jakiej sieci stacji dotyczy polecenie?"
-help = "Magazyn przechowuje zbiory, z których Obserwator buduje szeregi czasowe: hydrologiczne dobowe, miesięczne i półroczne, klimatyczne i opadowe dobowe oraz dane czeskie ČHMÚ."
+help = "Magazyn przechowuje zbiory, z których Obserwator buduje szeregi czasowe: hydrologiczne dobowe, miesięczne i półroczne, klimatyczne, opadowe i synoptyczne dobowe oraz dane czeskie ČHMÚ."
 options.pl_hydro_daily.label = "Dane hydrologiczne dobowe IMGW-PIB"
 options.pl_hydro_daily.description = "dobowe dane hydrologiczne: stan wody, przepływ, temperatura wody; wodowskaz; stacje hydrologiczne IMGW-PIB; rzeki; codzienne; hydro dobowe"
 options.pl_hydro_monthly.label = "Dane hydrologiczne miesięczne IMGW-PIB"
@@ -517,6 +559,8 @@ options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
 options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
 options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
 options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.pl_meteo_synop_daily.label = "Dane synoptyczne dobowe IMGW-PIB"
+options.pl_meteo_synop_daily.description = "dobowe dane synoptyczne ze stacji synoptycznych IMGW-PIB: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna, usłonecznienie, zachmurzenie, wiatr, wilgotność, ciśnienie, czas trwania zjawisk; dane synoptyczne; synop; stacje synoptyczne"
 options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
 options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
 options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
@@ -530,10 +574,10 @@ example = "2000-2020"
 help = "Lata numeruje IMGW: archiwum danych hydrologicznych IMGW-PIB ma rok hydrologiczny (od 1 listopada poprzedniego roku do 31 października), meteorologicznych i ČHMÚ rok kalendarzowy. Dla dobowych danych meteorologicznych ČHMÚ lat się nie podaje."
 
 [operations.sync_obserwator_store.params.stations]
-label = "Stacje ČHMÚ"
-question = "Dla których stacji ČHMÚ pobrać pliki do magazynu? Podaj kody (identyfikatory WIGOS) albo nazwy stacji."
-example = "0-203-1-001000"
-help = "Pliki ČHMÚ są osobne dla każdej stacji, więc stacje są wymagane."
+label = "Stacje"
+question = "Dla których stacji pobrać pliki do magazynu? Podaj nazwy stacji albo kody (9 cyfr IMGW-PIB albo identyfikatory WIGOS ČHMÚ)."
+example = "Świnoujście"
+help = "Pliki ČHMÚ i archiwa danych synoptycznych dobowych IMGW-PIB są osobne dla każdej stacji, więc stacje są wymagane."
 
 [operations.sync_obserwator_store_by_plan]
 label = "Pobranie do magazynu według planu"
@@ -560,6 +604,8 @@ options.pl_meteo_climate_daily.label = "Dane klimatyczne dobowe IMGW-PIB"
 options.pl_meteo_climate_daily.description = "dobowe dane klimatyczne: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna; stacje klimatyczne IMGW-PIB"
 options.pl_meteo_precip_daily.label = "Opady dobowe ze stacji opadowych IMGW-PIB"
 options.pl_meteo_precip_daily.description = "dobowe opady, suma dobowa opadu, pokrywa śnieżna, świeży śnieg ze stacji opadowych IMGW-PIB; deszczomierz; opad dobowy"
+options.pl_meteo_synop_daily.label = "Dane synoptyczne dobowe IMGW-PIB"
+options.pl_meteo_synop_daily.description = "dobowe dane synoptyczne ze stacji synoptycznych IMGW-PIB: temperatura powietrza maksymalna, minimalna, średnia, przygruntowa, opad dobowy, pokrywa śnieżna, usłonecznienie, zachmurzenie, wiatr, wilgotność, ciśnienie, czas trwania zjawisk; dane synoptyczne; synop; stacje synoptyczne"
 options.cz_hydro_daily.label = "Dane hydrologiczne dobowe ČHMÚ (Czechy)"
 options.cz_hydro_daily.description = "czeskie dane hydrologiczne ČHMÚ: stan wody, przepływ, temperatura wody; Czechy; CHMI; CHMU; WIGOS; stacje czeskie"
 options.cz_meteo_daily.label = "Dane meteorologiczne dobowe ČHMÚ (Czechy)"
@@ -763,6 +809,10 @@ value = "{start} – {end} (lata hydrologiczne, od 1 listopada do 31 październi
 [preview.arch_span_calendar]
 label = "Zakres danych"
 value = "{start} – {end} (lata kalendarzowe)"
+
+[preview.arch_listed]
+label = "Pliki"
+value = "wszystkie pliki wybranych lat ze spisu folderów serwera; ich liczbę i rozmiar poznam dopiero przy pobieraniu"
 
 [preview.arch_plan]
 label = "Plan synchronizacji"
