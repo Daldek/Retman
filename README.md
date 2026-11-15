@@ -26,7 +26,7 @@ Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Retman has no extras:
 # CLI
 uv tool install "git+https://github.com/Daldek/Retman@develop" \
     --with "kartograf @ git+https://github.com/Daldek/Kartograf@c9afdd3f85b164b21e3ab2ce1b8cc02c050712f1" \
-    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@0394af7c66b60cccb88f14b6118893b78443dc21" \
+    --with "obserwator[store] @ git+https://github.com/Daldek/Obserwator@3816b3c6a4d769a62335c63f2c6d02ae5af60b8b" \
     --with "hydrolog @ git+https://github.com/Daldek/Hydrolog@e5df06d85f7ca7a0fde2547393748bc17ea3669c"
 
 # Python library (name the same tools in the project's own dependencies)
@@ -169,7 +169,7 @@ The commands of the catalog; each exists as a CLI command and as a Python functi
 | `retman scaffold list` | `retman.operations.scaffold_list` | List the data commands of a tool and the operations that use them | no |
 | `retman scaffold draft` | `retman.operations.scaffold_draft` | Draft an operation from a command of a tool, for review by hand | no |
 
-The operations that a Polish command can select, 38 operations in 9 categories (a command that names none of them is `unsupported`):
+The operations that a Polish command can select, 39 operations in 9 categories (a command that names none of them is `unsupported`):
 
 | Category | Id | Tool | Operations | Data source |
 |---|---|---|---|---|
@@ -179,7 +179,7 @@ The operations that a Polish command can select, 38 operations in 9 categories (
 | Current data and warnings | `obserwator_current` | Obserwator 3.0.0 | 3 | IMGW-PIB |
 | Maximum precipitation PMAXTP | `obserwator_pmaxtp` | Obserwator 3.0.0 | 2 | IMGW-PIB |
 | Station time series | `obserwator_series` | Obserwator 3.0.0 | 3 | IMGW-PIB, ČHMÚ |
-| Archives and the data store | `obserwator_archives` | Obserwator 3.0.0 | 8 | IMGW-PIB, ČHMÚ |
+| Archives and the data store | `obserwator_archives` | Obserwator 3.0.0 | 9 | IMGW-PIB, ČHMÚ |
 | Rainfall and runoff: design hyetograph, SCS-CN effective rainfall, time of concentration of a watershed file, design hydrograph from area, CN and tc, hydrographs routed through a river network file (with or without an inflow table) | `rainfall_runoff` | Hydrolog 0.8.0 | 6 | computed locally |
 | Catchment and flow analyses: flood quantiles of an Obserwator daily flow series, morphometry of a watershed file | `hydrology_analysis` | Hydrolog 0.8.0 | 2 | computed locally |
 
@@ -263,6 +263,6 @@ Rules, commands and the documentation map for people and agents who work on the 
 
 ## Status, licence, author
 
-Under construction (before v0.1.0). Working: ten Kartograf 0.8.0 operations (DEM for a map sheet or an area from a file, child sheets with the orthophoto in three colour variants, a DEM or DSM cutout, an orthophoto cutout of an area, BDOT10k, CORINE or BDOO land cover, a SoilGrids soil layer, the hydrologic soil groups HSG, and the creation and the overview of the store), 19 Obserwator 3.0.0 operations and nine Hydrolog 0.8.0 operations (two-stage recognition: category, then operation), from the CLI and from Python, with a decision model on any OpenAI-compatible server (for example Bielik 11B in LM Studio); the offline plan preview, the availability check on request, `retman doctor check`, `retman eval run` and `retman scaffold`. The `basal` backend does not exist yet. Versions 0.x are public but not recommended for production before 1.0.0.
+Under construction (before v0.1.0). Working: ten Kartograf 0.8.0 operations (DEM for a map sheet or an area from a file, child sheets with the orthophoto in three colour variants, a DEM or DSM cutout, an orthophoto cutout of an area, BDOT10k, CORINE or BDOO land cover, a SoilGrids soil layer, the hydrologic soil groups HSG, and the creation and the overview of the store), 20 Obserwator 3.0.0 operations and nine Hydrolog 0.8.0 operations (two-stage recognition: category, then operation), from the CLI and from Python, with a decision model on any OpenAI-compatible server (for example Bielik 11B in LM Studio); the offline plan preview, the availability check on request, `retman doctor check`, `retman eval run` and `retman scaffold`. The `basal` backend does not exist yet. Versions 0.x are public but not recommended for production before 1.0.0.
 
 MIT licence, see [LICENSE](https://github.com/Daldek/Retman/blob/main/LICENSE). Author: [Piotr de Bever](https://www.linkedin.com/in/piotr-de-bever/).

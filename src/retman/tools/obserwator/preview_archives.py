@@ -50,14 +50,26 @@ def _blocked(problems: list[PreviewProblem]) -> PreviewOutput:
     return {"values": {}, "rows": [], "problems": problems}
 
 
+# The tool's ``reason`` for a dataset whose files only the server's folder index
+# names (the actinometric data): no offline listing, the download walks the index
+_LISTED = "listed"
+
+
 def _listing(
     params: Mapping[str, Any], ctx: ToolContext
 ) -> tuple[list[PreviewRow], dict[str, Any]]:
     """Rows for the files a selection names, from the tool's offline listing.
 
-    The size of the archives is not known without a request, which the row says.
+    The size of the archives is not known without a request, which the row says;
+    neither are the files of a dataset that only the server's index lists.
     """
-    document = ctx.client.lookup(archive_files_call(params, ctx))
+    try:
+        document = ctx.client.lookup(archive_files_call(params, ctx))
+    except ToolError as err:
+        tool_details: dict[str, Any] = dict(err.details.get("tool_details") or {})
+        if tool_details.get("reason") != _LISTED:
+            raise
+        return [{"key": "arch_listed", "args": {}}], {"files": None}
     result = document.get("result")
     raw = result if isinstance(result, list) else None
     items = [item for item in raw or () if isinstance(item, Mapping)]

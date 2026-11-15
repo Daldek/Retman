@@ -12,11 +12,11 @@ description = "Probable maximum precipitation PMAXTP (precipitation quantiles fo
 
 [categories.obserwator_series]
 label = "IMGW and ČHMÚ station time series"
-description = "Daily and monthly series of IMGW-PIB and ČHMÚ stations: precipitation, flows, water levels, temperatures; export to CSV, station data coverage, building series in the store"
+description = "Daily and monthly series of IMGW-PIB and ČHMÚ stations: precipitation, flows, water levels, temperatures, daily synoptic data; export to CSV, station data coverage, building series in the store"
 
 [categories.obserwator_archives]
 label = "IMGW archives and the Obserwator store"
-description = "IMGW-PIB and ČHMÚ data archives: downloading archive files, checking and synchronising the local Obserwator store (IMGW data store, magazyn danych IMGW), exporting stored archives, initialising and inspecting the store"
+description = "IMGW-PIB and ČHMÚ data archives: downloading archive files (also daily and term synoptic data, the archives of hydrological and meteorological warnings, actinometric data), checking and synchronising the local Obserwator store (IMGW data store, magazyn danych IMGW), exporting stored archives, initialising and inspecting the store"
 
 [operations.find_obserwator_stations]
 label = "Find IMGW and ČHMÚ stations"
@@ -150,7 +150,7 @@ help = "Give part of the synoptic station name or its 5-digit code (e.g. code 12
 
 [operations.fetch_imgw_warnings]
 label = "Hydrological and meteorological warnings"
-description = "Download current IMGW-PIB warnings: hydrological (rising water, exceeded warning and alarm levels, hydrological drought) and meteorological (strong wind, storms, heavy rain, frost), with the danger level, area and period of validity."
+description = "Download current (now in force) IMGW-PIB warnings: hydrological (rising water, exceeded warning and alarm levels, hydrological drought) and meteorological (strong wind, storms, heavy rain, frost), with the danger level, area and period of validity; past warnings of earlier years are in the warning archives."
 summary = "Done. Result #{number}: warnings in force: {rows}."
 
 [operations.fetch_imgw_warnings.params.kind]
@@ -246,7 +246,7 @@ options.unspecified.description = "The command specifies neither POT nor AMP met
 
 [operations.export_station_series]
 label = "Export a station series to CSV"
-description = "Download or export the time series of a single station to CSV (szereg czasowy): daily precipitation, flows, water levels, temperature; IMGW-PIB, IMGW, ČHMÚ, Czech Republic; from the server via the store or from the local store."
+description = "Download or export the time series of a single station to CSV (szereg czasowy): daily precipitation, flows, water levels, temperature, daily synoptic data of synoptic stations (e.g. synoptic data for Świnoujście for a year); IMGW-PIB, IMGW, ČHMÚ, Czech Republic; from the server via the store or from the local store."
 summary = "Done. Result #{number}: series of station {station_code} ({rows} rows, {first_date} – {last_date}) saved in a CSV file."
 
 [operations.export_station_series.check]
@@ -267,6 +267,8 @@ options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
 options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
 options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
 options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge (deszczomierz); daily precipitation"
+options.pl_meteo_synop_daily.label = "IMGW-PIB daily synoptic data"
+options.pl_meteo_synop_daily.description = "daily synoptic data from IMGW-PIB synoptic stations: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover, sunshine, cloud cover, wind, humidity, pressure, duration of weather phenomena; dane synoptyczne; synop; synoptic stations"
 options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czech Republic)"
 options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, flow, water temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
 options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czech Republic)"
@@ -330,6 +332,8 @@ options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
 options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum and mean air temperature, ground-level temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
 options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
 options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge (deszczomierz); daily precipitation"
+options.pl_meteo_synop_daily.label = "IMGW-PIB daily synoptic data"
+options.pl_meteo_synop_daily.description = "daily synoptic data from IMGW-PIB synoptic stations: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover, sunshine, cloud cover, wind, humidity, pressure, duration of weather phenomena; dane synoptyczne; synop; synoptic stations"
 options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czech Republic)"
 options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, discharge, water temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
 options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czech Republic)"
@@ -363,6 +367,8 @@ options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
 options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum and mean air temperature, ground-level temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
 options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
 options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge; daily rainfall"
+options.pl_meteo_synop_daily.label = "IMGW-PIB daily synoptic data"
+options.pl_meteo_synop_daily.description = "daily synoptic data from IMGW-PIB synoptic stations: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover, sunshine, cloud cover, wind, humidity, pressure, duration of weather phenomena; dane synoptyczne; synop; synoptic stations"
 options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czech Republic)"
 options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, discharge, water temperature; Czech Republic; CHMI; CHMU; WIGOS; Czech stations"
 options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czech Republic)"
@@ -371,14 +377,14 @@ options.unspecified.description = "The command does not specify the dataset from
 
 [operations.download_hydro_archives]
 label = "Download hydrological archives to the result folder"
-description = "Download archive files of IMGW-PIB or ČHMÚ hydrological data to the result folder, without processing and without saving to the store: daily, monthly and half-yearly hydrological data (water level, discharge, water temperature), ice phenomena and river overgrowth; ZIP archives from the server, raw source data, packages by year."
+description = "Download archive files of IMGW-PIB or ČHMÚ hydrological data to the result folder, without processing and without saving to the store: daily, monthly and half-yearly hydrological data (water level, discharge, water temperature), ice phenomena and river overgrowth, the archive of hydrological warnings; ZIP archives from the server, raw source data, packages by year."
 summary = "Done. Result #{number}: archives downloaded — files: {files} ({size}); the files are in the result folder."
 
 [operations.download_hydro_archives.params.dataset]
 label = "Dataset"
 question = "Archives of which hydrological dataset should be downloaded?"
-model_question = "What kind of hydrological data (daily, monthly, half-yearly, ice phenomena, Czechia) does the command mention?"
-help = "IMGW-PIB hydrological data is daily, monthly, or half-yearly and annual; ice phenomena and river overgrowth form a separate dataset. Czech data is the ČHMÚ dataset."
+model_question = "What kind of hydrological data (daily, monthly, half-yearly, ice phenomena, warning archive, Czechia) does the command mention?"
+help = "IMGW-PIB hydrological data is daily, monthly, or half-yearly and annual; ice phenomena and river overgrowth and the archive of hydrological warnings (monthly files from 2017) form separate datasets. Czech data is the ČHMÚ dataset."
 options.pl_hydro_daily.label = "IMGW-PIB daily hydrological data"
 options.pl_hydro_daily.description = "daily hydrological data: water level, discharge, water temperature; gauge (wodowskaz); IMGW-PIB hydrological stations; rivers; everyday; hydro daily (hydro dobowe)"
 options.pl_hydro_monthly.label = "IMGW-PIB monthly hydrological data"
@@ -387,6 +393,8 @@ options.pl_hydro_semiannual.label = "IMGW-PIB half-yearly and annual hydrologica
 options.pl_hydro_semiannual.description = "half-yearly and annual hydrological data: extremes of water level, discharge and water temperature in the winter half-year, summer half-year and the year; IMGW-PIB hydrological stations"
 options.pl_hydro_phenomena.label = "IMGW-PIB ice phenomena and river overgrowth"
 options.pl_hydro_phenomena.description = "ice phenomena and river overgrowth: ice, frazil ice (śryż), ice cover, ice jam (zator), channel overgrowth; IMGW-PIB hydrological phenomena"
+options.pl_warnings_hydro_archive.label = "IMGW-PIB hydrological warnings archive"
+options.pl_warnings_hydro_archive.description = "archive of IMGW-PIB hydrological warnings: past warnings of rising water, exceeded warning and alarm levels, hydrological drought; monthly files from 2017; archived, historical warnings"
 options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czechia)"
 options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, discharge, water temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
 options.unspecified.description = "The command does not indicate which hydrological data the archives concern"
@@ -420,14 +428,14 @@ help = "ČHMÚ files are separate for each station, so stations are required. A 
 
 [operations.download_meteo_archives]
 label = "Download meteorological archives to the result folder"
-description = "Download archive files of IMGW-PIB or ČHMÚ meteorological data to the result folder, without processing and without saving to the store: daily climate and precipitation data, monthly climate, precipitation and synoptic data, term data; climate, precipitation and synoptic stations; ZIP archives from the server, raw source data."
+description = "Download archive files of IMGW-PIB or ČHMÚ meteorological data to the result folder, without processing and without saving to the store: daily climate and precipitation data, monthly climate and precipitation data, term data of climate stations, the archive of meteorological warnings, actinometric data (solar radiation); climate and precipitation stations; ZIP archives from the server, raw source data. Synoptic data are downloaded by a separate operation."
 summary = "Done. Result #{number}: archives downloaded — files: {files} ({size}); the files are in the result folder."
 
 [operations.download_meteo_archives.params.dataset]
 label = "Dataset"
 question = "Which meteorological dataset should the archives be downloaded for?"
-model_question = "What kind of meteorological data (climate, precipitation, synoptic; daily, monthly, term; Czechia) does the command mention?"
-help = "Climate stations measure temperature and precipitation, precipitation stations measure only precipitation and snow cover, and synoptic stations provide monthly data. Czech data is the ČHMÚ dataset."
+model_question = "What kind of meteorological data (climate, precipitation; daily, monthly, term; warning archive; actinometric; Czechia) does the command mention?"
+help = "Climate stations measure temperature and precipitation, precipitation stations measure only precipitation and snow cover. The archive of meteorological warnings (from 2017) and the actinometric data (solar radiation, 1990–2017) are separate datasets. Czech data is the ČHMÚ dataset."
 options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
 options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
 options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
@@ -436,10 +444,12 @@ options.pl_meteo_climate_monthly.label = "IMGW-PIB monthly climate data"
 options.pl_meteo_climate_monthly.description = "monthly climate data: monthly means, extremes and totals of temperature and precipitation from IMGW-PIB climate stations"
 options.pl_meteo_precip_monthly.label = "Monthly precipitation from IMGW-PIB precipitation stations"
 options.pl_meteo_precip_monthly.description = "monthly precipitation totals from IMGW-PIB precipitation stations; monthly precipitation"
-options.pl_meteo_synop_monthly.label = "IMGW-PIB monthly synoptic data"
-options.pl_meteo_synop_monthly.description = "monthly data from IMGW-PIB synoptic stations: temperature, humidity, pressure, wind, cloud cover, precipitation; synop"
 options.pl_meteo_climate_terms.label = "IMGW-PIB climate station term data"
 options.pl_meteo_climate_terms.description = "term data: observations of IMGW-PIB climate stations at measurement terms (7, 14, 21), one file per month"
+options.pl_warnings_meteo_archive.label = "IMGW-PIB meteorological warnings archive"
+options.pl_warnings_meteo_archive.description = "archive of IMGW-PIB meteorological warnings: past warnings of strong wind, storms, heavy rain, frost, heat; monthly files from 2017; archived, historical warnings"
+options.pl_actinometric.label = "IMGW-PIB actinometric data (solar radiation)"
+options.pl_actinometric.description = "actinometric data: solar radiation measured at IMGW-PIB actinometric stations, 1990–2017; actinometry; radiation; files of every station"
 options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czechia)"
 options.cz_meteo_daily.description = "Czech ČHMÚ meteorological data: precipitation, mean, maximum and minimum temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
 options.unspecified.description = "The command does not specify which meteorological data the archives concern"
@@ -448,13 +458,43 @@ options.unspecified.description = "The command does not specify which meteorolog
 label = "Archive years"
 question = "Which years should the archives be downloaded for (e.g. “2000–2020”)?"
 example = "2000-2020"
-help = "IMGW-PIB meteorological data archives are by calendar year. Give a range (“2000–2020”) or a list (“2010, 2012 and 2015”). For ČHMÚ daily data no years are given: a station file covers its whole history."
+help = "IMGW-PIB meteorological data archives are by calendar year. Give a range (“2000–2020”) or a list (“2010, 2012 and 2015”). The warning archive starts in 2017, the actinometric data cover 1990–2017. For ČHMÚ daily data no years are given: a station file covers its whole history."
 
 [operations.download_meteo_archives.params.stations]
 label = "ČHMÚ stations"
 question = "Which ČHMÚ stations should the files be downloaded for? Give codes (WIGOS identifiers) or station names."
 example = "0-203-0-11514"
 help = "ČHMÚ files are separate for each station, so stations are required. A WIGOS code has the form “0-203-0-11514”."
+
+[operations.download_synop_archives]
+label = "Download synoptic archives to the result folder"
+description = "Download archive files of IMGW-PIB synoptic data to the result folder, without processing and without saving to the store: daily, monthly and term synoptic data of the synoptic stations (daily and term files separate for each station); synop; ZIP archives from the server, raw source data, packages by year."
+summary = "Done. Result #{number}: archives downloaded — files: {files} ({size}); the files are in the result folder."
+
+[operations.download_synop_archives.params.dataset]
+label = "Dataset"
+question = "Which synoptic archives should be downloaded: daily, monthly or term data?"
+model_question = "Which synoptic data (daily, monthly, term) does the command mention?"
+help = "IMGW-PIB synoptic stations provide daily, monthly and term data (at the observation times). Daily and term data are in a separate file per station, monthly data in files of the whole country."
+options.pl_meteo_synop_daily.label = "IMGW-PIB daily synoptic data"
+options.pl_meteo_synop_daily.description = "daily synoptic data from IMGW-PIB synoptic stations: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover, sunshine, cloud cover, wind, humidity, pressure, duration of weather phenomena; daily; a separate file per station"
+options.pl_meteo_synop_monthly.label = "IMGW-PIB monthly synoptic data"
+options.pl_meteo_synop_monthly.description = "monthly data from IMGW-PIB synoptic stations: temperature, humidity, pressure, wind, cloud cover, precipitation; monthly synop; files of the whole country"
+options.pl_meteo_synop_terms.label = "IMGW-PIB synoptic station term data"
+options.pl_meteo_synop_terms.description = "term data from IMGW-PIB synoptic stations: synoptic observations at observation times; synop terminowy; a separate file per station"
+options.unspecified.description = "The command does not specify whether daily, monthly or term synoptic data are meant"
+
+[operations.download_synop_archives.params.years]
+label = "Archive years"
+question = "Which years should the archives be downloaded for (e.g. “2000–2020”)?"
+example = "2020-2024"
+help = "IMGW-PIB synoptic archives are by calendar year; daily and term data start in 1966. Give a range (“2000–2020”) or a list (“2010, 2012 and 2015”). For the running year the server publishes only monthly files of the whole country, not station files."
+
+[operations.download_synop_archives.params.stations]
+label = "Synoptic stations"
+question = "Which synoptic stations should the files be downloaded for? Give station names or 9-digit IMGW-PIB codes."
+example = "Świnoujście"
+help = "Daily and term synoptic data are in a separate file per station, so stations are required. An IMGW-PIB code has 9 digits (“353140200”)."
 
 [operations.check_obserwator_archives]
 label = "Check archives against the store"
@@ -465,7 +505,7 @@ summary = "Done. Result #{number}: archives checked — files: {items}, to downl
 label = "Dataset"
 question = "Which dataset's archives should be checked?"
 model_question = "What kind of data and from which station network does the command mention?"
-help = "The store holds the datasets from which Obserwator builds time series: daily, monthly and half-yearly hydrological, daily climate and precipitation, and Czech ČHMÚ data."
+help = "The store holds the datasets from which Obserwator builds time series: daily, monthly and half-yearly hydrological, daily climate, precipitation and synoptic, and Czech ČHMÚ data."
 options.pl_hydro_daily.label = "IMGW-PIB daily hydrological data"
 options.pl_hydro_daily.description = "daily hydrological data: water level, flow, water temperature; water gauge (wodowskaz); IMGW-PIB hydrological stations; rivers; daily; hydro dobowe"
 options.pl_hydro_monthly.label = "IMGW-PIB monthly hydrological data"
@@ -476,6 +516,8 @@ options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
 options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
 options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
 options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge (deszczomierz); opad dobowy"
+options.pl_meteo_synop_daily.label = "IMGW-PIB daily synoptic data"
+options.pl_meteo_synop_daily.description = "daily synoptic data from IMGW-PIB synoptic stations: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover, sunshine, cloud cover, wind, humidity, pressure, duration of weather phenomena; dane synoptyczne; synop; synoptic stations"
 options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czechia)"
 options.cz_hydro_daily.description = "Czech ČHMÚ hydrological data: water level, flow, water temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
 options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czechia)"
@@ -489,10 +531,10 @@ example = "2000-2020"
 help = "The years are numbered by IMGW: the IMGW-PIB hydrological archive uses the hydrological year (from 1 November of the previous year to 31 October), while meteorological and ČHMÚ archives use the calendar year. For ČHMÚ daily meteorological data, no years are given."
 
 [operations.check_obserwator_archives.params.stations]
-label = "ČHMÚ stations"
-question = "Which ČHMÚ stations should the files be checked for? Give the codes (WIGOS identifiers) or station names."
-example = "0-203-1-001000"
-help = "ČHMÚ files are separate for each station, so stations are required."
+label = "Stations"
+question = "Which stations should the files be checked for? Give station names or codes (9 digits for IMGW-PIB or ČHMÚ WIGOS identifiers)."
+example = "Świnoujście"
+help = "ČHMÚ files and the IMGW-PIB daily synoptic archives are separate for each station, so stations are required."
 
 [operations.sync_obserwator_store]
 label = "Download archives to the store"
@@ -506,7 +548,7 @@ notice = "I will query the IMGW-PIB or ČHMÚ servers (file lists and HEAD heade
 label = "Dataset"
 question = "Which dataset's archives should be downloaded to the store?"
 model_question = "What kind of data, and from which station network, does the command mention?"
-help = "The store holds the datasets from which Obserwator builds time series: daily, monthly and half-yearly hydrological data, daily climate and precipitation data, and Czech ČHMÚ data."
+help = "The store holds the datasets from which Obserwator builds time series: daily, monthly and half-yearly hydrological data, daily climate, precipitation and synoptic data, and Czech ČHMÚ data."
 options.pl_hydro_daily.label = "Daily hydrological data from IMGW-PIB"
 options.pl_hydro_daily.description = "daily hydrological data: water level, flow, water temperature; wodowskaz (river gauge); IMGW-PIB hydrological stations; rivers; daily; hydro dobowe"
 options.pl_hydro_monthly.label = "Monthly hydrological data from IMGW-PIB"
@@ -517,6 +559,8 @@ options.pl_meteo_climate_daily.label = "Daily climate data from IMGW-PIB"
 options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum and mean air temperature, ground-level temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
 options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
 options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge (deszczomierz); opad dobowy"
+options.pl_meteo_synop_daily.label = "Daily synoptic data from IMGW-PIB"
+options.pl_meteo_synop_daily.description = "daily synoptic data from IMGW-PIB synoptic stations: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover, sunshine, cloud cover, wind, humidity, pressure, duration of weather phenomena; dane synoptyczne; synop; synoptic stations"
 options.cz_hydro_daily.label = "Daily hydrological data from ČHMÚ (Czechia)"
 options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, flow, water temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
 options.cz_meteo_daily.label = "Daily meteorological data from ČHMÚ (Czechia)"
@@ -530,10 +574,10 @@ example = "2000-2020"
 help = "Years are numbered by IMGW: IMGW-PIB hydrological archives use the hydrological year (from 1 November of the previous year to 31 October), while meteorological and ČHMÚ archives use the calendar year. No years are given for ČHMÚ daily meteorological data."
 
 [operations.sync_obserwator_store.params.stations]
-label = "ČHMÚ stations"
-question = "Which ČHMÚ stations should files be downloaded for? Give the codes (WIGOS identifiers) or station names."
-example = "0-203-1-001000"
-help = "ČHMÚ files are separate for each station, so stations are required."
+label = "Stations"
+question = "Which stations should files be downloaded to the store for? Give station names or codes (9 digits for IMGW-PIB or ČHMÚ WIGOS identifiers)."
+example = "Świnoujście"
+help = "ČHMÚ files and the IMGW-PIB daily synoptic archives are separate for each station, so stations are required."
 
 [operations.sync_obserwator_store_by_plan]
 label = "Download to the store according to a plan"
@@ -560,6 +604,8 @@ options.pl_meteo_climate_daily.label = "IMGW-PIB daily climate data"
 options.pl_meteo_climate_daily.description = "daily climate data: maximum, minimum and mean air temperature, ground-level temperature, daily precipitation, snow cover; IMGW-PIB climate stations"
 options.pl_meteo_precip_daily.label = "Daily precipitation from IMGW-PIB precipitation stations"
 options.pl_meteo_precip_daily.description = "daily precipitation, daily precipitation total, snow cover, fresh snow from IMGW-PIB precipitation stations; rain gauge; daily precipitation"
+options.pl_meteo_synop_daily.label = "IMGW-PIB daily synoptic data"
+options.pl_meteo_synop_daily.description = "daily synoptic data from IMGW-PIB synoptic stations: maximum, minimum, mean and ground-level air temperature, daily precipitation, snow cover, sunshine, cloud cover, wind, humidity, pressure, duration of weather phenomena; dane synoptyczne; synop; synoptic stations"
 options.cz_hydro_daily.label = "ČHMÚ daily hydrological data (Czechia)"
 options.cz_hydro_daily.description = "Czech hydrological data from ČHMÚ: water level, discharge, water temperature; Czechia; CHMI; CHMU; WIGOS; Czech stations"
 options.cz_meteo_daily.label = "ČHMÚ daily meteorological data (Czechia)"
@@ -763,6 +809,10 @@ value = "{start} – {end} (hydrological years, from 1 November to 31 October)"
 [preview.arch_span_calendar]
 label = "Data range"
 value = "{start} – {end} (calendar years)"
+
+[preview.arch_listed]
+label = "Files"
+value = "every file of the selected years in the server's folder index; their number and size are known only when downloading"
 
 [preview.arch_plan]
 label = "Synchronisation plan"

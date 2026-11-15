@@ -762,7 +762,7 @@ plainly.
 
 #### 3.2.11. Obserwator 3.0.0 operations
 
-All of Obserwator in v0.1 (ADR-017): 19 operations in five categories, on IMGW-PIB and ČHMÚ data.
+All of Obserwator in v0.1 (ADR-017): 20 operations in five categories, on IMGW-PIB and ČHMÚ data.
 Obserwator keeps two roots (ADR-034, Obserwator ADR-017): the **raw root** holds what the providers
 publish (archives, the station sources of the catalogs, PMAXTP cells) and the **data root** what
 the tool builds from it (series, station catalogs, analyses); "the store" below is either root.
@@ -785,7 +785,7 @@ plan is confirmed. Operations marked `check` offer an availability check (sectio
 | `obserwator_series` — station time series | `export_station_series` — station series (dataset, period, year type, variables) to CSV; `check` | `hydro_series`, `meteo_series` | from the data root without network; from the server download of archives to the raw root and a series build in the data root (network, writes) |
 | | `show_station_coverage` — data coverage of a station in the data root (years, gaps) | `obserwator_report` | no network |
 | | `build_obserwator_series` — build dataset series in the data root from archives in the raw root | — | writes the data root |
-| `obserwator_archives` — archives and store | `download_hydro_archives`, `download_meteo_archives` — download archives as plain files to the results folder (`output_dir`), without the store | `obserwator_archive`, `provider_attribution` | network |
+| `obserwator_archives` — archives and store | `download_hydro_archives`, `download_meteo_archives`, `download_synop_archives` — download archives as plain files to the results folder (`output_dir`), without the store | `obserwator_archive`, `provider_attribution` | network |
 | | `check_obserwator_archives` — plan: what needs to be downloaded relative to the raw root | `obserwator_plan` | network |
 | | `sync_obserwator_store` — download archives to the raw root, then build the dataset's series in the data root (`store sync`, `series build`); `check` | — | network; writes both roots |
 | | `sync_obserwator_store_by_plan` — download per a plan from the result of `check_obserwator_archives` (input `obserwator_plan`, e.g. "#5") into the raw root | — | network; writes the raw root |
@@ -822,7 +822,7 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
 - **Output: plain files or the store** (the data output convention ECO-051, ADR-024). Obserwator
   writes either plain files into a directory (`output_dir`) or a versioned store (`root`), never
   both: its catalog declares such options `exclusive`, and the client adds `root` only to a call that
-  names none of the options of a group that holds it. The two download operations pass the **results
+  names none of the options of a group that holds it. The three download operations pass the **results
   folder** as `output_dir`: the tool stages the files, verifies them and moves them into place
   atomically, and the audit block `tool` of the result carries the `files[]` it reports (path,
   SHA-256 computed while writing, status) as they are. While a plan is built there is no results
@@ -854,13 +854,23 @@ a document without a file (lists, tables) save it as CSV (tables) or JSON.
   hydrological data it is the file index within the hydrological year).
 - **Datasets** (`dataset`) are closed lists for the model (keys without dots; `tool_values` converts
   them to the tool's registry keys, e.g. `pl_hydro_daily` → `pl.imgw.hydro_daily`):
-  seven datasets for store and series commands (IMGW-PIB: hydro daily, monthly and semi-annual,
-  meteo climatic daily and precipitation daily; ČHMÚ: hydro daily and meteo daily), and for
-  downloading archives to the results folder two operations — hydrological (5 datasets, including
-  hydrological phenomena) and meteorological (7 datasets, including monthly, synoptic and fixed-time) —
-  each operation lists the IMGW-PIB datasets of the other in its `excluded` (coverage check, section
-  3.2.3); the ČHMÚ dataset of the other needs no entry, because no call of the operation can make
-  the tool accept it. Dataset metadata (provider, kind, variables, year numbering) is carried by
+  eight datasets for store and series commands (IMGW-PIB: hydro daily, monthly and semi-annual,
+  meteo climatic daily, precipitation daily and synoptic daily; ČHMÚ: hydro daily and meteo daily),
+  and for downloading archives to the results folder three operations — hydrological (6 datasets,
+  including hydrological phenomena and the archive of hydrological warnings), meteorological
+  (8 datasets, including monthly, fixed-time, the archive of meteorological warnings and the
+  actinometric data) and synoptic (daily, monthly and fixed-time synoptic data; a choice offers at
+  most 9 options, section 3.4). Each download operation lists the country-wide IMGW-PIB datasets
+  of the other two in its `excluded` (coverage check, section 3.2.3); a station dataset of another
+  operation (ČHMÚ, IMGW-PIB synoptic daily and fixed-time) needs no entry, because no call of the
+  operation can make the tool accept it. A dataset whose archives hold one station each (the tool's
+  `archive_scope` other than `country`: ČHMÚ, the synoptic daily and fixed-time data) requires
+  `stations`, also in the store selection and in the series export from the server, which
+  synchronises only the exported station; Retman does not expose the tool's `months`, so the
+  running year's monthly country files of the synoptic data are not offered. The actinometric
+  files are named only in the server's folder index (`datasets files` refuses them, reason
+  `listed`): the preview says that their number and size are known only when downloading.
+  Dataset metadata (provider, kind, variables, year numbering, archive scope) is carried by
   `option_meta`; it is used by the contextual extractors (e.g. variables available in the dataset,
   stations of the right provider and kind).
 - **PMAXTP:** the request to the tool accepts only a point and a method, and the result is a table
@@ -2120,7 +2130,7 @@ Model decyzyjny
 Narzędzia
   ✓ hydrolog 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 9 operacji
   ✓ kartograf 0.8.0, obsługiwane >=0.8.0.dev0,<0.9, 10 operacji
-  ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 19 operacji
+  ✓ obserwator 3.0.0, obsługiwane >=3.0.0.dev0,<4, 20 operacji
 
 Magazyny danych narzędzi
   ✓ kartograf: magazyn /dane/retman/stores/kartograf (znacznik kartograf-store.json, schemat kartograf-store/1, dowiązania twarde działają)
@@ -2587,8 +2597,9 @@ a GPU. The results go into the documentation as guidance for model selection (PR
   nor `mypy src tests` depends on what is installed.
 - The `tools` dependency group in `pyproject.toml` serves tests and manual runs; it is not
   a dependency of the user's environment. Until the tags `v0.8.0` (Kartograf) and `v3.0.0`
-  (Obserwator) it pins commits, the members of the Nogat release set `candidate-4`: Kartograf
-  `c9afdd3f`, Obserwator with the `store` extra (`0394af7c`) and Hydrolog `9e2cb618`, all on GitHub
+  (Obserwator) it pins commits: Kartograf `c9afdd3f` and Hydrolog `9e2cb618`, members of the Nogat
+  release set `candidate-4`, and Obserwator with the `store` extra at its `develop` commit
+  `3816b3c6` (the synoptic, warning-archive and actinometric datasets), all on GitHub
   (PROGRESS Next 3); after release it switches to tags (ADR-012, ADR-024). The Obserwator `store`
   extra installs `pyarrow` (time series are Parquet files).
 - Retman **has no extras that install tools** (`retman[hydrograf]` etc.). Dependencies pointing

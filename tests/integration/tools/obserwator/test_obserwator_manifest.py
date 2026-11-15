@@ -46,14 +46,14 @@ def operations() -> dict[str, Operation]:
     )
 
 
-def test_the_manifest_has_19_operations_in_five_categories(operations):
-    assert len(operations) == 19
+def test_the_manifest_has_20_operations_in_five_categories(operations):
+    assert len(operations) == 20
     assert Counter(operation.category for operation in operations.values()) == {
         "obserwator_catalog": 3,
         "obserwator_current": 3,
         "obserwator_pmaxtp": 2,
         "obserwator_series": 3,
-        "obserwator_archives": 8,
+        "obserwator_archives": 9,
     }
 
 
@@ -86,6 +86,7 @@ def test_the_datasets_of_the_manifest_are_the_datasets_of_the_tool():
         assert descriptor.year_type == info["numbering"], key
         assert list(descriptor.variables) == info["variables"], key
         assert descriptor.slug == info["slug"], key
+        assert descriptor.archive_scope == info["archive_scope"], key
         assert descriptor.in_store == info["series"], key
     # Every dataset with data of its own is offered; station lists and PMAXTP are not
     with_data = {

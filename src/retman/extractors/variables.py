@@ -2,9 +2,11 @@
 
 Obserwator exports the variables of one dataset: hydrological ``H`` (water level),
 ``Q`` (discharge), ``T`` (water temperature), their monthly ``_min/_mean/_max``
-forms, and the meteorological ``P``, ``Tmax``, ``Tmin``, ``Tmean``, ``Tground``,
-``snow_cover``, ``fresh_snow``. A command names them by code or by Polish words
-("przepływ", "stan wody", "temperatura maksymalna"). The dataset the user chose
+forms, the meteorological ``P``, ``Tmax``, ``Tmin``, ``Tmean``, ``Tground``,
+``snow_cover``, ``fresh_snow`` and the synoptic ones (``sunshine``, ``cloud_cover``,
+``humidity``, ``wind_speed``, the pressures, the durations of phenomena...). A
+command names them by code or by Polish words ("przepływ", "stan wody",
+"temperatura maksymalna", "usłonecznienie"). The dataset the user chose
 (``ctx.scope["variables"]``) decides which codes exist: a word that fits several
 variables of the dataset is a question, and a variable the dataset does not have
 is reported by the validator instead of being dropped.
@@ -41,6 +43,37 @@ KNOWN_VARIABLES = (
     "Tground",
     "snow_cover",
     "fresh_snow",
+    "snow_water_equivalent",
+    "sunshine",
+    "rain_duration",
+    "snowfall_duration",
+    "sleet_duration",
+    "hail_duration",
+    "fog_duration",
+    "mist_duration",
+    "rime_duration",
+    "glaze_duration",
+    "drifting_snow_duration",
+    "blowing_snow_duration",
+    "haze_duration",
+    "wind_10_duration",
+    "wind_15_duration",
+    "thunderstorm_duration",
+    "dew_duration",
+    "hoarfrost_duration",
+    "snow_cover_occurrence",
+    "lightning_occurrence",
+    "isotherm_lower",
+    "isotherm_upper",
+    "actinometry",
+    "cloud_cover",
+    "wind_speed",
+    "vapour_pressure",
+    "humidity",
+    "pressure_station",
+    "pressure_sea",
+    "P_day",
+    "P_night",
 )
 
 
@@ -88,6 +121,12 @@ _FAMILIES: dict[str, _Family] = {
     "snow": _Family(("snow_cover", "fresh_snow")),
     "snow_cover": _Family(("snow_cover",)),
     "fresh_snow": _Family(("fresh_snow",)),
+    "sunshine": _Family(("sunshine",)),
+    "cloud_cover": _Family(("cloud_cover",)),
+    "humidity": _Family(("humidity",)),
+    "vapour_pressure": _Family(("vapour_pressure",)),
+    "pressure": _Family(("pressure_station", "pressure_sea")),
+    "wind_speed": _Family(("wind_speed",)),
 }
 # Name phrases (folded regex) and the family each stands for; specific phrases
 # come before the general words they contain ("temperatura wody" before
@@ -103,6 +142,12 @@ _NAMES = (
     (r"snieg\w*|sniezn\w*", "snow"),
     (r"temperatur\w*", "temperature"),
     (r"opad(?:y|u|ow|ach|ami|om|em)?(?!\w)", "precipitation"),
+    (r"uslonecznien\w*", "sunshine"),
+    (r"zachmurzen\w*", "cloud_cover"),
+    (r"wilgotnos\w*", "humidity"),
+    (r"(?:cisnien\w*|preznos\w*)\s+par\w*", "vapour_pressure"),
+    (r"cisnien\w*", "pressure"),
+    (r"predkos\w*\s+wiatr\w*|wiatr(?:y|u|ow|em)?(?!\w)", "wind_speed"),
 )
 _NAME_RE = re.compile("|".join(f"(?P<n{i}>{p})" for i, (p, _) in enumerate(_NAMES)))
 _STATISTIC_STEMS = (

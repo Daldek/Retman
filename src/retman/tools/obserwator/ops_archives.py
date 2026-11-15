@@ -1,9 +1,10 @@
 """The ``obserwator_archives`` operations: archive files, the store and its plans.
 
-Eight operations (research-imgw 2 and 5.3, nos. 12-19): downloading archives to
-the result folder, checking and synchronising the Obserwator store, exporting
-stored archives and looking into the store. The manifest of the tool lists
-``OPERATIONS`` among its own; nothing here imports the tool.
+Nine operations (research-imgw 2 and 5.3, nos. 12-19, and the synoptic downloads):
+downloading archives to the result folder, checking and synchronising the
+Obserwator store, exporting stored archives and looking into the store. The
+manifest of the tool lists ``OPERATIONS`` among its own; nothing here imports the
+tool.
 """
 
 from collections.abc import Sequence
@@ -14,6 +15,7 @@ from retman.tools.obserwator.params import (
     HYDRO_DOWNLOAD_DATASETS,
     METEO_DOWNLOAD_DATASETS,
     SERIES_DATASETS,
+    SYNOP_DOWNLOAD_DATASETS,
     dataset_param,
     provider_param,
 )
@@ -56,7 +58,12 @@ def years_param(datasets: Sequence[str]) -> ParamSpec:
 
 
 def stations_param(datasets: Sequence[str]) -> ParamSpec:
-    """ČHMÚ station files are chosen by station; IMGW-PIB archives cover the country."""
+    """Station archives are chosen by station; country-wide archives cover them all.
+
+    The ČHMÚ files and the synoptic archives of IMGW-PIB hold one station each;
+    the tool needs their stations (or, for the synoptic ones, the running year's
+    months, which Retman does not offer).
+    """
     return {
         "name": "stations",
         "type": "free",
@@ -64,24 +71,48 @@ def stations_param(datasets: Sequence[str]) -> ParamSpec:
         "multiple": True,
         "required": True,
         "depends_on": {
-            "dataset": [key for key in datasets if DATASETS[key]["provider"] == "CHMI"]
+            "dataset": [
+                key for key in datasets if DATASETS[key]["archive_scope"] != "country"
+            ]
         },
     }
 
 
-def _excluded(offered: Sequence[str], reason: str) -> dict[str, dict[str, str]]:
-    """Return the IMGW-PIB download datasets the other operation serves (coverage).
+# The download operation that offers each dataset
+_DOWNLOADS: dict[str, tuple[str, ...]] = {
+    "download_hydro_archives": HYDRO_DOWNLOAD_DATASETS,
+    "download_meteo_archives": METEO_DOWNLOAD_DATASETS,
+    "download_synop_archives": SYNOP_DOWNLOAD_DATASETS,
+}
 
-    A ČHMÚ dataset of the other kind is not listed: it needs a combination of
-    ``stations`` and ``years`` that no call of this operation makes, so the tool
-    refuses it here and nothing is left uncovered (X4 says so if that changes).
+
+def _excluded(operation: str) -> dict[str, dict[str, str]]:
+    """Return the country-wide datasets the other download operations serve (X4).
+
+    A station dataset (ČHMÚ, IMGW-PIB synop) of another operation is not listed:
+    it needs stations of its provider and a combination of ``stations`` and
+    ``years`` that no call of this operation makes, so the tool refuses it here
+    and nothing is left uncovered (X4 says so if that changes).
     """
-    others = [
-        DATASETS[key]["tool_value"]
-        for key in (*HYDRO_DOWNLOAD_DATASETS, *METEO_DOWNLOAD_DATASETS)
-        if key not in offered and DATASETS[key]["provider"] != "CHMI"
+    others = {
+        DATASETS[key]["tool_value"]: other
+        for other, keys in _DOWNLOADS.items()
+        if other != operation
+        for key in keys
+        if DATASETS[key]["archive_scope"] == "country"
+    }
+    return {"dataset": others}
+
+
+def _download(operation: str, extra: Sequence[ParamSpec] = ()) -> list[ParamSpec]:
+    """Dataset, years and stations of a download operation, then ``extra``."""
+    datasets = _DOWNLOADS[operation]
+    return [
+        dataset_param(datasets),
+        years_param(datasets),
+        *extra,
+        stations_param(datasets),
     ]
-    return {"dataset": dict.fromkeys(others, reason)}
 
 
 _HYDRO_PARAMS: ParamSpec = {
@@ -107,18 +138,13 @@ OPERATIONS: list[OperationSpec] = [
         "(IMGW-PIB or ČHMÚ) to the result folder, as published",
         "inputs": [],
         "outputs": ["obserwator_archive", "provider_attribution"],
-        "params": [
-            dataset_param(HYDRO_DOWNLOAD_DATASETS),
-            years_param(HYDRO_DOWNLOAD_DATASETS),
-            _HYDRO_PARAMS,
-            stations_param(HYDRO_DOWNLOAD_DATASETS),
-        ],
+        "params": _download("download_hydro_archives", [_HYDRO_PARAMS]),
         "calls": f"{_CALLS}:download_hydro_archives",
         "commands": ["datasets download"],
         "describe": f"{_DESCRIBE}:describe_download_archives",
         "preview": f"{_PREVIEW}:preview_download_archives",
         "no_check": _NO_DOWNLOAD_CHECK,
-        "excluded": _excluded(HYDRO_DOWNLOAD_DATASETS, "download_meteo_archives"),
+        "excluded": _excluded("download_hydro_archives"),
     },
     {
         "id": "download_meteo_archives",
@@ -127,17 +153,28 @@ OPERATIONS: list[OperationSpec] = [
         "(IMGW-PIB or ČHMÚ) to the result folder, as published",
         "inputs": [],
         "outputs": ["obserwator_archive", "provider_attribution"],
-        "params": [
-            dataset_param(METEO_DOWNLOAD_DATASETS),
-            years_param(METEO_DOWNLOAD_DATASETS),
-            stations_param(METEO_DOWNLOAD_DATASETS),
-        ],
+        "params": _download("download_meteo_archives"),
         "calls": f"{_CALLS}:download_meteo_archives",
         "commands": ["datasets download"],
         "describe": f"{_DESCRIBE}:describe_download_archives",
         "preview": f"{_PREVIEW}:preview_download_archives",
         "no_check": _NO_DOWNLOAD_CHECK,
-        "excluded": _excluded(METEO_DOWNLOAD_DATASETS, "download_hydro_archives"),
+        "excluded": _excluded("download_meteo_archives"),
+    },
+    {
+        "id": "download_synop_archives",
+        "category": CATEGORY,
+        "description": "Download the archive files of a synoptic dataset of IMGW-PIB "
+        "(daily, monthly or at observation times) to the result folder, as published",
+        "inputs": [],
+        "outputs": ["obserwator_archive", "provider_attribution"],
+        "params": _download("download_synop_archives"),
+        "calls": f"{_CALLS}:download_synop_archives",
+        "commands": ["datasets download"],
+        "describe": f"{_DESCRIBE}:describe_download_archives",
+        "preview": f"{_PREVIEW}:preview_download_archives",
+        "no_check": _NO_DOWNLOAD_CHECK,
+        "excluded": _excluded("download_synop_archives"),
     },
     {
         "id": "check_obserwator_archives",

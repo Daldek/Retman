@@ -123,6 +123,13 @@ def download_meteo_archives(
     return _download(params, ctx)
 
 
+def download_synop_archives(
+    params: dict[str, Any], ctx: ToolContext
+) -> list[CatalogCall]:
+    """``datasets download`` of a synoptic dataset (per station but the monthly one)."""
+    return _download(params, ctx)
+
+
 # --- 14-16: freshness plan and synchronisation of the store -------------------------
 
 
@@ -254,10 +261,11 @@ def stored_archives(params: Mapping[str, Any], ctx: ToolContext) -> list[StoredA
 def expected_archives(params: Mapping[str, Any], ctx: ToolContext) -> int | None:
     """How many archive files the selection names, when that is known offline.
 
-    The country-wide IMGW-PIB archives are listed from the dataset and years alone;
-    a ČHMÚ file belongs to a station, and an export names none: unknown, ``None``.
+    The country-wide archives are listed from the dataset and years alone; a
+    station archive (ČHMÚ, IMGW-PIB synop) belongs to a station, and an export
+    names none: unknown, ``None``.
     """
-    if ctx.option_meta("dataset", params["dataset"])["provider"] != "IMGW-PIB":
+    if ctx.option_meta("dataset", params["dataset"])["archive_scope"] != "country":
         return None
     document = ctx.client.lookup(archive_files_call(params, ctx))
     result = document.get("result")

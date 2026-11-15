@@ -19,6 +19,15 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
 
 ### Changed
 
+- The `tools` group, README and USAGE pin Obserwator's `develop` commit `3816b3c6` (was
+  `0394af7c`), which has the datasets of Obserwator ADR-022 and ADR-023; its version is
+  still `3.0.0.dev0`.
+
+- The synoptic archives of IMGW-PIB are downloaded by the new operation
+  `download_synop_archives` („Pobierz archiwa miesięczne ze stacji synoptycznych z 2019”):
+  the monthly synoptic data moved there from `download_meteo_archives`, because a choice
+  offers at most nine options (ARCHITECTURE 3.2.11, 3.4).
+
 - Hydrolog's development version is now `0.8.0.dev0` (its last release is v0.7.0): Retman
   accepts Hydrolog `>=0.8.0.dev0,<0.9` (was `>=1.0.0.dev0,<2`), and the `tools` group, README
   and USAGE pin Hydrolog's `develop` commit `e5df06d8`; install that commit, since a Hydrolog
@@ -29,6 +38,24 @@ tagged yet, and `develop` carries `0.1.0.dev0`.
   „Dane ČHMÚ zostały przetworzone (…)” as CP, merged into one line.
 
 ### Added
+
+- IMGW-PIB datasets of Obserwator ADR-022 and ADR-023 (ARCHITECTURE 3.2.11):
+  - the daily synoptic data (`pl_meteo_synop_daily`, „dane synoptyczne dobowe”) in the store:
+    series export, coverage, series build, store check, sync and export of archives, and
+    downloads to the result folder; „pobierz dane synoptyczne dla Świnoujścia za 2024” plans
+    the station's daily synoptic series. Its archives hold one station each, so the
+    selections of the store and the downloads ask for stations, and a series export from the
+    server synchronises only the exported station;
+  - downloads to the result folder of the fixed-time synoptic data (`pl_meteo_synop_terms`,
+    per station), the archives of hydrological and meteorological warnings
+    (`pl_warnings_hydro_archive`, `pl_warnings_meteo_archive`, from 2017) and the
+    actinometric data (`pl_actinometric`, solar radiation, 1990–2017; the preview says that
+    their number and size are known only when downloading, since only the server's folder
+    index names them);
+  - the synoptic variables (sunshine, cloud cover, humidity, wind speed, pressures, durations
+    of phenomena…) with Polish names in the plan, and the Polish words „usłonecznienie”,
+    „zachmurzenie”, „wilgotność”, „ciśnienie”, „ciśnienie pary wodnej” and „prędkość wiatru”
+    read as variables.
 
 - The lines the data providers' terms require (Nogat DEV §20, ECO-060, ADR-033): the
   `attribution` and `terms_notice` of the tools' documents reach the result (fields of
